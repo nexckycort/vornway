@@ -17,7 +17,10 @@ export const Route = createFileRoute('/_authed/(home)/')({
 
 function HomePage() {
   const { user } = Route.useRouteContext();
+  const navigate = Route.useNavigate();
+
   const [searchQuery, setSearchQuery] = useState('');
+  const [showOptions, setShowOptions] = useState(false);
 
   return (
     <GradientLayout>
@@ -25,7 +28,7 @@ function HomePage() {
         {/* Header */}
         <header className="flex items-center justify-between px-6 pt-6 pb-4">
           <h1 className="text-2xl font-bold text-[#1a1a3e]">
-            Hola, {user?.name}
+            Hola, {user.name}
           </h1>
           <button className="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center">
             <HugeiconsIcon icon={Bell} className="w-5 h-5 text-[#1a1a3e]" />
@@ -166,10 +169,75 @@ function HomePage() {
         </div>
 
         {/* FAB */}
-        <button className="fixed bottom-24 right-6 w-14 h-14 bg-[#4040b0] rounded-2xl flex items-center justify-center shadow-lg shadow-[#4040b0]/30">
+        <button
+          onClick={() => setShowOptions(true)}
+          className="fixed bottom-24 right-6 w-14 h-14 bg-[#4040b0] rounded-2xl flex items-center justify-center shadow-lg shadow-[#4040b0]/30"
+        >
           <HugeiconsIcon icon={Plus} className="w-7 h-7 text-white" />
         </button>
       </div>
+
+      {/* Bottom Sheet Modal */}
+      {showOptions && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setShowOptions(false)}
+          />
+
+          {/* Bottom Sheet */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-4">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+            </div>
+
+            {/* Options */}
+            <div className="px-6 pb-8 space-y-2">
+              {/* Crear grupo */}
+              <button
+                onClick={() => {
+                  setShowOptions(false);
+                  navigate({ to: '/groups/new' });
+                }}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors text-left"
+              >
+                <div className="w-12 h-12 bg-[#e8e4f8] rounded-full flex items-center justify-center">
+                  <HugeiconsIcon
+                    icon={Plus}
+                    className="w-5 h-5 text-[#6060c0]"
+                  />
+                </div>
+                <div>
+                  <p className="font-semibold text-[#1a1a3e]">Crear grupo</p>
+                  <p className="text-sm text-gray-500">
+                    Inicia un nuevo grupo desde cero
+                  </p>
+                </div>
+              </button>
+
+              {/* Unirse a grupo */}
+              <button className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors text-left">
+                <div className="w-12 h-12 bg-[#e8e4f8] rounded-full flex items-center justify-center">
+                  <HugeiconsIcon
+                    icon={Bell}
+                    className="w-5 h-5 text-[#6060c0]"
+                  />
+                </div>
+                <div>
+                  <p className="font-semibold text-[#1a1a3e]">
+                    {'¿Te invitaron a un grupo?'}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Usa un enlace o código QR para unirte a un grupo
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       <BottomNav />
     </GradientLayout>

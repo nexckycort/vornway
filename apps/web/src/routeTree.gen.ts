@@ -14,6 +14,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as PublicWelcomeIndexRouteImport } from './routes/_public/welcome/index'
 import { Route as AuthedhomeIndexRouteImport } from './routes/_authed/(home)/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthedGroupsNewIndexRouteImport } from './routes/_authed/groups/new/index'
 
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
@@ -38,16 +39,23 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedGroupsNewIndexRoute = AuthedGroupsNewIndexRouteImport.update({
+  id: '/groups/new/',
+  path: '/groups/new/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedhomeIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/welcome/': typeof PublicWelcomeIndexRoute
+  '/groups/new/': typeof AuthedGroupsNewIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthedhomeIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/welcome': typeof PublicWelcomeIndexRoute
+  '/groups/new': typeof AuthedGroupsNewIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -56,12 +64,13 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authed/(home)/': typeof AuthedhomeIndexRoute
   '/_public/welcome/': typeof PublicWelcomeIndexRoute
+  '/_authed/groups/new/': typeof AuthedGroupsNewIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/auth/$' | '/welcome/'
+  fullPaths: '/' | '/api/auth/$' | '/welcome/' | '/groups/new/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/auth/$' | '/welcome'
+  to: '/' | '/api/auth/$' | '/welcome' | '/groups/new'
   id:
     | '__root__'
     | '/_authed'
@@ -69,6 +78,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/_authed/(home)/'
     | '/_public/welcome/'
+    | '/_authed/groups/new/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -114,15 +124,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/groups/new/': {
+      id: '/_authed/groups/new/'
+      path: '/groups/new'
+      fullPath: '/groups/new/'
+      preLoaderRoute: typeof AuthedGroupsNewIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
   AuthedhomeIndexRoute: typeof AuthedhomeIndexRoute
+  AuthedGroupsNewIndexRoute: typeof AuthedGroupsNewIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedhomeIndexRoute: AuthedhomeIndexRoute,
+  AuthedGroupsNewIndexRoute: AuthedGroupsNewIndexRoute,
 }
 
 const AuthedRouteWithChildren =

@@ -151,7 +151,7 @@ function CreateGroupPage() {
       <div className="p-4 pb-8">
         <button
           disabled={!nombre.trim()}
-          onClick={() => router.push('/crear-grupo/paso-2')}
+          onClick={() => router.navigate({ to: '/groups/new/participants' })}
           className={`w-full py-4 rounded-xl font-semibold text-white transition-colors ${
             nombre.trim() ? 'bg-[#4040b0]' : 'bg-gray-300 cursor-not-allowed'
           }`}

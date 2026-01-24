@@ -1,0 +1,31 @@
+{
+  "name": "password-generator",
+  "private": true,
+  "author": "Nestor Cortina <nexckycort@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "lefthook install",
+    "clean": "bun run -r --parallel --filter='./apps/*' clean",
+    "dev": "bun run -r --parallel --filter='./apps/*' dev"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@types/node": "catalog:",
+    "bun-types": "latest",
+    "lefthook": "^2.0.12",
+    "typescript": "catalog:",
+    "@types/bun": "latest"
+  },
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "catalog": {
+      "@biomejs/biome": "^2.3.9",
+      "@types/node": "^24.10.1",
+      "@typescript/native-preview": "latest",
+      "typescript": "^5.9.3"
+    }
+  }
+}

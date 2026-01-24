@@ -15,6 +15,7 @@ import { Route as PublicWelcomeIndexRouteImport } from './routes/_public/welcome
 import { Route as AuthedhomeIndexRouteImport } from './routes/_authed/(home)/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthedGroupsNewIndexRouteImport } from './routes/_authed/groups/new/index'
+import { Route as AuthedGroupsIdIndexRouteImport } from './routes/_authed/groups/$id/index'
 import { Route as AuthedGroupsNewParticipantsIndexRouteImport } from './routes/_authed/groups/new/participants/index'
 
 const PublicRoute = PublicRouteImport.update({
@@ -45,6 +46,11 @@ const AuthedGroupsNewIndexRoute = AuthedGroupsNewIndexRouteImport.update({
   path: '/groups/new/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedGroupsIdIndexRoute = AuthedGroupsIdIndexRouteImport.update({
+  id: '/groups/$id/',
+  path: '/groups/$id/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedGroupsNewParticipantsIndexRoute =
   AuthedGroupsNewParticipantsIndexRouteImport.update({
     id: '/groups/new/participants/',
@@ -56,6 +62,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedhomeIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/welcome/': typeof PublicWelcomeIndexRoute
+  '/groups/$id/': typeof AuthedGroupsIdIndexRoute
   '/groups/new/': typeof AuthedGroupsNewIndexRoute
   '/groups/new/participants/': typeof AuthedGroupsNewParticipantsIndexRoute
 }
@@ -63,6 +70,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthedhomeIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/welcome': typeof PublicWelcomeIndexRoute
+  '/groups/$id': typeof AuthedGroupsIdIndexRoute
   '/groups/new': typeof AuthedGroupsNewIndexRoute
   '/groups/new/participants': typeof AuthedGroupsNewParticipantsIndexRoute
 }
@@ -73,6 +81,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authed/(home)/': typeof AuthedhomeIndexRoute
   '/_public/welcome/': typeof PublicWelcomeIndexRoute
+  '/_authed/groups/$id/': typeof AuthedGroupsIdIndexRoute
   '/_authed/groups/new/': typeof AuthedGroupsNewIndexRoute
   '/_authed/groups/new/participants/': typeof AuthedGroupsNewParticipantsIndexRoute
 }
@@ -82,6 +91,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/auth/$'
     | '/welcome/'
+    | '/groups/$id/'
     | '/groups/new/'
     | '/groups/new/participants/'
   fileRoutesByTo: FileRoutesByTo
@@ -89,6 +99,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/auth/$'
     | '/welcome'
+    | '/groups/$id'
     | '/groups/new'
     | '/groups/new/participants'
   id:
@@ -98,6 +109,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/_authed/(home)/'
     | '/_public/welcome/'
+    | '/_authed/groups/$id/'
     | '/_authed/groups/new/'
     | '/_authed/groups/new/participants/'
   fileRoutesById: FileRoutesById
@@ -152,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedGroupsNewIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/groups/$id/': {
+      id: '/_authed/groups/$id/'
+      path: '/groups/$id'
+      fullPath: '/groups/$id/'
+      preLoaderRoute: typeof AuthedGroupsIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/groups/new/participants/': {
       id: '/_authed/groups/new/participants/'
       path: '/groups/new/participants'
@@ -164,12 +183,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthedRouteChildren {
   AuthedhomeIndexRoute: typeof AuthedhomeIndexRoute
+  AuthedGroupsIdIndexRoute: typeof AuthedGroupsIdIndexRoute
   AuthedGroupsNewIndexRoute: typeof AuthedGroupsNewIndexRoute
   AuthedGroupsNewParticipantsIndexRoute: typeof AuthedGroupsNewParticipantsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedhomeIndexRoute: AuthedhomeIndexRoute,
+  AuthedGroupsIdIndexRoute: AuthedGroupsIdIndexRoute,
   AuthedGroupsNewIndexRoute: AuthedGroupsNewIndexRoute,
   AuthedGroupsNewParticipantsIndexRoute: AuthedGroupsNewParticipantsIndexRoute,
 }

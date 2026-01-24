@@ -12,11 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as PublicWelcomeIndexRouteImport } from './routes/_public/welcome/index'
+import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
+import { Route as AuthedActivityIndexRouteImport } from './routes/_authed/activity/index'
 import { Route as AuthedhomeIndexRouteImport } from './routes/_authed/(home)/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthedGroupsNewIndexRouteImport } from './routes/_authed/groups/new/index'
 import { Route as AuthedGroupsIdIndexRouteImport } from './routes/_authed/groups/$id/index'
 import { Route as AuthedGroupsNewParticipantsIndexRouteImport } from './routes/_authed/groups/new/participants/index'
+import { Route as AuthedGroupsIdAddExpenseIndexRouteImport } from './routes/_authed/groups/$id/add-expense/index'
 
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
@@ -30,6 +33,16 @@ const PublicWelcomeIndexRoute = PublicWelcomeIndexRouteImport.update({
   id: '/welcome/',
   path: '/welcome/',
   getParentRoute: () => PublicRoute,
+} as any)
+const AuthedProfileIndexRoute = AuthedProfileIndexRouteImport.update({
+  id: '/profile/',
+  path: '/profile/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedActivityIndexRoute = AuthedActivityIndexRouteImport.update({
+  id: '/activity/',
+  path: '/activity/',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedhomeIndexRoute = AuthedhomeIndexRouteImport.update({
   id: '/(home)/',
@@ -57,21 +70,33 @@ const AuthedGroupsNewParticipantsIndexRoute =
     path: '/groups/new/participants/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedGroupsIdAddExpenseIndexRoute =
+  AuthedGroupsIdAddExpenseIndexRouteImport.update({
+    id: '/groups/$id/add-expense/',
+    path: '/groups/$id/add-expense/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedhomeIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/activity/': typeof AuthedActivityIndexRoute
+  '/profile/': typeof AuthedProfileIndexRoute
   '/welcome/': typeof PublicWelcomeIndexRoute
   '/groups/$id/': typeof AuthedGroupsIdIndexRoute
   '/groups/new/': typeof AuthedGroupsNewIndexRoute
+  '/groups/$id/add-expense/': typeof AuthedGroupsIdAddExpenseIndexRoute
   '/groups/new/participants/': typeof AuthedGroupsNewParticipantsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthedhomeIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/activity': typeof AuthedActivityIndexRoute
+  '/profile': typeof AuthedProfileIndexRoute
   '/welcome': typeof PublicWelcomeIndexRoute
   '/groups/$id': typeof AuthedGroupsIdIndexRoute
   '/groups/new': typeof AuthedGroupsNewIndexRoute
+  '/groups/$id/add-expense': typeof AuthedGroupsIdAddExpenseIndexRoute
   '/groups/new/participants': typeof AuthedGroupsNewParticipantsIndexRoute
 }
 export interface FileRoutesById {
@@ -80,9 +105,12 @@ export interface FileRoutesById {
   '/_public': typeof PublicRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authed/(home)/': typeof AuthedhomeIndexRoute
+  '/_authed/activity/': typeof AuthedActivityIndexRoute
+  '/_authed/profile/': typeof AuthedProfileIndexRoute
   '/_public/welcome/': typeof PublicWelcomeIndexRoute
   '/_authed/groups/$id/': typeof AuthedGroupsIdIndexRoute
   '/_authed/groups/new/': typeof AuthedGroupsNewIndexRoute
+  '/_authed/groups/$id/add-expense/': typeof AuthedGroupsIdAddExpenseIndexRoute
   '/_authed/groups/new/participants/': typeof AuthedGroupsNewParticipantsIndexRoute
 }
 export interface FileRouteTypes {
@@ -90,17 +118,23 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/api/auth/$'
+    | '/activity/'
+    | '/profile/'
     | '/welcome/'
     | '/groups/$id/'
     | '/groups/new/'
+    | '/groups/$id/add-expense/'
     | '/groups/new/participants/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/api/auth/$'
+    | '/activity'
+    | '/profile'
     | '/welcome'
     | '/groups/$id'
     | '/groups/new'
+    | '/groups/$id/add-expense'
     | '/groups/new/participants'
   id:
     | '__root__'
@@ -108,9 +142,12 @@ export interface FileRouteTypes {
     | '/_public'
     | '/api/auth/$'
     | '/_authed/(home)/'
+    | '/_authed/activity/'
+    | '/_authed/profile/'
     | '/_public/welcome/'
     | '/_authed/groups/$id/'
     | '/_authed/groups/new/'
+    | '/_authed/groups/$id/add-expense/'
     | '/_authed/groups/new/participants/'
   fileRoutesById: FileRoutesById
 }
@@ -142,6 +179,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/welcome/'
       preLoaderRoute: typeof PublicWelcomeIndexRouteImport
       parentRoute: typeof PublicRoute
+    }
+    '/_authed/profile/': {
+      id: '/_authed/profile/'
+      path: '/profile'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof AuthedProfileIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/activity/': {
+      id: '/_authed/activity/'
+      path: '/activity'
+      fullPath: '/activity/'
+      preLoaderRoute: typeof AuthedActivityIndexRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/(home)/': {
       id: '/_authed/(home)/'
@@ -178,20 +229,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedGroupsNewParticipantsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/groups/$id/add-expense/': {
+      id: '/_authed/groups/$id/add-expense/'
+      path: '/groups/$id/add-expense'
+      fullPath: '/groups/$id/add-expense/'
+      preLoaderRoute: typeof AuthedGroupsIdAddExpenseIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
   AuthedhomeIndexRoute: typeof AuthedhomeIndexRoute
+  AuthedActivityIndexRoute: typeof AuthedActivityIndexRoute
+  AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
   AuthedGroupsIdIndexRoute: typeof AuthedGroupsIdIndexRoute
   AuthedGroupsNewIndexRoute: typeof AuthedGroupsNewIndexRoute
+  AuthedGroupsIdAddExpenseIndexRoute: typeof AuthedGroupsIdAddExpenseIndexRoute
   AuthedGroupsNewParticipantsIndexRoute: typeof AuthedGroupsNewParticipantsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedhomeIndexRoute: AuthedhomeIndexRoute,
+  AuthedActivityIndexRoute: AuthedActivityIndexRoute,
+  AuthedProfileIndexRoute: AuthedProfileIndexRoute,
   AuthedGroupsIdIndexRoute: AuthedGroupsIdIndexRoute,
   AuthedGroupsNewIndexRoute: AuthedGroupsNewIndexRoute,
+  AuthedGroupsIdAddExpenseIndexRoute: AuthedGroupsIdAddExpenseIndexRoute,
   AuthedGroupsNewParticipantsIndexRoute: AuthedGroupsNewParticipantsIndexRoute,
 }
 

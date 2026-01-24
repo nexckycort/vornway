@@ -42,7 +42,15 @@ function RouteComponent() {
           {/* Action buttons */}
           <div className="flex justify-center gap-8">
             <div className="flex flex-col items-center gap-2">
-              <button className="w-14 h-14 bg-[#4040b0] rounded-2xl flex items-center justify-center">
+              <button
+                onClick={() =>
+                  router.navigate({
+                    to: '/groups/$id/add-expense',
+                    params: { id: '1' },
+                  })
+                }
+                className="w-14 h-14 bg-[#4040b0] rounded-2xl flex items-center justify-center"
+              >
                 <Plus className="w-6 h-6 text-white" />
               </button>
               <span className="text-sm text-[#1a1a3e]">Añadir gastos</span>

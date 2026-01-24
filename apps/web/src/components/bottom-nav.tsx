@@ -6,8 +6,8 @@ import { Link, useLocation } from '@tanstack/react-router';
 
 const navItems = [
   { href: '/', label: 'Inicio', icon: Home },
-  { href: '/actividad', label: 'Actividad', icon: Clock },
-  { href: '/perfil', label: 'Perfil', icon: User },
+  { href: '/activity', label: 'Actividad', icon: Clock },
+  { href: '/profile', label: 'Perfil', icon: User },
 ];
 
 export function BottomNav() {

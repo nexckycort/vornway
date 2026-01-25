@@ -19,8 +19,7 @@ export const Route = createFileRoute('/_authed/groups/new/participants/')({
 });
 
 function AddParticipants() {
-
-    const groupId = crypto.randomUUID();
+  const groupId = crypto.randomUUID();
 
   const { name, currency, category } = Route.useSearch();
 
@@ -232,7 +231,12 @@ function AddParticipants() {
 
               {/* Go to group button */}
               <button
-                onClick={() => router.navigate({ to: '/groups/$id', params: { id: groupId } })}
+                onClick={() =>
+                  router.navigate({
+                    to: '/groups/$id',
+                    params: { id: groupId },
+                  })
+                }
                 className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
               >
                 Ir al grupo

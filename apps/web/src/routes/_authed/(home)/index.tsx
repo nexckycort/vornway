@@ -148,7 +148,7 @@ function HomePage() {
         </div>
       </div>
 
-      <div className={cn('px-6', userGroups.length === 0 ? '' : 'pb-32')}>
+      <div className={cn('px-6', userGroups.length > 0 && 'pb-32')}>
         <h2 className="text-lg font-semibold text-[#1a1a3e] mb-4">
           Tus grupos
         </h2>

@@ -1,11 +1,13 @@
 {
-  "name": "password-generator",
+  "name": "splitway",
   "private": true,
   "author": "Nestor Cortina <nexckycort@gmail.com>",
   "license": "MIT",
   "scripts": {
     "postinstall": "lefthook install",
-    "clean": "bun run -r --parallel --filter='./apps/*' clean",
+    "clean:apps": "bun run -r --parallel --filter='./apps/*' clean",
+    "clean:packages": "bun run -r --parallel --filter='./packages/*' clean",
+    "clean": "bun run clean:apps & bun run clean:packages & rm -rf node_modules",
     "dev": "bun run -r --parallel --filter='./apps/*' dev"
   },
   "devDependencies": {

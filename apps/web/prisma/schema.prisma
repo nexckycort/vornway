@@ -12,3 +12,22 @@ model Todo {
   title     String
   createdAt DateTime @default(now())
 }
+
+model Group {
+  id        String   @id @default(cuid())
+  name      String
+  currency  String
+  category  String
+  userId    String?
+  createdAt DateTime @default(now())
+
+  participants Participant[]
+}
+
+model Participant {
+  id      String @id @default(cuid())
+  name    String
+  groupId String
+
+  group   Group   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}

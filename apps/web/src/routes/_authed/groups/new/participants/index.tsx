@@ -5,6 +5,7 @@ import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { Share2, UserPlus, X } from 'lucide-react';
 import { useState } from 'react';
 import { StepLayout } from '~/components/layouts/step-layout';
+import { groups, participants } from '~/db/tanstack-client';
 
 export const Route = createFileRoute('/_authed/groups/new/participants/')({
   validateSearch: (search: Record<string, string>) => {
@@ -18,22 +19,44 @@ export const Route = createFileRoute('/_authed/groups/new/participants/')({
 });
 
 function AddParticipants() {
+
+    const groupId = crypto.randomUUID();
+
   const { name, currency, category } = Route.useSearch();
 
   const router = useRouter();
   const [participantName, setParticipantName] = useState('');
-  const [participants, setParticipants] = useState<string[]>([]);
+  const [participantNames, setParticipantNames] = useState<string[]>([]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const handleCreate = () => {
+    const group = {
+      id: groupId,
+      name,
+      currency,
+      category,
+      createdAt: new Date().toISOString(),
+    };
+    groups.insert(group);
+    participants.forEach((p) => {
+      participants.insert({
+        id: crypto.randomUUID(),
+        name: p,
+        groupId,
+      });
+    });
+    setShowSuccessModal(true);
+  };
 
   const addParticipant = () => {
     if (participantName.trim()) {
-      setParticipants([...participants, participantName.trim()]);
+      setParticipantNames([...participantNames, participantName.trim()]);
       setParticipantName('');
     }
   };
 
   const removeParticipant = (index: number) => {
-    setParticipants(participants.filter((_, i) => i !== index));
+    setParticipantNames(participantNames.filter((_, i) => i !== index));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -55,14 +78,14 @@ function AddParticipants() {
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => setShowSuccessModal(true)}
+            onClick={handleCreate}
             className="flex-1 py-4 text-[#1a1a3e] font-medium"
           >
             Omitir
           </button>
           <button
             type="button"
-            onClick={() => setShowSuccessModal(true)}
+            onClick={handleCreate}
             className="flex-1 py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
           >
             Crear Grupo
@@ -96,7 +119,7 @@ function AddParticipants() {
 
         {/* Participants list */}
         <div className="space-y-3">
-          {participants.map((participant, index) => (
+          {participantNames.map((participant, index) => (
             <div
               key={index}
               className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100"
@@ -138,7 +161,7 @@ function AddParticipants() {
             <div className="px-6 pb-8">
               {/* Title */}
               <h2 className="text-2xl font-bold text-[#1a1a3e] text-center mb-6">
-                {'¡Viaje a Madrid, creado!'}
+                {'¡' + name + ', creado!'}
               </h2>
 
               {/* Image with decorative shape */}
@@ -209,7 +232,7 @@ function AddParticipants() {
 
               {/* Go to group button */}
               <button
-                onClick={() => router.navigate({ to: '/' })}
+                onClick={() => router.navigate({ to: '/groups/$id', params: { id: groupId } })}
                 className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
               >
                 Ir al grupo

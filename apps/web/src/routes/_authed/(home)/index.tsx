@@ -2,22 +2,68 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
+
 import {
   Bell,
+  LayoutGrid,
+  Pizza,
+  Plane,
   Plus,
   Search,
   SlidersHorizontal,
+  Sofa,
   Users,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
+import { useLiveQuery } from '@tanstack/react-db';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { BottomNav } from '~/components/bottom-nav';
 import { GradientLayout } from '~/components/gradient-layout';
+import { groups } from '~/db/tanstack-client';
+import { cn } from '~/lib/utils';
 
 export const Route = createFileRoute('/_authed/(home)/')({
   component: HomePage,
 });
+
+interface Group {
+  id: string;
+  name: string;
+  currency: string;
+  category: string;
+  createdAt?: string;
+}
+
+const categoryConfig: Record<
+  string,
+  { icon: typeof Plane; bg: string; color: string; label: string }
+> = {
+  viajes: {
+    icon: Plane,
+    bg: 'bg-blue-100',
+    color: 'text-blue-600',
+    label: 'Viajes',
+  },
+  roomates: {
+    icon: Sofa,
+    bg: 'bg-orange-100',
+    color: 'text-orange-600',
+    label: 'Roomates',
+  },
+  salidas: {
+    icon: Pizza,
+    bg: 'bg-pink-100',
+    color: 'text-pink-600',
+    label: 'Salidas',
+  },
+  otros: {
+    icon: LayoutGrid,
+    bg: 'bg-gray-100',
+    color: 'text-gray-600',
+    label: 'Otros',
+  },
+};
 
 function HomePage() {
   const { user } = Route.useRouteContext();
@@ -25,6 +71,10 @@ function HomePage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showOptions, setShowOptions] = useState(false);
+
+  const { data: userGroups } = useLiveQuery((q) =>
+    q.from({ groups }),
+  ) as unknown as { data: Group[] };
 
   return (
     <GradientLayout>
@@ -98,7 +148,7 @@ function HomePage() {
         </div>
       </div>
 
-      <div className="px-6">
+      <div className={cn('px-6', userGroups.length === 0 ? '' : 'pb-32')}>
         <h2 className="text-lg font-semibold text-[#1a1a3e] mb-4">
           Tus grupos
         </h2>
@@ -125,39 +175,87 @@ function HomePage() {
           </button>
         </div>
 
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="w-20 h-20 bg-[#8080d0] rounded-2xl rotate-[-8deg] flex items-center justify-center mb-6 shadow-lg">
-            <HugeiconsIcon icon={Users} className="w-10 h-10 text-white" />
-          </div>
-          <h3 className="text-xl font-bold text-[#1a1a3e] mb-2">
-            No tienes grupos aún
-          </h3>
-          <p className="text-gray-500">Crea uno es menos de 5 Segundos</p>
+        {userGroups.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="w-20 h-20 bg-[#8080d0] rounded-2xl rotate-[-8deg] flex items-center justify-center mb-6 shadow-lg">
+              <HugeiconsIcon icon={Users} className="w-10 h-10 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-[#1a1a3e] mb-2">
+              No tienes grupos aún
+            </h3>
+            <p className="text-gray-500">Crea uno es menos de 5 Segundos</p>
 
-          <div className="relative w-full h-32 mt-4">
-            <svg
-              className="absolute right-8 bottom-0 w-32 h-32"
-              viewBox="0 0 128 128"
-              fill="none"
-            >
-              <path
-                d="M20 20 Q60 100 100 80"
-                stroke="#8080d0"
-                strokeWidth="2"
+            <div className="relative w-full h-32 mt-4">
+              <svg
+                className="absolute right-8 bottom-0 w-32 h-32"
+                viewBox="0 0 128 128"
                 fill="none"
-                strokeLinecap="round"
-              />
-              <path
-                d="M95 70 L100 80 L90 82"
-                stroke="#8080d0"
-                strokeWidth="2"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+              >
+                <path
+                  d="M20 20 Q60 100 100 80"
+                  stroke="#8080d0"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M95 70 L100 80 L90 82"
+                  stroke="#8080d0"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-4">
+            {userGroups.map((group) => {
+              const config =
+                categoryConfig[group.category] ?? categoryConfig.otros;
+              const IconComponent = config.icon;
+              return (
+                <button
+                  key={group.id}
+                  onClick={() =>
+                    navigate({ to: '/groups/$id', params: { id: group.id } })
+                  }
+                  className="w-full bg-white rounded-2xl p-4 text-left"
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`w-10 h-10 ${config.bg} rounded-xl flex items-center justify-center`}
+                    >
+                      <HugeiconsIcon
+                        icon={IconComponent}
+                        className={`w-5 h-5 ${config.color}`}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-[#1a1a3e]">
+                        {group.name}
+                      </p>
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <span>{config.label}</span>
+                        <span>•</span>
+                        <span>{group.currency}</span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+
+            {/* Footer message */}
+            <p className="text-sm text-gray-500 pt-4">
+              Ocultamos los grupos sin deudas del último mes.{' '}
+              <button className="text-[#4040b0] font-medium">
+                Ver todos los grupos
+              </button>
+            </p>
+          </div>
+        )}
       </div>
 
       <button

@@ -1,14 +1,17 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router';
+/** biome-ignore-all lint/a11y/noLabelWithoutControl: <explanation> */
+/** biome-ignore-all lint/a11y/useButtonType: <explanation> */
+
 import {
   ChevronDown,
-  ChevronLeft,
   LayoutGrid,
   Pizza,
   Plane,
   Sofa,
-} from 'lucide-react';
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
-import { GradientLayout } from '~/components/gradient-layout';
+import { StepLayout } from '~/components/layouts/step-layout';
 
 const categorias = [
   { id: 'viajes', label: 'Viajes', icon: Plane },
@@ -18,11 +21,9 @@ const categorias = [
 ];
 
 const monedas = [
-  { code: 'USD', label: 'Dolar estadounidense' },
   { code: 'EUR', label: 'Euro' },
-  { code: 'MXN', label: 'Peso mexicano' },
-  { code: 'ARS', label: 'Peso argentino' },
   { code: 'COP', label: 'Peso colombiano' },
+  { code: 'USD', label: 'Dolar estadounidense' },
 ];
 
 export const Route = createFileRoute('/_authed/groups/new/')({
@@ -40,27 +41,24 @@ function CreateGroupPage() {
   const monedaSeleccionada = monedas.find((m) => m.code === moneda);
 
   return (
-    <GradientLayout className="flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4">
-        <div className="flex items-center gap-2">
-          <button onClick={() => router.history.back()} className="p-1">
-            <ChevronLeft className="w-6 h-6 text-gray-700" />
-          </button>
-          <h1 className="text-xl font-semibold text-[#1a1a3e]">Crear grupo</h1>
-        </div>
-        <span className="text-gray-500 text-sm">Paso 1 de 2</span>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="flex gap-1 px-4 mb-6">
-        <div className="flex-1 h-1.5 bg-[#4040b0] rounded-full" />
-        <div className="flex-1 h-1.5 bg-gray-200 rounded-full" />
-      </div>
-
-      {/* Form */}
-      <div className="flex-1 px-4 space-y-6">
-        {/* Nombre del grupo */}
+    <StepLayout
+      title="Crear grupo"
+      currentStep={1}
+      totalSteps={2}
+      footer={
+        <button
+          type="button"
+          disabled={!nombre.trim()}
+          onClick={() => router.navigate({ to: '/groups/new/participants' })}
+          className={`w-full py-4 rounded-xl font-semibold text-white transition-colors ${
+            nombre.trim() ? 'bg-[#4040b0]' : 'bg-gray-300 cursor-not-allowed'
+          }`}
+        >
+          Continuar
+        </button>
+      }
+    >
+      <div className="space-y-6">
         <div>
           <label className="block text-[#1a1a3e] font-medium mb-2">
             Nombre del grupo
@@ -74,7 +72,6 @@ function CreateGroupPage() {
           />
         </div>
 
-        {/* Moneda */}
         <div>
           <label className="block text-[#1a1a3e] font-medium mb-2">
             Moneda
@@ -87,7 +84,10 @@ function CreateGroupPage() {
               <span>
                 {moneda} - {monedaSeleccionada?.label}
               </span>
-              <ChevronDown className="w-5 h-5 text-gray-500" />
+              <HugeiconsIcon
+                icon={ChevronDown}
+                className="w-5 h-5 text-gray-500"
+              />
             </button>
 
             {showMonedaSelect && (
@@ -111,7 +111,6 @@ function CreateGroupPage() {
           </div>
         </div>
 
-        {/* Categoría */}
         <div>
           <label className="block text-[#1a1a3e] font-medium mb-3">
             {'Categoría (Opcional)'}
@@ -133,7 +132,7 @@ function CreateGroupPage() {
                         : 'bg-gray-100 text-gray-500'
                     }`}
                   >
-                    <Icon className="w-5 h-5" />
+                    <HugeiconsIcon icon={Icon} className="w-5 h-5" />
                   </div>
                   <span
                     className={`text-sm ${isSelected ? 'text-[#1a8a9a] font-medium' : 'text-gray-600'}`}
@@ -146,19 +145,6 @@ function CreateGroupPage() {
           </div>
         </div>
       </div>
-
-      {/* Bottom Button */}
-      <div className="p-4 pb-8">
-        <button
-          disabled={!nombre.trim()}
-          onClick={() => router.navigate({ to: '/groups/new/participants' })}
-          className={`w-full py-4 rounded-xl font-semibold text-white transition-colors ${
-            nombre.trim() ? 'bg-[#4040b0]' : 'bg-gray-300 cursor-not-allowed'
-          }`}
-        >
-          Continuar
-        </button>
-      </div>
-    </GradientLayout>
+    </StepLayout>
   );
 }

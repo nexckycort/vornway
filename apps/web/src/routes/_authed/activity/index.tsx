@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_authed/activity/')({
 
 function RouteComponent() {
   return (
-    <GradientLayout className="pb-20">
+    <GradientLayout>
       <BottomNav />
     </GradientLayout>
   );

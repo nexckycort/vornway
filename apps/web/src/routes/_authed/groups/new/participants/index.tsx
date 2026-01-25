@@ -1,7 +1,10 @@
+/** biome-ignore-all lint/a11y/noLabelWithoutControl: <explanation> */
+/** biome-ignore-all lint/a11y/useButtonType: <explanation> */
+
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { ChevronLeft, Share2, UserPlus, X } from 'lucide-react';
+import { Share2, UserPlus, X } from 'lucide-react';
 import { useState } from 'react';
-import { GradientLayout } from '~/components/gradient-layout';
+import { StepLayout } from '~/components/layouts/step-layout';
 
 export const Route = createFileRoute('/_authed/groups/new/participants/')({
   component: AddParticipants,
@@ -35,33 +38,30 @@ function AddParticipants() {
   };
 
   return (
-    <GradientLayout className="flex flex-col">
-      {/* Header */}
-      <div className="px-4 pt-4 pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.history.back()}
-              className="w-10 h-10 flex items-center justify-center"
-            >
-              <ChevronLeft className="w-6 h-6 text-[#1a1a3e]" />
-            </button>
-            <h1 className="text-xl font-semibold text-[#1a1a3e]">
-              Añadir participantes
-            </h1>
-          </div>
-          <span className="text-sm text-gray-500">Paso 2 de 2</span>
+    <StepLayout
+      title="Añadir participantes"
+      currentStep={2}
+      totalSteps={2}
+      footer={
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => setShowSuccessModal(true)}
+            className="flex-1 py-4 text-[#1a1a3e] font-medium"
+          >
+            Omitir
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowSuccessModal(true)}
+            className="flex-1 py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
+          >
+            Crear Grupo
+          </button>
         </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="flex gap-1 px-4 mb-6">
-        <div className="flex-1 h-1.5 bg-[#22d3c5] rounded-full" />
-        <div className="flex-1 h-1.5 bg-[#22d3c5] rounded-full" />
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 px-4">
+      }
+    >
+      <div>
         <p className="text-gray-600 mb-6">
           Puedes agregarlos ahora o más adelante.
         </p>
@@ -111,22 +111,6 @@ function AddParticipants() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Bottom buttons */}
-      <div className="px-4 py-6 flex items-center gap-4 border-t border-gray-100 bg-white">
-        <button
-          onClick={() => setShowSuccessModal(true)}
-          className="flex-1 py-4 text-[#1a1a3e] font-medium"
-        >
-          Omitir
-        </button>
-        <button
-          onClick={() => setShowSuccessModal(true)}
-          className="flex-1 py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
-        >
-          Crear Grupo
-        </button>
       </div>
 
       {/* Success Modal */}
@@ -225,6 +209,6 @@ function AddParticipants() {
           </div>
         </>
       )}
-    </GradientLayout>
+    </StepLayout>
   );
 }

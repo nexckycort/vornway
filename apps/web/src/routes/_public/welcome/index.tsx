@@ -29,7 +29,16 @@ function RouteComponent() {
         ¿Cómo quieres que te llamemos?
       </p>
 
-      <div className="w-full max-w-sm bg-[#f2f4ff] backdrop-blur-sm rounded-lg p-6 shadow-sm">
+      <form
+        className="w-full max-w-sm bg-blue-50 backdrop-blur-sm rounded-lg p-6 shadow-sm"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (!nombre.trim()) return;
+          setLocalUser({ name: nombre.trim() });
+          await router.invalidate();
+          navigate({ to: '/' });
+        }}
+      >
         <Label className="block text-[#1a1a3e] text-base mb-2">Tu nombre</Label>
         <Input
           type="text"
@@ -41,12 +50,8 @@ function RouteComponent() {
 
         <Button
           size="lg"
+          type="submit"
           disabled={!nombre.trim()}
-          onClick={async () => {
-            setLocalUser({ name: nombre.trim() });
-            await router.invalidate();
-            navigate({ to: '/' });
-          }}
           className={`w-full mt-4 !h-14 py-4 text-base font-medium transition-all ${
             nombre.trim()
               ? 'text-white hover:bg-[#2a2a5e]'
@@ -55,7 +60,7 @@ function RouteComponent() {
         >
           Continuar
         </Button>
-      </div>
+      </form>
       <div className="mt-2 text-center">
         <span className="text-[#4a4a6a] text-xs">¿Ya tienes una cuenta? </span>
         <Button

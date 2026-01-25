@@ -11,7 +11,7 @@ export function GradientLayout({
 }: GradientLayoutProps) {
   return (
     <div
-      className={`min-h-screen bg-gradient-to-b from-[#e8e0f0] via-[#f0ebf5] to-white ${className}`}
+      className={`min-h-screen bg-[linear-gradient(180deg,#e8e0f0_0%,#f0ebf5_14%,rgba(255,255,255,0.95)_28%,#ffffff_40%)] ${className}`}
     >
       {children}
     </div>

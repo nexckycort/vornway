@@ -1,17 +1,14 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { getLocalUser } from '~/lib/local-user';
 
 export const Route = createFileRoute('/_authed')({
-  beforeLoad: ({ location }) => {
-    const user = getLocalUser();
-    if (!user?.name) {
+  beforeLoad: ({ location, context }) => {
+    if (!context.user) {
       throw redirect({
-        to: '/welcome',
+        to: '/login',
         search: {
           redirect: location.href,
         },
       });
     }
-    return { user };
   },
 });

@@ -1,0 +1,26 @@
+model Expense {
+  id          String   @id @default(cuid())
+  groupId     String
+  paidById    String
+  description String
+  amount      Float
+  date        DateTime @default(now())
+  notes       String?
+  attachment  String? // URL de foto del recibo
+
+  group        Group                @relation(fields: [groupId], references: [id])
+  paidBy       User                 @relation("UserPaidExpenses", fields: [paidById], references: [id])
+  participants ExpenseParticipant[]
+}
+
+model ExpenseParticipant {
+  id        String @id @default(cuid())
+  expenseId String
+  userId    String
+  share     Float // cuánto debe pagar
+
+  expense Expense @relation(fields: [expenseId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([expenseId, userId])
+}

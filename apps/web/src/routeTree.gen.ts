@@ -13,10 +13,12 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as ApiGroupsIndexRouteImport } from './routes/api/groups/index'
 import { Route as PublicWelcomeIndexRouteImport } from './routes/_public/welcome/index'
+import { Route as PublicLoginIndexRouteImport } from './routes/_public/login/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
 import { Route as AuthedActivityIndexRouteImport } from './routes/_authed/activity/index'
 import { Route as AuthedhomeIndexRouteImport } from './routes/_authed/(home)/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as PublicLoginOtpRouteImport } from './routes/_public/login/otp'
 import { Route as AuthedGroupsNewIndexRouteImport } from './routes/_authed/groups/new/index'
 import { Route as AuthedGroupsIdIndexRouteImport } from './routes/_authed/groups/$id/index'
 import { Route as AuthedGroupsNewParticipantsIndexRouteImport } from './routes/_authed/groups/new/participants/index'
@@ -40,6 +42,11 @@ const PublicWelcomeIndexRoute = PublicWelcomeIndexRouteImport.update({
   path: '/welcome/',
   getParentRoute: () => PublicRoute,
 } as any)
+const PublicLoginIndexRoute = PublicLoginIndexRouteImport.update({
+  id: '/login/',
+  path: '/login/',
+  getParentRoute: () => PublicRoute,
+} as any)
 const AuthedProfileIndexRoute = AuthedProfileIndexRouteImport.update({
   id: '/profile/',
   path: '/profile/',
@@ -59,6 +66,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PublicLoginOtpRoute = PublicLoginOtpRouteImport.update({
+  id: '/login/otp',
+  path: '/login/otp',
+  getParentRoute: () => PublicRoute,
 } as any)
 const AuthedGroupsNewIndexRoute = AuthedGroupsNewIndexRouteImport.update({
   id: '/groups/new/',
@@ -85,9 +97,11 @@ const AuthedGroupsIdAddExpenseIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedhomeIndexRoute
+  '/login/otp': typeof PublicLoginOtpRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/activity/': typeof AuthedActivityIndexRoute
   '/profile/': typeof AuthedProfileIndexRoute
+  '/login/': typeof PublicLoginIndexRoute
   '/welcome/': typeof PublicWelcomeIndexRoute
   '/api/groups/': typeof ApiGroupsIndexRoute
   '/groups/$id/': typeof AuthedGroupsIdIndexRoute
@@ -97,9 +111,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AuthedhomeIndexRoute
+  '/login/otp': typeof PublicLoginOtpRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/activity': typeof AuthedActivityIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
+  '/login': typeof PublicLoginIndexRoute
   '/welcome': typeof PublicWelcomeIndexRoute
   '/api/groups': typeof ApiGroupsIndexRoute
   '/groups/$id': typeof AuthedGroupsIdIndexRoute
@@ -111,10 +127,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
+  '/_public/login/otp': typeof PublicLoginOtpRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authed/(home)/': typeof AuthedhomeIndexRoute
   '/_authed/activity/': typeof AuthedActivityIndexRoute
   '/_authed/profile/': typeof AuthedProfileIndexRoute
+  '/_public/login/': typeof PublicLoginIndexRoute
   '/_public/welcome/': typeof PublicWelcomeIndexRoute
   '/api/groups/': typeof ApiGroupsIndexRoute
   '/_authed/groups/$id/': typeof AuthedGroupsIdIndexRoute
@@ -126,9 +144,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login/otp'
     | '/api/auth/$'
     | '/activity/'
     | '/profile/'
+    | '/login/'
     | '/welcome/'
     | '/api/groups/'
     | '/groups/$id/'
@@ -138,9 +158,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login/otp'
     | '/api/auth/$'
     | '/activity'
     | '/profile'
+    | '/login'
     | '/welcome'
     | '/api/groups'
     | '/groups/$id'
@@ -151,10 +173,12 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/_public'
+    | '/_public/login/otp'
     | '/api/auth/$'
     | '/_authed/(home)/'
     | '/_authed/activity/'
     | '/_authed/profile/'
+    | '/_public/login/'
     | '/_public/welcome/'
     | '/api/groups/'
     | '/_authed/groups/$id/'
@@ -200,6 +224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicWelcomeIndexRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_public/login/': {
+      id: '/_public/login/'
+      path: '/login'
+      fullPath: '/login/'
+      preLoaderRoute: typeof PublicLoginIndexRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_authed/profile/': {
       id: '/_authed/profile/'
       path: '/profile'
@@ -227,6 +258,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_public/login/otp': {
+      id: '/_public/login/otp'
+      path: '/login/otp'
+      fullPath: '/login/otp'
+      preLoaderRoute: typeof PublicLoginOtpRouteImport
+      parentRoute: typeof PublicRoute
     }
     '/_authed/groups/new/': {
       id: '/_authed/groups/new/'
@@ -283,10 +321,14 @@ const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
 
 interface PublicRouteChildren {
+  PublicLoginOtpRoute: typeof PublicLoginOtpRoute
+  PublicLoginIndexRoute: typeof PublicLoginIndexRoute
   PublicWelcomeIndexRoute: typeof PublicWelcomeIndexRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
+  PublicLoginOtpRoute: PublicLoginOtpRoute,
+  PublicLoginIndexRoute: PublicLoginIndexRoute,
   PublicWelcomeIndexRoute: PublicWelcomeIndexRoute,
 }
 

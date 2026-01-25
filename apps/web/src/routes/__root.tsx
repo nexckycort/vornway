@@ -6,9 +6,11 @@ import {
   Scripts,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
+import { Toaster } from '@workspace/ui/components/sonner';
 
 import appCss from '@workspace/ui/globals.css?url';
 
+import { getCurrentUserFn } from '~/server/auth';
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools';
 
 interface MyRouterContext {
@@ -16,6 +18,15 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
+  beforeLoad: async () => {
+    try {
+      const user = await getCurrentUserFn();
+      return { user };
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      return { user: null };
+    }
+  },
   head: () => ({
     meta: [
       {
@@ -68,6 +79,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <Toaster richColors />
         {children}
         <TanStackDevtools
           config={{

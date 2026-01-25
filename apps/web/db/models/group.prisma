@@ -1,0 +1,27 @@
+model Group {
+  id          String        @id
+  name        String
+  type        String
+  createdAt   DateTime
+  updatedAt   DateTime
+  description String?
+  ownerId     String
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  GroupMember GroupMember[]
+  Expense     Expense[]
+
+  @@map("group")
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  userId   String
+  groupId  String
+  role     String   @default("member") // "admin" | "member"
+  joinedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  group Group @relation(fields: [groupId], references: [id])
+
+  @@unique([userId, groupId])
+}

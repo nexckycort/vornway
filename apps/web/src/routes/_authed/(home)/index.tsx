@@ -15,25 +15,16 @@ import {
   Users,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { useLiveQuery } from '@tanstack/react-db';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { BottomNav } from '~/components/bottom-nav';
 import { GradientLayout } from '~/components/gradient-layout';
-import { groups } from '~/db/tanstack-client';
 import { cn } from '~/lib/utils';
+import { useUserGroups } from './-hooks/use-user-groups';
 
 export const Route = createFileRoute('/_authed/(home)/')({
   component: HomePage,
 });
-
-interface Group {
-  id: string;
-  name: string;
-  currency: string;
-  category: string;
-  createdAt?: string;
-}
 
 const categoryConfig: Record<
   string,
@@ -72,9 +63,7 @@ function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showOptions, setShowOptions] = useState(false);
 
-  const { data: userGroups } = useLiveQuery((q) =>
-    q.from({ groups }),
-  ) as unknown as { data: Group[] };
+  const { data: userGroups = [] } = useUserGroups();
 
   return (
     <GradientLayout>
@@ -213,7 +202,7 @@ function HomePage() {
           <div className="space-y-4">
             {userGroups.map((group) => {
               const config =
-                categoryConfig[group.category] ?? categoryConfig.otros;
+                categoryConfig[group.type] ?? categoryConfig.otros;
               const IconComponent = config.icon;
               return (
                 <button
@@ -238,8 +227,6 @@ function HomePage() {
                       </p>
                       <div className="flex items-center gap-2 text-sm text-gray-500">
                         <span>{config.label}</span>
-                        <span>•</span>
-                        <span>{group.currency}</span>
                       </div>
                     </div>
                   </div>

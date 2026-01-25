@@ -5,7 +5,8 @@ import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { Share2, UserPlus, X } from 'lucide-react';
 import { useState } from 'react';
 import { StepLayout } from '~/components/layouts/step-layout';
-import { groups, participants } from '~/db/tanstack-client';
+
+import { createGroup } from './-actions/create-group';
 
 export const Route = createFileRoute('/_authed/groups/new/participants/')({
   validateSearch: (search: Record<string, string>) => {
@@ -19,32 +20,42 @@ export const Route = createFileRoute('/_authed/groups/new/participants/')({
 });
 
 function AddParticipants() {
-  const groupId = crypto.randomUUID();
-
   const { name, currency, category } = Route.useSearch();
 
   const router = useRouter();
   const [participantName, setParticipantName] = useState('');
   const [participantNames, setParticipantNames] = useState<string[]>([]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [createdGroupId, setCreatedGroupId] = useState<string | null>(null);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
 
-  const handleCreate = () => {
-    const group = {
-      id: groupId,
-      name,
-      currency,
-      category,
-      createdAt: new Date().toISOString(),
-    };
-    groups.insert(group);
-    participants.forEach((p) => {
-      participants.insert({
-        id: crypto.randomUUID(),
-        name: p,
-        groupId,
+  const handleCreate = async () => {
+    if (isLoading) return;
+
+    setIsLoading(true);
+    try {
+      const result = await createGroup({
+        data: {
+          name,
+          currency,
+          category,
+          participants: participantNames,
+        },
       });
-    });
-    setShowSuccessModal(true);
+
+      if (result.success && result.groupId) {
+        setCreatedGroupId(result.groupId);
+        setInviteCode(result.inviteCode ?? null);
+        setShowSuccessModal(true);
+      } else {
+        console.error('Error creating group:', result.error);
+      }
+    } catch (error) {
+      console.error('Error creating group:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const addParticipant = () => {
@@ -78,16 +89,18 @@ function AddParticipants() {
           <button
             type="button"
             onClick={handleCreate}
-            className="flex-1 py-4 text-[#1a1a3e] font-medium"
+            disabled={isLoading}
+            className="flex-1 py-4 text-[#1a1a3e] font-medium disabled:opacity-50"
           >
             Omitir
           </button>
           <button
             type="button"
             onClick={handleCreate}
-            className="flex-1 py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
+            disabled={isLoading}
+            className="flex-1 py-4 bg-[#4040b0] text-white font-medium rounded-2xl disabled:opacity-50"
           >
-            Crear Grupo
+            {isLoading ? 'Creando...' : 'Crear Grupo'}
           </button>
         </div>
       }
@@ -184,12 +197,19 @@ function AddParticipants() {
                 Compartir enlace del grupo
               </p>
               <div className="flex gap-3 mb-6">
-                <div className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl bg-gray-50">
-                  <span className="text-gray-500 text-sm">
-                    https://splitway.app/join/xyz-123
+                <div className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl bg-gray-50 overflow-hidden">
+                  <span className="text-gray-500 text-sm truncate block">
+                    {`${window.location.origin}/join/${inviteCode}`}
                   </span>
                 </div>
-                <button className="w-14 h-14 border-2 border-[#4040b0] rounded-xl flex items-center justify-center">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      `${window.location.origin}/join/${inviteCode}`
+                    );
+                  }}
+                  className="w-14 h-14 border-2 border-[#4040b0] rounded-xl flex items-center justify-center"
+                >
                   <Share2 className="w-5 h-5 text-[#4040b0]" />
                 </button>
               </div>
@@ -231,12 +251,14 @@ function AddParticipants() {
 
               {/* Go to group button */}
               <button
-                onClick={() =>
-                  router.navigate({
-                    to: '/groups/$id',
-                    params: { id: groupId },
-                  })
-                }
+                onClick={() => {
+                  if (createdGroupId) {
+                    router.navigate({
+                      to: '/groups/$id',
+                      params: { id: createdGroupId },
+                    });
+                  }
+                }}
                 className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
               >
                 Ir al grupo

@@ -49,7 +49,16 @@ function CreateGroupPage() {
         <button
           type="button"
           disabled={!nombre.trim()}
-          onClick={() => router.navigate({ to: '/groups/new/participants' })}
+          onClick={() =>
+            router.navigate({
+              to: '/groups/new/participants',
+              search: {
+                name: nombre.trim(),
+                currency: moneda,
+                category: categoria || '',
+              },
+            })
+          }
           className={`w-full py-4 rounded-xl font-semibold text-white transition-colors ${
             nombre.trim() ? 'bg-[#4040b0]' : 'bg-gray-300 cursor-not-allowed'
           }`}

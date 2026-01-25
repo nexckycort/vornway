@@ -7,10 +7,19 @@ import { useState } from 'react';
 import { StepLayout } from '~/components/layouts/step-layout';
 
 export const Route = createFileRoute('/_authed/groups/new/participants/')({
+  validateSearch: (search: Record<string, string>) => {
+    return {
+      name: search.name,
+      currency: search.currency,
+      category: search.category,
+    };
+  },
   component: AddParticipants,
 });
 
 function AddParticipants() {
+  const { name, currency, category } = Route.useSearch();
+
   const router = useRouter();
   const [participantName, setParticipantName] = useState('');
   const [participants, setParticipants] = useState<string[]>([]);

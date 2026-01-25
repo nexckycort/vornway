@@ -1,4 +1,3 @@
-import { env } from 'cloudflare:workers';
 import * as z from 'zod';
 
 const serverEnvSchema = z.object({
@@ -9,4 +8,4 @@ const serverEnvSchema = z.object({
   RESEND_API_KEY: z.string().min(1),
 });
 
-export const serverEnv = serverEnvSchema.parse(env);
+export const serverEnv = serverEnvSchema.parse(process.env);

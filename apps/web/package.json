@@ -35,8 +35,8 @@
     "@tanstack/rxdb-db-collection": "^0.1.55",
     "@workspace/ui": "workspace:*",
     "better-auth": "^1.4.12",
-    "dexie": "^4.0.9",
     "lucide-react": "^0.563.0",
+    "nitro": "^3.0.1-alpha.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "resend": "^6.8.0",
@@ -45,7 +45,6 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.21.2",
     "@dotenvx/dotenvx": "^1.52.0",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/devtools-vite": "^0.3.11",

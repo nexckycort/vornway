@@ -2,7 +2,7 @@ generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
 
-  runtime      = "workerd"
+  runtime      = "bun"
   moduleFormat = "esm"
 }
 

@@ -14,12 +14,35 @@ function generateRandomPassword(length: number = 10): string {
   return password;
 }
 
+const allowedDomains = [
+  'gmail.com',
+  'outlook.com',
+  'outlook.es',
+  'hotmail.com',
+  'hotmail.es',
+  'yahoo.com',
+  'yahoo.es',
+  'icloud.com',
+  'live.com',
+  'msn.com',
+  'protonmail.com',
+  'proton.me',
+];
+
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) return false;
+
+  const domain = email.split('@')[1]?.toLowerCase();
+  return allowedDomains.includes(domain);
+};
+
 export const sendOtp = createServerFn({ method: 'POST' })
   .inputValidator((data: { email: string; name?: string }) => data)
   .handler(async ({ data: { email, name } }) => {
     const normalizedEmail = email.toLowerCase().trim();
 
-    if (!normalizedEmail.endsWith('@somosplenti.com')) {
+    if (!validateEmail(normalizedEmail)) {
       return {
         code: 'INVALID_DOMAIN',
       };
@@ -101,7 +124,8 @@ export const loginFn = createServerFn({ method: 'POST' })
           name: user.name,
         },
       };
-    } catch {
+    } catch (error) {
+      console.error('Error during OTP login:', error);
       return {
         success: false,
         error: 'Código OTP incorrecto o expirado',

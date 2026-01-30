@@ -21,12 +21,22 @@ interface Expense {
   participantCount: number;
 }
 
+interface Member {
+  id: string;
+  name: string;
+  role: string;
+  userId: string | null;
+  isCurrentUser: boolean;
+}
+
 interface GetGroupResponse {
   name: string;
   participantCount: number;
   totals: Record<string, number>; // { "COP": 150000, "USD": 50 }
   expenses: Expense[];
   inviteCode: string | null;
+  members: Member[];
+  isOwner: boolean;
 }
 
 export const getGroup = createServerFn({ method: 'POST' })
@@ -45,10 +55,15 @@ export const getGroup = createServerFn({ method: 'POST' })
           name: true,
           totals: true,
           inviteCode: true,
+          ownerId: true,
           GroupMember: {
             select: {
               id: true,
+              name: true,
+              role: true,
+              userId: true,
             },
+            orderBy: { joinedAt: 'asc' },
           },
           Expense: {
             select: {
@@ -79,6 +94,15 @@ export const getGroup = createServerFn({ method: 'POST' })
         throw new Error('Grupo no encontrado');
       }
 
+      // Verificar que el usuario es miembro del grupo
+      const isMember = groupRecord.GroupMember.some(
+        (member) => member.userId === userId
+      );
+
+      if (!isMember) {
+        throw new Error('No tienes acceso a este grupo');
+      }
+
       const expenses: Expense[] = groupRecord.Expense.map((expense) => ({
         id: expense.id,
         description: expense.description,
@@ -92,12 +116,22 @@ export const getGroup = createServerFn({ method: 'POST' })
         participantCount: expense._count.participants,
       }));
 
+      const members: Member[] = groupRecord.GroupMember.map((member) => ({
+        id: member.id,
+        name: member.name,
+        role: member.role,
+        userId: member.userId,
+        isCurrentUser: member.userId === userId,
+      }));
+
       return {
         name: groupRecord.name,
         participantCount: groupRecord.GroupMember.length,
         totals: (groupRecord.totals as Record<string, number>) ?? {},
         expenses,
         inviteCode: groupRecord.inviteCode,
+        members,
+        isOwner: groupRecord.ownerId === userId,
       };
     } catch (error) {
       console.error('Error creating group:', error);

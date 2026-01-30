@@ -1,9 +1,10 @@
 /** biome-ignore-all lint/a11y/useButtonType: <explanation> */
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { Check, ChevronLeft, Copy, Link, MoreHorizontal, Plus, UserPlus, X } from 'lucide-react';
+import { Check, ChevronLeft, Copy, Link, MoreHorizontal, Plus, Trash2, UserPlus, X } from 'lucide-react';
 import { useState } from 'react';
 import { getGroup } from './-actions/get-group';
+import { removeMember } from './-actions/remove-member';
 
 export const Route = createFileRoute('/_authed/groups/$id/')({
   component: RouteComponent,
@@ -88,14 +89,37 @@ function TotalsDisplay({ totals }: { totals: Record<string, number> }) {
 function RouteComponent() {
   const { id } = Route.useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'gastos' | 'cuentas'>('gastos');
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState<{ id: string; name: string } | null>(null);
 
-  const { data } = useQuery({
+  const { data, error, isLoading } = useQuery({
     queryKey: ['group', id],
     queryFn: async () => getGroup({ data: { groupId: id } }),
   });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: removeMember,
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['group', id] });
+        setMemberToDelete(null);
+      }
+    },
+  });
+
+  const handleRemoveMember = () => {
+    if (!memberToDelete) return;
+    removeMemberMutation.mutate({
+      data: {
+        groupId: id,
+        memberId: memberToDelete.id,
+      },
+    });
+  };
 
   const inviteLink = data?.inviteCode
     ? `${window.location.origin}/join/${data.inviteCode}`
@@ -122,6 +146,40 @@ function RouteComponent() {
       console.error('Error copying code:', err);
     }
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f5f3fa] flex items-center justify-center">
+        <p className="text-gray-500">Cargando...</p>
+      </div>
+    );
+  }
+
+  // Error state (no access or not found)
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#f5f3fa] flex flex-col items-center justify-center p-6">
+        <div className="bg-white rounded-3xl p-8 text-center shadow-sm max-w-md w-full">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
+            Acceso denegado
+          </h2>
+          <p className="text-gray-500 mb-6">
+            {error instanceof Error ? error.message : 'No tienes acceso a este grupo'}
+          </p>
+          <button
+            onClick={() => router.navigate({ to: '/' })}
+            className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
+          >
+            Ir al inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f5f3fa]">
@@ -178,7 +236,10 @@ function RouteComponent() {
               <span className="text-sm text-[#1a1a3e]">Invitar</span>
             </div>
             <div className="flex flex-col items-center gap-2">
-              <button className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center">
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center"
+              >
                 <MoreHorizontal className="w-6 h-6 text-[#1a1a3e]" />
               </button>
               <span className="text-sm text-[#1a1a3e]">Ajustes</span>
@@ -332,6 +393,122 @@ function RouteComponent() {
 
               <button
                 onClick={() => setShowInviteModal(false)}
+                className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Modal de ajustes */}
+      {showSettingsModal && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/30 z-40 cursor-default"
+            onClick={() => {
+              setShowSettingsModal(false);
+              setMemberToDelete(null);
+            }}
+            aria-label="Cerrar modal"
+          />
+
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+            </div>
+
+            <div className="px-6 pb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-[#1a1a3e]">
+                  Ajustes del grupo
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowSettingsModal(false);
+                    setMemberToDelete(null);
+                  }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Lista de participantes */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-500 mb-3">
+                  Participantes ({data?.members?.length ?? 0})
+                </h3>
+                <div className="space-y-2">
+                  {data?.members?.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
+                    >
+                      <div className="w-10 h-10 bg-[#e8e4f8] rounded-full flex items-center justify-center">
+                        <span className="text-[#6060c0] font-medium">
+                          {member.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-[#1a1a3e] truncate">
+                          {member.name}
+                          {member.isCurrentUser && ' (Tú)'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {member.role === 'admin' ? 'Administrador' : 'Miembro'}
+                          {!member.userId && ' · Sin cuenta'}
+                        </p>
+                      </div>
+                      {data?.isOwner && !member.isCurrentUser && (
+                        <button
+                          onClick={() => setMemberToDelete({ id: member.id, name: member.name })}
+                          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-100 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Confirmación de eliminación */}
+              {memberToDelete && (
+                <div className="bg-red-50 rounded-xl p-4 mb-6">
+                  <p className="text-[#1a1a3e] mb-3">
+                    ¿Eliminar a <strong>{memberToDelete.name}</strong> del grupo?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setMemberToDelete(null)}
+                      className="flex-1 py-2 text-[#1a1a3e] font-medium rounded-lg"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleRemoveMember}
+                      disabled={removeMemberMutation.isPending}
+                      className="flex-1 py-2 bg-red-500 text-white font-medium rounded-lg"
+                    >
+                      {removeMemberMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+                    </button>
+                  </div>
+                  {removeMemberMutation.data?.error && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {removeMemberMutation.data.error}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  setShowSettingsModal(false);
+                  setMemberToDelete(null);
+                }}
                 className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
               >
                 Cerrar

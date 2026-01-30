@@ -5,13 +5,14 @@ import { useState } from 'react';
 import { loginFn, sendOtp } from '~/server/auth';
 
 export const Route = createFileRoute('/_public/login/otp')({
-  validateSearch: (search: { email: string }) => {
+  validateSearch: (search: { email: string; redirect?: string }) => {
     return search;
   },
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const { redirect } = Route.useSearch();
   const router = useRouter();
   const { email } = Route.useSearch();
 
@@ -24,7 +25,7 @@ function RouteComponent() {
       const result = await loginFn({ data: { email, otp } });
 
       if (result.success) {
-        router.navigate({ to: '/' });
+        router.navigate({ to: redirect || '/' });
       } else {
         toast.error(
           result.error || 'Código incorrecto. Por favor intenta de nuevo.',

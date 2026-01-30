@@ -8,14 +8,12 @@
     "build": "vite build",
     "check": "biome check --write",
     "clean": "rm -rf node_modules && rm -rf dist",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "preview": "vite preview",
     "db:generate": "dotenvx run -- prisma generate",
     "db:migrate:dev": "prisma migrate dev --name init",
     "db:migrate": "dotenvx run -- prisma migrate dev",
     "db:migrate:reset": "prisma migrate reset",
     "db:seed": "dotenvx run -- prisma db seed",
-    "deploy": "pnpm run build && wrangler deploy",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
@@ -55,7 +53,6 @@
     "typescript": "^5.7.2",
     "vite": "^7.1.7",
     "vite-tsconfig-paths": "^6.0.2",
-    "web-vitals": "^5.1.0",
-    "wrangler": "^4.60.0"
+    "web-vitals": "^5.1.0"
   }
 }

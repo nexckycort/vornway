@@ -1,11 +1,11 @@
 /** biome-ignore-all lint/a11y/noLabelWithoutControl: <explanation> */
 /** biome-ignore-all lint/a11y/useButtonType: <explanation> */
 
+import { useMutation } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { Share2, UserPlus, X } from 'lucide-react';
 import { useState } from 'react';
 import { StepLayout } from '~/components/layouts/step-layout';
-
 import { createGroup } from './-actions/create-group';
 
 export const Route = createFileRoute('/_authed/groups/new/participants/')({
@@ -26,16 +26,18 @@ function AddParticipants() {
   const [participantName, setParticipantName] = useState('');
   const [participantNames, setParticipantNames] = useState<string[]>([]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [createdGroupId, setCreatedGroupId] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
+
+  const { mutateAsync, isPending: isLoading } = useMutation({
+    mutationFn: createGroup,
+  });
 
   const handleCreate = async () => {
     if (isLoading) return;
 
-    setIsLoading(true);
     try {
-      const result = await createGroup({
+      const result = await mutateAsync({
         data: {
           name,
           currency,
@@ -53,8 +55,6 @@ function AddParticipants() {
       }
     } catch (error) {
       console.error('Error creating group:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -205,7 +205,7 @@ function AddParticipants() {
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(
-                      `${window.location.origin}/join/${inviteCode}`
+                      `${window.location.origin}/join/${inviteCode}`,
                     );
                   }}
                   className="w-14 h-14 border-2 border-[#4040b0] rounded-xl flex items-center justify-center"

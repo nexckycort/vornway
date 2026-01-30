@@ -13,7 +13,6 @@
     "@biomejs/biome": "catalog:",
     "@types/node": "catalog:",
     "bun-types": "latest",
-    "lefthook": "^2.0.12",
     "typescript": "catalog:",
     "@types/bun": "latest"
   },

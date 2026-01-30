@@ -1,14 +1,22 @@
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { ChevronLeft, MoreHorizontal, Plus, UserPlus } from 'lucide-react';
 import { useState } from 'react';
+import { getGroup } from './-actions/get-group';
 
 export const Route = createFileRoute('/_authed/groups/$id/')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const { id } = Route.useParams();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'gastos' | 'cuentas'>('gastos');
+
+  const { data, error, isLoading } = useQuery({
+    queryKey: ['group', id],
+    queryFn: async () => getGroup({ data: { groupId: id } }),
+  });
 
   return (
     <div className="min-h-screen bg-[#f5f3fa]">
@@ -23,9 +31,11 @@ function RouteComponent() {
           </button>
           <div>
             <h1 className="text-xl font-semibold text-[#1a1a3e]">
-              Viaje a Madrid
+              {data?.name || 'Cargando...'}
             </h1>
-            <p className="text-sm text-gray-500">2 Participantes</p>
+            <p className="text-sm text-gray-500">
+              {data ? `${data.participantCount} Participantes` : 'Cargando...'}
+            </p>
           </div>
         </div>
       </div>

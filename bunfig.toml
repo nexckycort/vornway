@@ -1,1 +1,4 @@
+[install]
+minimumReleaseAge = 259200 # seconds
+
 linker = "isolated"

@@ -15,13 +15,16 @@ model Group {
 
 model GroupMember {
   id       String   @id @default(cuid())
-  userId   String
+  userId   String? // Opcional: null si el participante no está registrado
   groupId  String
+  name     String // Nombre del participante (requerido para todos)
   role     String   @default("member") // "admin" | "member"
   joinedAt DateTime @default(now())
 
-  user  User  @relation(fields: [userId], references: [id])
-  group Group @relation(fields: [groupId], references: [id])
+  user                User?                @relation(fields: [userId], references: [id])
+  group               Group                @relation(fields: [groupId], references: [id])
+  paidExpenses        Expense[]            @relation("MemberPaidExpenses")
+  expenseParticipants ExpenseParticipant[]
 
   @@unique([userId, groupId])
 }

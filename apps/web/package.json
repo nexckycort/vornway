@@ -12,7 +12,7 @@
     "db:generate": "dotenvx run -- prisma generate",
     "db:migrate:dev": "prisma migrate dev --name init",
     "db:migrate": "dotenvx run -- prisma migrate dev",
-    "db:migrate:reset": "prisma migrate reset",
+    "db:migrate:reset": "dotenvx run -- prisma migrate reset",
     "db:seed": "dotenvx run -- prisma db seed",
     "typecheck": "tsgo --noEmit"
   },

@@ -35,8 +35,7 @@ export const createGroup = createServerFn({ method: 'POST' })
       const inviteCode = crypto.randomUUID().slice(0, 8);
       const now = new Date();
 
-      // Crear el grupo
-      await db.group.create({
+      const { owner } = await db.group.create({
         data: {
           id: groupId,
           name: data.name,
@@ -45,21 +44,35 @@ export const createGroup = createServerFn({ method: 'POST' })
           updatedAt: now,
           ownerId: userId,
         },
+        select: {
+          owner: {
+            select: {
+              name: true,
+            },
+          },
+        },
       });
 
-      // Agregar al creador como miembro admin
       await db.groupMember.create({
         data: {
           userId: userId,
           groupId: groupId,
+          name: owner?.name ?? 'Usuario',
           role: 'admin',
           joinedAt: now,
         },
       });
 
-      // Crear los participantes como miembros (sin userId, solo nombres)
-      // Nota: El modelo actual requiere userId, así que omitimos esto por ahora
-      // Si necesitas participantes sin cuenta, habría que modificar el schema
+      if (data.participants.length > 0) {
+        await db.groupMember.createMany({
+          data: data.participants.map((participantName) => ({
+            groupId: groupId,
+            name: participantName,
+            role: 'member',
+            joinedAt: now,
+          })),
+        });
+      }
 
       return {
         success: true,
@@ -70,7 +83,8 @@ export const createGroup = createServerFn({ method: 'POST' })
       console.error('Error creating group:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Error al crear el grupo',
+        error:
+          error instanceof Error ? error.message : 'Error al crear el grupo',
       };
     }
   });

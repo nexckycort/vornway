@@ -9,10 +9,8 @@ model User {
     sessions      Session[]
     accounts      Account[]
 
-    Group              Group[]
-    GroupMember        GroupMember[]
-    Expense            Expense[]            @relation("UserPaidExpenses")
-    ExpenseParticipant ExpenseParticipant[]
+    Group       Group[]
+    GroupMember GroupMember[]
 
     @@unique([email])
     @@map("user")

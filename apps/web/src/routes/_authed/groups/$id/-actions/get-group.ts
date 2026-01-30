@@ -26,6 +26,7 @@ interface GetGroupResponse {
   participantCount: number;
   totals: Record<string, number>; // { "COP": 150000, "USD": 50 }
   expenses: Expense[];
+  inviteCode: string | null;
 }
 
 export const getGroup = createServerFn({ method: 'POST' })
@@ -43,6 +44,7 @@ export const getGroup = createServerFn({ method: 'POST' })
         select: {
           name: true,
           totals: true,
+          inviteCode: true,
           GroupMember: {
             select: {
               id: true,
@@ -95,6 +97,7 @@ export const getGroup = createServerFn({ method: 'POST' })
         participantCount: groupRecord.GroupMember.length,
         totals: (groupRecord.totals as Record<string, number>) ?? {},
         expenses,
+        inviteCode: groupRecord.inviteCode,
       };
     } catch (error) {
       console.error('Error creating group:', error);

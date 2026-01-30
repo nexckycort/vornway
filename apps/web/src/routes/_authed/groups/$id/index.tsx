@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/a11y/useButtonType: <explanation> */
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { ChevronLeft, MoreHorizontal, Plus, UserPlus } from 'lucide-react';
+import { Check, ChevronLeft, Copy, Link, MoreHorizontal, Plus, UserPlus, X } from 'lucide-react';
 import { useState } from 'react';
 import { getGroup } from './-actions/get-group';
 
@@ -89,11 +89,39 @@ function RouteComponent() {
   const { id } = Route.useParams();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'gastos' | 'cuentas'>('gastos');
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const { data, error, isLoading } = useQuery({
+  const { data } = useQuery({
     queryKey: ['group', id],
     queryFn: async () => getGroup({ data: { groupId: id } }),
   });
+
+  const inviteLink = data?.inviteCode
+    ? `${window.location.origin}/join/${data.inviteCode}`
+    : '';
+
+  const handleCopyLink = async () => {
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Error copying link:', err);
+    }
+  };
+
+  const handleCopyCode = async () => {
+    if (!data?.inviteCode) return;
+    try {
+      await navigator.clipboard.writeText(data.inviteCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Error copying code:', err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f5f3fa]">
@@ -141,10 +169,13 @@ function RouteComponent() {
               <span className="text-sm text-[#1a1a3e]">Añadir gastos</span>
             </div>
             <div className="flex flex-col items-center gap-2">
-              <button className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center">
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center"
+              >
                 <UserPlus className="w-6 h-6 text-[#1a1a3e]" />
               </button>
-              <span className="text-sm text-[#1a1a3e]">Participantes</span>
+              <span className="text-sm text-[#1a1a3e]">Invitar</span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <button className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center">
@@ -222,6 +253,92 @@ function RouteComponent() {
             Aquí verás el balance de cuentas entre participantes
           </p>
         </div>
+      )}
+
+      {/* Modal de invitación */}
+      {showInviteModal && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/30 z-40 cursor-default"
+            onClick={() => setShowInviteModal(false)}
+            aria-label="Cerrar modal"
+          />
+
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+            </div>
+
+            <div className="px-6 pb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-[#1a1a3e]">
+                  Invitar al grupo
+                </h2>
+                <button
+                  onClick={() => setShowInviteModal(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <p className="text-gray-500 mb-6">
+                Comparte este enlace para que otros se unan a <strong>{data?.name}</strong>
+              </p>
+
+              {/* Enlace */}
+              <div className="bg-gray-50 rounded-2xl p-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#e8e4f8] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Link className="w-5 h-5 text-[#6060c0]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-500 mb-1">Enlace de invitación</p>
+                    <p className="text-[#1a1a3e] font-medium truncate text-sm">
+                      {inviteLink}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleCopyLink}
+                    className="w-10 h-10 bg-[#4040b0] rounded-xl flex items-center justify-center flex-shrink-0"
+                  >
+                    {copied ? (
+                      <Check className="w-5 h-5 text-white" />
+                    ) : (
+                      <Copy className="w-5 h-5 text-white" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Código */}
+              <div className="bg-gray-50 rounded-2xl p-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500 mb-1">Código de invitación</p>
+                    <p className="text-2xl font-bold text-[#1a1a3e] tracking-wider">
+                      {data?.inviteCode}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleCopyCode}
+                    className="px-4 py-2 bg-gray-200 rounded-xl text-[#1a1a3e] font-medium text-sm"
+                  >
+                    {copied ? 'Copiado' : 'Copiar'}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowInviteModal(false)}
+                className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

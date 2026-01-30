@@ -43,6 +43,7 @@ export const createGroup = createServerFn({ method: 'POST' })
           createdAt: now,
           updatedAt: now,
           ownerId: userId,
+          inviteCode,
         },
         select: {
           owner: {

@@ -11,6 +11,7 @@ const GetGroupInputSchema = z.object({
 interface GetGroupResponse {
   name: string;
   participantCount: number;
+  totals: Record<string, number>; // { "COP": 150000, "USD": 50 }
 }
 
 export const getGroup = createServerFn({ method: 'POST' })
@@ -27,6 +28,7 @@ export const getGroup = createServerFn({ method: 'POST' })
       const groupRecord = await db.group.findUnique({
         select: {
           name: true,
+          totals: true,
           GroupMember: {
             select: {
               _count: true,
@@ -43,6 +45,7 @@ export const getGroup = createServerFn({ method: 'POST' })
       return {
         name: groupRecord.name,
         participantCount: groupRecord.GroupMember.length,
+        totals: (groupRecord.totals as Record<string, number>) ?? {},
       };
     } catch (error) {
       console.error('Error creating group:', error);

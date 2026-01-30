@@ -8,6 +8,41 @@ export const Route = createFileRoute('/_authed/groups/$id/')({
   component: RouteComponent,
 });
 
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('es-CO', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function TotalsDisplay({ totals }: { totals: Record<string, number> }) {
+  const entries = Object.entries(totals);
+
+  if (entries.length === 0) {
+    return (
+      <h2 className="text-4xl font-bold text-[#1a1a3e] text-center mb-1">
+        $0
+      </h2>
+    );
+  }
+
+  return (
+    <div className="text-center mb-1">
+      {entries.map(([currency, amount], index) => (
+        <h2
+          key={currency}
+          className={`font-bold text-[#1a1a3e] ${index === 0 ? 'text-4xl' : 'text-2xl text-gray-600'}`}
+        >
+          ${formatCurrency(amount)}{' '}
+          <span className={index === 0 ? 'text-2xl font-semibold' : 'text-lg'}>
+            {currency}
+          </span>
+        </h2>
+      ))}
+    </div>
+  );
+}
+
 function RouteComponent() {
   const { id } = Route.useParams();
   const router = useRouter();
@@ -44,9 +79,7 @@ function RouteComponent() {
       <div className="px-4 py-4">
         <div className="bg-white rounded-3xl p-6 shadow-sm">
           <p className="text-gray-500 text-center mb-1">Total gastado</p>
-          <h2 className="text-4xl font-bold text-[#1a1a3e] text-center mb-1">
-            $0 <span className="text-2xl font-semibold">COP</span>
-          </h2>
+          <TotalsDisplay totals={data?.totals ?? {}} />
           <p className="text-gray-500 text-center mb-6">Sin deudas</p>
 
           {/* Action buttons */}

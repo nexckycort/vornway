@@ -4,6 +4,7 @@ model Expense {
   paidById    String // ID del GroupMember que pagó
   description String
   amount      Float
+  currency    String // Código de moneda: "COP", "USD", "EUR", etc.
   date        DateTime @default(now())
   notes       String?
   attachment  String? // URL de foto del recibo

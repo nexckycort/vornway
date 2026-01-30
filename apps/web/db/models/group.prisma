@@ -6,6 +6,7 @@ model Group {
   updatedAt   DateTime
   description String?
   ownerId     String
+  totals      Json          @default("{}") // Caché de totales por moneda: { "COP": 150000, "USD": 50 }
   owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   GroupMember GroupMember[]
   Expense     Expense[]

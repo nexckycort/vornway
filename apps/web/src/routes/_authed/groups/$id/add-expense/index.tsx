@@ -70,7 +70,10 @@ function RouteComponent() {
 
   const amountPerPerson =
     selectedParticipants.length > 0 && amount
-      ? (parseFloat(amount) / selectedParticipants.length).toFixed(0)
+      ? (parseFloat(amount) / selectedParticipants.length).toLocaleString('es-CO', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        })
       : '0';
 
   const canAdd =

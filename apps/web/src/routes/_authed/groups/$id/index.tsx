@@ -16,6 +16,49 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('es-CO', {
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(date));
+}
+
+interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+  currency: string;
+  date: Date;
+  paidBy: {
+    id: string;
+    name: string;
+  };
+  participantCount: number;
+}
+
+function ExpenseItem({ expense }: { expense: Expense }) {
+  return (
+    <div className="flex items-center gap-4 py-4 border-b border-gray-100 last:border-b-0">
+      <div className="w-12 h-12 bg-[#f0f0ff] rounded-xl flex items-center justify-center flex-shrink-0">
+        <span className="text-lg">💰</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-[#1a1a3e] truncate">{expense.description}</p>
+        <p className="text-sm text-gray-500">
+          {expense.paidBy.name} pagó · {formatDate(expense.date)}
+          {expense.participantCount > 0 && ` · ${expense.participantCount} participantes`}
+        </p>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <p className="font-semibold text-[#1a1a3e]">
+          ${formatCurrency(expense.amount)}
+        </p>
+        <p className="text-xs text-gray-500">{expense.currency}</p>
+      </div>
+    </div>
+  );
+}
+
 function TotalsDisplay({ totals }: { totals: Record<string, number> }) {
   const entries = Object.entries(totals);
 
@@ -139,25 +182,47 @@ function RouteComponent() {
         </div>
       </div>
 
-      {/* Empty State */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-20">
-        {/* Icon */}
-        <div className="relative mb-6">
-          <div className="w-20 h-20 bg-[#a8a0e8] rounded-2xl transform rotate-6" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-16 h-16 bg-[#4040b0] rounded-2xl flex items-center justify-center -rotate-6">
-              <Plus className="w-8 h-8 text-white" />
+      {/* Content */}
+      {activeTab === 'gastos' &&
+        (data?.expenses && data.expenses.length > 0 ? (
+          <div className="px-4 py-2">
+            <div className="bg-white rounded-2xl px-4">
+              {data.expenses.map((expense) => (
+                <ExpenseItem key={expense.id} expense={expense} />
+              ))}
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center px-6 py-20">
+            {/* Icon */}
+            <div className="relative mb-6">
+              <div className="w-20 h-20 bg-[#a8a0e8] rounded-2xl transform rotate-6" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-16 h-16 bg-[#4040b0] rounded-2xl flex items-center justify-center -rotate-6">
+                  <Plus className="w-8 h-8 text-white" />
+                </div>
+              </div>
+            </div>
 
-        <h3 className="text-xl font-semibold text-[#1a1a3e] mb-2">
-          No tienes gastos aún
-        </h3>
-        <p className="text-gray-500 text-center">
-          Ingresa tus primeros gastos y comienza a dividirlos
-        </p>
-      </div>
+            <h3 className="text-xl font-semibold text-[#1a1a3e] mb-2">
+              No tienes gastos aún
+            </h3>
+            <p className="text-gray-500 text-center">
+              Ingresa tus primeros gastos y comienza a dividirlos
+            </p>
+          </div>
+        ))}
+
+      {activeTab === 'cuentas' && (
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-20">
+          <h3 className="text-xl font-semibold text-[#1a1a3e] mb-2">
+            Próximamente
+          </h3>
+          <p className="text-gray-500 text-center">
+            Aquí verás el balance de cuentas entre participantes
+          </p>
+        </div>
+      )}
     </div>
   );
 }

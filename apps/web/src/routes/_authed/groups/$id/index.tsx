@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/a11y/useButtonType: <explanation> */
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { ChevronLeft, MoreHorizontal, Plus, UserPlus } from 'lucide-react';
@@ -20,9 +21,7 @@ function TotalsDisplay({ totals }: { totals: Record<string, number> }) {
 
   if (entries.length === 0) {
     return (
-      <h2 className="text-4xl font-bold text-[#1a1a3e] text-center mb-1">
-        $0
-      </h2>
+      <h2 className="text-4xl font-bold text-[#1a1a3e] text-center mb-1">$0</h2>
     );
   }
 
@@ -89,7 +88,7 @@ function RouteComponent() {
                 onClick={() =>
                   router.navigate({
                     to: '/groups/$id/add-expense',
-                    params: { id: '1' },
+                    params: { id },
                   })
                 }
                 className="w-14 h-14 bg-[#4040b0] rounded-2xl flex items-center justify-center"

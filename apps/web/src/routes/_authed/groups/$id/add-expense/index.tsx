@@ -1,42 +1,65 @@
-'use client';
-
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { ChevronDown, ChevronLeft, Info, LayoutGrid } from 'lucide-react';
 import { useState } from 'react';
 
-const participants = [
-  { id: '1', name: 'Vianys (Tu)', isCurrentUser: true },
-  { id: '2', name: 'Nestor', isCurrentUser: false },
-  { id: '3', name: 'Ana', isCurrentUser: false },
-];
+import { createExpense } from './-actions/create-expense';
+import { getGroupMembers } from './-actions/get-group-members';
 
 export const Route = createFileRoute('/_authed/groups/$id/add-expense/')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const { id: groupId } = Route.useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
+
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('COP');
-  const [paidBy, setPaidBy] = useState('Vianys (Tu)');
-  const [splitMethod, setSplitMethod] = useState('Partes iguales');
-  const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
-    [],
-  );
+  const [paidById, setPaidById] = useState<string | null>(null);
+  const [splitMethod, setSplitMethod] = useState<'equal' | 'percentage' | 'exact'>('equal');
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [showPaidByDropdown, setShowPaidByDropdown] = useState(false);
   const [showSplitDropdown, setShowSplitDropdown] = useState(false);
 
   const currencies = ['COP', 'USD', 'EUR', 'MXN'];
-  const splitMethods = ['Partes iguales', 'Porcentaje', 'Montos exactos'];
+  const splitMethods = [
+    { value: 'equal' as const, label: 'Partes iguales' },
+    { value: 'percentage' as const, label: 'Porcentaje' },
+    { value: 'exact' as const, label: 'Montos exactos' },
+  ];
+
+  const { data: membersData, isLoading: isLoadingMembers } = useQuery({
+    queryKey: ['group-members', groupId],
+    queryFn: () => getGroupMembers({ data: { groupId } }),
+  });
+
+  const members = membersData?.members ?? [];
+
+  // Set default paidBy when members are loaded
+  if (membersData?.currentUserMemberId && paidById === null) {
+    setPaidById(membersData.currentUserMemberId);
+  }
+
+  const createExpenseMutation = useMutation({
+    mutationFn: createExpense,
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+        router.navigate({ to: '/groups/$id', params: { id: groupId } });
+      }
+    },
+  });
 
   const toggleParticipant = (id: string) => {
     if (id === 'all') {
-      if (selectedParticipants.length === participants.length) {
+      if (selectedParticipants.length === members.length) {
         setSelectedParticipants([]);
       } else {
-        setSelectedParticipants(participants.map((p) => p.id));
+        setSelectedParticipants(members.map((p) => p.id));
       }
     } else {
       setSelectedParticipants((prev) =>
@@ -54,13 +77,41 @@ function RouteComponent() {
     description &&
     amount &&
     parseFloat(amount) > 0 &&
-    selectedParticipants.length > 0;
+    paidById !== null;
+
+  const handleSubmit = () => {
+    if (!canAdd || !paidById) return;
+
+    createExpenseMutation.mutate({
+      data: {
+        groupId,
+        description,
+        amount: parseFloat(amount),
+        currency,
+        paidById,
+        participantIds: selectedParticipants,
+        splitMethod,
+      },
+    });
+  };
+
+  const selectedPayer = members.find((m) => m.id === paidById);
+  const selectedSplitMethod = splitMethods.find((m) => m.value === splitMethod);
+
+  if (isLoadingMembers) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <p className="text-gray-500">Cargando...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
       <div className="px-4 py-4 flex items-center gap-3">
         <button
+          type="button"
           onClick={() => router.history.back()}
           className="w-10 h-10 flex items-center justify-center"
         >
@@ -73,12 +124,16 @@ function RouteComponent() {
       <div className="flex-1 px-4 pt-4 border-t border-gray-100">
         {/* Description */}
         <div className="mb-6">
-          <label className="block text-[#1a1a3e] mb-2">Descripción</label>
+          <label htmlFor="description" className="block text-[#1a1a3e] mb-2">Descripción</label>
           <div className="flex gap-3">
-            <button className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <button
+              type="button"
+              className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0"
+            >
               <LayoutGrid className="w-6 h-6 text-gray-600" />
             </button>
             <input
+              id="description"
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -91,9 +146,10 @@ function RouteComponent() {
         {/* Currency & Amount */}
         <div className="flex gap-4 mb-6">
           <div className="w-1/3">
-            <label className="block text-[#1a1a3e] mb-2">Moneda</label>
+            <span className="block text-[#1a1a3e] mb-2">Moneda</span>
             <div className="relative">
               <button
+                type="button"
                 onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
                 className="w-full px-4 py-3.5 bg-gray-100 rounded-xl flex items-center justify-between"
               >
@@ -104,6 +160,7 @@ function RouteComponent() {
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10">
                   {currencies.map((c) => (
                     <button
+                      type="button"
                       key={c}
                       onClick={() => {
                         setCurrency(c);
@@ -119,8 +176,9 @@ function RouteComponent() {
             </div>
           </div>
           <div className="flex-1">
-            <label className="block text-[#1a1a3e] mb-2">Monto*</label>
+            <label htmlFor="amount" className="block text-[#1a1a3e] mb-2">Monto*</label>
             <input
+              id="amount"
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
@@ -133,22 +191,26 @@ function RouteComponent() {
         {/* Paid by & Split method */}
         <div className="flex gap-4 mb-6">
           <div className="flex-1">
-            <label className="block text-[#1a1a3e] mb-2">Pagado por</label>
+            <span className="block text-[#1a1a3e] mb-2">Pagado por</span>
             <div className="relative">
               <button
+                type="button"
                 onClick={() => setShowPaidByDropdown(!showPaidByDropdown)}
                 className="w-full px-4 py-3.5 bg-gray-100 rounded-xl flex items-center justify-between"
               >
-                <span className="text-[#1a1a3e]">{paidBy}</span>
+                <span className="text-[#1a1a3e]">
+                  {selectedPayer?.name ?? 'Seleccionar'}
+                </span>
                 <ChevronDown className="w-5 h-5 text-gray-500" />
               </button>
               {showPaidByDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10">
-                  {participants.map((p) => (
+                  {members.map((p) => (
                     <button
+                      type="button"
                       key={p.id}
                       onClick={() => {
-                        setPaidBy(p.name);
+                        setPaidById(p.id);
                         setShowPaidByDropdown(false);
                       }}
                       className="w-full px-4 py-3 text-left hover:bg-gray-50 first:rounded-t-xl last:rounded-b-xl"
@@ -161,27 +223,31 @@ function RouteComponent() {
             </div>
           </div>
           <div className="flex-1">
-            <label className="block text-[#1a1a3e] mb-2">Dividir en</label>
+            <span className="block text-[#1a1a3e] mb-2">Dividir en</span>
             <div className="relative">
               <button
+                type="button"
                 onClick={() => setShowSplitDropdown(!showSplitDropdown)}
                 className="w-full px-4 py-3.5 bg-gray-100 rounded-xl flex items-center justify-between"
               >
-                <span className="text-[#1a1a3e]">{splitMethod}</span>
+                <span className="text-[#1a1a3e]">
+                  {selectedSplitMethod?.label ?? 'Partes iguales'}
+                </span>
                 <ChevronDown className="w-5 h-5 text-gray-500" />
               </button>
               {showSplitDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10">
                   {splitMethods.map((m) => (
                     <button
-                      key={m}
+                      type="button"
+                      key={m.value}
                       onClick={() => {
-                        setSplitMethod(m);
+                        setSplitMethod(m.value);
                         setShowSplitDropdown(false);
                       }}
                       className="w-full px-4 py-3 text-left hover:bg-gray-50 first:rounded-t-xl last:rounded-b-xl"
                     >
-                      {m}
+                      {m.label}
                     </button>
                   ))}
                 </div>
@@ -201,26 +267,37 @@ function RouteComponent() {
 
         {/* Split with */}
         <div>
-          <p className="font-semibold text-[#1a1a3e] mb-4">Se divide con</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="font-semibold text-[#1a1a3e]">Se divide con</p>
+            <span className="text-sm text-gray-500">
+              {selectedParticipants.length === 0
+                ? 'Gasto personal'
+                : selectedParticipants.length === members.length
+                  ? 'Todos'
+                  : `${selectedParticipants.length} participante${selectedParticipants.length > 1 ? 's' : ''}`}
+            </span>
+          </div>
 
           {/* Select all */}
           <button
+            type="button"
             onClick={() => toggleParticipant('all')}
             className="w-full flex items-center gap-4 py-3"
           >
             <div
               className={`w-6 h-6 border-2 rounded-lg flex items-center justify-center ${
-                selectedParticipants.length === participants.length
+                selectedParticipants.length === members.length
                   ? 'bg-[#4040b0] border-[#4040b0]'
                   : 'border-gray-300'
               }`}
             >
-              {selectedParticipants.length === participants.length && (
+              {selectedParticipants.length === members.length && (
                 <svg
                   className="w-4 h-4 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -235,8 +312,9 @@ function RouteComponent() {
           </button>
 
           {/* Participants */}
-          {participants.map((participant) => (
+          {members.map((participant) => (
             <button
+              type="button"
               key={participant.id}
               onClick={() => toggleParticipant(participant.id)}
               className="w-full flex items-center gap-4 py-3"
@@ -254,6 +332,7 @@ function RouteComponent() {
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -281,23 +360,34 @@ function RouteComponent() {
       {/* Bottom buttons */}
       <div className="px-4 py-6 flex items-center gap-4 border-t border-gray-100">
         <button
+          type="button"
           onClick={() => router.history.back()}
           className="flex-1 py-4 text-[#1a1a3e] font-medium"
         >
           Volver
         </button>
         <button
-          disabled={!canAdd}
-          onClick={() =>
-            router.navigate({ to: '/groups/$id', params: { id: '1' } })
-          }
+          type="button"
+          disabled={!canAdd || createExpenseMutation.isPending}
+          onClick={handleSubmit}
           className={`flex-1 py-4 font-medium rounded-2xl transition-colors ${
-            canAdd ? 'bg-[#4040b0] text-white' : 'bg-gray-200 text-gray-400'
+            canAdd && !createExpenseMutation.isPending
+              ? 'bg-[#4040b0] text-white'
+              : 'bg-gray-200 text-gray-400'
           }`}
         >
-          Añadir
+          {createExpenseMutation.isPending ? 'Añadiendo...' : 'Añadir'}
         </button>
       </div>
+
+      {/* Error message */}
+      {createExpenseMutation.data?.error && (
+        <div className="px-4 pb-4">
+          <p className="text-red-500 text-sm text-center">
+            {createExpenseMutation.data.error}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

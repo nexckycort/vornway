@@ -163,7 +163,7 @@ function RouteComponent() {
               </div>
               <div className="text-right">
                 <p className="font-bold text-[#3a3a3a] text-lg">
-                  $0 {data.currency}
+                  ${formatCurrency(data.amount)} {data.currency}
                 </p>
                 <p className="text-[#7a7a7a] text-sm">Sin deudas</p>
               </div>

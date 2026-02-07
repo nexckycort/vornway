@@ -12,7 +12,8 @@ import {
   UserPlus,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { type MouseEvent, type TouchEvent, useState } from 'react';
+import { deleteExpense } from './-actions/delete-expense';
 import { getGroup } from './-actions/get-group';
 import { removeMember } from './-actions/remove-member';
 
@@ -51,41 +52,126 @@ interface Expense {
 function ExpenseItem({
   expense,
   onOpenExpense,
+  onDeleteExpense,
 }: {
   expense: Expense;
   onOpenExpense: (expenseId: string) => void;
+  onDeleteExpense: (expenseId: string) => void;
 }) {
+  const SWIPE_WIDTH = 88;
+  const SWIPE_THRESHOLD = 44;
+  const [translateX, setTranslateX] = useState(0);
+  const [startX, setStartX] = useState<number | null>(null);
+  const [startY, setStartY] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [didSwipe, setDidSwipe] = useState(false);
+  const isOpen = translateX <= -SWIPE_THRESHOLD;
+
+  const handleTouchStart = (event: TouchEvent<HTMLButtonElement>) => {
+    if (expense.isDeleted) return;
+    const touch = event.touches[0];
+    setStartX(touch.clientX);
+    setStartY(touch.clientY);
+    setIsDragging(true);
+    setDidSwipe(false);
+  };
+
+  const handleTouchMove = (event: TouchEvent<HTMLButtonElement>) => {
+    if (!isDragging || startX === null || startY === null || expense.isDeleted)
+      return;
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - startY;
+
+    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+
+    const nextTranslateX = Math.max(-SWIPE_WIDTH, Math.min(0, deltaX));
+    if (Math.abs(nextTranslateX) > 6) {
+      setDidSwipe(true);
+    }
+    setTranslateX(nextTranslateX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging || expense.isDeleted) return;
+    setTranslateX((current) =>
+      current <= -SWIPE_THRESHOLD ? -SWIPE_WIDTH : 0,
+    );
+    setIsDragging(false);
+    setStartX(null);
+    setStartY(null);
+  };
+
+  const handleOpenExpense = () => {
+    if (didSwipe) {
+      setDidSwipe(false);
+      return;
+    }
+    if (isOpen) {
+      setTranslateX(0);
+      return;
+    }
+    onOpenExpense(expense.id);
+  };
+
+  const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    onDeleteExpense(expense.id);
+    setTranslateX(0);
+  };
+
   return (
-    <button
-      type="button"
-      onClick={() => onOpenExpense(expense.id)}
-      className="w-full flex items-center gap-4 py-4 border-b border-gray-100 last:border-b-0 text-left"
-    >
-      <div className="w-12 h-12 bg-[#f0f0ff] rounded-xl flex items-center justify-center flex-shrink-0">
-        <span className="text-lg">💰</span>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-[#1a1a3e] truncate">
-          {expense.description}
-        </p>
-        <p className="text-sm text-gray-500">
-          {formatDate(expense.date)}
-          {expense.participantCount > 0 &&
-            ` · ${expense.participantCount} participantes`}
-        </p>
-        <p className="text-sm text-gray-500">Pagó: {expense.paidBy.name}</p>
-      </div>
-      <div className="text-right flex-shrink-0">
-        <p
-          className={`font-semibold ${expense.isDeleted ? 'text-gray-400 line-through' : 'text-[#1a1a3e]'}`}
-        >
-          ${formatCurrency(expense.amount)}
-        </p>
-        <p className="text-xs text-gray-500">
-          {expense.isDeleted ? 'Eliminado' : expense.currency}
-        </p>
-      </div>
-    </button>
+    <div className="relative border-b border-gray-100 last:border-b-0 overflow-hidden">
+      {!expense.isDeleted && (
+        <div className="absolute inset-y-0 right-0 w-[88px] bg-red-500 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="h-full w-full flex flex-col items-center justify-center text-white"
+          >
+            <Trash2 className="w-5 h-5 mb-1" />
+            <span className="text-xs font-medium">Borrar</span>
+          </button>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={handleOpenExpense}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        className="w-full flex items-center gap-4 py-4 text-left bg-white transition-transform duration-200"
+        style={{ transform: `translateX(${translateX}px)` }}
+      >
+        <div className="w-12 h-12 bg-[#f0f0ff] rounded-xl flex items-center justify-center flex-shrink-0">
+          <span className="text-lg">💰</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-[#1a1a3e] truncate">
+            {expense.description}
+          </p>
+          <p className="text-sm text-gray-500">
+            {formatDate(expense.date)}
+            {expense.participantCount > 0 &&
+              ` · ${expense.participantCount} participantes`}
+          </p>
+          <p className="text-sm text-gray-500">Pagó: {expense.paidBy.name}</p>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <p
+            className={`font-semibold ${expense.isDeleted ? 'text-gray-400 line-through' : 'text-[#1a1a3e]'}`}
+          >
+            ${formatCurrency(expense.amount)}
+          </p>
+          <p className="text-xs text-gray-500">
+            {expense.isDeleted ? 'Eliminado' : expense.currency}
+          </p>
+        </div>
+      </button>
+    </div>
   );
 }
 
@@ -142,6 +228,29 @@ function RouteComponent() {
       }
     },
   });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: deleteExpense,
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['group', id] });
+      }
+    },
+  });
+
+  const handleDeleteExpense = (expenseId: string) => {
+    if (deleteExpenseMutation.isPending) return;
+
+    const confirmed = window.confirm('¿Deseas borrar este gasto?');
+    if (!confirmed) return;
+
+    deleteExpenseMutation.mutate({
+      data: {
+        groupId: id,
+        expenseId,
+      },
+    });
+  };
 
   const handleRemoveMember = () => {
     if (!memberToDelete) return;
@@ -324,6 +433,7 @@ function RouteComponent() {
                       params: { id, expenseId },
                     })
                   }
+                  onDeleteExpense={handleDeleteExpense}
                 />
               ))}
             </div>

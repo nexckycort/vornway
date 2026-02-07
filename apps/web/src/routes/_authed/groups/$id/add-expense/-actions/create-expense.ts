@@ -12,6 +12,7 @@ const CreateExpenseInputSchema = z.object({
   paidById: z.string(), // GroupMember ID
   participantIds: z.array(z.string()), // GroupMember IDs (vacío = gasto personal)
   splitMethod: z.enum(['equal', 'percentage', 'exact']),
+  exactShares: z.record(z.string(), z.number().nonnegative()).optional(),
 });
 
 interface CreateExpenseResponse {
@@ -49,7 +50,37 @@ export const createExpense = createServerFn({ method: 'POST' })
         };
       }
 
-      // Crear el gasto
+      let participantShares: Record<string, number> = {};
+
+      if (data.participantIds.length > 0) {
+        if (data.splitMethod === 'exact') {
+          const exactShares = data.exactShares ?? {};
+          participantShares = Object.fromEntries(
+            data.participantIds.map((memberId) => [
+              memberId,
+              exactShares[memberId] ?? 0,
+            ]),
+          );
+
+          const exactTotal = Object.values(participantShares).reduce(
+            (sum, share) => sum + share,
+            0,
+          );
+
+          if (Math.abs(exactTotal - data.amount) >= 0.01) {
+            return {
+              success: false,
+              error: 'La suma de montos exactos debe ser igual al monto total',
+            };
+          }
+        } else {
+          const equalShare = data.amount / data.participantIds.length;
+          participantShares = Object.fromEntries(
+            data.participantIds.map((memberId) => [memberId, equalShare]),
+          );
+        }
+      }
+
       const expense = await db.expense.create({
         data: {
           groupId: data.groupId,
@@ -62,7 +93,7 @@ export const createExpense = createServerFn({ method: 'POST' })
             participants: {
               create: data.participantIds.map((memberId) => ({
                 memberId,
-                share: data.amount / data.participantIds.length,
+                share: participantShares[memberId],
               })),
             },
           }),

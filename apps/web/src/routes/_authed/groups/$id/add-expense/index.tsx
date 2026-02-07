@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { ChevronDown, ChevronLeft, Info, LayoutGrid } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { createExpense } from './-actions/create-expense';
 import { getGroupMembers } from './-actions/get-group-members';
@@ -19,8 +19,13 @@ function RouteComponent() {
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('COP');
   const [paidById, setPaidById] = useState<string | null>(null);
-  const [splitMethod, setSplitMethod] = useState<'equal' | 'percentage' | 'exact'>('equal');
-  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+  const [splitMethod, setSplitMethod] = useState<
+    'equal' | 'percentage' | 'exact'
+  >('equal');
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
+    [],
+  );
+  const [exactAmounts, setExactAmounts] = useState<Record<string, string>>({});
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [showPaidByDropdown, setShowPaidByDropdown] = useState(false);
   const [showSplitDropdown, setShowSplitDropdown] = useState(false);
@@ -70,17 +75,66 @@ function RouteComponent() {
 
   const amountPerPerson =
     selectedParticipants.length > 0 && amount
-      ? (parseFloat(amount) / selectedParticipants.length).toLocaleString('es-CO', {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2,
-        })
+      ? (parseFloat(amount) / selectedParticipants.length).toLocaleString(
+          'es-CO',
+          {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          },
+        )
       : '0';
+
+  useEffect(() => {
+    if (splitMethod !== 'exact') return;
+
+    const parsedAmount = parseFloat(amount);
+    const totalAmount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
+    const defaultPerPerson =
+      selectedParticipants.length > 0
+        ? totalAmount / selectedParticipants.length
+        : 0;
+
+    setExactAmounts((prev) => {
+      const next: Record<string, string> = {};
+
+      for (const participantId of selectedParticipants) {
+        next[participantId] =
+          prev[participantId] ??
+          (defaultPerPerson > 0
+            ? defaultPerPerson.toFixed(2).replace(/\.00$/, '')
+            : '');
+      }
+
+      return next;
+    });
+  }, [splitMethod, selectedParticipants, amount]);
+
+  const parsedAmount = parseFloat(amount);
+  const totalAmount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
+  const exactTotal = selectedParticipants.reduce((sum, participantId) => {
+    const value = parseFloat(exactAmounts[participantId] ?? '0');
+    return sum + (Number.isFinite(value) ? value : 0);
+  }, 0);
+
+  const hasInvalidExactAmounts = selectedParticipants.some((participantId) => {
+    const rawValue = exactAmounts[participantId];
+    if (rawValue === undefined || rawValue === '') return true;
+
+    const parsedValue = parseFloat(rawValue);
+    return !Number.isFinite(parsedValue) || parsedValue < 0;
+  });
+
+  const isExactSplitValid =
+    splitMethod !== 'exact' ||
+    selectedParticipants.length === 0 ||
+    (!hasInvalidExactAmounts && Math.abs(exactTotal - totalAmount) < 0.01);
 
   const canAdd =
     description &&
     amount &&
     parseFloat(amount) > 0 &&
-    paidById !== null;
+    paidById !== null &&
+    isExactSplitValid;
 
   const handleSubmit = () => {
     if (!canAdd || !paidById) return;
@@ -94,6 +148,15 @@ function RouteComponent() {
         paidById,
         participantIds: selectedParticipants,
         splitMethod,
+        exactShares:
+          splitMethod === 'exact'
+            ? Object.fromEntries(
+                selectedParticipants.map((participantId) => [
+                  participantId,
+                  parseFloat(exactAmounts[participantId] ?? '0'),
+                ]),
+              )
+            : undefined,
       },
     });
   };
@@ -127,7 +190,9 @@ function RouteComponent() {
       <div className="flex-1 px-4 pt-4 border-t border-gray-100">
         {/* Description */}
         <div className="mb-6">
-          <label htmlFor="description" className="block text-[#1a1a3e] mb-2">Descripción</label>
+          <label htmlFor="description" className="block text-[#1a1a3e] mb-2">
+            Descripción
+          </label>
           <div className="flex gap-3">
             <button
               type="button"
@@ -179,7 +244,9 @@ function RouteComponent() {
             </div>
           </div>
           <div className="flex-1">
-            <label htmlFor="amount" className="block text-[#1a1a3e] mb-2">Monto*</label>
+            <label htmlFor="amount" className="block text-[#1a1a3e] mb-2">
+              Monto*
+            </label>
             <input
               id="amount"
               type="number"
@@ -263,8 +330,9 @@ function RouteComponent() {
         <div className="flex items-start gap-3 p-4 bg-[#f0f8ff] rounded-xl mb-6">
           <Info className="w-5 h-5 text-[#3498db] flex-shrink-0 mt-0.5" />
           <p className="text-sm text-gray-600">
-            Se dividira el monto total en partes iguales y todos pagan lo mismo
-            de este gasto
+            {splitMethod === 'exact'
+              ? 'Puedes editar cuánto paga cada participante. La suma debe ser igual al monto total.'
+              : 'Se dividira el monto total en partes iguales y todos pagan lo mismo de este gasto'}
           </p>
         </div>
 
@@ -316,47 +384,84 @@ function RouteComponent() {
 
           {/* Participants */}
           {members.map((participant) => (
-            <button
-              type="button"
+            <div
               key={participant.id}
-              onClick={() => toggleParticipant(participant.id)}
-              className="w-full flex items-center gap-4 py-3"
+              className="w-full flex items-center gap-3 py-3"
             >
-              <div
-                className={`w-6 h-6 border-2 rounded-lg flex items-center justify-center ${
-                  selectedParticipants.includes(participant.id)
-                    ? 'bg-[#4040b0] border-[#4040b0]'
-                    : 'border-gray-300'
-                }`}
+              <button
+                type="button"
+                onClick={() => toggleParticipant(participant.id)}
+                className="flex-1 flex items-center gap-4"
               >
-                {selectedParticipants.includes(participant.id) && (
-                  <svg
-                    className="w-4 h-4 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                <div
+                  className={`w-6 h-6 border-2 rounded-lg flex items-center justify-center ${
+                    selectedParticipants.includes(participant.id)
+                      ? 'bg-[#4040b0] border-[#4040b0]'
+                      : 'border-gray-300'
+                  }`}
+                >
+                  {selectedParticipants.includes(participant.id) && (
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
+                <span className="flex-1 text-left text-[#1a1a3e]">
+                  {participant.name}
+                </span>
+                {splitMethod !== 'exact' && (
+                  <span className="text-[#1a1a3e]">
+                    $
+                    {selectedParticipants.includes(participant.id)
+                      ? amountPerPerson
+                      : '0'}
+                  </span>
                 )}
-              </div>
-              <span className="flex-1 text-left text-[#1a1a3e]">
-                {participant.name}
-              </span>
-              <span className="text-[#1a1a3e]">
-                $
-                {selectedParticipants.includes(participant.id)
-                  ? amountPerPerson
-                  : '0'}
-              </span>
-            </button>
+              </button>
+
+              {splitMethod === 'exact' && (
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={exactAmounts[participant.id] ?? ''}
+                  onChange={(e) =>
+                    setExactAmounts((prev) => ({
+                      ...prev,
+                      [participant.id]: e.target.value,
+                    }))
+                  }
+                  disabled={!selectedParticipants.includes(participant.id)}
+                  className="w-28 px-3 py-2 border border-gray-200 rounded-lg text-right text-[#1a1a3e] disabled:bg-gray-100 disabled:text-gray-400"
+                  placeholder="0"
+                />
+              )}
+            </div>
           ))}
+
+          {splitMethod === 'exact' && selectedParticipants.length > 0 && (
+            <p
+              className={`mt-2 text-sm ${isExactSplitValid ? 'text-gray-500' : 'text-red-500'}`}
+            >
+              Total asignado: $
+              {exactTotal.toLocaleString('es-CO', { maximumFractionDigits: 2 })}{' '}
+              / $
+              {totalAmount.toLocaleString('es-CO', {
+                maximumFractionDigits: 2,
+              })}
+            </p>
+          )}
         </div>
       </div>
 

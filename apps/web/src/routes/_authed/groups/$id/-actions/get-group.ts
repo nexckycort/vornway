@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/correctness/useHookAtTopLevel: useAppSession is a server helper */
 import { createServerFn } from '@tanstack/react-start';
 import * as z from 'zod';
 
@@ -14,6 +15,7 @@ interface Expense {
   amount: number;
   currency: string;
   date: Date;
+  isDeleted: boolean;
   paidBy: {
     id: string;
     name: string;
@@ -72,6 +74,7 @@ export const getGroup = createServerFn({ method: 'POST' })
               amount: true,
               currency: true,
               date: true,
+              notes: true,
               paidBy: {
                 select: {
                   id: true,
@@ -96,7 +99,7 @@ export const getGroup = createServerFn({ method: 'POST' })
 
       // Verificar que el usuario es miembro del grupo
       const isMember = groupRecord.GroupMember.some(
-        (member) => member.userId === userId
+        (member) => member.userId === userId,
       );
 
       if (!isMember) {
@@ -109,6 +112,7 @@ export const getGroup = createServerFn({ method: 'POST' })
         amount: expense.amount,
         currency: expense.currency,
         date: expense.date,
+        isDeleted: expense.notes?.includes('[DELETED]') ?? false,
         paidBy: {
           id: expense.paidBy.id,
           name: expense.paidBy.name,

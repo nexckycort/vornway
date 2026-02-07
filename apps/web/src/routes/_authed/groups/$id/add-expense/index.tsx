@@ -3,15 +3,25 @@ import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { ChevronDown, ChevronLeft, Info, LayoutGrid } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { getExpense } from '../-actions/get-expense';
 import { createExpense } from './-actions/create-expense';
 import { getGroupMembers } from './-actions/get-group-members';
+import { updateExpense } from './-actions/update-expense';
 
 export const Route = createFileRoute('/_authed/groups/$id/add-expense/')({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { expenseId?: string } => ({
+    expenseId:
+      typeof search.expenseId === 'string' ? search.expenseId : undefined,
+  }),
   component: RouteComponent,
 });
 
 function RouteComponent() {
   const { id: groupId } = Route.useParams();
+  const { expenseId } = Route.useSearch();
+  const isEditMode = Boolean(expenseId);
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -29,6 +39,7 @@ function RouteComponent() {
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [showPaidByDropdown, setShowPaidByDropdown] = useState(false);
   const [showSplitDropdown, setShowSplitDropdown] = useState(false);
+  const [hasLoadedEditData, setHasLoadedEditData] = useState(false);
 
   const currencies = ['COP', 'USD', 'EUR', 'MXN'];
   const splitMethods = [
@@ -40,6 +51,17 @@ function RouteComponent() {
   const { data: membersData, isLoading: isLoadingMembers } = useQuery({
     queryKey: ['group-members', groupId],
     queryFn: () => getGroupMembers({ data: { groupId } }),
+  });
+  const { data: expenseData, isLoading: isLoadingExpense } = useQuery({
+    queryKey: ['expense', groupId, expenseId],
+    queryFn: () =>
+      getExpense({
+        data: {
+          groupId,
+          expenseId: expenseId ?? '',
+        },
+      }),
+    enabled: isEditMode,
   });
 
   const members = membersData?.members ?? [];
@@ -54,6 +76,20 @@ function RouteComponent() {
     onSuccess: (result) => {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+        router.navigate({ to: '/groups/$id', params: { id: groupId } });
+      }
+    },
+  });
+  const updateExpenseMutation = useMutation({
+    mutationFn: updateExpense,
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+        if (expenseId) {
+          queryClient.invalidateQueries({
+            queryKey: ['expense', groupId, expenseId],
+          });
+        }
         router.navigate({ to: '/groups/$id', params: { id: groupId } });
       }
     },
@@ -83,6 +119,38 @@ function RouteComponent() {
           },
         )
       : '0';
+
+  useEffect(() => {
+    if (!expenseData || hasLoadedEditData) return;
+
+    setDescription(expenseData.description);
+    setAmount(expenseData.amount.toString());
+    setCurrency(expenseData.currency);
+    setPaidById(expenseData.paidBy.memberId);
+
+    const participantIds = expenseData.participants.map(
+      (participant) => participant.memberId,
+    );
+    setSelectedParticipants(participantIds);
+
+    if (participantIds.length > 0) {
+      const firstShare = expenseData.participants[0]?.share ?? 0;
+      const hasDifferentShares = expenseData.participants.some(
+        (participant) => Math.abs(participant.share - firstShare) >= 0.01,
+      );
+      setSplitMethod(hasDifferentShares ? 'exact' : 'equal');
+      setExactAmounts(
+        Object.fromEntries(
+          expenseData.participants.map((participant) => [
+            participant.memberId,
+            participant.share.toString(),
+          ]),
+        ),
+      );
+    }
+
+    setHasLoadedEditData(true);
+  }, [expenseData, hasLoadedEditData]);
 
   useEffect(() => {
     if (splitMethod !== 'exact') return;
@@ -139,32 +207,45 @@ function RouteComponent() {
   const handleSubmit = () => {
     if (!canAdd || !paidById) return;
 
-    createExpenseMutation.mutate({
-      data: {
-        groupId,
-        description,
-        amount: parseFloat(amount),
-        currency,
-        paidById,
-        participantIds: selectedParticipants,
-        splitMethod,
-        exactShares:
-          splitMethod === 'exact'
-            ? Object.fromEntries(
-                selectedParticipants.map((participantId) => [
-                  participantId,
-                  parseFloat(exactAmounts[participantId] ?? '0'),
-                ]),
-              )
-            : undefined,
-      },
-    });
+    const payload = {
+      groupId,
+      description,
+      amount: parseFloat(amount),
+      currency,
+      paidById,
+      participantIds: selectedParticipants,
+      splitMethod,
+      exactShares:
+        splitMethod === 'exact'
+          ? Object.fromEntries(
+              selectedParticipants.map((participantId) => [
+                participantId,
+                parseFloat(exactAmounts[participantId] ?? '0'),
+              ]),
+            )
+          : undefined,
+    };
+
+    if (isEditMode && expenseId) {
+      updateExpenseMutation.mutate({
+        data: {
+          ...payload,
+          expenseId,
+        },
+      });
+      return;
+    }
+
+    createExpenseMutation.mutate({ data: payload });
   };
 
   const selectedPayer = members.find((m) => m.id === paidById);
   const selectedSplitMethod = splitMethods.find((m) => m.value === splitMethod);
 
-  if (isLoadingMembers) {
+  if (
+    isLoadingMembers ||
+    (isEditMode && isLoadingExpense && !hasLoadedEditData)
+  ) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <p className="text-gray-500">Cargando...</p>
@@ -183,7 +264,9 @@ function RouteComponent() {
         >
           <ChevronLeft className="w-6 h-6 text-[#1a1a3e]" />
         </button>
-        <h1 className="text-xl font-semibold text-[#1a1a3e]">Añadir gasto</h1>
+        <h1 className="text-xl font-semibold text-[#1a1a3e]">
+          {isEditMode ? 'Editar gasto' : 'Añadir gasto'}
+        </h1>
       </div>
 
       {/* Form */}
@@ -476,23 +559,37 @@ function RouteComponent() {
         </button>
         <button
           type="button"
-          disabled={!canAdd || createExpenseMutation.isPending}
+          disabled={
+            !canAdd ||
+            createExpenseMutation.isPending ||
+            updateExpenseMutation.isPending
+          }
           onClick={handleSubmit}
           className={`flex-1 py-4 font-medium rounded-2xl transition-colors ${
-            canAdd && !createExpenseMutation.isPending
+            canAdd &&
+            !createExpenseMutation.isPending &&
+            !updateExpenseMutation.isPending
               ? 'bg-[#4040b0] text-white'
               : 'bg-gray-200 text-gray-400'
           }`}
         >
-          {createExpenseMutation.isPending ? 'Añadiendo...' : 'Añadir'}
+          {createExpenseMutation.isPending || updateExpenseMutation.isPending
+            ? isEditMode
+              ? 'Guardando...'
+              : 'Añadiendo...'
+            : isEditMode
+              ? 'Guardar cambios'
+              : 'Añadir'}
         </button>
       </div>
 
       {/* Error message */}
-      {createExpenseMutation.data?.error && (
+      {(createExpenseMutation.data?.error ||
+        updateExpenseMutation.data?.error) && (
         <div className="px-4 pb-4">
           <p className="text-red-500 text-sm text-center">
-            {createExpenseMutation.data.error}
+            {createExpenseMutation.data?.error ??
+              updateExpenseMutation.data?.error}
           </p>
         </div>
       )}

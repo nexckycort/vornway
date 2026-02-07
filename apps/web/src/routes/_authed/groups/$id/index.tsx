@@ -1,7 +1,17 @@
 /** biome-ignore-all lint/a11y/useButtonType: <explanation> */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { Check, ChevronLeft, Copy, Link, MoreHorizontal, Plus, Trash2, UserPlus, X } from 'lucide-react';
+import {
+  Check,
+  ChevronLeft,
+  Copy,
+  Link,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+  UserPlus,
+  X,
+} from 'lucide-react';
 import { useState } from 'react';
 import { getGroup } from './-actions/get-group';
 import { removeMember } from './-actions/remove-member';
@@ -30,6 +40,7 @@ interface Expense {
   amount: number;
   currency: string;
   date: Date;
+  isDeleted: boolean;
   paidBy: {
     id: string;
     name: string;
@@ -37,26 +48,44 @@ interface Expense {
   participantCount: number;
 }
 
-function ExpenseItem({ expense }: { expense: Expense }) {
+function ExpenseItem({
+  expense,
+  onOpenExpense,
+}: {
+  expense: Expense;
+  onOpenExpense: (expenseId: string) => void;
+}) {
   return (
-    <div className="flex items-center gap-4 py-4 border-b border-gray-100 last:border-b-0">
+    <button
+      type="button"
+      onClick={() => onOpenExpense(expense.id)}
+      className="w-full flex items-center gap-4 py-4 border-b border-gray-100 last:border-b-0 text-left"
+    >
       <div className="w-12 h-12 bg-[#f0f0ff] rounded-xl flex items-center justify-center flex-shrink-0">
         <span className="text-lg">💰</span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-[#1a1a3e] truncate">{expense.description}</p>
-        <p className="text-sm text-gray-500">
-          {expense.paidBy.name} pagó · {formatDate(expense.date)}
-          {expense.participantCount > 0 && ` · ${expense.participantCount} participantes`}
+        <p className="font-medium text-[#1a1a3e] truncate">
+          {expense.description}
         </p>
+        <p className="text-sm text-gray-500">
+          {formatDate(expense.date)}
+          {expense.participantCount > 0 &&
+            ` · ${expense.participantCount} participantes`}
+        </p>
+        <p className="text-sm text-gray-500">Pagó: {expense.paidBy.name}</p>
       </div>
       <div className="text-right flex-shrink-0">
-        <p className="font-semibold text-[#1a1a3e]">
+        <p
+          className={`font-semibold ${expense.isDeleted ? 'text-gray-400 line-through' : 'text-[#1a1a3e]'}`}
+        >
           ${formatCurrency(expense.amount)}
         </p>
-        <p className="text-xs text-gray-500">{expense.currency}</p>
+        <p className="text-xs text-gray-500">
+          {expense.isDeleted ? 'Eliminado' : expense.currency}
+        </p>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -94,7 +123,10 @@ function RouteComponent() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [memberToDelete, setMemberToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [memberToDelete, setMemberToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const { data, error, isLoading } = useQuery({
     queryKey: ['group', id],
@@ -168,7 +200,9 @@ function RouteComponent() {
             Acceso denegado
           </h2>
           <p className="text-gray-500 mb-6">
-            {error instanceof Error ? error.message : 'No tienes acceso a este grupo'}
+            {error instanceof Error
+              ? error.message
+              : 'No tienes acceso a este grupo'}
           </p>
           <button
             onClick={() => router.navigate({ to: '/' })}
@@ -218,6 +252,7 @@ function RouteComponent() {
                   router.navigate({
                     to: '/groups/$id/add-expense',
                     params: { id },
+                    search: {},
                   })
                 }
                 className="w-14 h-14 bg-[#4040b0] rounded-2xl flex items-center justify-center"
@@ -280,7 +315,16 @@ function RouteComponent() {
           <div className="px-4 py-2">
             <div className="bg-white rounded-2xl px-4">
               {data.expenses.map((expense) => (
-                <ExpenseItem key={expense.id} expense={expense} />
+                <ExpenseItem
+                  key={expense.id}
+                  expense={expense}
+                  onOpenExpense={(expenseId) =>
+                    router.navigate({
+                      to: '/groups/$id/expense/$expenseId',
+                      params: { id, expenseId },
+                    })
+                  }
+                />
               ))}
             </div>
           </div>
@@ -345,7 +389,8 @@ function RouteComponent() {
               </div>
 
               <p className="text-gray-500 mb-6">
-                Comparte este enlace para que otros se unan a <strong>{data?.name}</strong>
+                Comparte este enlace para que otros se unan a{' '}
+                <strong>{data?.name}</strong>
               </p>
 
               {/* Enlace */}
@@ -355,7 +400,9 @@ function RouteComponent() {
                     <Link className="w-5 h-5 text-[#6060c0]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-500 mb-1">Enlace de invitación</p>
+                    <p className="text-sm text-gray-500 mb-1">
+                      Enlace de invitación
+                    </p>
                     <p className="text-[#1a1a3e] font-medium truncate text-sm">
                       {inviteLink}
                     </p>
@@ -377,7 +424,9 @@ function RouteComponent() {
               <div className="bg-gray-50 rounded-2xl p-4 mb-6">
                 <div className="flex items-center gap-3">
                   <div className="flex-1">
-                    <p className="text-sm text-gray-500 mb-1">Código de invitación</p>
+                    <p className="text-sm text-gray-500 mb-1">
+                      Código de invitación
+                    </p>
                     <p className="text-2xl font-bold text-[#1a1a3e] tracking-wider">
                       {data?.inviteCode}
                     </p>
@@ -458,13 +507,20 @@ function RouteComponent() {
                           {member.isCurrentUser && ' (Tú)'}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {member.role === 'admin' ? 'Administrador' : 'Miembro'}
+                          {member.role === 'admin'
+                            ? 'Administrador'
+                            : 'Miembro'}
                           {!member.userId && ' · Sin cuenta'}
                         </p>
                       </div>
                       {data?.isOwner && !member.isCurrentUser && (
                         <button
-                          onClick={() => setMemberToDelete({ id: member.id, name: member.name })}
+                          onClick={() =>
+                            setMemberToDelete({
+                              id: member.id,
+                              name: member.name,
+                            })
+                          }
                           className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-100 text-gray-400 hover:text-red-500 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -479,7 +535,8 @@ function RouteComponent() {
               {memberToDelete && (
                 <div className="bg-red-50 rounded-xl p-4 mb-6">
                   <p className="text-[#1a1a3e] mb-3">
-                    ¿Eliminar a <strong>{memberToDelete.name}</strong> del grupo?
+                    ¿Eliminar a <strong>{memberToDelete.name}</strong> del
+                    grupo?
                   </p>
                   <div className="flex gap-2">
                     <button
@@ -493,7 +550,9 @@ function RouteComponent() {
                       disabled={removeMemberMutation.isPending}
                       className="flex-1 py-2 bg-red-500 text-white font-medium rounded-lg"
                     >
-                      {removeMemberMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+                      {removeMemberMutation.isPending
+                        ? 'Eliminando...'
+                        : 'Eliminar'}
                     </button>
                   </div>
                   {removeMemberMutation.data?.error && (

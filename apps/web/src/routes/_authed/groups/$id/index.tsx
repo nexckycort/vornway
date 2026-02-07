@@ -60,6 +60,7 @@ function ExpenseItem({
 }) {
   const SWIPE_WIDTH = 88;
   const SWIPE_THRESHOLD = 44;
+  const FULL_SWIPE_THRESHOLD = 78;
   const [translateX, setTranslateX] = useState(0);
   const [startX, setStartX] = useState<number | null>(null);
   const [startY, setStartY] = useState<number | null>(null);
@@ -95,9 +96,18 @@ function ExpenseItem({
 
   const handleTouchEnd = () => {
     if (!isDragging || expense.isDeleted) return;
-    setTranslateX((current) =>
-      current <= -SWIPE_THRESHOLD ? -SWIPE_WIDTH : 0,
-    );
+    const shouldTriggerDelete = translateX <= -FULL_SWIPE_THRESHOLD;
+    const shouldOpenActions = translateX <= -SWIPE_THRESHOLD;
+
+    if (shouldTriggerDelete) {
+      setTranslateX(0);
+      onDeleteExpense(expense.id);
+    } else if (shouldOpenActions) {
+      setTranslateX(-SWIPE_WIDTH);
+    } else {
+      setTranslateX(0);
+    }
+
     setIsDragging(false);
     setStartX(null);
     setStartY(null);

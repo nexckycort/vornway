@@ -1,5 +1,6 @@
 FROM oven/bun AS base
-WORKDIR /usr/src/app
+
+WORKDIR /app
 
 # ---------------- install deps ----------------
 FROM base AS install
@@ -30,15 +31,13 @@ RUN bun --filter @splitway/web db:generate
 RUN bun --filter @splitway/web build
 RUN bun --filter @splitway/web compile
 
-# ---------------- runtime ----------------
-FROM gcr.io/distroless/base-debian12
+#
+FROM gcr.io/distroless/base
 
 WORKDIR /app
 
-# Copy built output
-COPY --from=build /usr/src/app/apps/web/server server
-
-USER bun
-EXPOSE 3000
+COPY --from=build /app/apps/web/server server
 
 CMD ["./server"]
+
+EXPOSE 3000

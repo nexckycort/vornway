@@ -34,9 +34,11 @@ RUN bun --filter @splitway/web compile
 #
 FROM gcr.io/distroless/base
 
-WORKDIR /app
+WORKDIR /app/apps/web
 
 COPY --from=build /app/apps/web/server server
+COPY --from=build /app/apps/web/.output/public .output/public
+
 
 CMD ["./server"]
 

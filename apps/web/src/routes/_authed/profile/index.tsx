@@ -1,9 +1,11 @@
 'use client';
 
-import { createFileRoute } from '@tanstack/react-router';
-import { ChevronRight, Sun } from 'lucide-react';
+import { createFileRoute, useRouter } from '@tanstack/react-router';
+import { ChevronRight, LogOut, Sun } from 'lucide-react';
+import { useState } from 'react';
 import { BottomNav } from '~/components/bottom-nav';
 import { GradientLayout } from '~/components/gradient-layout';
+import { logoutFn } from '~/server/auth';
 
 export const Route = createFileRoute('/_authed/profile/')({
   component: RouteComponent,
@@ -11,6 +13,20 @@ export const Route = createFileRoute('/_authed/profile/')({
 
 function RouteComponent() {
   const { user } = Route.useRouteContext();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logoutFn();
+      router.navigate({ to: '/login', search: { redirect: '/' } });
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const userName = user?.name ?? 'Usuario';
   const userEmail = user?.email ?? 'Sin correo';
@@ -19,12 +35,10 @@ function RouteComponent() {
   return (
     <GradientLayout className="pb-20">
       <div className="min-h-screen">
-        {/* Header */}
         <div className="px-6 pt-6 pb-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-[#1a1a3e]">Mi perfil</h1>
         </div>
 
-        {/* Avatar and Name */}
         <div className="flex flex-col items-center py-6">
           <div className="w-24 h-24 bg-[#d8f4f4] rounded-full flex items-center justify-center mb-4">
             <span className="text-4xl font-semibold text-[#1a1a3e]">
@@ -35,7 +49,6 @@ function RouteComponent() {
           <p className="text-gray-500 mt-1">{userEmail}</p>
         </div>
 
-        {/* Personal Data Section */}
         <div className="px-6">
           <h3 className="text-sm font-semibold text-[#1a1a3e] mb-3">
             Mis datos personales
@@ -66,7 +79,6 @@ function RouteComponent() {
           </div>
         </div>
 
-        {/* Settings Section */}
         <div className="px-6 mt-6">
           <h3 className="text-sm font-semibold text-[#1a1a3e] mb-3">
             Ajustes y preferencias
@@ -132,6 +144,18 @@ function RouteComponent() {
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
           </div>
+        </div>
+
+        <div className="px-6 pb-6">
+          <button
+            type="button"
+            disabled={isLoggingOut}
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 p-4 bg-white rounded-2xl text-red-500 font-medium disabled:opacity-50"
+          >
+            <LogOut className="w-5 h-5" />
+            {isLoggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
+          </button>
         </div>
       </div>
 

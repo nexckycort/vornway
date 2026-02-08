@@ -1,4 +1,18 @@
 -- CreateTable
+CREATE TABLE "ActivityLog" (
+    "id" TEXT NOT NULL,
+    "groupId" TEXT NOT NULL,
+    "actorUserId" TEXT,
+    "actorName" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "targetName" TEXT,
+    "details" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ActivityLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "user" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -63,6 +77,7 @@ CREATE TABLE "Expense" (
     "paidById" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "amount" DOUBLE PRECISION NOT NULL,
+    "currency" TEXT NOT NULL,
     "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "notes" TEXT,
     "attachment" TEXT,
@@ -89,6 +104,8 @@ CREATE TABLE "group" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "description" TEXT,
     "ownerId" TEXT NOT NULL,
+    "inviteCode" TEXT NOT NULL,
+    "totals" JSONB NOT NULL DEFAULT '{}',
 
     CONSTRAINT "group_pkey" PRIMARY KEY ("id")
 );
@@ -117,6 +134,9 @@ CREATE TABLE "waitlists" (
 );
 
 -- CreateIndex
+CREATE INDEX "ActivityLog_groupId_createdAt_idx" ON "ActivityLog"("groupId", "createdAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
 
 -- CreateIndex
@@ -126,10 +146,16 @@ CREATE UNIQUE INDEX "session_token_key" ON "session"("token");
 CREATE UNIQUE INDEX "ExpenseParticipant_expenseId_memberId_key" ON "ExpenseParticipant"("expenseId", "memberId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "group_inviteCode_key" ON "group"("inviteCode");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "GroupMember_userId_groupId_key" ON "GroupMember"("userId", "groupId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "waitlists_email_key" ON "waitlists"("email");
+
+-- AddForeignKey
+ALTER TABLE "ActivityLog" ADD CONSTRAINT "ActivityLog_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "group"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;

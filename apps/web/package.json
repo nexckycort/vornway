@@ -12,8 +12,9 @@
     "clean": "rm -rf node_modules && rm -rf dist",
     "preview": "bun --bun vite preview",
     "db:generate": "dotenvx run -- prisma generate",
-    "db:migrate:dev": "prisma migrate dev --name init",
+    "db:migrate:dev": "dotenvx run -- prisma migrate dev --name init",
     "db:migrate": "dotenvx run -- prisma migrate dev",
+    "db:migrate:deploy": "dotenvx run -- prisma migrate deploy",
     "db:migrate:reset": "dotenvx run -- prisma migrate reset",
     "db:seed": "dotenvx run -- prisma db seed",
     "typecheck": "tsgo --noEmit"

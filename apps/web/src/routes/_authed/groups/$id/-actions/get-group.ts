@@ -31,6 +31,13 @@ interface Member {
   isCurrentUser: boolean;
 }
 
+interface MemberBalance {
+  memberId: string;
+  name: string;
+  isCurrentUser: boolean;
+  balances: Record<string, number>; // { "COP": -50000, "USD": 10 } positivo = le deben, negativo = debe
+}
+
 interface GetGroupResponse {
   name: string;
   participantCount: number;
@@ -38,6 +45,7 @@ interface GetGroupResponse {
   expenses: Expense[];
   inviteCode: string | null;
   members: Member[];
+  memberBalances: MemberBalance[];
   isOwner: boolean;
 }
 
@@ -79,6 +87,12 @@ export const getGroup = createServerFn({ method: 'POST' })
                 select: {
                   id: true,
                   name: true,
+                },
+              },
+              participants: {
+                select: {
+                  memberId: true,
+                  share: true,
                 },
               },
               _count: {
@@ -128,6 +142,48 @@ export const getGroup = createServerFn({ method: 'POST' })
         isCurrentUser: member.userId === userId,
       }));
 
+      // Calcular balances por miembro y moneda
+      // Positivo = le deben (pagó más de lo que le corresponde)
+      // Negativo = debe (le corresponde pagar más de lo que pagó)
+      const balanceMap = new Map<string, Record<string, number>>();
+
+      for (const member of groupRecord.GroupMember) {
+        balanceMap.set(member.id, {});
+      }
+
+      for (const expense of groupRecord.Expense) {
+        const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
+        if (isDeleted) continue;
+
+        const currency = expense.currency;
+        const payerId = expense.paidBy.id;
+
+        // El pagador recibe crédito por el monto total
+        const payerBalances = balanceMap.get(payerId);
+        if (payerBalances) {
+          payerBalances[currency] =
+            (payerBalances[currency] ?? 0) + expense.amount;
+        }
+
+        // Cada participante debe su parte
+        for (const participant of expense.participants) {
+          const memberBalances = balanceMap.get(participant.memberId);
+          if (memberBalances) {
+            memberBalances[currency] =
+              (memberBalances[currency] ?? 0) - participant.share;
+          }
+        }
+      }
+
+      const memberBalances: MemberBalance[] = groupRecord.GroupMember.map(
+        (member) => ({
+          memberId: member.id,
+          name: member.name,
+          isCurrentUser: member.userId === userId,
+          balances: balanceMap.get(member.id) ?? {},
+        }),
+      );
+
       return {
         name: groupRecord.name,
         participantCount: groupRecord.GroupMember.length,
@@ -135,6 +191,7 @@ export const getGroup = createServerFn({ method: 'POST' })
         expenses,
         inviteCode: groupRecord.inviteCode,
         members,
+        memberBalances,
         isOwner: groupRecord.ownerId === userId,
       };
     } catch (error) {

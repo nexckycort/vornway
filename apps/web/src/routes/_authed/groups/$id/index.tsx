@@ -489,13 +489,89 @@ function RouteComponent() {
         ))}
 
       {activeTab === 'cuentas' && (
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-20">
-          <h3 className="text-xl font-semibold text-[#1a1a3e] mb-2">
-            Próximamente
-          </h3>
-          <p className="text-gray-500 text-center">
-            Aquí verás el balance de cuentas entre participantes
-          </p>
+        <div className="px-4 py-2">
+          {data?.memberBalances && data.memberBalances.length > 0 ? (
+            <div className="bg-white rounded-2xl px-4 py-2">
+              {data.memberBalances.map((member) => {
+                const entries = Object.entries(member.balances).filter(
+                  ([, amount]) => Math.abs(amount) >= 1,
+                );
+
+                return (
+                  <div
+                    key={member.memberId}
+                    className="flex items-center gap-4 py-4 border-b border-gray-100 last:border-b-0"
+                  >
+                    <div className="w-12 h-12 bg-[#f0f0ff] rounded-xl flex items-center justify-center flex-shrink-0">
+                      <span className="text-lg font-semibold text-[#4040b0]">
+                        {member.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-[#1a1a3e] truncate">
+                        {member.name}
+                        {member.isCurrentUser && (
+                          <span className="text-xs text-gray-400 ml-1">
+                            (tú)
+                          </span>
+                        )}
+                      </p>
+                      {entries.length === 0 ? (
+                        <p className="text-sm text-gray-400">Sin movimientos</p>
+                      ) : (
+                        entries.map(([currency, amount]) => (
+                          <p
+                            key={currency}
+                            className={`text-sm ${
+                              amount > 0
+                                ? 'text-green-600'
+                                : amount < 0
+                                  ? 'text-red-500'
+                                  : 'text-gray-400'
+                            }`}
+                          >
+                            {amount > 0
+                              ? `Le deben $${formatCurrency(amount)} ${currency}`
+                              : amount < 0
+                                ? `Debe $${formatCurrency(Math.abs(amount))} ${currency}`
+                                : 'Está al día'}
+                          </p>
+                        ))
+                      )}
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      {entries.map(([currency, amount]) => (
+                        <p
+                          key={currency}
+                          className={`font-semibold ${
+                            amount > 0
+                              ? 'text-green-600'
+                              : amount < 0
+                                ? 'text-red-500'
+                                : 'text-gray-400'
+                          }`}
+                        >
+                          {amount > 0 ? '+' : ''}${formatCurrency(amount)}{' '}
+                          <span className="text-xs font-normal">
+                            {currency}
+                          </span>
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center px-6 py-20">
+              <h3 className="text-xl font-semibold text-[#1a1a3e] mb-2">
+                Sin cuentas aún
+              </h3>
+              <p className="text-gray-500 text-center">
+                Agrega gastos para ver el balance de cada participante
+              </p>
+            </div>
+          )}
         </div>
       )}
 

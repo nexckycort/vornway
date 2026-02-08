@@ -4,8 +4,9 @@
   "type": "module",
   "scripts": {
     "postinstall": "bun db:generate",
+    "start": "bun ./.output/server/index.mjs",
     "dev": "vite dev --port 3000",
-    "build": "vite build",
+    "build": "NODE_ENV=production vite build",
     "check": "biome check --write",
     "clean": "rm -rf node_modules && rm -rf dist",
     "preview": "vite preview",

@@ -75,6 +75,25 @@ function RouteComponent() {
     };
   };
 
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('es-CO', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+
+  const getActivityAmount = (details: unknown) => {
+    if (!details || typeof details !== 'object') return null;
+
+    const amount = Reflect.get(details, 'amount');
+    const currency = Reflect.get(details, 'currency');
+
+    if (typeof amount !== 'number' || typeof currency !== 'string') {
+      return null;
+    }
+
+    return { amount, currency };
+  };
+
   const activities = data?.activities ?? [];
 
   return (
@@ -105,6 +124,7 @@ function RouteComponent() {
             {activities.map((activity) => {
               const config = getActivityConfig(activity.action);
               const Icon = config.icon;
+              const activityAmount = getActivityAmount(activity.details);
 
               return (
                 <article
@@ -137,6 +157,12 @@ function RouteComponent() {
                         {activity.group.name} ·{' '}
                         {formatDateTime(activity.createdAt)}
                       </p>
+                      {activityAmount && (
+                        <p className="text-sm font-semibold text-[#1a1a3e] mt-1">
+                          Valor: ${formatCurrency(activityAmount.amount)}{' '}
+                          {activityAmount.currency}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </article>

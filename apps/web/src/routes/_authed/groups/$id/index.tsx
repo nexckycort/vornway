@@ -7,7 +7,9 @@ import {
   Copy,
   Link,
   MoreHorizontal,
+  Pencil,
   Plus,
+  Share2,
   Trash2,
   UserPlus,
   X,
@@ -225,6 +227,7 @@ function RouteComponent() {
   } | null>(null);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [showDeleteExpenseModal, setShowDeleteExpenseModal] = useState(false);
+  const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false);
 
   const { data, error, isLoading } = useQuery({
     queryKey: ['group', id],
@@ -393,12 +396,17 @@ function RouteComponent() {
             </div>
             <div className="flex flex-col items-center gap-2">
               <button
-                onClick={() => setShowInviteModal(true)}
+                onClick={() =>
+                  router.navigate({
+                    to: '/groups/$id/participants',
+                    params: { id },
+                  })
+                }
                 className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center"
               >
                 <UserPlus className="w-6 h-6 text-[#1a1a3e]" />
               </button>
-              <span className="text-sm text-[#1a1a3e]">Invitar</span>
+              <span className="text-sm text-[#1a1a3e]">Participantes</span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <button
@@ -663,119 +671,109 @@ function RouteComponent() {
             className="fixed inset-0 bg-black/30 z-40 cursor-default"
             onClick={() => {
               setShowSettingsModal(false);
-              setMemberToDelete(null);
+              setShowDeleteGroupConfirm(false);
             }}
             aria-label="Cerrar modal"
           />
 
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto">
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
 
-            <div className="px-6 pb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-[#1a1a3e]">
-                  Ajustes del grupo
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowSettingsModal(false);
-                    setMemberToDelete(null);
-                  }}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
+            <div className="pb-8">
+              {!showDeleteGroupConfirm ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSettingsModal(false);
+                      // TODO: navigate to edit group
+                    }}
+                    className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <Pencil className="w-5 h-5 text-[#1a1a3e]" />
+                    <span className="text-[#1a1a3e] font-medium">
+                      Editar grupo
+                    </span>
+                  </button>
 
-              {/* Lista de participantes */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-500 mb-3">
-                  Participantes ({data?.members?.length ?? 0})
-                </h3>
-                <div className="space-y-2">
-                  {data?.members?.map((member) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
-                    >
-                      <div className="w-10 h-10 bg-[#e8e4f8] rounded-full flex items-center justify-center">
-                        <span className="text-[#6060c0] font-medium">
-                          {member.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-[#1a1a3e] truncate">
-                          {member.name}
-                          {member.isCurrentUser && ' (Tú)'}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {member.role === 'admin'
-                            ? 'Administrador'
-                            : 'Miembro'}
-                          {!member.userId && ' · Sin cuenta'}
-                        </p>
-                      </div>
-                      {data?.isOwner && !member.isCurrentUser && (
-                        <button
-                          onClick={() =>
-                            setMemberToDelete({
-                              id: member.id,
-                              name: member.name,
-                            })
-                          }
-                          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-100 text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSettingsModal(false);
+                      router.navigate({
+                        to: '/groups/$id/participants',
+                        params: { id },
+                      });
+                    }}
+                    className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <UserPlus className="w-5 h-5 text-[#1a1a3e]" />
+                    <span className="text-[#1a1a3e] font-medium">
+                      Editar o agregar participantes
+                    </span>
+                  </button>
 
-              {/* Confirmación de eliminación */}
-              {memberToDelete && (
-                <div className="bg-red-50 rounded-xl p-4 mb-6">
-                  <p className="text-[#1a1a3e] mb-3">
-                    ¿Eliminar a <strong>{memberToDelete.name}</strong> del
-                    grupo?
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSettingsModal(false);
+                      setShowInviteModal(true);
+                    }}
+                    className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <Share2 className="w-5 h-5 text-[#1a1a3e]" />
+                    <span className="text-[#1a1a3e] font-medium">
+                      Compartir enlace de invitación
+                    </span>
+                  </button>
+
+                  <div className="mx-6 border-t border-gray-200" />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteGroupConfirm(true)}
+                    className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="w-5 h-5 text-red-500" />
+                    <span className="text-red-500 font-medium">
+                      Eliminar grupo
+                    </span>
+                  </button>
+                </>
+              ) : (
+                <div className="px-6">
+                  <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
+                    Eliminar grupo
+                  </h2>
+                  <p className="text-gray-600 mb-6">
+                    ¿Estás seguro de que deseas eliminar{' '}
+                    <strong>{data?.name}</strong>? Esta acción no se puede
+                    deshacer.
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <button
-                      onClick={() => setMemberToDelete(null)}
-                      className="flex-1 py-2 text-[#1a1a3e] font-medium rounded-lg"
+                      type="button"
+                      onClick={() => setShowDeleteGroupConfirm(false)}
+                      className="flex-1 py-3 text-[#1a1a3e] font-medium"
                     >
                       Cancelar
                     </button>
                     <button
-                      onClick={handleRemoveMember}
-                      disabled={removeMemberMutation.isPending}
-                      className="flex-1 py-2 bg-red-500 text-white font-medium rounded-lg"
+                      type="button"
+                      onClick={() => {
+                        // TODO: implement delete group
+                        setShowSettingsModal(false);
+                        setShowDeleteGroupConfirm(false);
+                      }}
+                      className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl"
                     >
-                      {removeMemberMutation.isPending
-                        ? 'Eliminando...'
-                        : 'Eliminar'}
+                      Eliminar
                     </button>
                   </div>
-                  {removeMemberMutation.data?.error && (
-                    <p className="text-red-500 text-sm mt-2">
-                      {removeMemberMutation.data.error}
-                    </p>
-                  )}
                 </div>
               )}
-
-              <button
-                onClick={() => {
-                  setShowSettingsModal(false);
-                  setMemberToDelete(null);
-                }}
-                className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
-              >
-                Cerrar
-              </button>
             </div>
           </div>
         </>

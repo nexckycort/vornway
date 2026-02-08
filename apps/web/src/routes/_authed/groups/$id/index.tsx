@@ -223,6 +223,8 @@ function RouteComponent() {
     id: string;
     name: string;
   } | null>(null);
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+  const [showDeleteExpenseModal, setShowDeleteExpenseModal] = useState(false);
 
   const { data, error, isLoading } = useQuery({
     queryKey: ['group', id],
@@ -244,6 +246,8 @@ function RouteComponent() {
     onSuccess: (result) => {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['group', id] });
+        setShowDeleteExpenseModal(false);
+        setExpenseToDelete(null);
       }
     },
   });
@@ -251,13 +255,20 @@ function RouteComponent() {
   const handleDeleteExpense = (expenseId: string) => {
     if (deleteExpenseMutation.isPending) return;
 
-    const confirmed = window.confirm('¿Deseas borrar este gasto?');
-    if (!confirmed) return;
+    const expense =
+      data?.expenses.find((item) => item.id === expenseId) ?? null;
+    if (!expense || expense.isDeleted) return;
 
+    setExpenseToDelete(expense);
+    setShowDeleteExpenseModal(true);
+  };
+
+  const handleConfirmDeleteExpense = () => {
+    if (!expenseToDelete) return;
     deleteExpenseMutation.mutate({
       data: {
         groupId: id,
-        expenseId,
+        expenseId: expenseToDelete.id,
       },
     });
   };
@@ -478,6 +489,79 @@ function RouteComponent() {
             Aquí verás el balance de cuentas entre participantes
           </p>
         </div>
+      )}
+
+      {showDeleteExpenseModal && expenseToDelete && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/30 z-40 cursor-default"
+            onClick={() => {
+              setShowDeleteExpenseModal(false);
+              setExpenseToDelete(null);
+            }}
+            aria-label="Cerrar modal"
+          />
+
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+            </div>
+
+            <div className="px-6 pb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-[#1a1a3e]">
+                  Eliminar gasto
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteExpenseModal(false);
+                    setExpenseToDelete(null);
+                  }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <p className="text-gray-600 mb-6">
+                Se eliminará <strong>{expenseToDelete.description}</strong> por
+                ${formatCurrency(expenseToDelete.amount)}{' '}
+                {expenseToDelete.currency}.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteExpenseModal(false);
+                    setExpenseToDelete(null);
+                  }}
+                  className="flex-1 py-3 text-[#1a1a3e] font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteExpense}
+                  disabled={deleteExpenseMutation.isPending}
+                  className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl disabled:opacity-60"
+                >
+                  {deleteExpenseMutation.isPending
+                    ? 'Eliminando...'
+                    : 'Eliminar'}
+                </button>
+              </div>
+
+              {deleteExpenseMutation.data?.error && (
+                <p className="text-red-500 text-sm mt-3">
+                  {deleteExpenseMutation.data.error}
+                </p>
+              )}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Modal de invitación */}

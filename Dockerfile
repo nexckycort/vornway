@@ -38,6 +38,7 @@ WORKDIR /app/apps/web
 
 COPY --from=build /app/apps/web/server server
 COPY --from=build /app/apps/web/.output/public .output/public
+COPY --from=build /app/apps/web/.output/public ../public
 
 
 CMD ["./server"]

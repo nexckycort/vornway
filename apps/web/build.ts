@@ -1,6 +1,4 @@
-import { $, Glob } from 'bun';
-
-await $`bun run build`;
+import { Glob } from 'bun';
 
 // Embed all files from .output/public into the binary
 const glob = new Glob('./.output/public/**/*');

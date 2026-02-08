@@ -26,6 +26,7 @@ COPY . .
 ENV DATABASE_URL=dummy
 
 RUN bun --filter @splitway/web db:generate
+RUN bun --filter @splitway/web build
 RUN bun --filter @splitway/web compile
 
 # ---------------- runtime ----------------

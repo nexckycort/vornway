@@ -23,6 +23,9 @@ COPY --from=install /temp/dev/packages/ui/node_modules packages/ui/node_modules
 # Copy full source
 COPY . .
 
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+
 RUN bun --filter @splitway/web db:generate
 RUN bun --filter @splitway/web build
 RUN bun --filter @splitway/web compile

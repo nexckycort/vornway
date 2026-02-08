@@ -26,16 +26,17 @@ COPY . .
 ENV DATABASE_URL=dummy
 
 RUN bun --filter @splitway/web db:generate
-RUN bun --filter @splitway/web build
+RUN bun --filter @splitway/web compile
 
 # ---------------- runtime ----------------
-FROM base AS release
-ENV NODE_ENV=production
+FROM gcr.io/distroless/base-debian12
+
+WORKDIR /app
 
 # Copy built output
-COPY --from=prerelease /usr/src/app/apps/web/.output dist
+COPY --from=prerelease /usr/src/app/apps/web/server server
 
 USER bun
 EXPOSE 3000
 
-ENTRYPOINT [ "bun", "dist/server/index.mjs" ]
+CMD ["./server"]

@@ -13,7 +13,7 @@ COPY packages/ui/package.json /temp/dev/packages/ui/package.json
 RUN cd /temp/dev && bun install --ignore-scripts
 
 # ---------------- build ----------------
-FROM base AS prerelease
+FROM base AS build
 
 # Copy installed node_modules (root + hoisted)
 COPY --from=install /temp/dev/node_modules node_modules
@@ -22,8 +22,6 @@ COPY --from=install /temp/dev/packages/ui/node_modules packages/ui/node_modules
 
 # Copy full source
 COPY . .
-
-ENV DATABASE_URL=dummy
 
 RUN bun --filter @splitway/web db:generate
 RUN bun --filter @splitway/web build
@@ -35,7 +33,7 @@ FROM gcr.io/distroless/base-debian12
 WORKDIR /app
 
 # Copy built output
-COPY --from=prerelease /usr/src/app/apps/web/server server
+COPY --from=build /usr/src/app/apps/web/server server
 
 USER bun
 EXPOSE 3000

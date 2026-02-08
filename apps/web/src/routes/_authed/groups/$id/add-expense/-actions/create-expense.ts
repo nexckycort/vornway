@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/correctness/useHookAtTopLevel: useAppSession is a server helper */
 import { createServerFn } from '@tanstack/react-start';
 import * as z from 'zod';
 
@@ -97,6 +98,23 @@ export const createExpense = createServerFn({ method: 'POST' })
               })),
             },
           }),
+        },
+      });
+
+      await db.activityLog.create({
+        data: {
+          groupId: data.groupId,
+          actorUserId: userId,
+          actorName: userMembership.name,
+          action: 'expense.created',
+          targetName: data.description,
+          details: {
+            expenseId: expense.id,
+            amount: data.amount,
+            currency: data.currency,
+            paidById: data.paidById,
+            participants: data.participantIds.length,
+          },
         },
       });
 

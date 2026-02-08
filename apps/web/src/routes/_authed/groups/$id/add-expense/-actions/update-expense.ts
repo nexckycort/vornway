@@ -167,12 +167,33 @@ export const updateExpense = createServerFn({ method: 'POST' })
           },
         });
 
-        return existingExpense.id;
+        await tx.activityLog.create({
+          data: {
+            groupId: data.groupId,
+            actorUserId: userId,
+            actorName: membership.name,
+            action: 'expense.updated',
+            targetName: data.description,
+            details: {
+              expenseId: existingExpense.id,
+              amount: data.amount,
+              currency: data.currency,
+              previousAmount: existingExpense.amount,
+              previousCurrency: existingExpense.currency,
+            },
+          },
+        });
+
+        return {
+          expenseId: existingExpense.id,
+          previousAmount: existingExpense.amount,
+          previousCurrency: existingExpense.currency,
+        };
       });
 
       return {
         success: true,
-        expenseId: result,
+        expenseId: result.expenseId,
       };
     } catch (error) {
       console.error('Error updating expense:', error);

@@ -1,12 +1,13 @@
 /** biome-ignore-all lint/a11y/noLabelWithoutControl: <explanation> */
 /** biome-ignore-all lint/a11y/useButtonType: <explanation> */
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { Share2, UserPlus, X } from 'lucide-react';
 import { useState } from 'react';
 import { StepLayout } from '~/components/layouts/step-layout';
 import { createGroup } from './-actions/create-group';
+import { getKnownUsers } from './-actions/get-known-users';
 
 export const Route = createFileRoute('/_authed/groups/new/participants/')({
   validateSearch: (search: Record<string, string>) => {
@@ -24,10 +25,17 @@ function AddParticipants() {
 
   const router = useRouter();
   const [participantName, setParticipantName] = useState('');
-  const [participantNames, setParticipantNames] = useState<string[]>([]);
+  const [participants, setParticipants] = useState<
+    Array<{ name: string; userId?: string | null }>
+  >([]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [createdGroupId, setCreatedGroupId] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
+
+  const { data: knownUsersData } = useQuery({
+    queryKey: ['known-users'],
+    queryFn: () => getKnownUsers(),
+  });
 
   const { mutateAsync, isPending: isLoading } = useMutation({
     mutationFn: createGroup,
@@ -42,7 +50,7 @@ function AddParticipants() {
           name,
           currency,
           category,
-          participants: participantNames,
+          participants,
         },
       });
 
@@ -59,14 +67,40 @@ function AddParticipants() {
   };
 
   const addParticipant = () => {
-    if (participantName.trim()) {
-      setParticipantNames([...participantNames, participantName.trim()]);
+    const trimmedName = participantName.trim();
+    if (!trimmedName) return;
+
+    const alreadyExists = participants.some(
+      (participant) =>
+        participant.name.toLocaleLowerCase('es-CO') ===
+        trimmedName.toLocaleLowerCase('es-CO'),
+    );
+
+    if (alreadyExists) {
       setParticipantName('');
+      return;
     }
+
+    setParticipants([...participants, { name: trimmedName }]);
+    setParticipantName('');
+  };
+
+  const addKnownUserParticipant = (user: { id: string; name: string }) => {
+    const alreadyExists = participants.some(
+      (participant) =>
+        participant.userId === user.id ||
+        participant.name.toLocaleLowerCase('es-CO') ===
+          user.name.toLocaleLowerCase('es-CO'),
+    );
+
+    if (alreadyExists) return;
+
+    setParticipants([...participants, { name: user.name, userId: user.id }]);
+    setParticipantName('');
   };
 
   const removeParticipant = (index: number) => {
-    setParticipantNames(participantNames.filter((_, i) => i !== index));
+    setParticipants(participants.filter((_, i) => i !== index));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -78,6 +112,24 @@ function AddParticipants() {
   const getInitial = (name: string) => {
     return name.charAt(0).toUpperCase();
   };
+
+  const knownUsers = knownUsersData?.users ?? [];
+  const filteredKnownUsers = knownUsers.filter((user) => {
+    const alreadySelected = participants.some(
+      (participant) =>
+        participant.userId === user.id ||
+        participant.name.toLocaleLowerCase('es-CO') ===
+          user.name.toLocaleLowerCase('es-CO'),
+    );
+
+    if (alreadySelected) return false;
+
+    if (!participantName.trim()) return true;
+
+    return user.name
+      .toLocaleLowerCase('es-CO')
+      .includes(participantName.trim().toLocaleLowerCase('es-CO'));
+  });
 
   return (
     <StepLayout
@@ -129,9 +181,27 @@ function AddParticipants() {
           </button>
         </div>
 
+        {filteredKnownUsers.length > 0 && (
+          <div className="mb-6">
+            <p className="text-sm text-gray-500 mb-3">Contactos sugeridos</p>
+            <div className="flex flex-wrap gap-2">
+              {filteredKnownUsers.map((user) => (
+                <button
+                  type="button"
+                  key={user.id}
+                  onClick={() => addKnownUserParticipant(user)}
+                  className="px-3 py-2 bg-[#eef0ff] text-[#4040b0] rounded-xl text-sm font-medium"
+                >
+                  {user.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Participants list */}
         <div className="space-y-3">
-          {participantNames.map((participant, index) => (
+          {participants.map((participant, index) => (
             <div
               key={index}
               className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100"
@@ -139,11 +209,11 @@ function AddParticipants() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-[#e0f7f5] rounded-full flex items-center justify-center">
                   <span className="text-[#22d3c5] font-semibold">
-                    {getInitial(participant)}
+                    {getInitial(participant.name)}
                   </span>
                 </div>
                 <span className="font-medium text-[#1a1a3e]">
-                  {participant}
+                  {participant.name}
                 </span>
               </div>
               <button
@@ -173,7 +243,7 @@ function AddParticipants() {
             <div className="px-6 pb-8">
               {/* Title */}
               <h2 className="text-2xl font-bold text-[#1a1a3e] text-center mb-6">
-                {'¡' + name + ', creado!'}
+                {`¡${name}, creado!`}
               </h2>
 
               {/* Image with decorative shape */}

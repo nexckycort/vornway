@@ -11,6 +11,7 @@ model Group {
   owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   GroupMember GroupMember[]
   Expense     Expense[]
+  ActivityLog ActivityLog[]
 
   @@map("group")
 }

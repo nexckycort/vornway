@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/correctness/useHookAtTopLevel: useAppSession is a server helper */
 import { createServerFn } from '@tanstack/react-start';
 import * as z from 'zod';
 
@@ -51,7 +52,7 @@ export const removeMember = createServerFn({ method: 'POST' })
       // Verificar que el miembro existe y pertenece al grupo
       const member = await db.groupMember.findUnique({
         where: { id: data.memberId },
-        select: { groupId: true, userId: true },
+        select: { groupId: true, userId: true, name: true },
       });
 
       if (!member || member.groupId !== data.groupId) {
@@ -72,6 +73,30 @@ export const removeMember = createServerFn({ method: 'POST' })
       // Eliminar el miembro
       await db.groupMember.delete({
         where: { id: data.memberId },
+      });
+
+      const actorMember = await db.groupMember.findFirst({
+        where: {
+          groupId: data.groupId,
+          userId,
+        },
+        select: {
+          name: true,
+        },
+      });
+
+      await db.activityLog.create({
+        data: {
+          groupId: data.groupId,
+          actorUserId: userId,
+          actorName: actorMember?.name ?? session.data.name ?? 'Usuario',
+          action: 'member.removed',
+          targetName: member.name,
+          details: {
+            memberId: data.memberId,
+            removedUserId: member.userId,
+          },
+        },
       });
 
       return {

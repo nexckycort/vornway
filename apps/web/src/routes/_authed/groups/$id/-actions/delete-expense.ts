@@ -43,7 +43,7 @@ export const deleteExpense = createServerFn({ method: 'POST' })
         };
       }
 
-      await db.$transaction(async (tx) => {
+      const deletedExpenseLog = await db.$transaction(async (tx) => {
         const expense = await tx.expense.findFirst({
           where: {
             id: data.expenseId,
@@ -117,6 +117,28 @@ export const deleteExpense = createServerFn({ method: 'POST' })
             totals: nextTotals,
           },
         });
+
+        await tx.activityLog.create({
+          data: {
+            groupId: data.groupId,
+            actorUserId: userId,
+            actorName: membership.name,
+            action: 'expense.deleted',
+            targetName: expense.description,
+            details: {
+              expenseId: expense.id,
+              amount: expense.amount,
+              currency: expense.currency,
+            },
+          },
+        });
+
+        return {
+          expenseId: expense.id,
+          description: expense.description,
+          amount: expense.amount,
+          currency: expense.currency,
+        };
       });
 
       return {

@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/correctness/useHookAtTopLevel: useAppSession is a server helper */
 import { createServerFn } from '@tanstack/react-start';
 
 import { db } from '~/infrastructure/database/connection';
@@ -7,7 +8,10 @@ interface CreateGroupInput {
   name: string;
   currency: string;
   category: string;
-  participants: string[];
+  participants: Array<{
+    name: string;
+    userId?: string | null;
+  }>;
 }
 
 interface CreateGroupResponse {
@@ -66,14 +70,31 @@ export const createGroup = createServerFn({ method: 'POST' })
 
       if (data.participants.length > 0) {
         await db.groupMember.createMany({
-          data: data.participants.map((participantName) => ({
+          data: data.participants.map((participant) => ({
             groupId: groupId,
-            name: participantName,
+            userId: participant.userId ?? null,
+            name: participant.name,
             role: 'member',
             joinedAt: now,
           })),
         });
       }
+
+      await db.activityLog.create({
+        data: {
+          groupId,
+          actorUserId: userId,
+          actorName: owner?.name ?? session.data.name ?? 'Usuario',
+          action: 'group.created',
+          targetName: data.name,
+          details: {
+            currency: data.currency,
+            category: data.category,
+            participantCount: data.participants.length + 1,
+          },
+          createdAt: now,
+        },
+      });
 
       return {
         success: true,

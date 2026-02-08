@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { findGroupByInvite } from '~/routes/_authed/(home)/-actions/find-group-by-invite';
 import { joinGroup } from '~/routes/_authed/(home)/-actions/join-group';
 
-export const Route = createFileRoute('/_authed/join/$invite-code')({
+export const Route = createFileRoute('/_authed/join/$inviteCode')({
   component: RouteComponent,
 });
 
@@ -23,14 +23,18 @@ interface FoundGroup {
 }
 
 function RouteComponent() {
-  const { 'invite-code': inviteCode } = Route.useParams();
+  const { inviteCode } = Route.useParams();
   const { user } = Route.useRouteContext();
   const router = useRouter();
 
   const [foundGroup, setFoundGroup] = useState<FoundGroup | null>(null);
-  const [unregisteredMembers, setUnregisteredMembers] = useState<UnregisteredMember[]>([]);
+  const [unregisteredMembers, setUnregisteredMembers] = useState<
+    UnregisteredMember[]
+  >([]);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
-  const [step, setStep] = useState<'loading' | 'select' | 'confirm' | 'success' | 'error' | 'already-member'>('loading');
+  const [step, setStep] = useState<
+    'loading' | 'select' | 'confirm' | 'success' | 'error' | 'already-member'
+  >('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const findGroupMutation = useMutation({
@@ -113,9 +117,7 @@ function RouteComponent() {
             <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
               Buscando grupo...
             </h2>
-            <p className="text-gray-500">
-              Verificando el código de invitación
-            </p>
+            <p className="text-gray-500">Verificando el código de invitación</p>
           </div>
         )}
 
@@ -128,9 +130,7 @@ function RouteComponent() {
             <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
               Enlace inválido
             </h2>
-            <p className="text-gray-500 mb-6">
-              {errorMessage}
-            </p>
+            <p className="text-gray-500 mb-6">{errorMessage}</p>
             <button
               type="button"
               onClick={goToHome}
@@ -230,7 +230,9 @@ function RouteComponent() {
             </div>
 
             {errorMessage && (
-              <p className="text-red-500 text-sm text-center mb-4">{errorMessage}</p>
+              <p className="text-red-500 text-sm text-center mb-4">
+                {errorMessage}
+              </p>
             )}
 
             <button
@@ -272,7 +274,9 @@ function RouteComponent() {
                 disabled={joinGroupMutation.isPending}
                 className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl disabled:opacity-50"
               >
-                {joinGroupMutation.isPending ? 'Uniéndose...' : 'Unirme al grupo'}
+                {joinGroupMutation.isPending
+                  ? 'Uniéndose...'
+                  : 'Unirme al grupo'}
               </button>
               <button
                 type="button"

@@ -19,7 +19,7 @@ import { Route as AuthedActivityIndexRouteImport } from './routes/_authed/activi
 import { Route as AuthedhomeIndexRouteImport } from './routes/_authed/(home)/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as PublicLoginOtpRouteImport } from './routes/_public/login/otp'
-import { Route as AuthedJoinInviteCodeRouteImport } from './routes/_authed/join/$invite-code'
+import { Route as AuthedJoinInviteCodeRouteImport } from './routes/_authed/join/$inviteCode'
 import { Route as AuthedGroupsNewIndexRouteImport } from './routes/_authed/groups/new/index'
 import { Route as AuthedGroupsIdIndexRouteImport } from './routes/_authed/groups/$id/index'
 import { Route as AuthedGroupsNewParticipantsIndexRouteImport } from './routes/_authed/groups/new/participants/index'
@@ -75,8 +75,8 @@ const PublicLoginOtpRoute = PublicLoginOtpRouteImport.update({
   getParentRoute: () => PublicRoute,
 } as any)
 const AuthedJoinInviteCodeRoute = AuthedJoinInviteCodeRouteImport.update({
-  id: '/join/$invite-code',
-  path: '/join/$invite-code',
+  id: '/join/$inviteCode',
+  path: '/join/$inviteCode',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedGroupsNewIndexRoute = AuthedGroupsNewIndexRouteImport.update({
@@ -110,7 +110,7 @@ const AuthedGroupsIdExpenseExpenseIdIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedhomeIndexRoute
-  '/join/$invite-code': typeof AuthedJoinInviteCodeRoute
+  '/join/$inviteCode': typeof AuthedJoinInviteCodeRoute
   '/login/otp': typeof PublicLoginOtpRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/activity/': typeof AuthedActivityIndexRoute
@@ -126,7 +126,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AuthedhomeIndexRoute
-  '/join/$invite-code': typeof AuthedJoinInviteCodeRoute
+  '/join/$inviteCode': typeof AuthedJoinInviteCodeRoute
   '/login/otp': typeof PublicLoginOtpRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/activity': typeof AuthedActivityIndexRoute
@@ -144,7 +144,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
-  '/_authed/join/$invite-code': typeof AuthedJoinInviteCodeRoute
+  '/_authed/join/$inviteCode': typeof AuthedJoinInviteCodeRoute
   '/_public/login/otp': typeof PublicLoginOtpRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authed/(home)/': typeof AuthedhomeIndexRoute
@@ -163,7 +163,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/join/$invite-code'
+    | '/join/$inviteCode'
     | '/login/otp'
     | '/api/auth/$'
     | '/activity/'
@@ -179,7 +179,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/join/$invite-code'
+    | '/join/$inviteCode'
     | '/login/otp'
     | '/api/auth/$'
     | '/activity'
@@ -196,7 +196,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/_public'
-    | '/_authed/join/$invite-code'
+    | '/_authed/join/$inviteCode'
     | '/_public/login/otp'
     | '/api/auth/$'
     | '/_authed/(home)/'
@@ -291,10 +291,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicLoginOtpRouteImport
       parentRoute: typeof PublicRoute
     }
-    '/_authed/join/$invite-code': {
-      id: '/_authed/join/$invite-code'
-      path: '/join/$invite-code'
-      fullPath: '/join/$invite-code'
+    '/_authed/join/$inviteCode': {
+      id: '/_authed/join/$inviteCode'
+      path: '/join/$inviteCode'
+      fullPath: '/join/$inviteCode'
       preLoaderRoute: typeof AuthedJoinInviteCodeRouteImport
       parentRoute: typeof AuthedRoute
     }

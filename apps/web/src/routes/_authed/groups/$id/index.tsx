@@ -15,7 +15,7 @@ import {
   UserPlus,
   X,
 } from 'lucide-react';
-import { type MouseEvent, type TouchEvent, useMemo, useState } from 'react';
+import { type MouseEvent, type TouchEvent, useState } from 'react';
 import { deleteExpense } from './-actions/delete-expense';
 import { getGroup } from './-actions/get-group';
 
@@ -294,7 +294,6 @@ function RouteComponent() {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [showDeleteExpenseModal, setShowDeleteExpenseModal] = useState(false);
   const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false);
-  const [showTotalsModal, setShowTotalsModal] = useState(false);
 
   const { data, error, isLoading } = useQuery({
     queryKey: ['group', id],
@@ -336,33 +335,6 @@ function RouteComponent() {
   const inviteLink = data?.inviteCode
     ? `${window.location.origin}/join/${data.inviteCode}`
     : '';
-
-  const memberSpendTotals = useMemo(() => {
-    if (!data) return [];
-
-    const totalsByMember = new Map<string, Record<string, number>>();
-
-    for (const member of data.members) {
-      totalsByMember.set(member.id, {});
-    }
-
-    for (const expense of data.expenses) {
-      if (expense.isDeleted) continue;
-
-      const payerTotals = totalsByMember.get(expense.paidBy.id);
-      if (!payerTotals) continue;
-
-      payerTotals[expense.currency] =
-        (payerTotals[expense.currency] ?? 0) + expense.amount;
-    }
-
-    return data.members.map((member) => ({
-      memberId: member.id,
-      name: member.name,
-      isCurrentUser: member.isCurrentUser,
-      totals: totalsByMember.get(member.id) ?? {},
-    }));
-  }, [data]);
 
   const handleCopyLink = async () => {
     if (!inviteLink) return;
@@ -452,7 +424,7 @@ function RouteComponent() {
           <UserBalanceSummary memberBalances={data?.memberBalances} />
 
           {/* Action buttons */}
-          <div className="flex gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex justify-start md:justify-center gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex flex-col items-center gap-2 min-w-[96px]">
               <button
                 onClick={() =>
@@ -490,7 +462,12 @@ function RouteComponent() {
 
             <div className="flex flex-col items-center gap-2 min-w-[96px]">
               <button
-                onClick={() => setShowTotalsModal(true)}
+                onClick={() =>
+                  router.navigate({
+                    to: '/groups/$id/totals',
+                    params: { id },
+                  })
+                }
                 className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center"
               >
                 <BarChart3 className="w-6 h-6 text-[#1a1a3e]" />
@@ -737,77 +714,6 @@ function RouteComponent() {
                   {deleteExpenseMutation.data.error}
                 </p>
               )}
-            </div>
-          </div>
-        </>
-      )}
-
-      {showTotalsModal && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40 cursor-default"
-            onClick={() => setShowTotalsModal(false)}
-            aria-label="Cerrar modal"
-          />
-
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-center pt-3 pb-2">
-              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
-            </div>
-
-            <div className="px-6 pb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-[#1a1a3e]">
-                  Total gastado por persona
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setShowTotalsModal(false)}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {memberSpendTotals.map((member) => {
-                  const totals = Object.entries(member.totals).filter(
-                    ([, amount]) => amount > 0,
-                  );
-
-                  return (
-                    <div
-                      key={member.memberId}
-                      className="bg-gray-50 rounded-2xl p-4 border border-gray-100"
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <p className="font-semibold text-[#1a1a3e]">
-                            {member.name}
-                            {member.isCurrentUser ? ' (Tú)' : ''}
-                          </p>
-                          <p className="text-sm text-gray-500">Total gastado</p>
-                        </div>
-                        <div className="text-right">
-                          {totals.length === 0 ? (
-                            <p className="font-semibold text-gray-400">$0</p>
-                          ) : (
-                            totals.map(([currency, amount]) => (
-                              <p
-                                key={currency}
-                                className="font-semibold text-[#1a1a3e]"
-                              >
-                                ${formatCurrency(amount)} {currency}
-                              </p>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           </div>
         </>

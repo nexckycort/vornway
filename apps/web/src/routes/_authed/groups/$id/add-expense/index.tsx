@@ -45,7 +45,7 @@ function RouteComponent() {
   const splitMethods = [
     { value: 'equal' as const, label: 'Partes iguales' },
     { value: 'percentage' as const, label: 'Porcentaje' },
-    { value: 'exact' as const, label: 'Montos exactos' },
+    { value: 'exact' as const, label: 'Partes desiguales' },
   ];
 
   const { data: membersData, isLoading: isLoadingMembers } = useQuery({
@@ -533,18 +533,37 @@ function RouteComponent() {
             </div>
           ))}
 
-          {splitMethod === 'exact' && selectedParticipants.length > 0 && (
-            <p
-              className={`mt-2 text-sm ${isExactSplitValid ? 'text-gray-500' : 'text-red-500'}`}
-            >
-              Total asignado: $
-              {exactTotal.toLocaleString('es-CO', { maximumFractionDigits: 2 })}{' '}
-              / $
-              {totalAmount.toLocaleString('es-CO', {
-                maximumFractionDigits: 2,
-              })}
-            </p>
-          )}
+          {splitMethod === 'exact' &&
+            selectedParticipants.length > 0 &&
+            (() => {
+              const difference = exactTotal - totalAmount;
+              const absDifference = Math.abs(difference).toLocaleString(
+                'es-CO',
+                { maximumFractionDigits: 2 },
+              );
+
+              if (Math.abs(difference) < 0.01) {
+                return (
+                  <p className="mt-2 text-sm text-green-600">
+                    Monto distribuido correctamente
+                  </p>
+                );
+              }
+
+              if (difference > 0) {
+                return (
+                  <p className="mt-2 text-sm text-red-500">
+                    Excede en ${absDifference} el monto total
+                  </p>
+                );
+              }
+
+              return (
+                <p className="mt-2 text-sm text-gray-500">
+                  Faltan ${absDifference} para completar el monto
+                </p>
+              );
+            })()}
         </div>
       </div>
 

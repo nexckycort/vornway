@@ -41,7 +41,7 @@ function RouteComponent() {
   const [showSplitDropdown, setShowSplitDropdown] = useState(false);
   const [hasLoadedEditData, setHasLoadedEditData] = useState(false);
 
-  const currencies = ['COP', 'USD', 'EUR', 'MXN'];
+  const currencies = ['COP', 'USD', 'EUR', 'AED'];
   const splitMethods = [
     { value: 'equal' as const, label: 'Partes iguales' },
     { value: 'percentage' as const, label: 'Porcentaje' },

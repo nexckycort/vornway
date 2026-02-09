@@ -232,6 +232,57 @@ function TotalsDisplay({ totals }: { totals: Record<string, number> }) {
   );
 }
 
+function UserBalanceSummary({
+  memberBalances,
+}: {
+  memberBalances?: Array<{
+    memberId: string;
+    name: string;
+    isCurrentUser: boolean;
+    balances: Record<string, number>;
+  }>;
+}) {
+  if (!memberBalances) {
+    return <p className="text-gray-500 text-center mb-6">Sin deudas</p>;
+  }
+
+  const currentMember = memberBalances.find((member) => member.isCurrentUser);
+  if (!currentMember) {
+    return <p className="text-gray-500 text-center mb-6">Sin deudas</p>;
+  }
+
+  const entries = Object.entries(currentMember.balances ?? {}).filter(
+    ([, amount]) => Math.abs(amount) >= 1,
+  );
+
+  if (entries.length === 0) {
+    return <p className="text-gray-500 text-center mb-6">Sin deudas</p>;
+  }
+
+  return (
+    <div className="text-center mb-6 space-y-1">
+      {entries.map(([currency, amount]) => (
+        <p
+          key={currency}
+          className={`font-medium ${
+            amount > 0
+              ? 'text-green-600'
+              : amount < 0
+                ? 'text-red-500'
+                : 'text-gray-500'
+          }`}
+        >
+          {amount > 0
+            ? `Te deben $${formatCurrency(amount)} ${currency}`
+            : amount < 0
+              ? `Debes $${formatCurrency(Math.abs(amount))} ${currency}`
+              : 'Estás al día'}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 function RouteComponent() {
   const { id } = Route.useParams();
   const router = useRouter();
@@ -394,7 +445,7 @@ function RouteComponent() {
         <div className="bg-white rounded-3xl p-6 shadow-sm">
           <p className="text-gray-500 text-center mb-1">Total gastado</p>
           <TotalsDisplay totals={data?.totals ?? {}} />
-          <p className="text-gray-500 text-center mb-6">Sin deudas</p>
+          <UserBalanceSummary memberBalances={data?.memberBalances} />
 
           {/* Action buttons */}
           <div className="flex justify-center gap-8">

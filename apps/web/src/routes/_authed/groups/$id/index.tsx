@@ -49,6 +49,7 @@ interface Expense {
     name: string;
   };
   participantCount: number;
+  currentUserBalance: number | null;
 }
 
 function ExpenseItem({
@@ -178,9 +179,27 @@ function ExpenseItem({
           >
             ${formatCurrency(expense.amount)}
           </p>
-          <p className="text-xs text-gray-500">
-            {expense.isDeleted ? 'Eliminado' : expense.currency}
-          </p>
+          {!expense.isDeleted && expense.currentUserBalance !== null ? (
+            <p
+              className={`text-xs font-medium ${
+                expense.currentUserBalance > 0
+                  ? 'text-green-600'
+                  : expense.currentUserBalance < 0
+                    ? 'text-red-500'
+                    : 'text-gray-400'
+              }`}
+            >
+              {expense.currentUserBalance > 0
+                ? `Te deben $${formatCurrency(expense.currentUserBalance)}`
+                : expense.currentUserBalance < 0
+                  ? `Debes $${formatCurrency(Math.abs(expense.currentUserBalance))}`
+                  : 'Estás al día'}
+            </p>
+          ) : (
+            <p className="text-xs text-gray-500">
+              {expense.isDeleted ? 'Eliminado' : expense.currency}
+            </p>
+          )}
         </div>
       </button>
     </div>

@@ -21,6 +21,7 @@ interface Expense {
     name: string;
   };
   participantCount: number;
+  currentUserBalance: number | null; // positivo = te deben, negativo = debes, null = no involucrado
 }
 
 interface Member {
@@ -120,19 +121,48 @@ export const getGroup = createServerFn({ method: 'POST' })
         throw new Error('No tienes acceso a este grupo');
       }
 
-      const expenses: Expense[] = groupRecord.Expense.map((expense) => ({
-        id: expense.id,
-        description: expense.description,
-        amount: expense.amount,
-        currency: expense.currency,
-        date: expense.date,
-        isDeleted: expense.notes?.includes('[DELETED]') ?? false,
-        paidBy: {
-          id: expense.paidBy.id,
-          name: expense.paidBy.name,
-        },
-        participantCount: expense._count.participants,
-      }));
+      // Encontrar el memberId del usuario actual
+      const currentMember = groupRecord.GroupMember.find(
+        (member) => member.userId === userId,
+      );
+      const currentMemberId = currentMember?.id;
+
+      const expenses: Expense[] = groupRecord.Expense.map((expense) => {
+        const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
+        let currentUserBalance: number | null = null;
+
+        if (!isDeleted && currentMemberId) {
+          const isPayer = expense.paidBy.id === currentMemberId;
+          const participation = expense.participants.find(
+            (p) => p.memberId === currentMemberId,
+          );
+
+          if (isPayer || participation) {
+            currentUserBalance = 0;
+            if (isPayer) {
+              currentUserBalance += expense.amount;
+            }
+            if (participation) {
+              currentUserBalance -= participation.share;
+            }
+          }
+        }
+
+        return {
+          id: expense.id,
+          description: expense.description,
+          amount: expense.amount,
+          currency: expense.currency,
+          date: expense.date,
+          isDeleted,
+          paidBy: {
+            id: expense.paidBy.id,
+            name: expense.paidBy.name,
+          },
+          participantCount: expense._count.participants,
+          currentUserBalance,
+        };
+      });
 
       const members: Member[] = groupRecord.GroupMember.map((member) => ({
         id: member.id,

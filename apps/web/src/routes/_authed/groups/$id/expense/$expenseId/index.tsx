@@ -202,7 +202,9 @@ function RouteComponent() {
                       <p className="font-bold text-red-500 text-lg">
                         ${formatCurrency(participant.share)} {data.currency}
                       </p>
-                      <p className="text-[#7a7a7a] text-sm">Deben</p>
+                      <p className="text-[#7a7a7a] text-sm">
+                        {participant.isCurrentUser ? 'Debes' : 'Deben'}
+                      </p>
                     </div>
                   </div>
                 </div>

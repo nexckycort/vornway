@@ -1,3 +1,13 @@
+---
+import type { LandingCopy } from "../i18n";
+
+export interface Props {
+  copy: LandingCopy;
+}
+
+const { copy } = Astro.props;
+---
+
 <footer
   class="relative overflow-hidden py-16"
   style="background: hsl(240 38% 14%); border-top: 1px solid hsl(240 47% 47% / 0.1)"
@@ -38,26 +48,13 @@
           class="mt-3 text-sm leading-relaxed"
           style="color: hsl(250 25% 90% / 0.5)"
         >
-          Fair splits, fewer awkward conversations.
+          {copy.footer.tagline}
         </p>
       </div>
 
       <div class="grid grid-cols-2 gap-8 sm:grid-cols-3">
         {
-          [
-            {
-              title: "Product",
-              links: ["Features", "Pricing", "Changelog", "Roadmap"],
-            },
-            {
-              title: "Company",
-              links: ["About", "Blog", "Careers", "Press"],
-            },
-            {
-              title: "Legal",
-              links: ["Privacy", "Terms", "Cookie Policy"],
-            },
-          ].map((col) => (
+          copy.footer.columns.map((col) => (
             <div>
               <h4
                 class="mb-3 text-xs font-semibold uppercase tracking-widest"
@@ -69,7 +66,7 @@
                 {col.links.map((link) => (
                   <li>
                     <a
-                      href={`#${link.toLowerCase()}`}
+                      href="#"
                       class="text-sm transition-colors duration-200 hover:opacity-100"
                       style="color: hsl(250 25% 90% / 0.6)"
                     >
@@ -89,13 +86,13 @@
       style="border-color: hsl(240 47% 47% / 0.08)"
     >
       <p class="text-xs" style="color: hsl(250 25% 90% / 0.3)">
-        2026 Splitway. All rights reserved.
+        {copy.footer.rights}
       </p>
       <div class="flex gap-4">
         {
-          ["Twitter", "GitHub", "Discord"].map((social) => (
+          copy.footer.socials.map((social) => (
             <a
-              href={`#${social.toLowerCase()}`}
+              href="#"
               class="text-xs transition-colors duration-200 hover:opacity-100"
               style="color: hsl(250 25% 90% / 0.4)"
             >

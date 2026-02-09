@@ -1,19 +1,27 @@
 ---
 import "../styles/global.css";
+import type { Lang } from "../i18n";
 
 export interface Props {
   title: string;
   description?: string;
+  lang?: Lang;
+  ogImageAlt?: string;
+  twitterImageAlt?: string;
 }
 
 const {
   title,
-  description = "Stop the awkward money talk. Splitway turns expense chaos into crystal-clear group balances.",
+  description =
+    "Stop the awkward money talk. Splitway turns expense chaos into crystal-clear group balances.",
+  lang = "en",
+  ogImageAlt = "Splitway - Money between friends, made obvious",
+  twitterImageAlt = "Splitway - group expense sharing made clear",
 } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en" class="dark">
+<html lang={lang} class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
@@ -23,25 +31,17 @@ const {
     <link rel="sitemap" href="/sitemap-index.xml" />
     <meta name="generator" content={Astro.generator} />
 
-    <!-- SEO Meta Tags -->
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/logo.webp" />
-    <meta
-      property="og:image:alt"
-      content="Splitway — Money between friends, made obvious"
-    />
+    <meta property="og:image:alt" content={ogImageAlt} />
     <meta property="og:url" content={Astro.url} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content="/logo.webp" />
-    <meta
-      name="twitter:image:alt"
-      content="nyv - a namespace for small systems and experiments"
-    />
-    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image:alt" content={twitterImageAlt} />
 
     <title>{title}</title>
   </head>

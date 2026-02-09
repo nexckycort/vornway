@@ -1,16 +1,14 @@
 ---
-const BEFORE_ITEMS = [
-  { person: "Alex", amount: "$48", note: "Taxi to airport", status: "unpaid" },
-  { person: "Jamie", amount: "$120", note: "Group dinner", status: "disputed" },
-  { person: "Sam", amount: "$340", note: "Hotel 2 nights", status: "unclear" },
-  { person: "You", amount: "$67", note: "Groceries", status: "forgot" },
-];
+import type { LandingCopy } from "../i18n";
 
-const AFTER_ITEMS = [
-  { from: "Jamie", to: "Sam", amount: "$86.25", settled: true },
-  { from: "You", to: "Sam", amount: "$44.50", settled: true },
-  { from: "Alex", to: "You", amount: "$12.75", settled: false },
-];
+export interface Props {
+  copy: LandingCopy;
+}
+
+const { copy } = Astro.props;
+
+const BEFORE_ITEMS = copy.transformation.beforeItems;
+const AFTER_ITEMS = copy.transformation.afterItems;
 
 const statusStyles: Record<string, string> = {
   unpaid: "bg-destructive/10 text-destructive",
@@ -21,11 +19,11 @@ const statusStyles: Record<string, string> = {
 ---
 
 <section
+  id="how-it-works"
   data-transformation
   class="relative overflow-hidden py-24 md:py-32"
   style="background: hsl(252 33% 97%)"
 >
-  <!-- Geometric accents -->
   <div
     class="absolute -right-20 top-20 h-80 w-80 rounded-full opacity-[0.04]"
     style="background: hsl(240 47% 47%)"
@@ -38,21 +36,20 @@ const statusStyles: Record<string, string> = {
   </div>
 
   <div class="mx-auto max-w-6xl px-6">
-    <!-- Section intro -->
     <div class="section-intro mb-16 max-w-2xl transition-all duration-1000">
       <span
         class="mb-4 inline-block rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-widest"
         style="background: hsl(240 47% 47% / 0.08); color: hsl(240 47% 47%)"
       >
-        The shift
+        {copy.transformation.badge}
       </span>
       <h2
         class="font-display text-3xl font-bold leading-tight tracking-tight text-foreground md:text-5xl"
       >
         <span class="text-balance">
-          From
+          {copy.transformation.titleStart}
           <span class="relative">
-            chaos
+            {copy.transformation.titleChaos}
             <svg
               class="absolute -bottom-1 left-0 w-full"
               viewBox="0 0 120 8"
@@ -67,16 +64,14 @@ const statusStyles: Record<string, string> = {
                 opacity="0.4"></path>
             </svg>
           </span>
-          to
-          <span style="color: hsl(174 73% 48%)">clarity</span>
-          in one scroll.
+          {copy.transformation.titleMiddle}
+          <span style="color: hsl(174 73% 48%)">{copy.transformation.titleClarity}</span>
+          {copy.transformation.titleEnd}
         </span>
       </h2>
     </div>
 
-    <!-- Before / After comparison -->
     <div class="grid gap-8 md:grid-cols-2">
-      <!-- BEFORE -->
       <div
         class="before-panel transition-all duration-1000"
         style="transition-delay: 200ms"
@@ -93,7 +88,7 @@ const statusStyles: Record<string, string> = {
               ?
             </div>
             <span class="font-display text-lg font-semibold text-foreground"
-              >Before Splitway</span
+              >{copy.transformation.beforeTitle}</span
             >
           </div>
           <div class="space-y-3">
@@ -123,16 +118,15 @@ const statusStyles: Record<string, string> = {
                       {item.amount}
                     </span>
                     <span
-                      class={`rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[item.status] || ""}`}
+                      class={`rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[item.statusKey] || ""}`}
                     >
-                      {item.status}
+                      {item.statusLabel}
                     </span>
                   </div>
                 </div>
               ))
             }
           </div>
-          <!-- Scribbled line decoration -->
           <svg
             class="absolute -right-2 top-1/2 -translate-y-1/2 opacity-10"
             width="20"
@@ -149,7 +143,6 @@ const statusStyles: Record<string, string> = {
         </div>
       </div>
 
-      <!-- AFTER -->
       <div
         class="after-panel transition-all duration-1000"
         style="transition-delay: 500ms"
@@ -179,7 +172,7 @@ const statusStyles: Record<string, string> = {
               </svg>
             </div>
             <span class="font-display text-lg font-semibold text-foreground"
-              >After Splitway</span
+              >{copy.transformation.afterTitle}</span
             >
           </div>
           <div class="space-y-3">
@@ -237,14 +230,14 @@ const statusStyles: Record<string, string> = {
                         class="rounded-full px-2 py-0.5 text-xs font-medium"
                         style="background: hsl(174 73% 48% / 0.1); color: hsl(174 73% 48%)"
                       >
-                        settled
+                        {copy.transformation.settled}
                       </span>
                     ) : (
                       <span
                         class="rounded-full px-2 py-0.5 text-xs font-medium"
                         style="background: hsl(240 47% 47% / 0.08); color: hsl(240 47% 47%)"
                       >
-                        pending
+                        {copy.transformation.pending}
                       </span>
                     )}
                   </div>
@@ -252,16 +245,15 @@ const statusStyles: Record<string, string> = {
               ))
             }
           </div>
-          <!-- Total bar -->
           <div
             class="total-bar mt-4 flex items-center justify-between rounded-xl p-3 transition-all duration-700"
             style="background: hsl(174 73% 48% / 0.08); transition-delay: 1100ms"
           >
             <span class="text-sm font-medium text-muted-foreground"
-              >Everyone is square</span
+              >{copy.transformation.everyoneSquare}</span
             >
             <span class="text-sm font-bold" style="color: hsl(174 73% 48%)">
-              3 simple transfers
+              {copy.transformation.transfers}
             </span>
           </div>
         </div>
@@ -272,13 +264,6 @@ const statusStyles: Record<string, string> = {
 
 <script is:inline>
   document.querySelectorAll("[data-transformation]").forEach((section) => {
-    const intro = section.querySelector(".section-intro");
-    const beforePanel = section.querySelector(".before-panel");
-    const afterPanel = section.querySelector(".after-panel");
-    const beforeItems = section.querySelectorAll(".before-item");
-    const afterItems = section.querySelectorAll(".after-item");
-    const totalBar = section.querySelector(".total-bar");
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
@@ -293,7 +278,6 @@ const statusStyles: Record<string, string> = {
 </script>
 
 <style>
-  /* Section intro */
   [data-transformation] .section-intro {
     opacity: 0;
     transform: translateY(48px);
@@ -303,7 +287,6 @@ const statusStyles: Record<string, string> = {
     transform: translateY(0);
   }
 
-  /* Before panel */
   [data-transformation] .before-panel {
     opacity: 0;
     transform: translateX(-48px);
@@ -313,7 +296,6 @@ const statusStyles: Record<string, string> = {
     transform: translateX(0);
   }
 
-  /* Before items - chaotic initial state */
   [data-transformation] .before-item {
     opacity: 0.6;
   }
@@ -334,7 +316,6 @@ const statusStyles: Record<string, string> = {
     transform: none;
   }
 
-  /* After panel */
   [data-transformation] .after-panel {
     opacity: 0;
     transform: translateX(48px);
@@ -344,7 +325,6 @@ const statusStyles: Record<string, string> = {
     transform: translateX(0);
   }
 
-  /* After items */
   [data-transformation] .after-item {
     opacity: 0;
     transform: translateY(10px);
@@ -354,7 +334,6 @@ const statusStyles: Record<string, string> = {
     transform: none;
   }
 
-  /* Total bar */
   [data-transformation] .total-bar {
     opacity: 0;
   }

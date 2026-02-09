@@ -1,70 +1,78 @@
 ---
+import type { LandingCopy } from "../i18n";
+
+export interface Props {
+  copy: LandingCopy;
+}
+
+const { copy } = Astro.props;
+
 const EXPENSE_CHIPS = [
   {
-    label: "Taxi $48",
+    label: copy.hero.chips[0],
     color: "bg-primary text-primary-foreground",
     x: -180,
     y: -120,
     r: -12,
   },
   {
-    label: "Dinner $120",
+    label: copy.hero.chips[1],
     color: "bg-secondary text-secondary-foreground",
     x: 140,
     y: -80,
     r: 8,
   },
   {
-    label: "Who paid??",
+    label: copy.hero.chips[2],
     color: "bg-accent text-accent-foreground",
     x: -60,
     y: 80,
     r: -6,
   },
   {
-    label: "You owe me",
+    label: copy.hero.chips[3],
     color: "bg-primary text-primary-foreground",
     x: 200,
     y: 60,
     r: 15,
   },
   {
-    label: "Hotel $340",
+    label: copy.hero.chips[4],
     color: "bg-secondary text-secondary-foreground",
     x: -200,
     y: 20,
     r: -18,
   },
   {
-    label: "Groceries $67",
+    label: copy.hero.chips[5],
     color: "bg-accent text-accent-foreground",
     x: 80,
     y: -160,
     r: 5,
   },
   {
-    label: "Drinks $55",
+    label: copy.hero.chips[6],
     color: "bg-primary text-primary-foreground",
     x: -120,
     y: 140,
     r: 10,
   },
   {
-    label: "Gas $42",
+    label: copy.hero.chips[7],
     color: "bg-secondary text-secondary-foreground",
     x: 160,
     y: 140,
     r: -8,
   },
   {
-    label: "I'll pay later",
+    label: copy.hero.chips[8],
     color: "bg-muted text-muted-foreground",
     x: -30,
     y: -170,
     r: 20,
   },
   {
-    label: "Museum $25",
+    label: copy.hero.chips[9],
     color: "bg-primary text-primary-foreground",
     x: 30,
     y: 170,
@@ -123,9 +131,9 @@ const EXPENSE_CHIPS = [
       style="--fade-delay: 800ms"
     >
       <span class="text-balance">
-        Money between friends gets
+        {copy.hero.titleStart}
         <span class="relative inline-block text-[hsl(174_73%_48%)]">
-          messy.
+          {copy.hero.titleHighlight}
           <svg
             class="hero-underline absolute -bottom-1 left-0 w-full"
             viewBox="0 0 200 12"
@@ -147,7 +155,7 @@ const EXPENSE_CHIPS = [
       class="hero-fade mt-6 text-lg leading-relaxed text-[hsl(250_25%_90%)] transition-all duration-1000 md:text-xl"
       style="--fade-delay: 1100ms"
     >
-      Splitway makes it obvious.
+      {copy.hero.subtitle}
     </p>
     <div
       class="hero-fade mt-10 transition-all duration-1000"
@@ -159,7 +167,7 @@ const EXPENSE_CHIPS = [
         style="background: hsl(174 73% 48%); color: hsl(240 38% 17%)"
       >
         <span class="relative z-10 flex items-center gap-2">
-          Start splitting
+          {copy.hero.cta}
           <svg
             width="20"
             height="20"
@@ -194,7 +202,7 @@ const EXPENSE_CHIPS = [
         class="text-xs uppercase tracking-widest"
         style="color: hsl(250 25% 90% / 0.5)"
       >
-        Scroll to untangle
+        {copy.hero.scrollHint}
       </span>
       <div
         class="h-10 w-6 rounded-full border-2 p-1"
@@ -257,75 +265,5 @@ const EXPENSE_CHIPS = [
   [data-hero-chaos][data-mounted="true"] .chaotic-chip {
     opacity: 1;
     transform: var(--chip-transform);
-  }
-
-  [data-hero-chaos] .hero-fade {
-    opacity: 0;
-    transform: translateY(32px);
-    transition-property: opacity, transform;
-    transition-duration: 1000ms;
-    transition-delay: var(--fade-delay, 0ms);
-  }
-
-  [data-hero-chaos][data-mounted="true"] .hero-fade {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  [data-hero-chaos] .hero-underline path {
-    stroke-dashoffset: 200;
-    transition: stroke-dashoffset 1000ms ease;
-    transition-delay: 1400ms;
-  }
-
-  [data-hero-chaos][data-mounted="true"] .hero-underline path {
-    stroke-dashoffset: 0;
-  }
-
-  .geo-circle,
-  .geo-diamond {
-    position: absolute;
-    pointer-events: none;
-  }
-
-  @keyframes spin-slow {
-    from {
-      transform: translate(-50%, -50%) rotate(0deg);
-    }
-    to {
-      transform: translate(-50%, -50%) rotate(360deg);
-    }
-  }
-
-  @keyframes drift {
-    0% {
-      transform: translateY(0) rotate(0deg);
-    }
-    50% {
-      transform: translateY(-12px) rotate(6deg);
-    }
-    100% {
-      transform: translateY(0) rotate(0deg);
-    }
-  }
-
-  @keyframes float {
-    0% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(10px);
-    }
-    100% {
-      transform: translateY(0);
-    }
-  }
-
-  .animate-drift {
-    animation: drift 18s ease-in-out infinite;
-  }
-
-  .animate-float {
-    animation: float 14s ease-in-out infinite;
   }
 </style>

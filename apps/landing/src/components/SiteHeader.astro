@@ -1,5 +1,14 @@
 ---
-const navLinks = ["How it works", "Features", "Pricing"];
+import type { LandingCopy, Lang } from "../i18n";
+
+export interface Props {
+  copy: LandingCopy;
+  lang: Lang;
+}
+
+const { copy, lang } = Astro.props;
+
+const navLinks = copy.header.navLinks;
 const primaryColor = "hsl(174 73% 48%)";
 const darkColor = "hsl(240 38% 17%)";
 const darkOverlay = "hsl(240 38% 17% / 0.98)";
@@ -13,8 +22,7 @@ const lightTextMobile = "hsl(250 25% 90% / 0.8)";
   style="border-bottom: 1px solid transparent"
 >
   <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-    <!-- Logo -->
-    <a href="/" class="flex items-center gap-2" aria-label="Splitway home">
+    <a href={lang === "es" ? "/es/" : "/"} class="flex items-center gap-2" aria-label={copy.header.homeAria}>
       <div
         class="flex h-8 w-8 items-center justify-center rounded-lg"
         style={`background: ${primaryColor}`}
@@ -39,33 +47,55 @@ const lightTextMobile = "hsl(250 25% 90% / 0.8)";
       >
     </a>
 
-    <!-- Desktop links -->
-    <div class="hidden items-center gap-8 md:flex">
+    <div class="hidden items-center gap-6 md:flex">
       {
         navLinks.map((link) => (
           <a
-            href={`#${link.toLowerCase().replace(/\s/g, "-")}`}
+            href={`#${link.id}`}
             class="text-sm font-medium transition-colors duration-200 hover:opacity-100"
             style={`color: ${lightText}`}
           >
-            {link}
+            {link.label}
           </a>
         ))
       }
+      <div
+        class="flex items-center gap-1 rounded-full border px-1 py-1"
+        style="border-color: hsl(250 25% 90% / 0.2)"
+        aria-label={copy.header.languageLabel}
+      >
+        <a
+          href="/"
+          class={`rounded-full px-2.5 py-1 text-xs font-semibold ${lang === "en" ? "opacity-100" : "opacity-70"}`}
+          style={`background: ${lang === "en" ? "hsl(250 25% 90% / 0.16)" : "transparent"}; color: hsl(250 25% 90%)`}
+          aria-current={lang === "en" ? "page" : undefined}
+        >
+          {copy.header.english}
+        </a>
+        <a
+          href="/es/"
+          class={`rounded-full px-2.5 py-1 text-xs font-semibold ${lang === "es" ? "opacity-100" : "opacity-70"}`}
+          style={`background: ${lang === "es" ? "hsl(250 25% 90% / 0.16)" : "transparent"}; color: hsl(250 25% 90%)`}
+          aria-current={lang === "es" ? "page" : undefined}
+        >
+          {copy.header.spanish}
+        </a>
+      </div>
       <button
         type="button"
         class="rounded-full px-5 py-2 text-sm font-semibold transition-all duration-300 hover:scale-105"
         style={`background: ${primaryColor}; color: ${darkColor}`}
       >
-        Get started
+        {copy.header.cta}
       </button>
     </div>
 
-    <!-- Mobile toggle -->
     <button
       type="button"
       class="flex h-10 w-10 items-center justify-center rounded-lg md:hidden"
-      aria-label="Open menu"
+      aria-label={copy.header.openMenu}
+      data-open-label={copy.header.openMenu}
+      data-close-label={copy.header.closeMenu}
       style="color: white"
       data-mobile-toggle
     >
@@ -86,7 +116,6 @@ const lightTextMobile = "hsl(250 25% 90% / 0.8)";
     </button>
   </nav>
 
-  <!-- Mobile menu -->
   <div
     class="overflow-hidden transition-all duration-500 md:hidden"
     style={`max-height: 0; background: ${darkOverlay}`}
@@ -96,21 +125,39 @@ const lightTextMobile = "hsl(250 25% 90% / 0.8)";
       {
         navLinks.map((link) => (
           <a
-            href={`#${link.toLowerCase().replace(/\s/g, "-")}`}
+            href={`#${link.id}`}
             class="text-base font-medium"
             style={`color: ${lightTextMobile}`}
             data-mobile-link
           >
-            {link}
+            {link.label}
           </a>
         ))
       }
+      <div class="flex items-center gap-2">
+        <a
+          href="/"
+          class="rounded-full border px-3 py-2 text-xs font-semibold"
+          style="border-color: hsl(250 25% 90% / 0.2); color: hsl(250 25% 90%)"
+          aria-current={lang === "en" ? "page" : undefined}
+        >
+          {copy.header.english}
+        </a>
+        <a
+          href="/es/"
+          class="rounded-full border px-3 py-2 text-xs font-semibold"
+          style="border-color: hsl(250 25% 90% / 0.2); color: hsl(250 25% 90%)"
+          aria-current={lang === "es" ? "page" : undefined}
+        >
+          {copy.header.spanish}
+        </a>
+      </div>
       <button
         type="button"
         class="mt-2 rounded-full px-5 py-3 text-sm font-semibold"
         style={`background: ${primaryColor}; color: ${darkColor}`}
       >
-        Get started
+        {copy.header.cta}
       </button>
     </div>
   </div>
@@ -140,8 +187,11 @@ const lightTextMobile = "hsl(250 25% 90% / 0.8)";
 
   const updateMenu = () => {
     if (!menu || !toggle || !icon) return;
-    menu.style.maxHeight = mobileOpen ? "300px" : "0";
-    toggle.setAttribute("aria-label", mobileOpen ? "Close menu" : "Open menu");
+    menu.style.maxHeight = mobileOpen ? "360px" : "0";
+    const openLabel = toggle.getAttribute("data-open-label") || "Open menu";
+    const closeLabel =
+      toggle.getAttribute("data-close-label") || "Close menu";
+    toggle.setAttribute("aria-label", mobileOpen ? closeLabel : openLabel);
     toggle.setAttribute("aria-expanded", mobileOpen.toString());
     icon.setAttribute(
       "d",

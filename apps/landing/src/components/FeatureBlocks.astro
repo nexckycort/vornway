@@ -1,0 +1,394 @@
+---
+const FEED_ITEMS = [
+  { avatar: "S", name: "Sam", action: "added", item: "Flight tickets", amount: "$480", time: "2m ago", color: "hsl(240 47% 47%)" },
+  { avatar: "J", name: "Jamie", action: "settled", item: "Dinner split", amount: "$30", time: "5m ago", color: "hsl(174 73% 48%)" },
+  { avatar: "A", name: "Alex", action: "added", item: "Uber to hotel", amount: "$22", time: "12m ago", color: "hsl(240 33% 56%)" },
+  { avatar: "Y", name: "You", action: "settled", item: "Coffee run", amount: "$16", time: "1h ago", color: "hsl(174 73% 48%)" },
+  { avatar: "S", name: "Sam", action: "added", item: "Souvenirs", amount: "$35", time: "2h ago", color: "hsl(240 47% 47%)" },
+]
+
+const SWIPE_CARDS = [
+  { label: "Hotel booking", amount: "$340", person: "Sam", action: "Approve" },
+  { label: "Group dinner", amount: "$120", person: "Jamie", action: "Split equally" },
+  { label: "Taxi ride", amount: "$48", person: "Alex", action: "Settle up" },
+]
+
+const SOCIAL_NODES = [
+  { x: 50, y: 50, label: "You", size: 40, primary: true },
+  { x: 20, y: 25, label: "Sam", size: 32, primary: false },
+  { x: 80, y: 20, label: "Alex", size: 32, primary: false },
+  { x: 15, y: 75, label: "Jamie", size: 32, primary: false },
+  { x: 85, y: 70, label: "Kai", size: 28, primary: false },
+  { x: 55, y: 85, label: "Mia", size: 28, primary: false },
+]
+
+const SOCIAL_CONNECTIONS = [
+  [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [1, 3], [2, 4],
+]
+
+const CURRENCIES = [
+  { code: "USD", symbol: "$", amount: "1,245.00", flag: "US" },
+  { code: "EUR", symbol: "\u20ac", amount: "1,142.30", flag: "EU" },
+  { code: "GBP", symbol: "\u00a3", amount: "982.15", flag: "GB" },
+  { code: "JPY", symbol: "\u00a5", amount: "186,420", flag: "JP" },
+]
+
+const features = [
+  { tag: "Real-time", title: "Every expense, as it happens.", description: "A live timeline of every split, payment, and settle-up. No more guessing who paid what.", slot: "live-feed", reversed: false },
+  { tag: "Gestural", title: "Manage expenses like messages.", description: "Swipe through pending expenses. Approve, split, or settle in a single gesture.", slot: "swipe-cards", reversed: true },
+  { tag: "Social", title: "One link. Whole group.", description: "Share a link, everyone joins. No downloads required to view balances.", slot: "social-graph", reversed: false },
+  { tag: "Global", title: "Any currency. One truth.", description: "Travel with friends worldwide. Splitway converts and consolidates everything automatically.", slot: "currency-stack", reversed: true },
+]
+---
+
+<script src="../scripts/in-view.ts"></script>
+
+<section
+  class="relative overflow-hidden py-24 md:py-32"
+  style="background: hsl(240 38% 17%)"
+>
+  <!-- Background blurs -->
+  <div
+    class="absolute right-0 top-0 h-96 w-96 rounded-full opacity-[0.03]"
+    style="background: hsl(174 73% 48%); filter: blur(100px)"
+  ></div>
+  <div
+    class="absolute bottom-0 left-0 h-96 w-96 rounded-full opacity-[0.03]"
+    style="background: hsl(240 47% 47%); filter: blur(100px)"
+  ></div>
+
+  <div class="mx-auto max-w-6xl px-6">
+    <!-- Section title -->
+    <div data-in-view-root class="feature-title mb-20 text-center transition-all duration-1000">
+      <span
+        class="mb-4 inline-block rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-widest"
+        style="background: hsl(174 73% 48% / 0.1); color: hsl(174 73% 48%)"
+      >
+        Features
+      </span>
+      <h2
+        class="font-display text-3xl font-bold leading-tight tracking-tight md:text-5xl"
+        style="color: white"
+      >
+        <span class="text-balance">Built for how groups actually work.</span>
+      </h2>
+    </div>
+
+    <div class="space-y-28 md:space-y-36">
+      {features.map((feature) => (
+        <div
+          data-in-view-root
+          class={`feature-row flex flex-col gap-12 md:flex-row md:items-center md:gap-16 ${feature.reversed ? "md:flex-row-reverse" : ""}`}
+        >
+          <!-- Text -->
+          <div class="feature-text flex-1 transition-all duration-1000">
+            <span
+              class="mb-3 inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest"
+              style="background: hsl(240 47% 47% / 0.15); color: hsl(250 25% 90%)"
+            >
+              {feature.tag}
+            </span>
+            <h3
+              class="font-display text-2xl font-bold leading-tight tracking-tight md:text-3xl"
+              style="color: white"
+            >
+              {feature.title}
+            </h3>
+            <p
+              class="mt-4 max-w-md text-base leading-relaxed"
+              style="color: hsl(250 25% 90% / 0.7)"
+            >
+              {feature.description}
+            </p>
+          </div>
+
+          <!-- Visual -->
+          <div class="feature-visual flex-1 transition-all duration-1000" style="transition-delay: 200ms">
+            {feature.slot === "live-feed" && (
+              <div data-in-view-root class="live-feed relative">
+                <div
+                  class="feed-line absolute left-6 top-0 w-px md:left-8"
+                  style="background: hsl(240 47% 47% / 0.15)"
+                ></div>
+                <div class="space-y-4">
+                  {FEED_ITEMS.map((item, i) => (
+                    <div
+                      class="feed-item flex items-start gap-4 pl-2 transition-all duration-700 md:pl-4"
+                      style={`transition-delay: ${i * 150}ms`}
+                    >
+                      <div class="relative z-10 flex flex-shrink-0 items-center justify-center">
+                        <div
+                          class="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold md:h-12 md:w-12"
+                          style={`background: ${item.color}15; color: ${item.color}`}
+                        >
+                          {item.avatar}
+                        </div>
+                      </div>
+                      <div class="flex-1 rounded-xl bg-card p-3 shadow-sm">
+                        <div class="flex items-start justify-between">
+                          <div>
+                            <p class="text-sm font-medium text-foreground">
+                              <span class="font-semibold">{item.name}</span>{" "}
+                              <span class="text-muted-foreground">{item.action}</span>{" "}
+                              <span class="font-medium">{item.item}</span>
+                            </p>
+                            <p class="mt-0.5 text-xs text-muted-foreground">{item.time}</p>
+                          </div>
+                          <span
+                            class="rounded-lg px-2.5 py-1 text-sm font-bold"
+                            style={`background: ${item.color}10; color: ${item.color}`}
+                          >
+                            {item.amount}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {feature.slot === "swipe-cards" && (
+              <div data-in-view-root class="swipe-cards relative flex flex-col items-center justify-center">
+                {SWIPE_CARDS.map((card, i) => (
+                  <div
+                    class="swipe-card w-full max-w-sm rounded-2xl border bg-card p-5 shadow-lg transition-all duration-700"
+                    data-card-index={i}
+                    style={`transition-delay: ${i * 200}ms; z-index: ${SWIPE_CARDS.length - i}; ${i > 0 ? `position: absolute; top: ${i * 12}px` : "position: relative"}`}
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="font-display text-lg font-semibold text-foreground">{card.label}</p>
+                        <p class="text-sm text-muted-foreground">Paid by {card.person}</p>
+                      </div>
+                      <span class="text-2xl font-bold" style="color: hsl(240 47% 47%)">
+                        {card.amount}
+                      </span>
+                    </div>
+                    {i === 0 && (
+                      <>
+                        <div class="mt-4 flex gap-2">
+                          <button
+                            type="button"
+                            class="flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors"
+                            style="background: hsl(174 73% 48%); color: hsl(240 38% 17%)"
+                          >
+                            {card.action}
+                          </button>
+                          <button
+                            type="button"
+                            class="flex-1 rounded-xl border py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                          >
+                            Skip
+                          </button>
+                        </div>
+                        <div class="mt-3 flex items-center justify-center gap-1">
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="text-muted-foreground" aria-hidden="true">
+                            <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                          <span class="text-xs text-muted-foreground">swipe to manage</span>
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="text-muted-foreground" aria-hidden="true">
+                            <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {feature.slot === "social-graph" && (
+              <div data-in-view-root class="social-graph relative h-64 w-full md:h-80">
+                <svg class="absolute inset-0 h-full w-full" viewBox="0 0 100 100" aria-hidden="true">
+                  {SOCIAL_CONNECTIONS.map(([a, b], i) => (
+                    <line
+                      class="graph-line transition-all duration-1000"
+                      x1={SOCIAL_NODES[a].x}
+                      y1={SOCIAL_NODES[a].y}
+                      x2={SOCIAL_NODES[b].x}
+                      y2={SOCIAL_NODES[b].y}
+                      stroke="hsl(240 47% 47%)"
+                      stroke-width="0.3"
+                      stroke-dasharray="2 2"
+                      style={`transition-delay: ${i * 100 + 400}ms`}
+                    />
+                  ))}
+                </svg>
+                {SOCIAL_NODES.map((node, i) => (
+                  <div
+                    class="graph-node absolute flex flex-col items-center gap-1 transition-all duration-700"
+                    style={`left: ${node.x}%; top: ${node.y}%; transition-delay: ${i * 120}ms`}
+                  >
+                    <div
+                      class="flex items-center justify-center rounded-full text-xs font-bold shadow-md"
+                      style={`width: ${node.size}px; height: ${node.size}px; background: ${node.primary ? "hsl(240 47% 47%)" : "hsl(252 33% 97%)"}; color: ${node.primary ? "white" : "hsl(240 47% 47%)"}; ${node.primary ? "" : "border: 2px solid hsl(240 47% 47% / 0.2)"}`}
+                    >
+                      {node.label[0]}
+                    </div>
+                    <span class="text-[10px] font-medium text-muted-foreground">{node.label}</span>
+                  </div>
+                ))}
+                <!-- Invite link pill -->
+                <div class="graph-pill absolute bottom-0 left-1/2 transition-all duration-1000" style="transition-delay: 900ms">
+                  <div
+                    class="flex items-center gap-2 rounded-full px-4 py-2 shadow-lg"
+                    style="background: hsl(240 47% 47%); color: white"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path d="M5.5 8.5L8.5 5.5M6 5H4.5a2.5 2.5 0 000 5H6m2-5h1.5a2.5 2.5 0 010 5H8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                    </svg>
+                    <span class="text-xs font-semibold">splitway.app/join/beach-trip</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {feature.slot === "currency-stack" && (
+              <div data-in-view-root class="currency-stack space-y-3">
+                {CURRENCIES.map((c, i) => (
+                  <div
+                    class="currency-item flex items-center justify-between rounded-xl border bg-card p-4 transition-all duration-700"
+                    style={`transition-delay: ${i * 120}ms`}
+                  >
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold"
+                        style={`background: ${i === 0 ? "hsl(174 73% 48% / 0.12)" : "hsl(240 47% 47% / 0.08)"}; color: ${i === 0 ? "hsl(174 73% 48%)" : "hsl(240 47% 47%)"}`}
+                      >
+                        {c.symbol}
+                      </div>
+                      <div>
+                        <p class="text-sm font-semibold text-foreground">{c.code}</p>
+                        <p class="text-xs text-muted-foreground">{c.flag}</p>
+                      </div>
+                    </div>
+                    <span
+                      class="font-display text-lg font-bold"
+                      style={`color: ${i === 0 ? "hsl(174 73% 48%)" : "hsl(240 47% 47%)"}`}
+                    >
+                      {c.symbol}{c.amount}
+                    </span>
+                  </div>
+                ))}
+                <div
+                  class="currency-total flex items-center justify-between rounded-xl p-4 transition-all duration-700"
+                  style="background: hsl(240 47% 47%); transition-delay: 600ms"
+                >
+                  <span class="text-sm font-medium" style="color: hsl(250 25% 90%)">
+                    Total in your currency
+                  </span>
+                  <span class="font-display text-xl font-bold" style="color: white">
+                    $1,245.00
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  /* ── Section title ── */
+  .feature-title {
+    opacity: 0;
+    transform: translateY(48px);
+  }
+  [data-in-view="true"].feature-title {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── Feature row text & visual ── */
+  .feature-row .feature-text,
+  .feature-row .feature-visual {
+    opacity: 0;
+    transform: translateY(48px);
+  }
+  [data-in-view="true"].feature-row .feature-text,
+  [data-in-view="true"].feature-row .feature-visual {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── Live Feed ── */
+  .live-feed .feed-line {
+    height: 0%;
+    transition: height 2s ease;
+  }
+  [data-in-view="true"].live-feed .feed-line {
+    height: 100%;
+  }
+
+  .live-feed .feed-item {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  [data-in-view="true"].live-feed .feed-item {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  /* ── Swipe Cards ── */
+  .swipe-card {
+    opacity: 0;
+    transform: translateY(40px) rotate(var(--card-rotate, 0deg)) scale(0.9) !important;
+  }
+  .swipe-card[data-card-index="0"] { --card-rotate: -2deg; }
+  .swipe-card[data-card-index="1"] { --card-rotate: 0deg; }
+  .swipe-card[data-card-index="2"] { --card-rotate: 2deg; }
+
+  [data-in-view="true"].swipe-cards .swipe-card[data-card-index="0"] {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1) !important;
+  }
+  [data-in-view="true"].swipe-cards .swipe-card[data-card-index="1"] {
+    opacity: 1;
+    transform: translateY(-8px) rotate(0deg) scale(0.97) !important;
+  }
+  [data-in-view="true"].swipe-cards .swipe-card[data-card-index="2"] {
+    opacity: 1;
+    transform: translateY(-16px) rotate(0deg) scale(0.94) !important;
+  }
+
+  /* ── Social Graph ── */
+  .social-graph .graph-line {
+    opacity: 0;
+  }
+  [data-in-view="true"].social-graph .graph-line {
+    opacity: 0.3;
+  }
+
+  .social-graph .graph-node {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  [data-in-view="true"].social-graph .graph-node {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .social-graph .graph-pill {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  [data-in-view="true"].social-graph .graph-pill {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── Currency Stack ── */
+  .currency-item,
+  .currency-total {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  [data-in-view="true"].currency-stack .currency-item,
+  [data-in-view="true"].currency-stack .currency-total {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>

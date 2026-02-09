@@ -1,0 +1,123 @@
+---
+const AVATARS = ["S", "J", "A", "M", "K"];
+---
+
+<script src="../scripts/in-view.ts"></script>
+
+<section
+  data-final-cta
+  data-in-view-root
+  class="relative overflow-hidden py-24 md:py-36"
+  style="background: hsl(240 38% 17%)"
+>
+  <div
+    class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+    style="width: 700px; height: 700px; border-radius: 50%; border: 1px solid hsl(240 47% 47% / 0.08)"
+  >
+  </div>
+  <div
+    class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+    style="width: 500px; height: 500px; border-radius: 50%; border: 1px solid hsl(174 73% 48% / 0.06)"
+  >
+  </div>
+  <div
+    class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+    style="width: 300px; height: 300px; border-radius: 50%; background: hsl(240 47% 47% / 0.03)"
+  >
+  </div>
+
+  <div class="relative z-10 mx-auto max-w-3xl px-6 text-center">
+    <h2
+      class="cta-fade font-display text-3xl font-bold leading-tight tracking-tight md:text-6xl"
+      style="--fade-delay: 0ms; color: white"
+    >
+      <span class="text-balance">
+        Less awkward money talk.
+        <br class="hidden md:block" />
+        <span style="color: hsl(174 73% 48%)">More shared moments.</span>
+      </span>
+    </h2>
+
+    <p
+      class="cta-fade mx-auto mt-6 max-w-md text-lg leading-relaxed"
+      style="--fade-delay: 200ms; color: hsl(250 25% 90% / 0.7)"
+    >
+      Your next trip, dinner, or house share deserves better than a spreadsheet
+      and passive-aggressive texts.
+    </p>
+
+    <div
+      class="cta-fade mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center"
+      style="--fade-delay: 400ms"
+    >
+      <button
+        type="button"
+        class="group relative overflow-hidden rounded-full px-10 py-5 text-lg font-semibold shadow-2xl transition-all duration-300 hover:scale-105"
+        style="background: hsl(174 73% 48%); color: hsl(240 38% 17%)"
+      >
+        <span class="relative z-10 flex items-center gap-2">
+          Start your first group
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            class="transition-transform duration-300 group-hover:translate-x-1"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 10h12m0 0l-4-4m4 4l-4 4"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+          </svg>
+        </span>
+        <div
+          class="absolute inset-0 -translate-x-full transition-transform duration-500 group-hover:translate-x-0"
+          style="background: hsl(174 73% 55%)"
+        >
+        </div>
+      </button>
+      <span class="text-sm" style="color: hsl(250 25% 90% / 0.4)">
+        Free forever for groups under 10
+      </span>
+    </div>
+
+    <div
+      class="cta-fade mt-16 flex items-center justify-center gap-3"
+      style="--fade-delay: 700ms"
+    >
+      <div class="flex -space-x-2">
+        {
+          AVATARS.map((letter, i) => (
+            <div
+              class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ring-2"
+              style={`background: ${i % 2 === 0 ? "hsl(240 47% 47%)" : "hsl(240 33% 56%)"}; color: white; ring-color: hsl(240 38% 17%); z-index: ${5 - i}`}
+            >
+              {letter}
+            </div>
+          ))
+        }
+      </div>
+      <span class="text-sm" style="color: hsl(250 25% 90% / 0.5)">
+        Join 12,000+ groups already splitting smarter
+      </span>
+    </div>
+  </div>
+</section>
+
+<style>
+  [data-final-cta] .cta-fade {
+    opacity: 0;
+    transform: translateY(48px);
+    transition-property: opacity, transform;
+    transition-duration: 1000ms;
+    transition-delay: var(--fade-delay, 0ms);
+  }
+
+  [data-final-cta][data-in-view="true"] .cta-fade {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>

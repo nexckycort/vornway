@@ -1,5 +1,12 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.3.9/schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!**/routeTree.gen.ts",
+      "!**/*.astro"
+    ]
+  },
   "assist": {
     "actions": {
       "source": {

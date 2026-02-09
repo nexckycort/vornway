@@ -1,0 +1,181 @@
+---
+const navLinks = ["How it works", "Features", "Pricing"];
+const primaryColor = "hsl(174 73% 48%)";
+const darkColor = "hsl(240 38% 17%)";
+const darkOverlay = "hsl(240 38% 17% / 0.98)";
+const lightText = "hsl(250 25% 90% / 0.7)";
+const lightTextMobile = "hsl(250 25% 90% / 0.8)";
+---
+
+<header
+  data-site-header
+  class="fixed left-0 right-0 top-0 z-50 transition-all duration-500"
+  style="border-bottom: 1px solid transparent"
+>
+  <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+    <!-- Logo -->
+    <a href="/" class="flex items-center gap-2" aria-label="Splitway home">
+      <div
+        class="flex h-8 w-8 items-center justify-center rounded-lg"
+        style={`background: ${primaryColor}`}
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 18 18"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path d="M9 2L2 9l7 7 7-7-7-7z" fill={darkColor} opacity="0.9"></path>
+          <path
+            d="M9 6v6M6 9h6"
+            stroke={darkColor}
+            stroke-width="1.5"
+            stroke-linecap="round"></path>
+        </svg>
+      </div>
+      <span class="font-display text-lg font-bold" style="color: white"
+        >Splitway</span
+      >
+    </a>
+
+    <!-- Desktop links -->
+    <div class="hidden items-center gap-8 md:flex">
+      {
+        navLinks.map((link) => (
+          <a
+            href={`#${link.toLowerCase().replace(/\s/g, "-")}`}
+            class="text-sm font-medium transition-colors duration-200 hover:opacity-100"
+            style={`color: ${lightText}`}
+          >
+            {link}
+          </a>
+        ))
+      }
+      <button
+        type="button"
+        class="rounded-full px-5 py-2 text-sm font-semibold transition-all duration-300 hover:scale-105"
+        style={`background: ${primaryColor}; color: ${darkColor}`}
+      >
+        Get started
+      </button>
+    </div>
+
+    <!-- Mobile toggle -->
+    <button
+      type="button"
+      class="flex h-10 w-10 items-center justify-center rounded-lg md:hidden"
+      aria-label="Open menu"
+      style="color: white"
+      data-mobile-toggle
+    >
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+        data-mobile-icon
+      >
+        <path
+          d="M3 8h18M3 16h18"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"></path>
+      </svg>
+    </button>
+  </nav>
+
+  <!-- Mobile menu -->
+  <div
+    class="overflow-hidden transition-all duration-500 md:hidden"
+    style={`max-height: 0; background: ${darkOverlay}`}
+    data-mobile-menu
+  >
+    <div class="flex flex-col gap-4 px-6 pb-6 pt-2">
+      {
+        navLinks.map((link) => (
+          <a
+            href={`#${link.toLowerCase().replace(/\s/g, "-")}`}
+            class="text-base font-medium"
+            style={`color: ${lightTextMobile}`}
+            data-mobile-link
+          >
+            {link}
+          </a>
+        ))
+      }
+      <button
+        type="button"
+        class="mt-2 rounded-full px-5 py-3 text-sm font-semibold"
+        style={`background: ${primaryColor}; color: ${darkColor}`}
+      >
+        Get started
+      </button>
+    </div>
+  </div>
+</header>
+
+<script is:inline>
+  const header = document.querySelector("[data-site-header]");
+  const toggle = document.querySelector("[data-mobile-toggle]");
+  const menu = document.querySelector("[data-mobile-menu]");
+  const links = document.querySelectorAll("[data-mobile-link]");
+  const icon = document.querySelector("[data-mobile-icon] path");
+
+  let mobileOpen = false;
+  const linkHandlers = new WeakMap();
+
+  const updateHeader = () => {
+    if (!header) return;
+    const scrolled = window.scrollY > 50;
+    header.style.background = scrolled
+      ? "hsl(240 38% 17% / 0.95)"
+      : "transparent";
+    header.style.backdropFilter = scrolled ? "blur(12px)" : "none";
+    header.style.borderBottom = scrolled
+      ? "1px solid hsl(240 47% 47% / 0.1)"
+      : "1px solid transparent";
+  };
+
+  const updateMenu = () => {
+    if (!menu || !toggle || !icon) return;
+    menu.style.maxHeight = mobileOpen ? "300px" : "0";
+    toggle.setAttribute("aria-label", mobileOpen ? "Close menu" : "Open menu");
+    toggle.setAttribute("aria-expanded", mobileOpen.toString());
+    icon.setAttribute(
+      "d",
+      mobileOpen ? "M6 6l12 12M6 18L18 6" : "M3 8h18M3 16h18",
+    );
+  };
+
+  const handleScroll = () => updateHeader();
+  const handleToggle = () => {
+    mobileOpen = !mobileOpen;
+    updateMenu();
+  };
+
+  window.addEventListener("scroll", handleScroll, { passive: true });
+  updateHeader();
+
+  toggle?.addEventListener("click", handleToggle);
+  links.forEach((link) => {
+    const handler = () => {
+      mobileOpen = false;
+      updateMenu();
+    };
+    linkHandlers.set(link, handler);
+    link.addEventListener("click", handler);
+  });
+
+  document.addEventListener("astro:beforeunload", () => {
+    window.removeEventListener("scroll", handleScroll);
+    toggle?.removeEventListener("click", handleToggle);
+    links.forEach((link) => {
+      const handler = linkHandlers.get(link);
+      if (handler) {
+        link.removeEventListener("click", handler);
+      }
+    });
+  });
+</script>

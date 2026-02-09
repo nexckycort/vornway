@@ -130,10 +130,14 @@ function RouteComponent() {
             <Pizza className="w-7 h-7 text-[#5b7090]" />
           </div>
           <p className="text-gray-500 mb-1">{data.description}</p>
-          <h2 className="text-5xl font-bold text-[#2b2d33] mb-4">
-            ${formatCurrency(data.amount)}
-            <span className="text-4xl">{data.currency}</span>
-          </h2>
+          <div className="flex flex-col items-center gap-1 mb-4 sm:flex-row sm:justify-center sm:gap-2">
+            <p className="text-4xl sm:text-5xl font-bold text-[#2b2d33] leading-none">
+              ${formatCurrency(data.amount)}
+            </p>
+            <p className="text-2xl sm:text-4xl font-semibold text-[#4a4a4a] leading-none">
+              {data.currency}
+            </p>
+          </div>
           {data.isDeleted && (
             <p className="text-sm text-red-500 mb-2">
               Este gasto fue eliminado (se conserva por historial)

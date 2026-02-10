@@ -87,11 +87,13 @@ function SwipeableGroupItem({
   onOpenGroup,
   onDeleteGroup,
   canDelete,
+  isOwner,
 }: {
   group: HomeGroup;
   onOpenGroup: (groupId: string) => void;
   onDeleteGroup: (group: HomeGroup) => void;
   canDelete: boolean;
+  isOwner: boolean;
 }) {
   const config = categoryConfig[group.type] ?? categoryConfig.otros;
   const IconComponent = config.icon;
@@ -212,6 +214,11 @@ function SwipeableGroupItem({
             <p className="font-semibold text-[#1a1a3e]">{group.name}</p>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span>{config.label}</span>
+              {isOwner && (
+                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#e8e4f8] text-[#4040b0]">
+                  Admin
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -495,6 +502,7 @@ function HomePage() {
                   }
                   onDeleteGroup={handleRequestDeleteGroup}
                   canDelete={group.ownerId === user?.id}
+                  isOwner={group.ownerId === user?.id}
                 />
               );
             })}

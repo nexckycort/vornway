@@ -3,6 +3,7 @@
 interface ImportMetaEnv {
   // Client-side environment variables
   readonly VITE_APP_NAME: string;
+  readonly VITE_APP_ENV: 'dev' | 'prod';
 }
 
 interface ImportMeta {

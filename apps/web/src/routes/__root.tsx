@@ -9,7 +9,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { Toaster } from '@workspace/ui/components/sonner';
 
 import appCss from '@workspace/ui/globals.css?url';
-import { serverEnv } from '~/config/env.server';
+import { clientEnv } from '~/config/env.client';
 import { getCurrentUserFn } from '~/server/auth';
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools';
 
@@ -19,7 +19,7 @@ interface MyRouterContext {
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   loader: async () => {
-    const isDev = serverEnv.APP_ENV === 'dev';
+    const isDev = clientEnv.APP_ENV === 'dev';
     try {
       const user = await getCurrentUserFn();
       return { user, isDev };

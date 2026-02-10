@@ -244,20 +244,24 @@ function RouteComponent() {
           </div>
         )}
 
-        {/* Logout (only logged in) */}
-        {!isGuest && (
-          <div className="px-6 pb-6">
-            <button
-              type="button"
-              disabled={isLoggingOut}
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 p-4 bg-white rounded-2xl text-red-500 font-medium disabled:opacity-50"
-            >
-              <LogOut className="w-5 h-5" />
-              {isLoggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
-            </button>
-          </div>
-        )}
+        {/* Logout / Delete session */}
+        <div className="px-6 pb-6">
+          <button
+            type="button"
+            disabled={isLoggingOut}
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 p-4 bg-white rounded-2xl text-red-500 font-medium disabled:opacity-50"
+          >
+            <LogOut className="w-5 h-5" />
+            {isLoggingOut
+              ? isGuest
+                ? 'Eliminando sesión...'
+                : 'Cerrando sesión...'
+              : isGuest
+                ? 'Eliminar sesión'
+                : 'Cerrar sesión'}
+          </button>
+        </div>
       </div>
 
       <BottomNav />

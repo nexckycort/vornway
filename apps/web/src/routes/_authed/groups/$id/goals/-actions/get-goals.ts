@@ -24,6 +24,8 @@ interface GoalItem {
   id: string;
   title: string;
   description: string | null;
+  createdByMemberId: string;
+  canDelete: boolean;
   currency: string;
   targetAmount: number;
   startDate: Date;
@@ -39,6 +41,7 @@ interface GoalItem {
 
 interface GetGoalsResponse {
   groupName: string;
+  inviteCode: string | null;
   members: Array<{
     id: string;
     name: string;
@@ -79,6 +82,7 @@ export const getGoals = createServerFn({ method: 'POST' })
       where: { id: data.groupId },
       select: {
         name: true,
+        inviteCode: true,
         GroupMember: {
           select: {
             id: true,
@@ -97,6 +101,7 @@ export const getGoals = createServerFn({ method: 'POST' })
             id: true,
             title: true,
             description: true,
+            createdByMemberId: true,
             currency: true,
             targetAmount: true,
             startDate: true,
@@ -142,6 +147,7 @@ export const getGoals = createServerFn({ method: 'POST' })
 
     return {
       groupName: group.name,
+      inviteCode: group.inviteCode,
       members: group.GroupMember.map((member) => ({
         id: member.id,
         name: member.name,
@@ -172,6 +178,8 @@ export const getGoals = createServerFn({ method: 'POST' })
           id: goal.id,
           title: goal.title,
           description: goal.description,
+          createdByMemberId: goal.createdByMemberId,
+          canDelete: goal.createdByMemberId === currentMembership.id,
           currency: goal.currency,
           targetAmount: goal.targetAmount,
           startDate: goal.startDate,

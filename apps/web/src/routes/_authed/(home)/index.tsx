@@ -259,7 +259,11 @@ function HomePage() {
     onSuccess: (result) => {
       if (result.success && result.group) {
         if (result.alreadyMember) {
-          navigate({ to: '/groups/$id', params: { id: result.group.id } });
+          if (result.group.type === 'meta') {
+            navigate({ to: '/goals/$id', params: { id: result.group.id } });
+          } else {
+            navigate({ to: '/groups/$id', params: { id: result.group.id } });
+          }
           resetJoinModal();
           return;
         }
@@ -282,7 +286,11 @@ function HomePage() {
     onSuccess: (result) => {
       if (result.success && result.groupId) {
         queryClient.invalidateQueries({ queryKey: ['user-groups'] });
-        navigate({ to: '/groups/$id', params: { id: result.groupId } });
+        if (foundGroup?.type === 'meta') {
+          navigate({ to: '/goals/$id', params: { id: result.groupId } });
+        } else {
+          navigate({ to: '/groups/$id', params: { id: result.groupId } });
+        }
         resetJoinModal();
       } else {
         setJoinError(result.error ?? 'Error al unirse al grupo');
@@ -621,10 +629,10 @@ function HomePage() {
                 </div>
                 <div>
                   <p className="font-semibold text-[#1a1a3e]">
-                    {'¿Te invitaron a un grupo?'}
+                    {'¿Te invitaron a un grupo o a una meta?'}
                   </p>
                   <p className="text-sm text-gray-500">
-                    Usa un enlace o código QR para unirte a un grupo
+                    Usa un enlace o código QR para unirte
                   </p>
                 </div>
               </button>

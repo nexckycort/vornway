@@ -1,7 +1,18 @@
 /** biome-ignore-all lint/a11y/useButtonType: <explanation> */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { CalendarDays, ChevronLeft, Plus, Target, Trash2, X } from 'lucide-react';
+import {
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  Copy,
+  Link,
+  Plus,
+  Share2,
+  Target,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { addGoalContribution } from '../../groups/$id/goals/-actions/add-goal-contribution';
 import { createGoal } from '../../groups/$id/goals/-actions/create-goal';
@@ -35,6 +46,8 @@ function RouteComponent() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showContributionModal, setShowContributionModal] = useState(false);
   const [showDeleteGoalModal, setShowDeleteGoalModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState('');
 
   const [title, setTitle] = useState('');
@@ -104,6 +117,31 @@ function RouteComponent() {
     () => data?.goals.find((goal) => goal.id === selectedGoalId) ?? null,
     [data?.goals, selectedGoalId],
   );
+  const inviteLink = data?.inviteCode
+    ? `${window.location.origin}/join/${data.inviteCode}`
+    : '';
+
+  const handleCopyLink = async () => {
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch (error) {
+      console.error('Error copying invite link:', error);
+    }
+  };
+
+  const handleCopyCode = async () => {
+    if (!data?.inviteCode) return;
+    try {
+      await navigator.clipboard.writeText(data.inviteCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch (error) {
+      console.error('Error copying invite code:', error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -133,18 +171,28 @@ function RouteComponent() {
   return (
     <div className="min-h-screen bg-[#f5f3fa] pb-8">
       <div className="px-4 pt-4 pb-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.navigate({ to: '/' })}
+              className="w-10 h-10 flex items-center justify-center"
+            >
+              <ChevronLeft className="w-6 h-6 text-[#1a1a3e]" />
+            </button>
+            <div>
+              <h1 className="text-xl font-semibold text-[#1a1a3e]">Meta</h1>
+              <p className="text-sm text-gray-500">{data.groupName}</p>
+            </div>
+          </div>
           <button
             type="button"
-            onClick={() => router.navigate({ to: '/goals' })}
-            className="w-10 h-10 flex items-center justify-center"
+            onClick={() => setShowInviteModal(true)}
+            className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center"
+            aria-label="Compartir meta"
           >
-            <ChevronLeft className="w-6 h-6 text-[#1a1a3e]" />
+            <Share2 className="w-5 h-5 text-[#1a1a3e]" />
           </button>
-          <div>
-            <h1 className="text-xl font-semibold text-[#1a1a3e]">Meta</h1>
-            <p className="text-sm text-gray-500">{data.groupName}</p>
-          </div>
         </div>
       </div>
 
@@ -171,14 +219,19 @@ function RouteComponent() {
           </div>
         ) : (
           data.goals.map((goal) => (
-            <article key={goal.id} className="bg-white rounded-3xl p-5 shadow-sm">
+            <article
+              key={goal.id}
+              className="bg-white rounded-3xl p-5 shadow-sm"
+            >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <h2 className="text-lg font-semibold text-[#1a1a3e]">
                     {goal.title}
                   </h2>
                   {goal.description ? (
-                    <p className="text-sm text-gray-500 mt-1">{goal.description}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {goal.description}
+                    </p>
                   ) : null}
                 </div>
                 <div className="flex items-center gap-2">
@@ -196,19 +249,21 @@ function RouteComponent() {
                   >
                     Aportar
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedGoalId(goal.id);
-                      setShowDeleteGoalModal(true);
-                    }}
-                    className="px-3 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-medium"
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      <Trash2 className="w-4 h-4" />
-                      Borrar
-                    </span>
-                  </button>
+                  {goal.canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedGoalId(goal.id);
+                        setShowDeleteGoalModal(true);
+                      }}
+                      className="px-3 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-medium"
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        <Trash2 className="w-4 h-4" />
+                        Borrar
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -289,7 +344,8 @@ function RouteComponent() {
                               aportó
                             </p>
                             <p className="text-sm font-semibold text-[#1a1a3e]">
-                              ${formatCurrency(contribution.amount)} {goal.currency}
+                              ${formatCurrency(contribution.amount)}{' '}
+                              {goal.currency}
                             </p>
                           </div>
                           <p className="text-xs text-gray-500">
@@ -321,7 +377,9 @@ function RouteComponent() {
             </div>
             <div className="px-6 pb-8">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-[#1a1a3e]">Nuevo objetivo</h2>
+                <h2 className="text-xl font-bold text-[#1a1a3e]">
+                  Nuevo objetivo
+                </h2>
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
@@ -357,7 +415,9 @@ function RouteComponent() {
                   <input
                     type="text"
                     value={currency}
-                    onChange={(event) => setCurrency(event.target.value.toUpperCase())}
+                    onChange={(event) =>
+                      setCurrency(event.target.value.toUpperCase())
+                    }
                     placeholder="Moneda"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl"
                   />
@@ -404,8 +464,10 @@ function RouteComponent() {
                         description,
                         targetAmount: Number(targetAmount),
                         currency,
-                        startDate: startDate || new Date().toISOString().slice(0, 10),
-                        endDate: endDate || new Date().toISOString().slice(0, 10),
+                        startDate:
+                          startDate || new Date().toISOString().slice(0, 10),
+                        endDate:
+                          endDate || new Date().toISOString().slice(0, 10),
                         installmentCount: Number(installmentCount),
                       },
                     })
@@ -421,7 +483,9 @@ function RouteComponent() {
                   }
                   className="flex-1 py-3 bg-[#4040b0] text-white font-medium rounded-xl disabled:opacity-60"
                 >
-                  {createGoalMutation.isPending ? 'Creando...' : 'Crear objetivo'}
+                  {createGoalMutation.isPending
+                    ? 'Creando...'
+                    : 'Crear objetivo'}
                 </button>
               </div>
               {createGoalMutation.data?.error ? (
@@ -479,7 +543,9 @@ function RouteComponent() {
                   min="1"
                   step="1"
                   value={contributionAmount}
-                  onChange={(event) => setContributionAmount(event.target.value)}
+                  onChange={(event) =>
+                    setContributionAmount(event.target.value)
+                  }
                   placeholder={`Monto (${selectedGoal.currency})`}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl"
                 />
@@ -595,6 +661,77 @@ function RouteComponent() {
               {deleteGoalMutation.data?.error ? (
                 <p className="text-red-500 text-sm mt-3">
                   {deleteGoalMutation.data.error}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </>
+      )}
+
+      {showInviteModal && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setShowInviteModal(false)}
+            aria-label="Cerrar modal"
+          />
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+            </div>
+            <div className="px-6 pb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-[#1a1a3e]">
+                  Compartir meta
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="mb-5">
+                <p className="text-sm text-gray-500 mb-2">
+                  Enlace de invitación
+                </p>
+                <div className="flex gap-2">
+                  <div className="flex-1 px-3 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-600 truncate">
+                    {inviteLink}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="px-3 py-3 rounded-xl border border-gray-300"
+                  >
+                    <Link className="w-4 h-4 text-gray-700" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="mb-5">
+                <p className="text-sm text-gray-500 mb-2">Código</p>
+                <div className="flex gap-2">
+                  <div className="flex-1 px-3 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700 font-mono">
+                    {data?.inviteCode}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyCode}
+                    className="px-3 py-3 rounded-xl border border-gray-300"
+                  >
+                    <Copy className="w-4 h-4 text-gray-700" />
+                  </button>
+                </div>
+              </div>
+
+              {copied ? (
+                <p className="text-sm text-green-600 flex items-center gap-1">
+                  <Check className="w-4 h-4" />
+                  Copiado al portapapeles
                 </p>
               ) : null}
             </div>

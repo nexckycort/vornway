@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { findGroupByInvite } from '~/routes/_authed/(home)/-actions/find-group-by-invite';
 import { joinGroup } from '~/routes/_authed/(home)/-actions/join-group';
 
-export const Route = createFileRoute('/_authed/join/$inviteCode')({
+export const Route = createFileRoute('/_shared/join/$inviteCode')({
   async loader({ params: { inviteCode } }) {
     const result = await findGroupByInvite({ data: { inviteCode } });
     const groupName = result.success && result.group ? result.group.name : null;

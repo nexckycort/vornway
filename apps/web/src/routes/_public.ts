@@ -9,7 +9,7 @@ export const Route = createFileRoute('/_public')({
     };
   },
   beforeLoad: ({ search, context }) => {
-    if (context.user) {
+    if (context.user && !context.user.isAnonymous) {
       throw redirect({
         to: search.redirect || fallback,
       });

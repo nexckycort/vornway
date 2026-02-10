@@ -102,6 +102,10 @@ export const loginFn = createServerFn({ method: 'POST' })
     const normalizedEmail = email.toLowerCase().trim();
     const session = await useAppSession();
 
+    // Guardar datos del usuario anónimo antes de iniciar sesión
+    const previousUserId = session.data.userId;
+    const wasAnonymous = session.data.isAnonymous === true;
+
     try {
       const { user } = await auth.api.signInEmailOTP({
         body: {
@@ -109,6 +113,23 @@ export const loginFn = createServerFn({ method: 'POST' })
           otp,
         },
       });
+
+      // Transferir membresías de grupo si venía de un usuario anónimo
+      if (wasAnonymous && previousUserId && previousUserId !== user.id) {
+        await db.groupMember.updateMany({
+          where: { userId: previousUserId },
+          data: { userId: user.id },
+        });
+
+        // Eliminar el usuario anónimo
+        try {
+          await db.session.deleteMany({ where: { userId: previousUserId } });
+          await db.account.deleteMany({ where: { userId: previousUserId } });
+          await db.user.delete({ where: { id: previousUserId } });
+        } catch (e) {
+          console.error('Error cleaning up anonymous user:', e);
+        }
+      }
 
       await session.update({
         userId: user.id,

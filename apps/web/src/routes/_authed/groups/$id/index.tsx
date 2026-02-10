@@ -462,6 +462,18 @@ function RouteComponent() {
 
             <div className="flex flex-col items-center gap-2 min-w-[96px]">
               <button
+                onClick={() => setShowInviteModal(true)}
+                className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center"
+              >
+                <Share2 className="w-6 h-6 text-[#1a1a3e]" />
+              </button>
+              <span className="text-sm text-[#1a1a3e] text-center">
+                Compartir
+              </span>
+            </div>
+
+            <div className="flex flex-col items-center gap-2 min-w-[96px]">
+              <button
                 onClick={() =>
                   router.navigate({
                     to: '/groups/$id/totals',

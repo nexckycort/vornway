@@ -1,12 +1,18 @@
 import { createServerFn } from '@tanstack/react-start';
 import * as z from 'zod';
-
+import { auth } from '~/infrastructure/auth/better-auth.config';
 import { db } from '~/infrastructure/database/connection';
 import { useAppSession } from '~/utils/session';
 
 const JoinGroupInputSchema = z.object({
   groupId: z.string(),
   existingMemberId: z.string().optional(), // Si se asocia a un miembro existente
+  name: z
+    .string()
+    .trim()
+    .min(1, 'El nombre es requerido')
+    .max(80, 'Nombre demasiado largo')
+    .optional(),
 });
 
 interface JoinGroupResponse {
@@ -20,13 +26,35 @@ export const joinGroup = createServerFn({ method: 'POST' })
   .handler(async ({ data }): Promise<JoinGroupResponse> => {
     try {
       const session = await useAppSession();
-      const userId = session.data.userId;
+      let userId = session.data.userId;
+      let userName = session.data.name;
+      const preferredName = data.name?.trim();
 
       if (!userId) {
-        return {
-          success: false,
-          error: 'No autenticado',
-        };
+        const result = await auth.api.signInAnonymous({ body: {} });
+        if (!result) {
+          return {
+            success: false,
+            error: 'No se pudo crear una sesión anónima',
+          };
+        }
+
+        const user = result.user;
+        if (preferredName) {
+          await db.user.update({
+            where: { id: user.id },
+            data: { name: preferredName },
+          });
+        }
+
+        await session.update({
+          userId: user.id,
+          email: user.email,
+          name: preferredName ?? user.name ?? 'Invitado',
+        });
+
+        userId = user.id;
+        userName = preferredName ?? user.name ?? 'Invitado';
       }
 
       // Obtener el nombre del usuario
@@ -41,6 +69,11 @@ export const joinGroup = createServerFn({ method: 'POST' })
           error: 'Usuario no encontrado',
         };
       }
+
+      const existingName = user.name ?? userName ?? undefined;
+      const isAnonymousName = existingName
+        ? existingName.toLowerCase() === 'anonymous'
+        : false;
 
       // Verificar que el grupo existe
       const group = await db.group.findUnique({
@@ -70,11 +103,12 @@ export const joinGroup = createServerFn({ method: 'POST' })
         };
       }
 
+      // Si se seleccionó un miembro existente, usar su nombre como fallback
+      let selectedMemberName: string | undefined;
       if (data.existingMemberId) {
-        // Asociar al miembro existente
         const existingMember = await db.groupMember.findUnique({
           where: { id: data.existingMemberId },
-          select: { id: true, userId: true, groupId: true },
+          select: { id: true, userId: true, groupId: true, name: true },
         });
 
         if (!existingMember) {
@@ -98,18 +132,59 @@ export const joinGroup = createServerFn({ method: 'POST' })
           };
         }
 
-        // Actualizar el miembro existente con el userId
+        selectedMemberName = existingMember.name ?? undefined;
+      }
+
+      // Determinar nombre final (preferido > nombre del miembro seleccionado > existente usuario)
+      const finalNameCandidate = (
+        preferredName ??
+        selectedMemberName ??
+        existingName ??
+        ''
+      ).trim();
+      const isMissingName =
+        !finalNameCandidate || finalNameCandidate.toLowerCase() === 'anonymous';
+
+      if (isMissingName) {
+        return {
+          success: false,
+          error: 'El nombre es requerido',
+        };
+      }
+
+      const finalName = finalNameCandidate;
+
+      // Actualizar nombre si viene uno nuevo, si el existente es Anonymous, o si usamos el nombre del miembro seleccionado
+      if (
+        preferredName ||
+        isAnonymousName ||
+        (selectedMemberName && finalName !== existingName)
+      ) {
+        await db.user.update({
+          where: { id: userId },
+          data: { name: finalName },
+        });
+        await session.update({
+          userId,
+          email: session.data.email,
+          name: finalName,
+        });
+        userName = finalName;
+      } else {
+        userName = finalName;
+      }
+
+      if (data.existingMemberId) {
         await db.groupMember.update({
           where: { id: data.existingMemberId },
           data: { userId },
         });
       } else {
-        // Crear nuevo miembro
         await db.groupMember.create({
           data: {
             groupId: data.groupId,
             userId,
-            name: user.name,
+            name: finalName,
             role: 'member',
           },
         });

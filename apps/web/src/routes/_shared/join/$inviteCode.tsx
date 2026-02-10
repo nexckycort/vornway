@@ -69,15 +69,24 @@ function RouteComponent() {
   const { user } = Route.useRouteContext();
   const router = useRouter();
 
+  const isAnonymousName = user?.name?.toLowerCase() === 'anonymous';
+
   const [foundGroup, setFoundGroup] = useState<FoundGroup | null>(null);
   const [unregisteredMembers, setUnregisteredMembers] = useState<
     UnregisteredMember[]
   >([]);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [newMemberName, setNewMemberName] = useState('');
   const [step, setStep] = useState<
     'loading' | 'select' | 'confirm' | 'success' | 'error' | 'already-member'
   >('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.name && !isAnonymousName && !newMemberName) {
+      setNewMemberName(user.name);
+    }
+  }, [user?.name, isAnonymousName, newMemberName]);
 
   const findGroupMutation = useMutation({
     mutationFn: findGroupByInvite,
@@ -129,10 +138,30 @@ function RouteComponent() {
 
   const handleJoinGroup = () => {
     if (!foundGroup) return;
+
+    const isNewMember = selectedMemberId === null;
+    const isNotLoggedIn = !user?.name || isAnonymousName;
+
+    // Para nuevos miembros sin sesión, exigir nombre
+    if (isNewMember && isNotLoggedIn && !newMemberName.trim()) return;
+
+    // Determinar el nombre a enviar
+    let nameToSend: string | undefined;
+    if (isNewMember && isNotLoggedIn) {
+      nameToSend = newMemberName.trim();
+    } else if (!isNewMember && isNotLoggedIn) {
+      // Enviar el nombre del miembro seleccionado para el usuario anónimo
+      const selectedMember = unregisteredMembers.find(
+        (m) => m.id === selectedMemberId,
+      );
+      nameToSend = selectedMember?.name;
+    }
+
     joinGroupMutation.mutate({
       data: {
         groupId: foundGroup.id,
         existingMemberId: selectedMemberId ?? undefined,
+        name: nameToSend,
       },
     });
   };
@@ -271,6 +300,21 @@ function RouteComponent() {
               </button>
             </div>
 
+            {selectedMemberId === null && (!user?.name || isAnonymousName) && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-[#1a1a3e] mb-2">
+                  Tu nombre
+                </label>
+                <input
+                  type="text"
+                  value={newMemberName}
+                  onChange={(e) => setNewMemberName(e.target.value)}
+                  placeholder="Cómo te llamas"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-[#1a1a3e] placeholder:text-gray-400"
+                />
+              </div>
+            )}
+
             {errorMessage && (
               <p className="text-red-500 text-sm text-center mb-4">
                 {errorMessage}
@@ -280,7 +324,12 @@ function RouteComponent() {
             <button
               type="button"
               onClick={handleJoinGroup}
-              disabled={joinGroupMutation.isPending}
+              disabled={
+                joinGroupMutation.isPending ||
+                (selectedMemberId === null &&
+                  (!user?.name || isAnonymousName) &&
+                  !newMemberName.trim())
+              }
               className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl disabled:opacity-50"
             >
               {joinGroupMutation.isPending ? 'Uniéndose...' : 'Unirme al grupo'}
@@ -302,8 +351,25 @@ function RouteComponent() {
             </p>
 
             <p className="text-[#1a1a3e] mb-6">
-              Te unirás como <strong>{user?.name}</strong> a este grupo.
+              Te unirás como{' '}
+              <strong>{newMemberName || user?.name || 'Invitado'}</strong> a
+              este grupo.
             </p>
+
+            {selectedMemberId === null && (!user?.name || isAnonymousName) && (
+              <div className="mb-6 text-left">
+                <label className="block text-sm font-medium text-[#1a1a3e] mb-2">
+                  Tu nombre
+                </label>
+                <input
+                  type="text"
+                  value={newMemberName}
+                  onChange={(e) => setNewMemberName(e.target.value)}
+                  placeholder="Cómo te llamas"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-[#1a1a3e] placeholder:text-gray-400"
+                />
+              </div>
+            )}
 
             {errorMessage && (
               <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
@@ -313,7 +379,12 @@ function RouteComponent() {
               <button
                 type="button"
                 onClick={handleJoinGroup}
-                disabled={joinGroupMutation.isPending}
+                disabled={
+                  joinGroupMutation.isPending ||
+                  (selectedMemberId === null &&
+                    (!user?.name || isAnonymousName) &&
+                    !newMemberName.trim())
+                }
                 className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl disabled:opacity-50"
               >
                 {joinGroupMutation.isPending

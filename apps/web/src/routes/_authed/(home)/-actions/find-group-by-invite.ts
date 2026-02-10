@@ -31,16 +31,7 @@ export const findGroupByInvite = createServerFn({ method: 'POST' })
   .handler(async ({ data }): Promise<FindGroupByInviteResponse> => {
     try {
       const session = await useAppSession();
-      const userId = session.data.userId;
-
-      if (!userId) {
-        return {
-          success: false,
-          unregisteredMembers: [],
-          alreadyMember: false,
-          error: 'No autenticado',
-        };
-      }
+      const userId = session.data.userId ?? null;
 
       // Extraer el código de invitación del enlace si es una URL
       let inviteCode = data.inviteCode.trim();
@@ -80,28 +71,16 @@ export const findGroupByInvite = createServerFn({ method: 'POST' })
       }
 
       // Verificar si el usuario ya es miembro
-      const existingMembership = group.GroupMember.find(
-        (m) => m.userId === userId
-      );
-
-      if (existingMembership) {
-        return {
-          success: true,
-          group: {
-            id: group.id,
-            name: group.name,
-            type: group.type,
-            memberCount: group.GroupMember.length,
-          },
-          unregisteredMembers: [],
-          alreadyMember: true,
-        };
-      }
+      const existingMembership = userId
+        ? group.GroupMember.find((m) => m.userId === userId)
+        : null;
 
       // Obtener miembros sin userId (no registrados)
-      const unregisteredMembers: UnregisteredMember[] = group.GroupMember
-        .filter((m) => m.userId === null)
-        .map((m) => ({ id: m.id, name: m.name }));
+      const unregisteredMembers: UnregisteredMember[] =
+        group.GroupMember.filter((m) => m.userId === null).map((m) => ({
+          id: m.id,
+          name: m.name,
+        }));
 
       return {
         success: true,
@@ -112,7 +91,7 @@ export const findGroupByInvite = createServerFn({ method: 'POST' })
           memberCount: group.GroupMember.length,
         },
         unregisteredMembers,
-        alreadyMember: false,
+        alreadyMember: Boolean(existingMembership),
       };
     } catch (error) {
       console.error('Error finding group:', error);

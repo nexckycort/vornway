@@ -11,4 +11,5 @@ model ActivityLog {
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@index([groupId, createdAt])
+  @@map("activity_log")
 }

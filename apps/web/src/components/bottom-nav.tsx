@@ -22,7 +22,7 @@ export function BottomNav() {
           return (
             <Link
               key={item.href}
-              href={item.href}
+              to={item.href}
               className={`flex flex-col items-center gap-1 py-2 px-4 ${
                 isActive ? 'text-[#4040b0]' : 'text-gray-400'
               }`}

@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AuthedRouteImport } from './routes/_authed'
-import { Route as ApiGroupsIndexRouteImport } from './routes/api/groups/index'
 import { Route as PublicWelcomeIndexRouteImport } from './routes/_public/welcome/index'
 import { Route as PublicLoginIndexRouteImport } from './routes/_public/login/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
@@ -34,11 +33,6 @@ const PublicRoute = PublicRouteImport.update({
 } as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiGroupsIndexRoute = ApiGroupsIndexRouteImport.update({
-  id: '/api/groups/',
-  path: '/api/groups/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PublicWelcomeIndexRoute = PublicWelcomeIndexRouteImport.update({
@@ -131,7 +125,6 @@ export interface FileRoutesByFullPath {
   '/profile/': typeof AuthedProfileIndexRoute
   '/login/': typeof PublicLoginIndexRoute
   '/welcome/': typeof PublicWelcomeIndexRoute
-  '/api/groups/': typeof ApiGroupsIndexRoute
   '/groups/$id/': typeof AuthedGroupsIdIndexRoute
   '/groups/new/': typeof AuthedGroupsNewIndexRoute
   '/groups/$id/add-expense/': typeof AuthedGroupsIdAddExpenseIndexRoute
@@ -149,7 +142,6 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthedProfileIndexRoute
   '/login': typeof PublicLoginIndexRoute
   '/welcome': typeof PublicWelcomeIndexRoute
-  '/api/groups': typeof ApiGroupsIndexRoute
   '/groups/$id': typeof AuthedGroupsIdIndexRoute
   '/groups/new': typeof AuthedGroupsNewIndexRoute
   '/groups/$id/add-expense': typeof AuthedGroupsIdAddExpenseIndexRoute
@@ -170,7 +162,6 @@ export interface FileRoutesById {
   '/_authed/profile/': typeof AuthedProfileIndexRoute
   '/_public/login/': typeof PublicLoginIndexRoute
   '/_public/welcome/': typeof PublicWelcomeIndexRoute
-  '/api/groups/': typeof ApiGroupsIndexRoute
   '/_authed/groups/$id/': typeof AuthedGroupsIdIndexRoute
   '/_authed/groups/new/': typeof AuthedGroupsNewIndexRoute
   '/_authed/groups/$id/add-expense/': typeof AuthedGroupsIdAddExpenseIndexRoute
@@ -190,7 +181,6 @@ export interface FileRouteTypes {
     | '/profile/'
     | '/login/'
     | '/welcome/'
-    | '/api/groups/'
     | '/groups/$id/'
     | '/groups/new/'
     | '/groups/$id/add-expense/'
@@ -208,7 +198,6 @@ export interface FileRouteTypes {
     | '/profile'
     | '/login'
     | '/welcome'
-    | '/api/groups'
     | '/groups/$id'
     | '/groups/new'
     | '/groups/$id/add-expense'
@@ -228,7 +217,6 @@ export interface FileRouteTypes {
     | '/_authed/profile/'
     | '/_public/login/'
     | '/_public/welcome/'
-    | '/api/groups/'
     | '/_authed/groups/$id/'
     | '/_authed/groups/new/'
     | '/_authed/groups/$id/add-expense/'
@@ -243,7 +231,6 @@ export interface RootRouteChildren {
   PublicRoute: typeof PublicRouteWithChildren
   SharedJoinInviteCodeRoute: typeof SharedJoinInviteCodeRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiGroupsIndexRoute: typeof ApiGroupsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -260,13 +247,6 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/groups/': {
-      id: '/api/groups/'
-      path: '/api/groups'
-      fullPath: '/api/groups/'
-      preLoaderRoute: typeof ApiGroupsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_public/welcome/': {
@@ -427,7 +407,6 @@ const rootRouteChildren: RootRouteChildren = {
   PublicRoute: PublicRouteWithChildren,
   SharedJoinInviteCodeRoute: SharedJoinInviteCodeRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiGroupsIndexRoute: ApiGroupsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

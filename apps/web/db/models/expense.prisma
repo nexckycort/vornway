@@ -12,6 +12,8 @@ model Expense {
   group        Group                @relation(fields: [groupId], references: [id])
   paidBy       GroupMember          @relation("MemberPaidExpenses", fields: [paidById], references: [id])
   participants ExpenseParticipant[]
+
+  @@map("expense")
 }
 
 model ExpenseParticipant {
@@ -24,4 +26,5 @@ model ExpenseParticipant {
   member  GroupMember @relation(fields: [memberId], references: [id])
 
   @@unique([expenseId, memberId])
+  @@map("expense_participant")
 }

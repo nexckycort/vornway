@@ -30,4 +30,5 @@ model GroupMember {
   expenseParticipants ExpenseParticipant[]
 
   @@unique([userId, groupId])
+  @@map("group_member")
 }

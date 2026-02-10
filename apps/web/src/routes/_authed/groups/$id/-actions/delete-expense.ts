@@ -43,7 +43,7 @@ export const deleteExpense = createServerFn({ method: 'POST' })
         };
       }
 
-      const deletedExpenseLog = await db.$transaction(async (tx) => {
+      await db.$transaction(async (tx) => {
         const expense = await tx.expense.findFirst({
           where: {
             id: data.expenseId,

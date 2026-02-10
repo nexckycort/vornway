@@ -6,16 +6,20 @@ import {
   Scripts,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
+import { createServerFn } from '@tanstack/react-start';
 import { Toaster } from '@workspace/ui/components/sonner';
-
 import appCss from '@workspace/ui/globals.css?url';
-import { clientEnv } from '~/config/env.client';
+import { serverEnv } from '~/config/env.server';
 import { getCurrentUserFn } from '~/server/auth';
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools';
 
 interface MyRouterContext {
   queryClient: QueryClient;
 }
+
+const getAppEnv = createServerFn().handler(() => {
+  return serverEnv.APP_ENV;
+});
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   beforeLoad: async () => {
@@ -28,8 +32,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     }
   },
   loader: async () => {
-    const isDev = clientEnv.APP_ENV === 'dev';
-    return { isDev };
+    const appEnv = await getAppEnv();
+    return { isDev: appEnv === 'dev' };
   },
   head: ({ loaderData }) => {
     const isDev = loaderData?.isDev;

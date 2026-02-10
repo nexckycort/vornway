@@ -114,6 +114,7 @@ export const loginFn = createServerFn({ method: 'POST' })
         userId: user.id,
         email: user.email,
         name: user.name,
+        isAnonymous: false,
       });
 
       return {
@@ -152,6 +153,7 @@ export const getCurrentUserFn = createServerFn({ method: 'GET' }).handler(
       id: userId,
       email: session.data.email,
       name: session.data.name,
+      isAnonymous: session.data.isAnonymous ?? false,
     };
   },
 );

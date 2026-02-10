@@ -7,6 +7,7 @@ type SessionData = {
   email?: string;
   name?: string;
   role?: string;
+  isAnonymous?: boolean;
 };
 
 export function useAppSession() {

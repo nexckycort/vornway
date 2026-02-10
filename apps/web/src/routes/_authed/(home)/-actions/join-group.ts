@@ -51,6 +51,7 @@ export const joinGroup = createServerFn({ method: 'POST' })
           userId: user.id,
           email: user.email,
           name: preferredName ?? user.name ?? 'Invitado',
+          isAnonymous: true,
         });
 
         userId = user.id;

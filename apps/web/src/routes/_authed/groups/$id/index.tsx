@@ -19,6 +19,7 @@ import { type MouseEvent, type TouchEvent, useState } from 'react';
 import { deleteGroup } from '../../(home)/-actions/delete-group';
 import { deleteExpense } from './-actions/delete-expense';
 import { getGroup } from './-actions/get-group';
+import { leaveGroup } from './-actions/leave-group';
 
 export const Route = createFileRoute('/_authed/groups/$id/')({
   component: RouteComponent,
@@ -295,6 +296,7 @@ function RouteComponent() {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [showDeleteExpenseModal, setShowDeleteExpenseModal] = useState(false);
   const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false);
+  const [showLeaveGroupConfirm, setShowLeaveGroupConfirm] = useState(false);
   const [deleteGroupNameInput, setDeleteGroupNameInput] = useState('');
   const [copiedGroupName, setCopiedGroupName] = useState(false);
 
@@ -324,6 +326,19 @@ function RouteComponent() {
         setShowDeleteGroupConfirm(false);
         setDeleteGroupNameInput('');
         setCopiedGroupName(false);
+        router.navigate({ to: '/' });
+      }
+    },
+  });
+
+  const leaveGroupMutation = useMutation({
+    mutationFn: leaveGroup,
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['user-groups'] });
+        queryClient.invalidateQueries({ queryKey: ['group', id] });
+        setShowSettingsModal(false);
+        setShowLeaveGroupConfirm(false);
         router.navigate({ to: '/' });
       }
     },
@@ -860,6 +875,7 @@ function RouteComponent() {
             onClick={() => {
               setShowSettingsModal(false);
               setShowDeleteGroupConfirm(false);
+              setShowLeaveGroupConfirm(false);
               setDeleteGroupNameInput('');
               setCopiedGroupName(false);
             }}
@@ -872,7 +888,7 @@ function RouteComponent() {
             </div>
 
             <div className="pb-8">
-              {!showDeleteGroupConfirm ? (
+              {!showDeleteGroupConfirm && !showLeaveGroupConfirm ? (
                 <>
                   <button
                     type="button"
@@ -921,18 +937,31 @@ function RouteComponent() {
 
                   <div className="mx-6 border-t border-gray-200" />
 
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteGroupConfirm(true)}
-                    className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-5 h-5 text-red-500" />
-                    <span className="text-red-500 font-medium">
-                      Eliminar grupo
-                    </span>
-                  </button>
+                  {data?.isOwner ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteGroupConfirm(true)}
+                      className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-5 h-5 text-red-500" />
+                      <span className="text-red-500 font-medium">
+                        Eliminar grupo
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowLeaveGroupConfirm(true)}
+                      className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-red-50 transition-colors"
+                    >
+                      <X className="w-5 h-5 text-red-500" />
+                      <span className="text-red-500 font-medium">
+                        Abandonar grupo
+                      </span>
+                    </button>
+                  )}
                 </>
-              ) : (
+              ) : showDeleteGroupConfirm ? (
                 <div className="px-6">
                   <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
                     Eliminar grupo
@@ -1003,6 +1032,47 @@ function RouteComponent() {
                       {deleteGroupMutation.isPending
                         ? 'Eliminando...'
                         : 'Eliminar'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="px-6">
+                  <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
+                    Abandonar grupo
+                  </h2>
+                  <p className="text-gray-600 mb-6">
+                    ¿Seguro que quieres abandonar <strong>{data?.name}</strong>?
+                    Podrás volver a unirte con invitación.
+                  </p>
+                  {leaveGroupMutation.data?.error && (
+                    <p className="text-red-500 text-sm mb-4">
+                      {leaveGroupMutation.data.error}
+                    </p>
+                  )}
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowLeaveGroupConfirm(false)}
+                      className="flex-1 py-3 text-[#1a1a3e] font-medium"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (leaveGroupMutation.isPending) return;
+                        leaveGroupMutation.mutate({
+                          data: {
+                            groupId: id,
+                          },
+                        });
+                      }}
+                      disabled={leaveGroupMutation.isPending}
+                      className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl disabled:opacity-60"
+                    >
+                      {leaveGroupMutation.isPending
+                        ? 'Abandonando...'
+                        : 'Abandonar'}
                     </button>
                   </div>
                 </div>

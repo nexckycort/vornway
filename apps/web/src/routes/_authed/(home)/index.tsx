@@ -79,16 +79,19 @@ interface HomeGroup {
   id: string;
   name: string;
   type: string;
+  ownerId: string;
 }
 
 function SwipeableGroupItem({
   group,
   onOpenGroup,
   onDeleteGroup,
+  canDelete,
 }: {
   group: HomeGroup;
   onOpenGroup: (groupId: string) => void;
   onDeleteGroup: (group: HomeGroup) => void;
+  canDelete: boolean;
 }) {
   const config = categoryConfig[group.type] ?? categoryConfig.otros;
   const IconComponent = config.icon;
@@ -103,6 +106,7 @@ function SwipeableGroupItem({
   const isOpen = translateX <= -SWIPE_THRESHOLD;
 
   const handleTouchStart = (event: React.TouchEvent<HTMLButtonElement>) => {
+    if (!canDelete) return;
     const touch = event.touches[0];
     setStartX(touch.clientX);
     setStartY(touch.clientY);
@@ -111,6 +115,7 @@ function SwipeableGroupItem({
   };
 
   const handleTouchMove = (event: React.TouchEvent<HTMLButtonElement>) => {
+    if (!canDelete) return;
     if (!isDragging || startX === null || startY === null) return;
 
     const touch = event.touches[0];
@@ -127,6 +132,7 @@ function SwipeableGroupItem({
   };
 
   const handleTouchEnd = () => {
+    if (!canDelete) return;
     if (!isDragging) return;
     const shouldTriggerDelete = translateX <= -FULL_SWIPE_THRESHOLD;
     const shouldOpenActions = translateX <= -SWIPE_THRESHOLD;
@@ -146,6 +152,10 @@ function SwipeableGroupItem({
   };
 
   const handleOpenGroup = () => {
+    if (!canDelete) {
+      onOpenGroup(group.id);
+      return;
+    }
     if (didSwipe) {
       setDidSwipe(false);
       return;
@@ -158,6 +168,7 @@ function SwipeableGroupItem({
   };
 
   const handleDelete = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (!canDelete) return;
     event.stopPropagation();
     onDeleteGroup(group);
     setTranslateX(0);
@@ -165,16 +176,18 @@ function SwipeableGroupItem({
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
-      <div className="absolute inset-y-0 right-0 w-[88px] bg-red-500 flex items-center justify-center rounded-2xl">
-        <button
-          type="button"
-          onClick={handleDelete}
-          className="h-full w-full flex flex-col items-center justify-center text-white"
-        >
-          <Trash2 className="w-5 h-5 mb-1" />
-          <span className="text-xs font-medium">Borrar</span>
-        </button>
-      </div>
+      {canDelete && (
+        <div className="absolute inset-y-0 right-0 w-[88px] bg-red-500 flex items-center justify-center rounded-2xl">
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="h-full w-full flex flex-col items-center justify-center text-white"
+          >
+            <Trash2 className="w-5 h-5 mb-1" />
+            <span className="text-xs font-medium">Borrar</span>
+          </button>
+        </div>
+      )}
 
       <button
         type="button"
@@ -481,6 +494,7 @@ function HomePage() {
                     navigate({ to: '/groups/$id', params: { id: groupId } })
                   }
                   onDeleteGroup={handleRequestDeleteGroup}
+                  canDelete={group.ownerId === user?.id}
                 />
               );
             })}

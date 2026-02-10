@@ -57,6 +57,7 @@ function RouteComponent() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [installmentCount, setInstallmentCount] = useState('12');
+  const [installmentAmount, setInstallmentAmount] = useState('');
 
   const [memberId, setMemberId] = useState('');
   const [contributionAmount, setContributionAmount] = useState('');
@@ -83,6 +84,7 @@ function RouteComponent() {
       setStartDate('');
       setEndDate('');
       setInstallmentCount('12');
+      setInstallmentAmount('');
     },
   });
 
@@ -445,6 +447,15 @@ function RouteComponent() {
                   placeholder="Número de cuotas"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl"
                 />
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={installmentAmount}
+                  onChange={(event) => setInstallmentAmount(event.target.value)}
+                  placeholder="Monto cuota mensual (opcional)"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+                />
               </div>
               <div className="flex gap-3 mt-5">
                 <button
@@ -469,6 +480,10 @@ function RouteComponent() {
                         endDate:
                           endDate || new Date().toISOString().slice(0, 10),
                         installmentCount: Number(installmentCount),
+                        installmentAmount:
+                          installmentAmount.trim() === ''
+                            ? undefined
+                            : Number(installmentAmount),
                       },
                     })
                   }

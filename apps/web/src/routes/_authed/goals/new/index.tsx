@@ -18,6 +18,7 @@ function RouteComponent() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [installmentCount, setInstallmentCount] = useState('12');
+  const [installmentAmount, setInstallmentAmount] = useState('');
 
   const [participantName, setParticipantName] = useState('');
   const [participants, setParticipants] = useState<
@@ -162,6 +163,18 @@ function RouteComponent() {
               className="w-full px-4 py-3.5 border border-gray-200 rounded-xl"
             />
           </div>
+          <div>
+            <p className="text-xs text-gray-500 mb-1">
+              Monto cuota mensual (opcional)
+            </p>
+            <input
+              type="number"
+              value={installmentAmount}
+              onChange={(event) => setInstallmentAmount(event.target.value)}
+              placeholder="Si no lo defines, se calcula automático"
+              className="w-full px-4 py-3.5 border border-gray-200 rounded-xl"
+            />
+          </div>
         </div>
 
         <div>
@@ -226,6 +239,10 @@ function RouteComponent() {
                 startDate,
                 endDate,
                 installmentCount: Number(installmentCount),
+                installmentAmount:
+                  installmentAmount.trim() === ''
+                    ? undefined
+                    : Number(installmentAmount),
                 participants,
               },
             })

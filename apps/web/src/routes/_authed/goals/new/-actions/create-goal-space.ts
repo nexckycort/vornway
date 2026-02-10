@@ -11,6 +11,7 @@ interface CreateGoalSpaceInput {
   startDate: string;
   endDate: string;
   installmentCount: number;
+  installmentAmount?: number;
   participants: Array<{
     name: string;
     userId?: string | null;
@@ -50,6 +51,15 @@ export const createGoalSpace = createServerFn({ method: 'POST' })
           error: 'Monto objetivo y cuotas deben ser mayores a 0',
         };
       }
+      if (
+        data.installmentAmount !== undefined &&
+        (!Number.isFinite(data.installmentAmount) || data.installmentAmount <= 0)
+      ) {
+        return {
+          success: false,
+          error: 'La cuota mensual debe ser mayor a 0',
+        };
+      }
 
       const startDate = new Date(data.startDate);
       const endDate = new Date(data.endDate);
@@ -71,7 +81,10 @@ export const createGoalSpace = createServerFn({ method: 'POST' })
       const now = new Date();
       const groupId = crypto.randomUUID();
       const inviteCode = crypto.randomUUID().slice(0, 8);
-      const installmentAmount = data.targetAmount / data.installmentCount;
+      const installmentAmount =
+        data.installmentAmount && data.installmentAmount > 0
+          ? data.installmentAmount
+          : data.targetAmount / data.installmentCount;
 
       const created = await db.$transaction(async (tx) => {
         const group = await tx.group.create({

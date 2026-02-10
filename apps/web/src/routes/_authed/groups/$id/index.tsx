@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { type MouseEvent, type TouchEvent, useState } from 'react';
+import { deleteGroup } from '../../(home)/-actions/delete-group';
 import { deleteExpense } from './-actions/delete-expense';
 import { getGroup } from './-actions/get-group';
 
@@ -294,6 +295,8 @@ function RouteComponent() {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [showDeleteExpenseModal, setShowDeleteExpenseModal] = useState(false);
   const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false);
+  const [deleteGroupNameInput, setDeleteGroupNameInput] = useState('');
+  const [copiedGroupName, setCopiedGroupName] = useState(false);
 
   const { data, error, isLoading } = useQuery({
     queryKey: ['group', id],
@@ -307,6 +310,21 @@ function RouteComponent() {
         queryClient.invalidateQueries({ queryKey: ['group', id] });
         setShowDeleteExpenseModal(false);
         setExpenseToDelete(null);
+      }
+    },
+  });
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: deleteGroup,
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['user-groups'] });
+        queryClient.invalidateQueries({ queryKey: ['group', id] });
+        setShowSettingsModal(false);
+        setShowDeleteGroupConfirm(false);
+        setDeleteGroupNameInput('');
+        setCopiedGroupName(false);
+        router.navigate({ to: '/' });
       }
     },
   });
@@ -355,6 +373,17 @@ function RouteComponent() {
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Error copying code:', err);
+    }
+  };
+
+  const handleCopyGroupName = async () => {
+    if (!data?.name) return;
+    try {
+      await navigator.clipboard.writeText(data.name);
+      setCopiedGroupName(true);
+      setTimeout(() => setCopiedGroupName(false), 1500);
+    } catch (error) {
+      console.error('Error copying group name:', error);
     }
   };
 
@@ -831,6 +860,8 @@ function RouteComponent() {
             onClick={() => {
               setShowSettingsModal(false);
               setShowDeleteGroupConfirm(false);
+              setDeleteGroupNameInput('');
+              setCopiedGroupName(false);
             }}
             aria-label="Cerrar modal"
           />
@@ -907,14 +938,45 @@ function RouteComponent() {
                     Eliminar grupo
                   </h2>
                   <p className="text-gray-600 mb-6">
-                    ¿Estás seguro de que deseas eliminar{' '}
-                    <strong>{data?.name}</strong>? Esta acción no se puede
-                    deshacer.
+                    Para confirmar, escribe exactamente el nombre del grupo.
                   </p>
+                  <div className="bg-gray-50 rounded-xl p-3 mb-4 border border-gray-100">
+                    <p className="text-sm text-gray-500">Nombre del grupo</p>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-[#1a1a3e] break-all">
+                        {data?.name}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleCopyGroupName}
+                        className="px-3 py-1.5 text-sm rounded-lg bg-white border border-gray-200 text-[#1a1a3e] whitespace-nowrap"
+                      >
+                        {copiedGroupName ? 'Copiado' : 'Copiar'}
+                      </button>
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    value={deleteGroupNameInput}
+                    onChange={(event) =>
+                      setDeleteGroupNameInput(event.target.value)
+                    }
+                    placeholder="Escribe el nombre del grupo"
+                    className="w-full px-4 py-3.5 border border-gray-200 rounded-xl text-[#1a1a3e] placeholder:text-gray-400 focus:outline-none focus:border-[#6060c0] mb-4"
+                  />
+                  {deleteGroupMutation.data?.error && (
+                    <p className="text-red-500 text-sm mb-4">
+                      {deleteGroupMutation.data.error}
+                    </p>
+                  )}
                   <div className="flex gap-3">
                     <button
                       type="button"
-                      onClick={() => setShowDeleteGroupConfirm(false)}
+                      onClick={() => {
+                        setShowDeleteGroupConfirm(false);
+                        setDeleteGroupNameInput('');
+                        setCopiedGroupName(false);
+                      }}
                       className="flex-1 py-3 text-[#1a1a3e] font-medium"
                     >
                       Cancelar
@@ -922,13 +984,25 @@ function RouteComponent() {
                     <button
                       type="button"
                       onClick={() => {
-                        // TODO: implement delete group
-                        setShowSettingsModal(false);
-                        setShowDeleteGroupConfirm(false);
+                        if (!data?.name || deleteGroupMutation.isPending)
+                          return;
+                        deleteGroupMutation.mutate({
+                          data: {
+                            groupId: id,
+                            groupNameConfirm: deleteGroupNameInput.trim(),
+                          },
+                        });
                       }}
-                      className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl"
+                      disabled={
+                        deleteGroupMutation.isPending ||
+                        !data?.name ||
+                        deleteGroupNameInput.trim() !== data.name
+                      }
+                      className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl disabled:opacity-60"
                     >
-                      Eliminar
+                      {deleteGroupMutation.isPending
+                        ? 'Eliminando...'
+                        : 'Eliminar'}
                     </button>
                   </div>
                 </div>

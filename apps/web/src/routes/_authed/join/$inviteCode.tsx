@@ -7,6 +7,48 @@ import { findGroupByInvite } from '~/routes/_authed/(home)/-actions/find-group-b
 import { joinGroup } from '~/routes/_authed/(home)/-actions/join-group';
 
 export const Route = createFileRoute('/_authed/join/$inviteCode')({
+  async loader({ params: { inviteCode } }) {
+    const result = await findGroupByInvite({ data: { inviteCode } });
+    const groupName = result.success && result.group ? result.group.name : null;
+
+    return { groupName, inviteCode };
+  },
+  head({ loaderData }) {
+    const groupName = loaderData?.groupName;
+    const inviteCode = loaderData?.inviteCode;
+
+    const title = groupName
+      ? `Únete a ${groupName} en Splitway`
+      : 'Te invitaron a un grupo en Splitway';
+
+    const description = groupName
+      ? `Te invitaron a unirte al grupo ${groupName}.`
+      : 'Únete a tu grupo y empieza a dividir gastos en Splitway.';
+
+    const url = inviteCode
+      ? `https://splitway.app/join/${inviteCode}`
+      : 'https://splitway.app/join';
+
+    return {
+      meta: [
+        { title },
+        { name: 'description', content: description },
+
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: url },
+        { property: 'og:site_name', content: 'Splitway' },
+        { property: 'og:locale', content: 'es_CO' },
+
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+
+        { rel: 'canonical', href: url },
+      ],
+    };
+  },
   component: RouteComponent,
 });
 

@@ -19,7 +19,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { Trash2 } from 'lucide-react';
+import { Target, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { BottomNav } from '~/components/bottom-nav';
 import { GradientLayout } from '~/components/gradient-layout';
@@ -251,6 +251,8 @@ function HomePage() {
   const [copiedGroupName, setCopiedGroupName] = useState(false);
 
   const { data: userGroups = [] } = useUserGroups();
+  const regularGroups = userGroups.filter((group) => group.type !== 'meta');
+  const metaGroups = userGroups.filter((group) => group.type === 'meta');
 
   const findGroupMutation = useMutation({
     mutationFn: findGroupByInvite,
@@ -310,6 +312,11 @@ function HomePage() {
     setSelectedMemberId(null);
     setJoinStep('input');
     setJoinError(null);
+  };
+
+  const handleOpenCreateGoal = () => {
+    setShowOptions(false);
+    navigate({ to: '/goals/new' });
   };
 
   const handleFindGroup = () => {
@@ -429,7 +436,7 @@ function HomePage() {
         </div>
       </div>
 
-      <div className={cn('px-6', userGroups.length > 0 && 'pb-32')}>
+      <div className={cn('px-6', regularGroups.length > 0 && 'pb-32')}>
         <h2 className="text-lg font-semibold text-[#1a1a3e] mb-4">
           Tus grupos
         </h2>
@@ -456,7 +463,7 @@ function HomePage() {
           </button>
         </div>
 
-        {userGroups.length === 0 ? (
+        {regularGroups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="w-20 h-20 bg-[#8080d0] rounded-2xl rotate-[-8deg] flex items-center justify-center mb-6 shadow-lg">
               <HugeiconsIcon icon={Users} className="w-10 h-10 text-white" />
@@ -492,7 +499,7 @@ function HomePage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {userGroups.map((group) => {
+            {regularGroups.map((group) => {
               return (
                 <SwipeableGroupItem
                   key={group.id}
@@ -514,6 +521,45 @@ function HomePage() {
                 Ver todos los grupos
               </button>
             </p>
+          </div>
+        )}
+
+        {metaGroups.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold text-[#1a1a3e] mb-4">
+              Tus metas
+            </h2>
+            <div className="space-y-3">
+              {metaGroups.map((goalGroup) => (
+                <button
+                  key={goalGroup.id}
+                  type="button"
+                  onClick={() =>
+                    navigate({ to: '/goals/$id', params: { id: goalGroup.id } })
+                  }
+                  className="w-full bg-[#ecfdf3] border border-emerald-200 rounded-2xl p-4 text-left"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                      <Target className="w-5 h-5 text-emerald-700" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-[#1a1a3e]">
+                          {goalGroup.name}
+                        </p>
+                        <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-200 text-emerald-800">
+                          META
+                        </span>
+                      </div>
+                      <p className="text-sm text-emerald-700">
+                        Aportes por cuotas y progreso
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -579,6 +625,21 @@ function HomePage() {
                   </p>
                   <p className="text-sm text-gray-500">
                     Usa un enlace o código QR para unirte a un grupo
+                  </p>
+                </div>
+              </button>
+
+              <button
+                onClick={handleOpenCreateGoal}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors text-left"
+              >
+                <div className="w-12 h-12 bg-[#e8e4f8] rounded-full flex items-center justify-center">
+                  <Target className="w-5 h-5 text-[#6060c0]" />
+                </div>
+                <div>
+                  <p className="font-semibold text-[#1a1a3e]">Crear meta</p>
+                  <p className="text-sm text-gray-500">
+                    Define un objetivo y registra aportes
                   </p>
                 </div>
               </button>

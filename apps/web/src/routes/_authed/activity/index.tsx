@@ -68,6 +68,30 @@ function RouteComponent() {
       };
     }
 
+    if (action === 'goal.created') {
+      return {
+        title: 'Creó una meta',
+        icon: Users,
+        iconClasses: 'bg-[#e6f5ff] text-[#2b6cb0]',
+      };
+    }
+
+    if (action === 'goal.contribution.created') {
+      return {
+        title: 'Registró un aporte a',
+        icon: CircleDollarSign,
+        iconClasses: 'bg-[#e4f6ee] text-[#2f855a]',
+      };
+    }
+
+    if (action === 'goal.deleted') {
+      return {
+        title: 'Eliminó un objetivo',
+        icon: Trash2,
+        iconClasses: 'bg-[#fde8e8] text-[#c53030]',
+      };
+    }
+
     return {
       title: 'Realizó una acción',
       icon: Users,
@@ -84,7 +108,8 @@ function RouteComponent() {
   const getActivityAmount = (details: unknown) => {
     if (!details || typeof details !== 'object') return null;
 
-    const amount = Reflect.get(details, 'amount');
+    const amount =
+      Reflect.get(details, 'amount') ?? Reflect.get(details, 'targetAmount');
     const currency = Reflect.get(details, 'currency');
 
     if (typeof amount !== 'number' || typeof currency !== 'string') {

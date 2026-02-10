@@ -175,7 +175,7 @@ export const getGroup = createServerFn({ method: 'POST' })
           participantCount: expense._count.participants,
           currentUserBalance,
         };
-      });
+      }).filter((expense) => !(expense.isSettlement && expense.isDeleted));
 
       const members: Member[] = groupRecord.GroupMember.map((member) => ({
         id: member.id,

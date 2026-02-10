@@ -220,148 +220,201 @@ function RouteComponent() {
             </p>
           </div>
         ) : (
-          data.goals.map((goal) => (
-            <article
-              key={goal.id}
-              className="bg-white rounded-3xl p-5 shadow-sm"
-            >
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div>
-                  <h2 className="text-lg font-semibold text-[#1a1a3e]">
-                    {goal.title}
-                  </h2>
-                  {goal.description ? (
-                    <p className="text-sm text-gray-500 mt-1">
-                      {goal.description}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedGoalId(goal.id);
-                      setMemberId('');
-                      setContributionAmount('');
-                      setContributedAt('');
-                      setContributionNotes('');
-                      setShowContributionModal(true);
-                    }}
-                    className="px-3 py-2 rounded-xl bg-[#eef0ff] text-[#4040b0] text-sm font-medium"
-                  >
-                    Aportar
-                  </button>
-                  {goal.canDelete && (
+          data.goals.map((goal) => {
+            const contributionsByMember = data.members.map((member) => {
+              const memberTotal = goal.contributions.reduce(
+                (sum, contribution) => {
+                  if (contribution.member.id !== member.id) return sum;
+                  return sum + contribution.amount;
+                },
+                0,
+              );
+              const quotaEquivalent =
+                goal.installmentAmount > 0
+                  ? memberTotal / goal.installmentAmount
+                  : 0;
+
+              return {
+                memberId: member.id,
+                memberName: member.name,
+                totalAmount: memberTotal,
+                totalQuotas: quotaEquivalent,
+              };
+            });
+
+            return (
+              <article
+                key={goal.id}
+                className="bg-white rounded-3xl p-5 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <h2 className="text-lg font-semibold text-[#1a1a3e]">
+                      {goal.title}
+                    </h2>
+                    {goal.description ? (
+                      <p className="text-sm text-gray-500 mt-1">
+                        {goal.description}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => {
                         setSelectedGoalId(goal.id);
-                        setShowDeleteGoalModal(true);
+                        setMemberId('');
+                        setContributionAmount('');
+                        setContributedAt('');
+                        setContributionNotes('');
+                        setShowContributionModal(true);
                       }}
-                      className="px-3 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-medium"
+                      className="px-3 py-2 rounded-xl bg-[#eef0ff] text-[#4040b0] text-sm font-medium"
                     >
-                      <span className="inline-flex items-center gap-1">
-                        <Trash2 className="w-4 h-4" />
-                        Borrar
-                      </span>
+                      Aportar
                     </button>
-                  )}
+                    {goal.canDelete && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedGoalId(goal.id);
+                          setShowDeleteGoalModal(true);
+                        }}
+                        className="px-3 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-medium"
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          <Trash2 className="w-4 h-4" />
+                          Borrar
+                        </span>
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="rounded-2xl bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500 mb-1">Meta</p>
-                  <p className="font-semibold text-[#1a1a3e]">
-                    ${formatCurrency(goal.targetAmount)} {goal.currency}
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="rounded-2xl bg-gray-50 p-3">
+                    <p className="text-xs text-gray-500 mb-1">Meta</p>
+                    <p className="font-semibold text-[#1a1a3e]">
+                      ${formatCurrency(goal.targetAmount)} {goal.currency}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-gray-50 p-3">
+                    <p className="text-xs text-gray-500 mb-1">Recaudado</p>
+                    <p className="font-semibold text-[#1a1a3e]">
+                      ${formatCurrency(goal.totalContributed)} {goal.currency}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <p className="text-gray-500">Progreso</p>
+                    <p className="font-medium text-[#1a1a3e]">
+                      {goal.progressPct.toFixed(1)}%
+                    </p>
+                  </div>
+                  <div className="w-full h-2.5 rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      className="h-full bg-[#4040b0]"
+                      style={{ width: `${goal.progressPct}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-[#f7f7fb] p-3 mb-3 text-sm">
+                  <div className="flex items-center gap-2 text-[#1a1a3e] mb-1">
+                    <CalendarDays className="w-4 h-4" />
+                    <p>
+                      {formatDate(goal.startDate)} - {formatDate(goal.endDate)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-[#1a1a3e]">
+                    <Target className="w-4 h-4" />
+                    <p>
+                      {goal.installmentCount} cuotas mensuales de $
+                      {formatCurrency(goal.installmentAmount)} {goal.currency}
+                    </p>
+                  </div>
+                  <p className="text-gray-500 mt-2">
+                    Esperado a hoy: ${formatCurrency(goal.expectedByNow)}{' '}
+                    {goal.currency}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500 mb-1">Recaudado</p>
-                  <p className="font-semibold text-[#1a1a3e]">
-                    ${formatCurrency(goal.totalContributed)} {goal.currency}
-                  </p>
-                </div>
-              </div>
 
-              <div className="mb-3">
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <p className="text-gray-500">Progreso</p>
-                  <p className="font-medium text-[#1a1a3e]">
-                    {goal.progressPct.toFixed(1)}%
+                <div>
+                  <p className="text-sm font-medium text-[#1a1a3e] mb-2">
+                    Aportes por persona
                   </p>
-                </div>
-                <div className="w-full h-2.5 rounded-full bg-gray-100 overflow-hidden">
-                  <div
-                    className="h-full bg-[#4040b0]"
-                    style={{ width: `${goal.progressPct}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-[#f7f7fb] p-3 mb-3 text-sm">
-                <div className="flex items-center gap-2 text-[#1a1a3e] mb-1">
-                  <CalendarDays className="w-4 h-4" />
-                  <p>
-                    {formatDate(goal.startDate)} - {formatDate(goal.endDate)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 text-[#1a1a3e]">
-                  <Target className="w-4 h-4" />
-                  <p>
-                    {goal.installmentCount} cuotas mensuales de $
-                    {formatCurrency(goal.installmentAmount)} {goal.currency}
-                  </p>
-                </div>
-                <p className="text-gray-500 mt-2">
-                  Esperado a hoy: ${formatCurrency(goal.expectedByNow)}{' '}
-                  {goal.currency}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm font-medium text-[#1a1a3e] mb-2">
-                  Últimos aportes
-                </p>
-                {goal.contributions.length === 0 ? (
-                  <p className="text-sm text-gray-500">Sin aportes aún</p>
-                ) : (
-                  <div className="space-y-2">
-                    {goal.contributions.slice(0, 5).map((contribution) => {
-                      const quotaEquivalent =
-                        goal.installmentAmount > 0
-                          ? contribution.amount / goal.installmentAmount
-                          : 0;
-
-                      return (
-                        <div
-                          key={contribution.id}
-                          className="rounded-xl border border-gray-100 px-3 py-2"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm text-[#1a1a3e]">
-                              <span className="font-medium">
-                                {contribution.member.name}
-                              </span>{' '}
-                              aportó
-                            </p>
-                            <p className="text-sm font-semibold text-[#1a1a3e]">
-                              ${formatCurrency(contribution.amount)}{' '}
-                              {goal.currency}
-                            </p>
-                          </div>
-                          <p className="text-xs text-gray-500">
-                            {formatDate(contribution.contributedAt)} ·{' '}
-                            {quotaEquivalent.toFixed(2)} cuotas
+                  <div className="space-y-2 mb-4">
+                    {contributionsByMember.map((memberContribution) => (
+                      <div
+                        key={memberContribution.memberId}
+                        className="rounded-xl border border-gray-100 px-3 py-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-[#1a1a3e]">
+                            {memberContribution.memberName}
+                          </p>
+                          <p className="text-sm font-semibold text-[#1a1a3e]">
+                            ${formatCurrency(memberContribution.totalAmount)}{' '}
+                            {goal.currency}
                           </p>
                         </div>
-                      );
-                    })}
+                        <p className="text-xs text-gray-500">
+                          {memberContribution.totalQuotas.toFixed(2)} cuotas
+                        </p>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            </article>
-          ))
+
+                  <p className="text-sm font-medium text-[#1a1a3e] mb-2">
+                    Todos los aportes
+                  </p>
+                  {goal.contributions.length === 0 ? (
+                    <p className="text-sm text-gray-500">Sin aportes aún</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {goal.contributions.map((contribution) => {
+                        const quotaEquivalent =
+                          goal.installmentAmount > 0
+                            ? contribution.amount / goal.installmentAmount
+                            : 0;
+
+                        return (
+                          <div
+                            key={contribution.id}
+                            className="rounded-xl border border-gray-100 px-3 py-2"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm text-[#1a1a3e]">
+                                <span className="font-medium">
+                                  {contribution.member.name}
+                                </span>{' '}
+                                aportó
+                              </p>
+                              <p className="text-sm font-semibold text-[#1a1a3e]">
+                                ${formatCurrency(contribution.amount)}{' '}
+                                {goal.currency}
+                              </p>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {formatDate(contribution.contributedAt)} ·{' '}
+                              {quotaEquivalent.toFixed(2)} cuotas
+                            </p>
+                            {contribution.notes ? (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {contribution.notes}
+                              </p>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </article>
+            );
+          })
         )}
       </div>
 

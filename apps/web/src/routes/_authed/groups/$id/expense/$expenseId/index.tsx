@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { ChevronLeft, Pencil, Pizza, X } from 'lucide-react';
+import { ChevronLeft, HandCoins, Pencil, Pizza, X } from 'lucide-react';
 import { useState } from 'react';
 
 import { deleteExpense } from '../../-actions/delete-expense';
@@ -119,7 +119,7 @@ function RouteComponent() {
             <ChevronLeft className="w-6 h-6 text-[#1a1a3e]" />
           </button>
           <h1 className="text-xl font-semibold text-[#1a1a3e]">
-            Detalle de gastos
+            {data.isSettlement ? 'Detalle de liquidación' : 'Detalle de gastos'}
           </h1>
         </div>
       </div>
@@ -127,7 +127,11 @@ function RouteComponent() {
       <div className="px-4 py-3">
         <div className="bg-white rounded-3xl p-6 shadow-sm text-center">
           <div className="w-14 h-14 bg-[#f0f4ff] rounded-2xl flex items-center justify-center mx-auto mb-2">
-            <Pizza className="w-7 h-7 text-[#5b7090]" />
+            {data.isSettlement ? (
+              <HandCoins className="w-7 h-7 text-[#2f8f5b]" />
+            ) : (
+              <Pizza className="w-7 h-7 text-[#5b7090]" />
+            )}
           </div>
           <p className="text-gray-500 mb-1">{data.description}</p>
           <div className="flex flex-col items-center gap-1 mb-4 sm:flex-row sm:justify-center sm:gap-2">
@@ -138,11 +142,13 @@ function RouteComponent() {
               {data.currency}
             </p>
           </div>
-          {data.isDeleted && (
+          {data.isDeleted ? (
             <p className="text-sm text-red-500 mb-2">
-              Este gasto fue eliminado (se conserva por historial)
+              {data.isSettlement
+                ? 'Esta liquidación fue eliminada (se conserva por historial)'
+                : 'Este gasto fue eliminado (se conserva por historial)'}
             </p>
-          )}
+          ) : null}
           <p className="text-gray-500">{formatRelativeTime(data.date)}</p>
         </div>
       </div>
@@ -150,7 +156,7 @@ function RouteComponent() {
       <div className="px-4 space-y-5">
         <section>
           <h3 className="text-2xl font-semibold text-[#474747] mb-3">
-            Pagado por
+            {data.isSettlement ? 'Liquidado por' : 'Pagado por'}
           </h3>
           <div className="bg-white rounded-2xl px-4 py-3 border border-gray-100">
             <div className="flex items-center gap-3">
@@ -169,7 +175,9 @@ function RouteComponent() {
                 <p className="font-bold text-[#3a3a3a] text-lg">
                   ${formatCurrency(data.amount)} {data.currency}
                 </p>
-                <p className="text-[#7a7a7a] text-sm">Sin deudas</p>
+                <p className="text-[#7a7a7a] text-sm">
+                  {data.isSettlement ? 'Pago aplicado' : 'Sin deudas'}
+                </p>
               </div>
             </div>
           </div>
@@ -177,12 +185,14 @@ function RouteComponent() {
 
         <section>
           <h3 className="text-2xl font-semibold text-[#474747] mb-3">
-            Se divide con
+            {data.isSettlement ? 'A favor de' : 'Se divide con'}
           </h3>
           <div className="space-y-3">
             {splitParticipants.length === 0 ? (
               <div className="bg-white rounded-2xl px-4 py-4 border border-gray-100">
-                <p className="text-gray-500">Gasto personal</p>
+                <p className="text-gray-500">
+                  {data.isSettlement ? 'Sin receptor de liquidación' : 'Gasto personal'}
+                </p>
               </div>
             ) : (
               splitParticipants.map((participant) => (
@@ -207,7 +217,11 @@ function RouteComponent() {
                         ${formatCurrency(participant.share)} {data.currency}
                       </p>
                       <p className="text-[#7a7a7a] text-sm">
-                        {participant.isCurrentUser ? 'Debes' : 'Deben'}
+                        {data.isSettlement
+                          ? 'Monto recibido'
+                          : participant.isCurrentUser
+                            ? 'Debes'
+                            : 'Deben'}
                       </p>
                     </div>
                   </div>
@@ -240,7 +254,7 @@ function RouteComponent() {
           className="flex-1 py-4 bg-[#4733d8] text-white font-semibold rounded-2xl flex items-center justify-center gap-2"
         >
           <Pencil className="w-5 h-5" />
-          Editar gasto
+          {data.isSettlement ? 'Editar liquidación' : 'Editar gasto'}
         </button>
       </div>
 
@@ -261,7 +275,7 @@ function RouteComponent() {
             <div className="px-6 pb-8">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-[#1a1a3e]">
-                  Eliminar gasto
+                  {data.isSettlement ? 'Eliminar liquidación' : 'Eliminar gasto'}
                 </h2>
                 <button
                   type="button"
@@ -273,8 +287,11 @@ function RouteComponent() {
               </div>
 
               <p className="text-gray-600 mb-6">
-                Se eliminará <strong>{data.description}</strong> por $
-                {formatCurrency(data.amount)} {data.currency}.
+                {data.isSettlement
+                  ? 'Se eliminará la liquidación'
+                  : 'Se eliminará'}{' '}
+                <strong>{data.description}</strong> por ${formatCurrency(data.amount)}{' '}
+                {data.currency}.
               </p>
 
               <div className="flex gap-3">

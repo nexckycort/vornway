@@ -66,25 +66,30 @@ export const deleteExpense = createServerFn({ method: 'POST' })
           throw new Error('Este gasto ya fue eliminado');
         }
 
-        const group = await tx.group.findUnique({
-          where: {
-            id: data.groupId,
-          },
-          select: {
-            totals: true,
-          },
-        });
+        const isSettlement = expense.notes?.includes('[SETTLEMENT') ?? false;
+        let nextTotals: Record<string, number> | null = null;
 
-        const currentTotals = (group?.totals as Record<string, number>) ?? {};
-        const currentCurrencyTotal = currentTotals[expense.currency] ?? 0;
-        const nextCurrencyTotal = currentCurrencyTotal - expense.amount;
-        const nextTotals = {
-          ...currentTotals,
-          [expense.currency]: Math.max(0, nextCurrencyTotal),
-        };
+        if (!isSettlement) {
+          const group = await tx.group.findUnique({
+            where: {
+              id: data.groupId,
+            },
+            select: {
+              totals: true,
+            },
+          });
 
-        if (nextTotals[expense.currency] === 0) {
-          delete nextTotals[expense.currency];
+          const currentTotals = (group?.totals as Record<string, number>) ?? {};
+          const currentCurrencyTotal = currentTotals[expense.currency] ?? 0;
+          const nextCurrencyTotal = currentCurrencyTotal - expense.amount;
+          nextTotals = {
+            ...currentTotals,
+            [expense.currency]: Math.max(0, nextCurrencyTotal),
+          };
+
+          if (nextTotals[expense.currency] === 0) {
+            delete nextTotals[expense.currency];
+          }
         }
 
         await tx.expenseParticipant.deleteMany({
@@ -109,14 +114,16 @@ export const deleteExpense = createServerFn({ method: 'POST' })
           },
         });
 
-        await tx.group.update({
-          where: {
-            id: data.groupId,
-          },
-          data: {
-            totals: nextTotals,
-          },
-        });
+        if (nextTotals) {
+          await tx.group.update({
+            where: {
+              id: data.groupId,
+            },
+            data: {
+              totals: nextTotals,
+            },
+          });
+        }
 
         await tx.activityLog.create({
           data: {

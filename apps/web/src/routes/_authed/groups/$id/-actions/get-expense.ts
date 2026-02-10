@@ -24,6 +24,7 @@ interface GetExpenseResponse {
   currency: string;
   date: Date;
   isDeleted: boolean;
+  isSettlement: boolean;
   paidBy: {
     memberId: string;
     name: string;
@@ -110,6 +111,7 @@ export const getExpense = createServerFn({ method: 'POST' })
       currency: expenseRecord.currency,
       date: expenseRecord.date,
       isDeleted: expenseRecord.notes?.includes('[DELETED]') ?? false,
+      isSettlement: expenseRecord.notes?.includes('[SETTLEMENT') ?? false,
       paidBy: {
         memberId: expenseRecord.paidBy.id,
         name: expenseRecord.paidBy.name,

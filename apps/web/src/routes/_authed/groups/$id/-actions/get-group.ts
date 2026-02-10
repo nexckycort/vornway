@@ -16,6 +16,8 @@ interface Expense {
   currency: string;
   date: Date;
   isDeleted: boolean;
+  isSettlement: boolean;
+  settlementToName: string | null;
   paidBy: {
     id: string;
     name: string;
@@ -94,6 +96,11 @@ export const getGroup = createServerFn({ method: 'POST' })
                 select: {
                   memberId: true,
                   share: true,
+                  member: {
+                    select: {
+                      name: true,
+                    },
+                  },
                 },
               },
               _count: {
@@ -129,6 +136,10 @@ export const getGroup = createServerFn({ method: 'POST' })
 
       const expenses: Expense[] = groupRecord.Expense.map((expense) => {
         const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
+        const isSettlement = expense.notes?.includes('[SETTLEMENT') ?? false;
+        const settlementToName = isSettlement
+          ? (expense.participants[0]?.member.name ?? null)
+          : null;
         let currentUserBalance: number | null = null;
 
         if (!isDeleted && currentMemberId) {
@@ -155,6 +166,8 @@ export const getGroup = createServerFn({ method: 'POST' })
           currency: expense.currency,
           date: expense.date,
           isDeleted,
+          isSettlement,
+          settlementToName,
           paidBy: {
             id: expense.paidBy.id,
             name: expense.paidBy.name,

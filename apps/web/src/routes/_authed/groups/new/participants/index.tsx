@@ -31,6 +31,7 @@ function AddParticipants() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [createdGroupId, setCreatedGroupId] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [shareMessage, setShareMessage] = useState('');
 
   const { data: knownUsersData } = useQuery({
     queryKey: ['known-users'],
@@ -130,6 +131,30 @@ function AddParticipants() {
       .toLocaleLowerCase('es-CO')
       .includes(participantName.trim().toLocaleLowerCase('es-CO'));
   });
+
+  const handleShareInvite = async () => {
+    if (!inviteCode) return;
+
+    const inviteLink = `${window.location.origin}/join/${inviteCode}`;
+    setShareMessage('');
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Únete al grupo ${name}`,
+          text: `Te invito a unirte al grupo "${name}"`,
+          url: inviteLink,
+        });
+        return;
+      }
+
+      await navigator.clipboard.writeText(inviteLink);
+      setShareMessage('Enlace copiado');
+    } catch (error) {
+      console.error('Error sharing invite link:', error);
+      setShareMessage('No se pudo compartir el enlace');
+    }
+  };
 
   return (
     <StepLayout
@@ -273,16 +298,16 @@ function AddParticipants() {
                   </span>
                 </div>
                 <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(
-                      `${window.location.origin}/join/${inviteCode}`,
-                    );
-                  }}
+                  type="button"
+                  onClick={handleShareInvite}
                   className="w-14 h-14 border-2 border-[#4040b0] rounded-xl flex items-center justify-center"
                 >
                   <Share2 className="w-5 h-5 text-[#4040b0]" />
                 </button>
               </div>
+              {shareMessage ? (
+                <p className="text-sm text-gray-500 mb-4">{shareMessage}</p>
+              ) : null}
 
               {/* Info card */}
               <div className="bg-gray-50 rounded-2xl p-5 mb-6">

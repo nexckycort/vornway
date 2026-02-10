@@ -6,6 +6,7 @@ import {
   Check,
   ChevronLeft,
   Copy,
+  HandCoins,
   Link,
   MoreHorizontal,
   Pencil,
@@ -46,6 +47,8 @@ interface Expense {
   currency: string;
   date: Date;
   isDeleted: boolean;
+  isSettlement: boolean;
+  settlementToName: string | null;
   paidBy: {
     id: string;
     name: string;
@@ -72,6 +75,7 @@ function ExpenseItem({
   const [isDragging, setIsDragging] = useState(false);
   const [didSwipe, setDidSwipe] = useState(false);
   const isOpen = translateX <= -SWIPE_THRESHOLD;
+  const showDeleteAction = !expense.isDeleted && translateX < -2;
 
   const handleTouchStart = (event: TouchEvent<HTMLButtonElement>) => {
     if (expense.isDeleted) return;
@@ -137,9 +141,15 @@ function ExpenseItem({
   };
 
   return (
-    <div className="relative border-b border-gray-100 last:border-b-0 overflow-hidden">
-      {!expense.isDeleted && (
-        <div className="absolute inset-y-0 right-0 w-[88px] bg-red-500 flex items-center justify-center">
+    <div
+      className={`relative border-b last:border-b-0 overflow-hidden ${
+        expense.isSettlement
+          ? 'border-emerald-100'
+          : 'border-gray-100'
+      }`}
+    >
+      {showDeleteAction && (
+        <div className="absolute inset-y-0 right-0 w-[88px] bg-red-500 flex items-center justify-center z-0">
           <button
             type="button"
             onClick={handleDelete}
@@ -158,22 +168,41 @@ function ExpenseItem({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
-        className="w-full flex items-center gap-4 py-4 text-left bg-white transition-transform duration-200"
+        className={`relative z-10 w-full flex items-center gap-4 py-4 text-left transition-transform duration-200 ${
+          expense.isSettlement ? 'bg-emerald-50' : 'bg-white'
+        }`}
         style={{ transform: `translateX(${translateX}px)` }}
       >
-        <div className="w-12 h-12 bg-[#f0f0ff] rounded-xl flex items-center justify-center flex-shrink-0">
-          <span className="text-lg">💰</span>
+        <div
+          className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+            expense.isSettlement ? 'bg-emerald-100' : 'bg-[#f0f0ff]'
+          }`}
+        >
+          <span className="text-lg">{expense.isSettlement ? '🤝' : '💰'}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-[#1a1a3e] truncate">
+          <p className="font-medium text-[#1a1a3e] truncate flex items-center gap-2">
             {expense.description}
+            {expense.isSettlement ? (
+              <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700">
+                Liquidación
+              </span>
+            ) : null}
           </p>
           <p className="text-sm text-gray-500">
             {formatDate(expense.date)}
             {expense.participantCount > 0 &&
               ` · ${expense.participantCount} participantes`}
           </p>
-          <p className="text-sm text-gray-500">Pagó: {expense.paidBy.name}</p>
+          <p
+            className={`text-sm ${
+              expense.isSettlement ? 'text-emerald-700' : 'text-gray-500'
+            }`}
+          >
+            {expense.isSettlement
+              ? `${expense.paidBy.name} pagó a ${expense.settlementToName ?? 'otro miembro'}`
+              : `Pagó: ${expense.paidBy.name}`}
+          </p>
         </div>
         <div className="text-right flex-shrink-0">
           <p
@@ -181,7 +210,9 @@ function ExpenseItem({
           >
             ${formatCurrency(expense.amount)}
           </p>
-          {!expense.isDeleted && expense.currentUserBalance !== null ? (
+          {!expense.isDeleted &&
+          !expense.isSettlement &&
+          expense.currentUserBalance !== null ? (
             <p
               className={`text-xs font-medium ${
                 expense.currentUserBalance > 0
@@ -199,7 +230,11 @@ function ExpenseItem({
             </p>
           ) : (
             <p className="text-xs text-gray-500">
-              {expense.isDeleted ? 'Eliminado' : expense.currency}
+              {expense.isDeleted
+                ? 'Eliminado'
+                : expense.isSettlement
+                  ? 'Liquidación'
+                  : expense.currency}
             </p>
           )}
         </div>
@@ -530,6 +565,23 @@ function RouteComponent() {
               </button>
               <span className="text-sm text-[#1a1a3e] text-center">
                 Totales
+              </span>
+            </div>
+
+            <div className="flex flex-col items-center gap-2 min-w-[96px]">
+              <button
+                onClick={() =>
+                  router.navigate({
+                    to: '/groups/$id/settle',
+                    params: { id },
+                  })
+                }
+                className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center"
+              >
+                <HandCoins className="w-6 h-6 text-[#1a1a3e]" />
+              </button>
+              <span className="text-sm text-[#1a1a3e] text-center">
+                Liquidar
               </span>
             </div>
 

@@ -65,6 +65,7 @@ function RouteComponent() {
   });
 
   const members = membersData?.members ?? [];
+  const isSettlement = expenseData?.isSettlement ?? false;
 
   // Set default paidBy when members are loaded
   if (membersData?.currentUserMemberId && paidById === null) {
@@ -96,6 +97,7 @@ function RouteComponent() {
   });
 
   const toggleParticipant = (id: string) => {
+    if (isSettlement) return;
     if (id === 'all') {
       if (selectedParticipants.length === members.length) {
         setSelectedParticipants([]);
@@ -265,7 +267,11 @@ function RouteComponent() {
           <ChevronLeft className="w-6 h-6 text-[#1a1a3e]" />
         </button>
         <h1 className="text-xl font-semibold text-[#1a1a3e]">
-          {isEditMode ? 'Editar gasto' : 'Añadir gasto'}
+          {isEditMode
+            ? isSettlement
+              ? 'Editar liquidación'
+              : 'Editar gasto'
+            : 'Añadir gasto'}
         </h1>
       </div>
 
@@ -376,19 +382,28 @@ function RouteComponent() {
             </div>
           </div>
           <div className="flex-1">
-            <span className="block text-[#1a1a3e] mb-2">Dividir en</span>
+            <span className="block text-[#1a1a3e] mb-2">
+              {isSettlement ? 'Tipo' : 'Dividir en'}
+            </span>
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setShowSplitDropdown(!showSplitDropdown)}
+                onClick={() => {
+                  if (!isSettlement) {
+                    setShowSplitDropdown(!showSplitDropdown);
+                  }
+                }}
                 className="w-full px-4 py-3.5 bg-gray-100 rounded-xl flex items-center justify-between"
+                disabled={isSettlement}
               >
                 <span className="text-[#1a1a3e]">
-                  {selectedSplitMethod?.label ?? 'Partes iguales'}
+                  {isSettlement
+                    ? 'Liquidación entre miembros'
+                    : selectedSplitMethod?.label ?? 'Partes iguales'}
                 </span>
                 <ChevronDown className="w-5 h-5 text-gray-500" />
               </button>
-              {showSplitDropdown && (
+              {showSplitDropdown && !isSettlement && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10">
                   {splitMethods.map((m) => (
                     <button
@@ -413,7 +428,9 @@ function RouteComponent() {
         <div className="flex items-start gap-3 p-4 bg-[#f0f8ff] rounded-xl mb-6">
           <Info className="w-5 h-5 text-[#3498db] flex-shrink-0 mt-0.5" />
           <p className="text-sm text-gray-600">
-            {splitMethod === 'exact'
+            {isSettlement
+              ? 'Esta edición corresponde a una liquidación. No cambia el total gastado del grupo, solo salda deuda entre miembros.'
+              : splitMethod === 'exact'
               ? 'Puedes editar cuánto paga cada participante. La suma debe ser igual al monto total.'
               : 'Se dividira el monto total en partes iguales y todos pagan lo mismo de este gasto'}
           </p>
@@ -433,37 +450,39 @@ function RouteComponent() {
           </div>
 
           {/* Select all */}
-          <button
-            type="button"
-            onClick={() => toggleParticipant('all')}
-            className="w-full flex items-center gap-4 py-3"
-          >
-            <div
-              className={`w-6 h-6 border-2 rounded-lg flex items-center justify-center ${
-                selectedParticipants.length === members.length
-                  ? 'bg-[#4040b0] border-[#4040b0]'
-                  : 'border-gray-300'
-              }`}
+          {!isSettlement && (
+            <button
+              type="button"
+              onClick={() => toggleParticipant('all')}
+              className="w-full flex items-center gap-4 py-3"
             >
-              {selectedParticipants.length === members.length && (
-                <svg
-                  className="w-4 h-4 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={3}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              )}
-            </div>
-            <span className="text-[#1a1a3e]">Todos</span>
-          </button>
+              <div
+                className={`w-6 h-6 border-2 rounded-lg flex items-center justify-center ${
+                  selectedParticipants.length === members.length
+                    ? 'bg-[#4040b0] border-[#4040b0]'
+                    : 'border-gray-300'
+                }`}
+              >
+                {selectedParticipants.length === members.length && (
+                  <svg
+                    className="w-4 h-4 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </div>
+              <span className="text-[#1a1a3e]">Todos</span>
+            </button>
+          )}
 
           {/* Participants */}
           {members.map((participant) => (
@@ -474,6 +493,7 @@ function RouteComponent() {
               <button
                 type="button"
                 onClick={() => toggleParticipant(participant.id)}
+                disabled={isSettlement}
                 className="flex-1 flex items-center gap-4"
               >
                 <div
@@ -597,7 +617,9 @@ function RouteComponent() {
               ? 'Guardando...'
               : 'Añadiendo...'
             : isEditMode
-              ? 'Guardar cambios'
+              ? isSettlement
+                ? 'Guardar liquidación'
+                : 'Guardar cambios'
               : 'Añadir'}
         </button>
       </div>

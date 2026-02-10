@@ -19,10 +19,12 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { BottomNav } from '~/components/bottom-nav';
 import { GradientLayout } from '~/components/gradient-layout';
 import { cn } from '~/lib/utils';
+import { deleteGroup } from './-actions/delete-group';
 import { findGroupByInvite } from './-actions/find-group-by-invite';
 import { joinGroup } from './-actions/join-group';
 import { useUserGroups } from './-hooks/use-user-groups';
@@ -73,6 +75,138 @@ interface FoundGroup {
   memberCount: number;
 }
 
+interface HomeGroup {
+  id: string;
+  name: string;
+  type: string;
+}
+
+function SwipeableGroupItem({
+  group,
+  onOpenGroup,
+  onDeleteGroup,
+}: {
+  group: HomeGroup;
+  onOpenGroup: (groupId: string) => void;
+  onDeleteGroup: (group: HomeGroup) => void;
+}) {
+  const config = categoryConfig[group.type] ?? categoryConfig.otros;
+  const IconComponent = config.icon;
+  const SWIPE_WIDTH = 88;
+  const SWIPE_THRESHOLD = 44;
+  const FULL_SWIPE_THRESHOLD = 78;
+  const [translateX, setTranslateX] = useState(0);
+  const [startX, setStartX] = useState<number | null>(null);
+  const [startY, setStartY] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [didSwipe, setDidSwipe] = useState(false);
+  const isOpen = translateX <= -SWIPE_THRESHOLD;
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLButtonElement>) => {
+    const touch = event.touches[0];
+    setStartX(touch.clientX);
+    setStartY(touch.clientY);
+    setIsDragging(true);
+    setDidSwipe(false);
+  };
+
+  const handleTouchMove = (event: React.TouchEvent<HTMLButtonElement>) => {
+    if (!isDragging || startX === null || startY === null) return;
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - startY;
+
+    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+
+    const nextTranslateX = Math.max(-SWIPE_WIDTH, Math.min(0, deltaX));
+    if (Math.abs(nextTranslateX) > 6) {
+      setDidSwipe(true);
+    }
+    setTranslateX(nextTranslateX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    const shouldTriggerDelete = translateX <= -FULL_SWIPE_THRESHOLD;
+    const shouldOpenActions = translateX <= -SWIPE_THRESHOLD;
+
+    if (shouldTriggerDelete) {
+      setTranslateX(0);
+      onDeleteGroup(group);
+    } else if (shouldOpenActions) {
+      setTranslateX(-SWIPE_WIDTH);
+    } else {
+      setTranslateX(0);
+    }
+
+    setIsDragging(false);
+    setStartX(null);
+    setStartY(null);
+  };
+
+  const handleOpenGroup = () => {
+    if (didSwipe) {
+      setDidSwipe(false);
+      return;
+    }
+    if (isOpen) {
+      setTranslateX(0);
+      return;
+    }
+    onOpenGroup(group.id);
+  };
+
+  const handleDelete = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    onDeleteGroup(group);
+    setTranslateX(0);
+  };
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl">
+      <div className="absolute inset-y-0 right-0 w-[88px] bg-red-500 flex items-center justify-center rounded-2xl">
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="h-full w-full flex flex-col items-center justify-center text-white"
+        >
+          <Trash2 className="w-5 h-5 mb-1" />
+          <span className="text-xs font-medium">Borrar</span>
+        </button>
+      </div>
+
+      <button
+        type="button"
+        onClick={handleOpenGroup}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        className="w-full bg-white rounded-2xl p-4 text-left transition-transform duration-200"
+        style={{ transform: `translateX(${translateX}px)` }}
+      >
+        <div className="flex items-start gap-3">
+          <div
+            className={`w-10 h-10 ${config.bg} rounded-xl flex items-center justify-center`}
+          >
+            <HugeiconsIcon
+              icon={IconComponent}
+              className={`w-5 h-5 ${config.color}`}
+            />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-[#1a1a3e]">{group.name}</p>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <span>{config.label}</span>
+            </div>
+          </div>
+        </div>
+      </button>
+    </div>
+  );
+}
+
 function HomePage() {
   const { user } = Route.useRouteContext();
   const navigate = Route.useNavigate();
@@ -83,10 +217,18 @@ function HomePage() {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [inviteLink, setInviteLink] = useState('');
   const [foundGroup, setFoundGroup] = useState<FoundGroup | null>(null);
-  const [unregisteredMembers, setUnregisteredMembers] = useState<UnregisteredMember[]>([]);
+  const [unregisteredMembers, setUnregisteredMembers] = useState<
+    UnregisteredMember[]
+  >([]);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
-  const [joinStep, setJoinStep] = useState<'input' | 'select' | 'confirm'>('input');
+  const [joinStep, setJoinStep] = useState<'input' | 'select' | 'confirm'>(
+    'input',
+  );
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [groupToDelete, setGroupToDelete] = useState<HomeGroup | null>(null);
+  const [showDeleteGroupModal, setShowDeleteGroupModal] = useState(false);
+  const [deleteGroupNameInput, setDeleteGroupNameInput] = useState('');
+  const [copiedGroupName, setCopiedGroupName] = useState(false);
 
   const { data: userGroups = [] } = useUserGroups();
 
@@ -126,6 +268,19 @@ function HomePage() {
     },
   });
 
+  const deleteGroupMutation = useMutation({
+    mutationFn: deleteGroup,
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['user-groups'] });
+        setShowDeleteGroupModal(false);
+        setGroupToDelete(null);
+        setDeleteGroupNameInput('');
+        setCopiedGroupName(false);
+      }
+    },
+  });
+
   const resetJoinModal = () => {
     setShowJoinModal(false);
     setShowOptions(false);
@@ -152,10 +307,40 @@ function HomePage() {
     });
   };
 
+  const handleRequestDeleteGroup = (group: HomeGroup) => {
+    setGroupToDelete(group);
+    setDeleteGroupNameInput('');
+    setCopiedGroupName(false);
+    setShowDeleteGroupModal(true);
+  };
+
+  const handleCopyGroupName = async () => {
+    if (!groupToDelete) return;
+    try {
+      await navigator.clipboard.writeText(groupToDelete.name);
+      setCopiedGroupName(true);
+      setTimeout(() => setCopiedGroupName(false), 1500);
+    } catch (error) {
+      console.error('Error copying group name:', error);
+    }
+  };
+
+  const handleConfirmDeleteGroup = () => {
+    if (!groupToDelete || deleteGroupMutation.isPending) return;
+    deleteGroupMutation.mutate({
+      data: {
+        groupId: groupToDelete.id,
+        groupNameConfirm: deleteGroupNameInput.trim(),
+      },
+    });
+  };
+
   return (
     <GradientLayout>
       <header className="flex items-center justify-between px-6 pt-6 pb-4">
-        <h1 className="text-2xl font-bold text-[#1a1a3e]">Hola, {user?.name}</h1>
+        <h1 className="text-2xl font-bold text-[#1a1a3e]">
+          Hola, {user?.name}
+        </h1>
         <button className="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center">
           <HugeiconsIcon icon={Bell} className="w-5 h-5 text-[#1a1a3e]" />
         </button>
@@ -288,36 +473,15 @@ function HomePage() {
         ) : (
           <div className="space-y-4">
             {userGroups.map((group) => {
-              const config =
-                categoryConfig[group.type] ?? categoryConfig.otros;
-              const IconComponent = config.icon;
               return (
-                <button
+                <SwipeableGroupItem
                   key={group.id}
-                  onClick={() =>
-                    navigate({ to: '/groups/$id', params: { id: group.id } })
+                  group={group}
+                  onOpenGroup={(groupId) =>
+                    navigate({ to: '/groups/$id', params: { id: groupId } })
                   }
-                  className="w-full bg-white rounded-2xl p-4 text-left"
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`w-10 h-10 ${config.bg} rounded-xl flex items-center justify-center`}
-                    >
-                      <HugeiconsIcon
-                        icon={IconComponent}
-                        className={`w-5 h-5 ${config.color}`}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-[#1a1a3e]">
-                        {group.name}
-                      </p>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span>{config.label}</span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
+                  onDeleteGroup={handleRequestDeleteGroup}
+                />
               );
             })}
 
@@ -431,7 +595,9 @@ function HomePage() {
                         />
                       </div>
                       <div>
-                        <p className="font-medium text-[#1a1a3e]">Escanear código QR</p>
+                        <p className="font-medium text-[#1a1a3e]">
+                          Escanear código QR
+                        </p>
                         <p className="text-sm text-gray-500">Próximamente</p>
                       </div>
                     </button>
@@ -444,7 +610,9 @@ function HomePage() {
                         />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-[#1a1a3e] mb-2">Pegar enlace de invitación</p>
+                        <p className="font-medium text-[#1a1a3e] mb-2">
+                          Pegar enlace de invitación
+                        </p>
                         <input
                           type="text"
                           value={inviteLink}
@@ -469,15 +637,19 @@ function HomePage() {
                     </button>
                     <button
                       onClick={handleFindGroup}
-                      disabled={!inviteLink.trim() || findGroupMutation.isPending}
+                      disabled={
+                        !inviteLink.trim() || findGroupMutation.isPending
+                      }
                       className={cn(
                         'flex-1 py-3 font-medium rounded-xl transition-colors',
                         inviteLink.trim() && !findGroupMutation.isPending
                           ? 'bg-[#4040b0] text-white'
-                          : 'bg-gray-200 text-gray-400'
+                          : 'bg-gray-200 text-gray-400',
                       )}
                     >
-                      {findGroupMutation.isPending ? 'Buscando...' : 'Buscar grupo'}
+                      {findGroupMutation.isPending
+                        ? 'Buscando...'
+                        : 'Buscar grupo'}
                     </button>
                   </div>
                 </>
@@ -486,12 +658,17 @@ function HomePage() {
               {joinStep === 'select' && foundGroup && (
                 <>
                   <div className="bg-[#f8f7fc] rounded-2xl p-4 mb-6">
-                    <p className="font-semibold text-[#1a1a3e]">{foundGroup.name}</p>
-                    <p className="text-sm text-gray-500">{foundGroup.memberCount} participantes</p>
+                    <p className="font-semibold text-[#1a1a3e]">
+                      {foundGroup.name}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {foundGroup.memberCount} participantes
+                    </p>
                   </div>
 
                   <p className="text-[#1a1a3e] mb-4">
-                    Hay participantes sin cuenta asociada. ¿Eres alguno de ellos?
+                    Hay participantes sin cuenta asociada. ¿Eres alguno de
+                    ellos?
                   </p>
 
                   <div className="space-y-2 mb-6">
@@ -503,7 +680,7 @@ function HomePage() {
                           'w-full flex items-center gap-3 p-4 rounded-xl transition-colors text-left',
                           selectedMemberId === member.id
                             ? 'bg-[#4040b0] text-white'
-                            : 'bg-gray-50 text-[#1a1a3e]'
+                            : 'bg-gray-50 text-[#1a1a3e]',
                         )}
                       >
                         <div
@@ -511,7 +688,7 @@ function HomePage() {
                             'w-8 h-8 rounded-full flex items-center justify-center font-medium',
                             selectedMemberId === member.id
                               ? 'bg-white/20 text-white'
-                              : 'bg-[#e8e4f8] text-[#6060c0]'
+                              : 'bg-[#e8e4f8] text-[#6060c0]',
                           )}
                         >
                           {member.name.charAt(0).toUpperCase()}
@@ -526,7 +703,7 @@ function HomePage() {
                         'w-full flex items-center gap-3 p-4 rounded-xl transition-colors text-left',
                         selectedMemberId === null
                           ? 'bg-[#4040b0] text-white'
-                          : 'bg-gray-50 text-[#1a1a3e]'
+                          : 'bg-gray-50 text-[#1a1a3e]',
                       )}
                     >
                       <div
@@ -534,7 +711,7 @@ function HomePage() {
                           'w-8 h-8 rounded-full flex items-center justify-center',
                           selectedMemberId === null
                             ? 'bg-white/20 text-white'
-                            : 'bg-gray-200 text-gray-500'
+                            : 'bg-gray-200 text-gray-500',
                         )}
                       >
                         <HugeiconsIcon icon={Plus} className="w-4 h-4" />
@@ -559,7 +736,9 @@ function HomePage() {
                       disabled={joinGroupMutation.isPending}
                       className="flex-1 py-3 bg-[#4040b0] text-white font-medium rounded-xl"
                     >
-                      {joinGroupMutation.isPending ? 'Uniéndose...' : 'Unirme al grupo'}
+                      {joinGroupMutation.isPending
+                        ? 'Uniéndose...'
+                        : 'Unirme al grupo'}
                     </button>
                   </div>
                 </>
@@ -568,8 +747,12 @@ function HomePage() {
               {joinStep === 'confirm' && foundGroup && (
                 <>
                   <div className="bg-[#f8f7fc] rounded-2xl p-4 mb-6">
-                    <p className="font-semibold text-[#1a1a3e]">{foundGroup.name}</p>
-                    <p className="text-sm text-gray-500">{foundGroup.memberCount} participantes</p>
+                    <p className="font-semibold text-[#1a1a3e]">
+                      {foundGroup.name}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {foundGroup.memberCount} participantes
+                    </p>
                   </div>
 
                   <p className="text-[#1a1a3e] mb-6">
@@ -592,11 +775,101 @@ function HomePage() {
                       disabled={joinGroupMutation.isPending}
                       className="flex-1 py-3 bg-[#4040b0] text-white font-medium rounded-xl"
                     >
-                      {joinGroupMutation.isPending ? 'Uniéndose...' : 'Unirme al grupo'}
+                      {joinGroupMutation.isPending
+                        ? 'Uniéndose...'
+                        : 'Unirme al grupo'}
                     </button>
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {showDeleteGroupModal && groupToDelete && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/30 z-40 cursor-default"
+            onClick={() => {
+              setShowDeleteGroupModal(false);
+              setGroupToDelete(null);
+              setDeleteGroupNameInput('');
+              setCopiedGroupName(false);
+            }}
+            aria-label="Cerrar modal"
+          />
+
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+            </div>
+
+            <div className="px-6 pb-8">
+              <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
+                Eliminar grupo
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Para confirmar, escribe exactamente el nombre del grupo:
+              </p>
+              <div className="bg-gray-50 rounded-xl p-3 mb-4 border border-gray-100">
+                <p className="text-sm text-gray-500">Nombre del grupo</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-semibold text-[#1a1a3e] break-all">
+                    {groupToDelete.name}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleCopyGroupName}
+                    className="px-3 py-1.5 text-sm rounded-lg bg-white border border-gray-200 text-[#1a1a3e] whitespace-nowrap"
+                  >
+                    {copiedGroupName ? 'Copiado' : 'Copiar'}
+                  </button>
+                </div>
+              </div>
+
+              <input
+                type="text"
+                value={deleteGroupNameInput}
+                onChange={(event) =>
+                  setDeleteGroupNameInput(event.target.value)
+                }
+                placeholder="Escribe el nombre del grupo"
+                className="w-full px-4 py-3.5 border border-gray-200 rounded-xl text-[#1a1a3e] placeholder:text-gray-400 focus:outline-none focus:border-[#6060c0] mb-3"
+              />
+
+              {deleteGroupMutation.data?.error && (
+                <p className="text-red-500 text-sm mb-4">
+                  {deleteGroupMutation.data.error}
+                </p>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteGroupModal(false);
+                    setGroupToDelete(null);
+                    setDeleteGroupNameInput('');
+                    setCopiedGroupName(false);
+                  }}
+                  className="flex-1 py-3 text-[#1a1a3e] font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteGroup}
+                  disabled={
+                    deleteGroupMutation.isPending ||
+                    deleteGroupNameInput.trim() !== groupToDelete.name
+                  }
+                  className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl disabled:opacity-60"
+                >
+                  {deleteGroupMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+                </button>
+              </div>
             </div>
           </div>
         </>

@@ -18,15 +18,18 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  loader: async () => {
-    const isDev = clientEnv.APP_ENV === 'dev';
+  beforeLoad: async () => {
     try {
       const user = await getCurrentUserFn();
-      return { user, isDev };
+      return { user };
     } catch (error) {
       console.error('Error getting current user:', error);
-      return { user: null, isDev };
+      return { user: null };
     }
+  },
+  loader: async () => {
+    const isDev = clientEnv.APP_ENV === 'dev';
+    return { isDev };
   },
   head: ({ loaderData }) => {
     const isDev = loaderData?.isDev;

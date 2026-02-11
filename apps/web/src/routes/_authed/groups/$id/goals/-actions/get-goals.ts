@@ -48,6 +48,7 @@ interface GetGoalsResponse {
     name: string;
     role: string;
     isCurrentUser: boolean;
+    isRegisteredUser: boolean;
   }>;
   goals: GoalItem[];
 }
@@ -158,6 +159,7 @@ export const getGoals = createServerFn({ method: 'POST' })
         name: member.name,
         role: member.role,
         isCurrentUser: member.userId === userId,
+        isRegisteredUser: member.userId !== null,
       })),
       goals: group.Goal.map((goal) => {
         const totalContributed = goal.contributions.reduce(

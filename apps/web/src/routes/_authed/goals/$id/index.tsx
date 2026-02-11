@@ -1191,9 +1191,22 @@ function RouteComponent() {
                           {member.name}
                           {member.isCurrentUser ? ' (Tú)' : ''}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          Rol: {member.role === 'admin' ? 'Admin' : 'Miembro'}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-xs text-gray-500">
+                            Rol: {member.role === 'admin' ? 'Admin' : 'Miembro'}
+                          </p>
+                          <span
+                            className={`text-[11px] px-2 py-0.5 rounded-full ${
+                              member.isRegisteredUser
+                                ? 'bg-green-50 text-green-700'
+                                : 'bg-amber-50 text-amber-700'
+                            }`}
+                          >
+                            {member.isRegisteredUser
+                              ? 'Registrado'
+                              : 'Sin cuenta'}
+                          </span>
+                        </div>
                       </div>
 
                       {isCurrentUserAdmin && !member.isCurrentUser ? (

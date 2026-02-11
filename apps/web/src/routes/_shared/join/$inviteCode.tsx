@@ -168,7 +168,11 @@ function RouteComponent() {
 
   const goToGroup = () => {
     if (foundGroup) {
-      router.navigate({ to: '/groups/$id', params: { id: foundGroup.id } });
+      if (foundGroup.type === 'meta') {
+        router.navigate({ to: '/goals/$id', params: { id: foundGroup.id } });
+      } else {
+        router.navigate({ to: '/groups/$id', params: { id: foundGroup.id } });
+      }
     }
   };
 
@@ -229,7 +233,7 @@ function RouteComponent() {
               onClick={goToGroup}
               className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
             >
-              Ir al grupo
+              {foundGroup.type === 'meta' ? 'Ir a la meta' : 'Ir al grupo'}
             </button>
           </div>
         )}
@@ -302,10 +306,14 @@ function RouteComponent() {
 
             {selectedMemberId === null && (!user?.name || isAnonymousName) && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-[#1a1a3e] mb-2">
+                <label
+                  htmlFor="join-name-select"
+                  className="block text-sm font-medium text-[#1a1a3e] mb-2"
+                >
                   Tu nombre
                 </label>
                 <input
+                  id="join-name-select"
                   type="text"
                   value={newMemberName}
                   onChange={(e) => setNewMemberName(e.target.value)}
@@ -358,10 +366,14 @@ function RouteComponent() {
 
             {selectedMemberId === null && (!user?.name || isAnonymousName) && (
               <div className="mb-6 text-left">
-                <label className="block text-sm font-medium text-[#1a1a3e] mb-2">
+                <label
+                  htmlFor="join-name-confirm"
+                  className="block text-sm font-medium text-[#1a1a3e] mb-2"
+                >
                   Tu nombre
                 </label>
                 <input
+                  id="join-name-confirm"
                   type="text"
                   value={newMemberName}
                   onChange={(e) => setNewMemberName(e.target.value)}
@@ -419,7 +431,7 @@ function RouteComponent() {
               onClick={goToGroup}
               className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
             >
-              Ir al grupo
+              {foundGroup.type === 'meta' ? 'Ir a la meta' : 'Ir al grupo'}
             </button>
           </div>
         )}

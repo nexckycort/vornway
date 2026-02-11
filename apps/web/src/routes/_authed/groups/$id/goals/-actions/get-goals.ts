@@ -42,9 +42,11 @@ interface GoalItem {
 interface GetGoalsResponse {
   groupName: string;
   inviteCode: string | null;
+  isCurrentUserAdmin: boolean;
   members: Array<{
     id: string;
     name: string;
+    role: string;
     isCurrentUser: boolean;
   }>;
   goals: GoalItem[];
@@ -64,7 +66,8 @@ function getElapsedMonthlyInstallments(
   const nowYear = now.getFullYear();
   const nowMonth = now.getMonth();
 
-  const monthsElapsed = (nowYear - startYear) * 12 + (nowMonth - startMonth) + 1;
+  const monthsElapsed =
+    (nowYear - startYear) * 12 + (nowMonth - startMonth) + 1;
   return Math.max(0, Math.min(installmentCount, monthsElapsed));
 }
 
@@ -87,6 +90,7 @@ export const getGoals = createServerFn({ method: 'POST' })
           select: {
             id: true,
             name: true,
+            role: true,
             userId: true,
           },
           orderBy: {
@@ -148,9 +152,11 @@ export const getGoals = createServerFn({ method: 'POST' })
     return {
       groupName: group.name,
       inviteCode: group.inviteCode,
+      isCurrentUserAdmin: currentMembership.role === 'admin',
       members: group.GroupMember.map((member) => ({
         id: member.id,
         name: member.name,
+        role: member.role,
         isCurrentUser: member.userId === userId,
       })),
       goals: group.Goal.map((goal) => {

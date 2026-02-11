@@ -11,6 +11,7 @@ import {
   Share2,
   Target,
   Trash2,
+  Users,
   X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -18,6 +19,8 @@ import { addGoalContribution } from '../../groups/$id/goals/-actions/add-goal-co
 import { createGoal } from '../../groups/$id/goals/-actions/create-goal';
 import { deleteGoal } from '../../groups/$id/goals/-actions/delete-goal';
 import { getGoals } from '../../groups/$id/goals/-actions/get-goals';
+import { removeGoalMember } from '../../groups/$id/goals/-actions/remove-goal-member';
+import { updateGoalMemberRole } from '../../groups/$id/goals/-actions/update-goal-member-role';
 
 export const Route = createFileRoute('/_authed/goals/$id/')({
   component: RouteComponent,
@@ -46,6 +49,7 @@ function RouteComponent() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showContributionModal, setShowContributionModal] = useState(false);
   const [showDeleteGoalModal, setShowDeleteGoalModal] = useState(false);
+  const [showParticipantsModal, setShowParticipantsModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState('');
@@ -114,6 +118,22 @@ function RouteComponent() {
       setSelectedGoalId('');
     },
   });
+  const updateGoalMemberRoleMutation = useMutation({
+    mutationFn: updateGoalMemberRole,
+    onSuccess: (result) => {
+      if (!result.success) return;
+      queryClient.invalidateQueries({ queryKey: ['goal-space', id] });
+      queryClient.invalidateQueries({ queryKey: ['activity-feed'] });
+    },
+  });
+  const removeGoalMemberMutation = useMutation({
+    mutationFn: removeGoalMember,
+    onSuccess: (result) => {
+      if (!result.success) return;
+      queryClient.invalidateQueries({ queryKey: ['goal-space', id] });
+      queryClient.invalidateQueries({ queryKey: ['activity-feed'] });
+    },
+  });
 
   const selectedGoal = useMemo(
     () => data?.goals.find((goal) => goal.id === selectedGoalId) ?? null,
@@ -122,6 +142,7 @@ function RouteComponent() {
   const inviteLink = data?.inviteCode
     ? `${window.location.origin}/join/${data.inviteCode}`
     : '';
+  const isCurrentUserAdmin = data?.isCurrentUserAdmin ?? false;
 
   const handleCopyLink = async () => {
     if (!inviteLink) return;
@@ -143,6 +164,35 @@ function RouteComponent() {
     } catch (error) {
       console.error('Error copying invite code:', error);
     }
+  };
+
+  const handleToggleAdminRole = (
+    memberId: string,
+    nextRole: 'admin' | 'member',
+  ) => {
+    if (updateGoalMemberRoleMutation.isPending) return;
+    updateGoalMemberRoleMutation.mutate({
+      data: {
+        groupId: id,
+        memberId,
+        role: nextRole,
+      },
+    });
+  };
+
+  const handleRemoveParticipant = (memberId: string, memberName: string) => {
+    if (removeGoalMemberMutation.isPending) return;
+    const shouldRemove = window.confirm(
+      `¿Eliminar a ${memberName} de la meta? Esta acción no se puede deshacer.`,
+    );
+    if (!shouldRemove) return;
+
+    removeGoalMemberMutation.mutate({
+      data: {
+        groupId: id,
+        memberId,
+      },
+    });
   };
 
   if (isLoading) {
@@ -187,14 +237,24 @@ function RouteComponent() {
               <p className="text-sm text-gray-500">{data.groupName}</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowInviteModal(true)}
-            className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center"
-            aria-label="Compartir meta"
-          >
-            <Share2 className="w-5 h-5 text-[#1a1a3e]" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowParticipantsModal(true)}
+              className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center"
+              aria-label="Participantes"
+            >
+              <Users className="w-5 h-5 text-[#1a1a3e]" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowInviteModal(true)}
+              className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center"
+              aria-label="Compartir meta"
+            >
+              <Share2 className="w-5 h-5 text-[#1a1a3e]" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -207,6 +267,11 @@ function RouteComponent() {
           <Plus className="w-5 h-5" />
           Añadir objetivo
         </button>
+        {!isCurrentUserAdmin ? (
+          <p className="text-xs text-gray-500 mt-2">
+            Solo los admin pueden registrar aportes y administrar participantes.
+          </p>
+        ) : null}
       </div>
 
       <div className="px-4 space-y-4">
@@ -259,20 +324,22 @@ function RouteComponent() {
                     ) : null}
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedGoalId(goal.id);
-                        setMemberId('');
-                        setContributionAmount('');
-                        setContributedAt('');
-                        setContributionNotes('');
-                        setShowContributionModal(true);
-                      }}
-                      className="px-3 py-2 rounded-xl bg-[#eef0ff] text-[#4040b0] text-sm font-medium"
-                    >
-                      Aportar
-                    </button>
+                    {isCurrentUserAdmin ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedGoalId(goal.id);
+                          setMemberId('');
+                          setContributionAmount('');
+                          setContributedAt('');
+                          setContributionNotes('');
+                          setShowContributionModal(true);
+                        }}
+                        className="px-3 py-2 rounded-xl bg-[#eef0ff] text-[#4040b0] text-sm font-medium"
+                      >
+                        Aportar
+                      </button>
+                    ) : null}
                     {goal.canDelete && (
                       <button
                         type="button"
@@ -654,6 +721,7 @@ function RouteComponent() {
                   }
                   disabled={
                     addContributionMutation.isPending ||
+                    !isCurrentUserAdmin ||
                     !memberId ||
                     Number(contributionAmount) <= 0
                   }
@@ -667,6 +735,11 @@ function RouteComponent() {
               {addContributionMutation.data?.error ? (
                 <p className="text-red-500 text-sm mt-3">
                   {addContributionMutation.data.error}
+                </p>
+              ) : null}
+              {!isCurrentUserAdmin ? (
+                <p className="text-red-500 text-sm mt-3">
+                  Solo un admin puede registrar aportes.
                 </p>
               ) : null}
             </div>
@@ -729,6 +802,103 @@ function RouteComponent() {
               {deleteGoalMutation.data?.error ? (
                 <p className="text-red-500 text-sm mt-3">
                   {deleteGoalMutation.data.error}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </>
+      )}
+
+      {showParticipantsModal && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setShowParticipantsModal(false)}
+            aria-label="Cerrar modal"
+          />
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[88vh] overflow-y-auto">
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+            </div>
+            <div className="px-6 pb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-[#1a1a3e]">
+                  Participantes
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowParticipantsModal(false)}
+                  className="w-8 h-8 flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {data.members.map((member) => (
+                  <div
+                    key={member.id}
+                    className="rounded-xl border border-gray-100 px-4 py-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-[#1a1a3e]">
+                          {member.name}
+                          {member.isCurrentUser ? ' (Tú)' : ''}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Rol: {member.role === 'admin' ? 'Admin' : 'Miembro'}
+                        </p>
+                      </div>
+
+                      {isCurrentUserAdmin && !member.isCurrentUser ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleToggleAdminRole(
+                                member.id,
+                                member.role === 'admin' ? 'member' : 'admin',
+                              )
+                            }
+                            disabled={updateGoalMemberRoleMutation.isPending}
+                            className="px-3 py-2 rounded-lg bg-[#eef0ff] text-[#4040b0] text-xs font-medium disabled:opacity-60"
+                          >
+                            {member.role === 'admin'
+                              ? 'Quitar admin'
+                              : 'Hacer admin'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleRemoveParticipant(member.id, member.name)
+                            }
+                            disabled={removeGoalMemberMutation.isPending}
+                            className="px-3 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-medium disabled:opacity-60"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {updateGoalMemberRoleMutation.data?.error ? (
+                <p className="text-red-500 text-sm mt-3">
+                  {updateGoalMemberRoleMutation.data.error}
+                </p>
+              ) : null}
+              {removeGoalMemberMutation.data?.error ? (
+                <p className="text-red-500 text-sm mt-3">
+                  {removeGoalMemberMutation.data.error}
+                </p>
+              ) : null}
+              {!isCurrentUserAdmin ? (
+                <p className="text-gray-500 text-sm mt-3">
+                  Solo un admin puede cambiar roles o eliminar participantes.
                 </p>
               ) : null}
             </div>

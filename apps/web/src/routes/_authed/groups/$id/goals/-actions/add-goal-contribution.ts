@@ -42,6 +42,7 @@ export const addGoalContribution = createServerFn({ method: 'POST' })
         select: {
           id: true,
           name: true,
+          role: true,
         },
       });
 
@@ -49,6 +50,13 @@ export const addGoalContribution = createServerFn({ method: 'POST' })
         return {
           success: false,
           error: 'No tienes acceso a este grupo',
+        };
+      }
+
+      if (currentMembership.role !== 'admin') {
+        return {
+          success: false,
+          error: 'Solo un admin puede registrar aportes',
         };
       }
 

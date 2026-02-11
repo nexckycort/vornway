@@ -20,7 +20,9 @@ import { createGoal } from '../../groups/$id/goals/-actions/create-goal';
 import { deleteGoal } from '../../groups/$id/goals/-actions/delete-goal';
 import { getGoals } from '../../groups/$id/goals/-actions/get-goals';
 import { removeGoalMember } from '../../groups/$id/goals/-actions/remove-goal-member';
+import { updateGoalGroupName } from '../../groups/$id/goals/-actions/update-goal-group-name';
 import { updateGoalMemberRole } from '../../groups/$id/goals/-actions/update-goal-member-role';
+import { updateGoalSettings } from '../../groups/$id/goals/-actions/update-goal-settings';
 
 export const Route = createFileRoute('/_authed/goals/$id/')({
   component: RouteComponent,
@@ -51,8 +53,11 @@ function RouteComponent() {
   const [showDeleteGoalModal, setShowDeleteGoalModal] = useState(false);
   const [showParticipantsModal, setShowParticipantsModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showEditGroupModal, setShowEditGroupModal] = useState(false);
+  const [showEditGoalModal, setShowEditGoalModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState('');
+  const [editingGoalId, setEditingGoalId] = useState('');
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -67,6 +72,10 @@ function RouteComponent() {
   const [contributionAmount, setContributionAmount] = useState('');
   const [contributedAt, setContributedAt] = useState('');
   const [contributionNotes, setContributionNotes] = useState('');
+  const [groupNameDraft, setGroupNameDraft] = useState('');
+  const [editGoalTargetAmount, setEditGoalTargetAmount] = useState('');
+  const [editGoalInstallmentAmount, setEditGoalInstallmentAmount] =
+    useState('');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['goal-space', id],
@@ -134,6 +143,29 @@ function RouteComponent() {
       queryClient.invalidateQueries({ queryKey: ['activity-feed'] });
     },
   });
+  const updateGoalGroupNameMutation = useMutation({
+    mutationFn: updateGoalGroupName,
+    onSuccess: (result) => {
+      if (!result.success) return;
+      queryClient.invalidateQueries({ queryKey: ['goal-space', id] });
+      queryClient.invalidateQueries({ queryKey: ['user-goals'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-feed'] });
+      setShowEditGroupModal(false);
+    },
+  });
+  const updateGoalSettingsMutation = useMutation({
+    mutationFn: updateGoalSettings,
+    onSuccess: (result) => {
+      if (!result.success) return;
+      queryClient.invalidateQueries({ queryKey: ['goal-space', id] });
+      queryClient.invalidateQueries({ queryKey: ['user-goals'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-feed'] });
+      setShowEditGoalModal(false);
+      setEditingGoalId('');
+      setEditGoalTargetAmount('');
+      setEditGoalInstallmentAmount('');
+    },
+  });
 
   const selectedGoal = useMemo(
     () => data?.goals.find((goal) => goal.id === selectedGoalId) ?? null,
@@ -195,6 +227,22 @@ function RouteComponent() {
     });
   };
 
+  const handleOpenGroupEdit = () => {
+    setGroupNameDraft(data?.groupName ?? '');
+    setShowEditGroupModal(true);
+  };
+
+  const handleOpenGoalEdit = (goal: {
+    id: string;
+    targetAmount: number;
+    installmentAmount: number;
+  }) => {
+    setEditingGoalId(goal.id);
+    setEditGoalTargetAmount(String(goal.targetAmount));
+    setEditGoalInstallmentAmount(String(goal.installmentAmount));
+    setShowEditGoalModal(true);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f5f3fa] flex items-center justify-center">
@@ -235,6 +283,15 @@ function RouteComponent() {
             <div>
               <h1 className="text-xl font-semibold text-[#1a1a3e]">Meta</h1>
               <p className="text-sm text-gray-500">{data.groupName}</p>
+              {isCurrentUserAdmin ? (
+                <button
+                  type="button"
+                  onClick={handleOpenGroupEdit}
+                  className="text-xs text-[#4040b0] font-medium mt-1"
+                >
+                  Editar nombre
+                </button>
+              ) : null}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -324,6 +381,15 @@ function RouteComponent() {
                     ) : null}
                   </div>
                   <div className="flex items-center gap-2">
+                    {isCurrentUserAdmin ? (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenGoalEdit(goal)}
+                        className="px-3 py-2 rounded-xl bg-gray-100 text-[#1a1a3e] text-sm font-medium"
+                      >
+                        Editar
+                      </button>
+                    ) : null}
                     {isCurrentUserAdmin ? (
                       <button
                         type="button"
@@ -484,6 +550,174 @@ function RouteComponent() {
           })
         )}
       </div>
+
+      {showEditGroupModal && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setShowEditGroupModal(false)}
+            aria-label="Cerrar modal"
+          />
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[88vh] overflow-y-auto">
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+            </div>
+            <div className="px-6 pb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-[#1a1a3e]">
+                  Editar nombre de meta
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowEditGroupModal(false)}
+                  className="w-8 h-8 flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <input
+                type="text"
+                value={groupNameDraft}
+                onChange={(event) => setGroupNameDraft(event.target.value)}
+                placeholder="Nombre de la meta"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+              />
+
+              <div className="flex gap-3 mt-5">
+                <button
+                  type="button"
+                  onClick={() => setShowEditGroupModal(false)}
+                  className="flex-1 py-3 text-[#1a1a3e] font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateGoalGroupNameMutation.mutate({
+                      data: {
+                        groupId: id,
+                        name: groupNameDraft,
+                      },
+                    })
+                  }
+                  disabled={
+                    !isCurrentUserAdmin ||
+                    updateGoalGroupNameMutation.isPending ||
+                    !groupNameDraft.trim()
+                  }
+                  className="flex-1 py-3 bg-[#4040b0] text-white font-medium rounded-xl disabled:opacity-60"
+                >
+                  {updateGoalGroupNameMutation.isPending
+                    ? 'Guardando...'
+                    : 'Guardar'}
+                </button>
+              </div>
+              {updateGoalGroupNameMutation.data?.error ? (
+                <p className="text-red-500 text-sm mt-3">
+                  {updateGoalGroupNameMutation.data.error}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </>
+      )}
+
+      {showEditGoalModal && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setShowEditGoalModal(false)}
+            aria-label="Cerrar modal"
+          />
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[88vh] overflow-y-auto">
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+            </div>
+            <div className="px-6 pb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-[#1a1a3e]">
+                  Editar objetivo
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowEditGoalModal(false)}
+                  className="w-8 h-8 flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={editGoalTargetAmount}
+                  onChange={(event) =>
+                    setEditGoalTargetAmount(event.target.value)
+                  }
+                  placeholder="Monto meta"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+                />
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={editGoalInstallmentAmount}
+                  onChange={(event) =>
+                    setEditGoalInstallmentAmount(event.target.value)
+                  }
+                  placeholder="Cuota mensual"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+                />
+              </div>
+
+              <div className="flex gap-3 mt-5">
+                <button
+                  type="button"
+                  onClick={() => setShowEditGoalModal(false)}
+                  className="flex-1 py-3 text-[#1a1a3e] font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateGoalSettingsMutation.mutate({
+                      data: {
+                        groupId: id,
+                        goalId: editingGoalId,
+                        targetAmount: Number(editGoalTargetAmount),
+                        installmentAmount: Number(editGoalInstallmentAmount),
+                      },
+                    })
+                  }
+                  disabled={
+                    !isCurrentUserAdmin ||
+                    updateGoalSettingsMutation.isPending ||
+                    Number(editGoalTargetAmount) <= 0 ||
+                    Number(editGoalInstallmentAmount) <= 0
+                  }
+                  className="flex-1 py-3 bg-[#4040b0] text-white font-medium rounded-xl disabled:opacity-60"
+                >
+                  {updateGoalSettingsMutation.isPending
+                    ? 'Guardando...'
+                    : 'Guardar'}
+                </button>
+              </div>
+              {updateGoalSettingsMutation.data?.error ? (
+                <p className="text-red-500 text-sm mt-3">
+                  {updateGoalSettingsMutation.data.error}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </>
+      )}
 
       {showCreateModal && (
         <>

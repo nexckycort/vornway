@@ -22,6 +22,7 @@ import { deleteGoal } from '../../groups/$id/goals/-actions/delete-goal';
 import { deleteGoalContribution } from '../../groups/$id/goals/-actions/delete-goal-contribution';
 import { getGoals } from '../../groups/$id/goals/-actions/get-goals';
 import { removeGoalMember } from '../../groups/$id/goals/-actions/remove-goal-member';
+import { searchGoalUsers } from '../../groups/$id/goals/-actions/search-goal-users';
 import { updateGoalGroupName } from '../../groups/$id/goals/-actions/update-goal-group-name';
 import { updateGoalMemberRole } from '../../groups/$id/goals/-actions/update-goal-member-role';
 import { updateGoalSettings } from '../../groups/$id/goals/-actions/update-goal-settings';
@@ -79,10 +80,30 @@ function RouteComponent() {
   const [editGoalInstallmentAmount, setEditGoalInstallmentAmount] =
     useState('');
   const [newParticipantName, setNewParticipantName] = useState('');
+  const [selectedExistingUser, setSelectedExistingUser] = useState<{
+    id: string;
+    name: string;
+    email: string;
+  } | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['goal-space', id],
     queryFn: () => getGoals({ data: { groupId: id } }),
+  });
+  const userSearchQuery = useQuery({
+    queryKey: ['goal-user-search', id, newParticipantName.trim()],
+    queryFn: () =>
+      searchGoalUsers({
+        data: {
+          groupId: id,
+          query: newParticipantName.trim(),
+        },
+      }),
+    enabled:
+      showParticipantsModal &&
+      (data?.isCurrentUserAdmin ?? false) &&
+      newParticipantName.trim().length >= 2 &&
+      selectedExistingUser === null,
   });
 
   const createGoalMutation = useMutation({
@@ -125,7 +146,11 @@ function RouteComponent() {
       if (!result.success) return;
       queryClient.invalidateQueries({ queryKey: ['goal-space', id] });
       queryClient.invalidateQueries({ queryKey: ['activity-feed'] });
+      queryClient.invalidateQueries({
+        queryKey: ['goal-user-search', id, newParticipantName.trim()],
+      });
       setNewParticipantName('');
+      setSelectedExistingUser(null);
     },
   });
   const deleteGoalMutation = useMutation({
@@ -285,7 +310,8 @@ function RouteComponent() {
     addGoalMemberMutation.mutate({
       data: {
         groupId: id,
-        name: trimmedName,
+        name: selectedExistingUser?.name ?? trimmedName,
+        userId: selectedExistingUser?.id,
       },
     });
   };
@@ -1148,9 +1174,10 @@ function RouteComponent() {
                       <input
                         type="text"
                         value={newParticipantName}
-                        onChange={(event) =>
-                          setNewParticipantName(event.target.value)
-                        }
+                        onChange={(event) => {
+                          setNewParticipantName(event.target.value);
+                          setSelectedExistingUser(null);
+                        }}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
                             event.preventDefault();
@@ -1172,6 +1199,58 @@ function RouteComponent() {
                         Añadir
                       </button>
                     </div>
+                    {selectedExistingUser ? (
+                      <p className="text-xs text-[#1a1a3e] mt-2">
+                        Se agregará usuario existente:{' '}
+                        <span className="font-medium">
+                          {selectedExistingUser.name} (
+                          {selectedExistingUser.email})
+                        </span>
+                      </p>
+                    ) : null}
+                    {newParticipantName.trim().length >= 2 &&
+                    !selectedExistingUser ? (
+                      <div className="mt-2 space-y-1">
+                        {userSearchQuery.isLoading ? (
+                          <p className="text-xs text-gray-500">
+                            Buscando usuarios...
+                          </p>
+                        ) : null}
+                        {userSearchQuery.data?.success &&
+                        userSearchQuery.data.users.length > 0
+                          ? userSearchQuery.data.users.map((userResult) => (
+                              <button
+                                key={userResult.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedExistingUser(userResult);
+                                  setNewParticipantName(userResult.name);
+                                }}
+                                className="w-full text-left px-3 py-2 rounded-lg border border-gray-200 bg-white"
+                              >
+                                <p className="text-sm font-medium text-[#1a1a3e]">
+                                  {userResult.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {userResult.email}
+                                </p>
+                              </button>
+                            ))
+                          : null}
+                        {userSearchQuery.data?.success &&
+                        userSearchQuery.data.users.length === 0 ? (
+                          <p className="text-xs text-gray-500">
+                            No encontramos usuarios con ese nombre/email. Puedes
+                            crear el participante manualmente.
+                          </p>
+                        ) : null}
+                        {userSearchQuery.data?.error ? (
+                          <p className="text-xs text-red-500">
+                            {userSearchQuery.data.error}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
                     {addGoalMemberMutation.data?.error ? (
                       <p className="text-red-500 text-sm mt-2">
                         {addGoalMemberMutation.data.error}

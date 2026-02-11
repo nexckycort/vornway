@@ -8,6 +8,7 @@ import { useAppSession } from '~/utils/session';
 const AddGoalMemberInputSchema = z.object({
   groupId: z.string(),
   name: z.string().min(1),
+  userId: z.string().optional(),
 });
 
 interface AddGoalMemberResponse {
@@ -77,10 +78,53 @@ export const addGoalMember = createServerFn({ method: 'POST' })
         };
       }
 
+      let userIdToAttach: string | null = null;
+      let memberName = trimmedName;
+
+      if (data.userId) {
+        const user = await db.user.findUnique({
+          where: {
+            id: data.userId,
+          },
+          select: {
+            id: true,
+            name: true,
+          },
+        });
+
+        if (!user) {
+          return {
+            success: false,
+            error: 'Usuario no encontrado',
+          };
+        }
+
+        const existingMembershipByUser = await db.groupMember.findFirst({
+          where: {
+            groupId: data.groupId,
+            userId: user.id,
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (existingMembershipByUser) {
+          return {
+            success: false,
+            error: 'Este usuario ya es participante de la meta',
+          };
+        }
+
+        userIdToAttach = user.id;
+        memberName = user.name;
+      }
+
       const newMember = await db.groupMember.create({
         data: {
           groupId: data.groupId,
-          name: trimmedName,
+          name: memberName,
+          userId: userIdToAttach,
           role: 'member',
         },
         select: {
@@ -94,9 +138,10 @@ export const addGoalMember = createServerFn({ method: 'POST' })
           actorUserId: userId,
           actorName: actorMember.name,
           action: 'member.added',
-          targetName: trimmedName,
+          targetName: memberName,
           details: {
             memberId: newMember.id,
+            userId: userIdToAttach,
           },
         },
       });

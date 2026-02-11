@@ -1,11 +1,12 @@
 'use client';
 
-import { Clock, Home, User } from '@hugeicons/core-free-icons';
+import { Clock, Home, LayoutGrid, User } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Link, useLocation } from '@tanstack/react-router';
 
 const navItems = [
   { href: '/', label: 'Inicio', icon: Home },
+  { href: '/goals', label: 'Metas', icon: LayoutGrid },
   { href: '/activity', label: 'Actividad', icon: Clock },
   { href: '/profile', label: 'Perfil', icon: User },
 ];
@@ -17,7 +18,10 @@ export function BottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-2 pb-2">
       <div className="max-w-md mx-auto flex items-center justify-around">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive =
+            item.href === '/'
+              ? pathname === '/'
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
           return (
             <Link

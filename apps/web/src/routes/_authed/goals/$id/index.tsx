@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { addGoalContribution } from '../../groups/$id/goals/-actions/add-goal-contribution';
+import { addGoalMember } from '../../groups/$id/goals/-actions/add-goal-member';
 import { createGoal } from '../../groups/$id/goals/-actions/create-goal';
 import { deleteGoal } from '../../groups/$id/goals/-actions/delete-goal';
 import { deleteGoalContribution } from '../../groups/$id/goals/-actions/delete-goal-contribution';
@@ -77,6 +78,7 @@ function RouteComponent() {
   const [editGoalTargetAmount, setEditGoalTargetAmount] = useState('');
   const [editGoalInstallmentAmount, setEditGoalInstallmentAmount] =
     useState('');
+  const [newParticipantName, setNewParticipantName] = useState('');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['goal-space', id],
@@ -115,6 +117,15 @@ function RouteComponent() {
       setContributionAmount('');
       setContributedAt('');
       setContributionNotes('');
+    },
+  });
+  const addGoalMemberMutation = useMutation({
+    mutationFn: addGoalMember,
+    onSuccess: (result) => {
+      if (!result.success) return;
+      queryClient.invalidateQueries({ queryKey: ['goal-space', id] });
+      queryClient.invalidateQueries({ queryKey: ['activity-feed'] });
+      setNewParticipantName('');
     },
   });
   const deleteGoalMutation = useMutation({
@@ -262,6 +273,19 @@ function RouteComponent() {
       data: {
         groupId: id,
         contributionId,
+      },
+    });
+  };
+
+  const handleAddParticipant = () => {
+    if (addGoalMemberMutation.isPending) return;
+    const trimmedName = newParticipantName.trim();
+    if (!trimmedName) return;
+
+    addGoalMemberMutation.mutate({
+      data: {
+        groupId: id,
+        name: trimmedName,
       },
     });
   };
@@ -1115,6 +1139,47 @@ function RouteComponent() {
               </div>
 
               <div className="space-y-3">
+                {isCurrentUserAdmin ? (
+                  <div className="rounded-xl border border-gray-100 p-3 bg-gray-50">
+                    <p className="text-sm font-medium text-[#1a1a3e] mb-2">
+                      Agregar participante
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newParticipantName}
+                        onChange={(event) =>
+                          setNewParticipantName(event.target.value)
+                        }
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            handleAddParticipant();
+                          }
+                        }}
+                        placeholder="Nombre del participante"
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddParticipant}
+                        disabled={
+                          addGoalMemberMutation.isPending ||
+                          !newParticipantName.trim()
+                        }
+                        className="px-3 py-2 rounded-lg bg-[#4040b0] text-white text-sm font-medium disabled:opacity-60"
+                      >
+                        Añadir
+                      </button>
+                    </div>
+                    {addGoalMemberMutation.data?.error ? (
+                      <p className="text-red-500 text-sm mt-2">
+                        {addGoalMemberMutation.data.error}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+
                 {data.members.map((member) => (
                   <div
                     key={member.id}

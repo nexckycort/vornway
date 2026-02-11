@@ -227,6 +227,35 @@ function SwipeableGroupItem({
   );
 }
 
+function MetaGroupList({
+  metaGroups,
+  userId,
+  navigate,
+  onDeleteGroup,
+}: {
+  metaGroups: HomeGroup[];
+  userId?: string;
+  navigate: ReturnType<typeof Route.useNavigate>;
+  onDeleteGroup: (group: HomeGroup) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {metaGroups.map((metaGroup) => (
+        <SwipeableGroupItem
+          key={metaGroup.id}
+          group={metaGroup}
+          onOpenGroup={(groupId) =>
+            navigate({ to: '/goals/$id', params: { id: groupId } })
+          }
+          onDeleteGroup={onDeleteGroup}
+          canDelete={metaGroup.ownerId === userId}
+          isOwner={metaGroup.ownerId === userId}
+        />
+      ))}
+    </div>
+  );
+}
+
 function HomePage() {
   const { user } = Route.useRouteContext();
   const navigate = Route.useNavigate();
@@ -452,37 +481,12 @@ function HomePage() {
             <h2 className="text-lg font-semibold text-[#1a1a3e] mb-4">
               Tus metas
             </h2>
-            <div className="space-y-3">
-              {metaGroups.map((goalGroup) => (
-                <button
-                  key={goalGroup.id}
-                  type="button"
-                  onClick={() =>
-                    navigate({ to: '/goals/$id', params: { id: goalGroup.id } })
-                  }
-                  className="w-full bg-[#ecfdf3] border border-emerald-200 rounded-2xl p-4 text-left"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-                      <Target className="w-5 h-5 text-emerald-700" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-[#1a1a3e]">
-                          {goalGroup.name}
-                        </p>
-                        <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-200 text-emerald-800">
-                          META
-                        </span>
-                      </div>
-                      <p className="text-sm text-emerald-700">
-                        Aportes por cuotas y progreso
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <MetaGroupList
+              metaGroups={metaGroups}
+              userId={user?.id}
+              navigate={navigate}
+              onDeleteGroup={handleRequestDeleteGroup}
+            />
           </div>
         )}
 
@@ -578,37 +582,12 @@ function HomePage() {
             <h2 className="text-lg font-semibold text-[#1a1a3e] mb-4">
               Tus metas
             </h2>
-            <div className="space-y-3">
-              {metaGroups.map((goalGroup) => (
-                <button
-                  key={goalGroup.id}
-                  type="button"
-                  onClick={() =>
-                    navigate({ to: '/goals/$id', params: { id: goalGroup.id } })
-                  }
-                  className="w-full bg-[#ecfdf3] border border-emerald-200 rounded-2xl p-4 text-left"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-                      <Target className="w-5 h-5 text-emerald-700" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-[#1a1a3e]">
-                          {goalGroup.name}
-                        </p>
-                        <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-200 text-emerald-800">
-                          META
-                        </span>
-                      </div>
-                      <p className="text-sm text-emerald-700">
-                        Aportes por cuotas y progreso
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <MetaGroupList
+              metaGroups={metaGroups}
+              userId={user?.id}
+              navigate={navigate}
+              onDeleteGroup={handleRequestDeleteGroup}
+            />
           </div>
         )}
       </div>
@@ -940,13 +919,20 @@ function HomePage() {
 
             <div className="px-6 pb-8">
               <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
-                Eliminar grupo
+                {groupToDelete.type === 'meta'
+                  ? 'Eliminar meta'
+                  : 'Eliminar grupo'}
               </h2>
               <p className="text-gray-600 mb-4">
-                Para confirmar, escribe exactamente el nombre del grupo:
+                Para confirmar, escribe exactamente el nombre de{' '}
+                {groupToDelete.type === 'meta' ? 'la meta' : 'el grupo'}:
               </p>
               <div className="bg-gray-50 rounded-xl p-3 mb-4 border border-gray-100">
-                <p className="text-sm text-gray-500">Nombre del grupo</p>
+                <p className="text-sm text-gray-500">
+                  {groupToDelete.type === 'meta'
+                    ? 'Nombre de la meta'
+                    : 'Nombre del grupo'}
+                </p>
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-semibold text-[#1a1a3e] break-all">
                     {groupToDelete.name}
@@ -967,7 +953,16 @@ function HomePage() {
                 onChange={(event) =>
                   setDeleteGroupNameInput(event.target.value)
                 }
-                placeholder="Escribe el nombre del grupo"
+                placeholder={
+                  groupToDelete.type === 'meta'
+                    ? 'Escribe el nombre de la meta'
+                    : 'Escribe el nombre del grupo'
+                }
+                aria-label={
+                  groupToDelete.type === 'meta'
+                    ? 'Escribe el nombre de la meta'
+                    : 'Escribe el nombre del grupo'
+                }
                 className="w-full px-4 py-3.5 border border-gray-200 rounded-xl text-[#1a1a3e] placeholder:text-gray-400 focus:outline-none focus:border-[#6060c0] mb-3"
               />
 

@@ -1,11 +1,13 @@
 'use client';
 
+import { useMutation } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { ChevronRight, LogOut, Mail, Sun } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BottomNav } from '~/components/bottom-nav';
 import { GradientLayout } from '~/components/gradient-layout';
 import { logoutFn } from '~/server/auth';
+import { updateProfileName } from './-actions/update-profile-name';
 
 export const Route = createFileRoute('/_authed/profile/')({
   component: RouteComponent,
@@ -15,11 +17,31 @@ function RouteComponent() {
   const { user } = Route.useRouteContext();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showEditNameModal, setShowEditNameModal] = useState(false);
+  const [nameDraft, setNameDraft] = useState(user?.name ?? '');
+  const [displayName, setDisplayName] = useState(user?.name ?? 'Usuario');
 
   const isGuest = user?.isAnonymous ?? false;
-  const userName = user?.name ?? 'Usuario';
+  const userName = displayName;
   const userEmail = user?.email ?? 'Sin correo';
   const userInitial = userName.charAt(0).toUpperCase();
+
+  useEffect(() => {
+    if (!user?.name) return;
+    setDisplayName(user.name);
+    setNameDraft(user.name);
+  }, [user?.name]);
+
+  const updateNameMutation = useMutation({
+    mutationFn: updateProfileName,
+    onSuccess: (result) => {
+      if (!result.success) return;
+      const nextName = result.name ?? nameDraft.trim();
+      setDisplayName(nextName);
+      setNameDraft(nextName);
+      setShowEditNameModal(false);
+    },
+  });
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -75,6 +97,7 @@ function RouteComponent() {
                   className="w-5 h-5"
                   viewBox="0 0 24 24"
                   fill="currentColor"
+                  aria-hidden="true"
                 >
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
                 </svg>
@@ -88,7 +111,7 @@ function RouteComponent() {
                 className="w-full flex items-center justify-center gap-3 py-4 border border-gray-200 rounded-xl bg-white opacity-50"
                 disabled
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -138,6 +161,7 @@ function RouteComponent() {
           <div className="bg-white rounded-2xl overflow-hidden">
             <button
               type="button"
+              onClick={() => setShowEditNameModal(true)}
               className="w-full flex items-center justify-between p-4 text-left"
             >
               <div>
@@ -265,6 +289,76 @@ function RouteComponent() {
       </div>
 
       <BottomNav />
+
+      {showEditNameModal && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setShowEditNameModal(false)}
+            aria-label="Cerrar modal"
+          />
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[88vh] overflow-y-auto">
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+            </div>
+            <div className="px-6 pb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-[#1a1a3e]">
+                  Editar nombre
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowEditNameModal(false)}
+                  className="w-8 h-8 flex items-center justify-center"
+                >
+                  <ChevronRight className="w-5 h-5 text-gray-500 rotate-90" />
+                </button>
+              </div>
+
+              <input
+                type="text"
+                value={nameDraft}
+                onChange={(event) => setNameDraft(event.target.value)}
+                placeholder="Tu nombre"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+              />
+
+              <div className="flex gap-3 mt-5">
+                <button
+                  type="button"
+                  onClick={() => setShowEditNameModal(false)}
+                  className="flex-1 py-3 text-[#1a1a3e] font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateNameMutation.mutate({
+                      data: {
+                        name: nameDraft,
+                      },
+                    })
+                  }
+                  disabled={
+                    updateNameMutation.isPending ||
+                    nameDraft.trim().length === 0
+                  }
+                  className="flex-1 py-3 bg-[#4040b0] text-white font-medium rounded-xl disabled:opacity-60"
+                >
+                  {updateNameMutation.isPending ? 'Guardando...' : 'Guardar'}
+                </button>
+              </div>
+              {updateNameMutation.data?.error ? (
+                <p className="text-red-500 text-sm mt-3">
+                  {updateNameMutation.data.error}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </>
+      )}
     </GradientLayout>
   );
 }

@@ -18,6 +18,7 @@ import { useMemo, useState } from 'react';
 import { addGoalContribution } from '../../groups/$id/goals/-actions/add-goal-contribution';
 import { createGoal } from '../../groups/$id/goals/-actions/create-goal';
 import { deleteGoal } from '../../groups/$id/goals/-actions/delete-goal';
+import { deleteGoalContribution } from '../../groups/$id/goals/-actions/delete-goal-contribution';
 import { getGoals } from '../../groups/$id/goals/-actions/get-goals';
 import { removeGoalMember } from '../../groups/$id/goals/-actions/remove-goal-member';
 import { updateGoalGroupName } from '../../groups/$id/goals/-actions/update-goal-group-name';
@@ -125,6 +126,15 @@ function RouteComponent() {
       queryClient.invalidateQueries({ queryKey: ['activity-feed'] });
       setShowDeleteGoalModal(false);
       setSelectedGoalId('');
+    },
+  });
+  const deleteGoalContributionMutation = useMutation({
+    mutationFn: deleteGoalContribution,
+    onSuccess: (result) => {
+      if (!result.success) return;
+      queryClient.invalidateQueries({ queryKey: ['goal-space', id] });
+      queryClient.invalidateQueries({ queryKey: ['user-goals'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-feed'] });
     },
   });
   const updateGoalMemberRoleMutation = useMutation({
@@ -241,6 +251,19 @@ function RouteComponent() {
     setEditGoalTargetAmount(String(goal.targetAmount));
     setEditGoalInstallmentAmount(String(goal.installmentAmount));
     setShowEditGoalModal(true);
+  };
+
+  const handleDeleteContribution = (contributionId: string) => {
+    if (deleteGoalContributionMutation.isPending) return;
+    const shouldDelete = window.confirm('¿Eliminar este aporte?');
+    if (!shouldDelete) return;
+
+    deleteGoalContributionMutation.mutate({
+      data: {
+        groupId: id,
+        contributionId,
+      },
+    });
   };
 
   if (isLoading) {
@@ -525,10 +548,27 @@ function RouteComponent() {
                                 </span>{' '}
                                 aportó
                               </p>
-                              <p className="text-sm font-semibold text-[#1a1a3e]">
-                                ${formatCurrency(contribution.amount)}{' '}
-                                {goal.currency}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold text-[#1a1a3e]">
+                                  ${formatCurrency(contribution.amount)}{' '}
+                                  {goal.currency}
+                                </p>
+                                {isCurrentUserAdmin ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleDeleteContribution(contribution.id)
+                                    }
+                                    disabled={
+                                      deleteGoalContributionMutation.isPending
+                                    }
+                                    className="p-1 rounded-lg text-red-600 bg-red-50 disabled:opacity-60"
+                                    aria-label="Eliminar aporte"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                ) : null}
+                              </div>
                             </div>
                             <p className="text-xs text-gray-500">
                               {formatDate(contribution.contributedAt)} ·{' '}
@@ -544,6 +584,11 @@ function RouteComponent() {
                       })}
                     </div>
                   )}
+                  {deleteGoalContributionMutation.data?.error ? (
+                    <p className="text-red-500 text-sm mt-3">
+                      {deleteGoalContributionMutation.data.error}
+                    </p>
+                  ) : null}
                 </div>
               </article>
             );

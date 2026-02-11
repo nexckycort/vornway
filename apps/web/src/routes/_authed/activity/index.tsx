@@ -84,6 +84,14 @@ function RouteComponent() {
       };
     }
 
+    if (action === 'goal.contribution.deleted') {
+      return {
+        title: 'Eliminó un aporte de',
+        icon: Trash2,
+        iconClasses: 'bg-[#fde8e8] text-[#c53030]',
+      };
+    }
+
     if (action === 'goal.deleted') {
       return {
         title: 'Eliminó un objetivo',

@@ -131,8 +131,10 @@ function RouteComponent() {
 
   return (
     <GradientLayout className="pb-20">
-      <div className="min-h-screen px-6 pt-6">
-        <h1 className="text-2xl font-bold text-[#1a1a3e] mb-5">Actividad</h1>
+      <div className="min-h-screen px-5 pt-5">
+        <div className="native-surface-muted mb-5 px-4 py-3">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1a1a3e]">Actividad</h1>
+        </div>
 
         {isLoading && (
           <div className="bg-white rounded-2xl p-6 text-center text-gray-500">

@@ -402,18 +402,20 @@ function HomePage() {
   };
 
   return (
-    <GradientLayout>
-      <header className="flex items-center justify-between px-6 pt-6 pb-4">
-        <h1 className="text-2xl font-bold text-[#1a1a3e]">
+    <GradientLayout className="pb-10">
+      <header className="px-5 pt-5 pb-4">
+        <div className="native-surface-muted flex items-center justify-between px-4 py-3">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1a1a3e]">
           Hola, {user?.name}
-        </h1>
-        <button className="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center">
-          <HugeiconsIcon icon={Bell} className="w-5 h-5 text-[#1a1a3e]" />
-        </button>
+          </h1>
+          <button className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/70 bg-white/80">
+            <HugeiconsIcon icon={Bell} className="h-5 w-5 text-[#1a1a3e]" />
+          </button>
+        </div>
       </header>
 
-      <div className="px-6 mb-6">
-        <div className="bg-blue-50 backdrop-blur-sm rounded-lg p-4">
+      <div className="mb-6 px-5">
+        <div className="rounded-3xl border border-white/60 bg-blue-50/85 p-4 backdrop-blur-xl">
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white rounded-2xl p-4 row-span-2">
               <div className="w-10 h-10 bg-[#e8e4f8] rounded-xl flex items-center justify-center mb-8">
@@ -475,7 +477,7 @@ function HomePage() {
         </div>
       </div>
 
-      <div className="px-6 pb-32">
+      <div className="px-5 pb-32">
         {!hasRegularGroups && hasMetaGroups && (
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-[#1a1a3e] mb-4">
@@ -494,7 +496,7 @@ function HomePage() {
           Tus grupos
         </h2>
 
-        <div className="flex gap-3 mb-8">
+        <div className="mb-8 flex gap-3">
           <div className="flex-1 relative">
             <HugeiconsIcon
               icon={Search}
@@ -505,10 +507,10 @@ function HomePage() {
               placeholder="Buscar grupos o gastos"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white rounded-xl border border-gray-100 focus:outline-none focus:border-[#8b7bb8] transition-colors"
+              className="w-full rounded-2xl border border-white/70 bg-white/90 py-3.5 pl-12 pr-4 backdrop-blur-sm transition-colors focus:border-[#8b7bb8] focus:outline-none"
             />
           </div>
-          <button className="w-12 h-12 rounded-xl border-2 border-[#6060c0] flex items-center justify-center bg-white">
+          <button className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-[#6060c0] bg-white/90">
             <HugeiconsIcon
               icon={SlidersHorizontal}
               className="w-5 h-5 text-[#6060c0]"
@@ -594,7 +596,7 @@ function HomePage() {
 
       <button
         onClick={() => setShowOptions(true)}
-        className="fixed bottom-26 right-6 w-14 h-14 bg-[#4040b0] rounded-2xl flex items-center justify-center shadow-lg shadow-[#4040b0]/30"
+        className="fixed bottom-[calc(max(0.5rem,env(safe-area-inset-bottom))+5rem)] right-5 z-30 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4040b0] shadow-lg shadow-[#4040b0]/30 active:scale-[0.98]"
       >
         <HugeiconsIcon icon={Plus} className="w-7 h-7 text-white" />
       </button>

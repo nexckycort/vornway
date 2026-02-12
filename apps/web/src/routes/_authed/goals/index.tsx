@@ -50,19 +50,21 @@ function RouteComponent() {
   return (
     <GradientLayout className="pb-20">
       <div className="min-h-screen bg-[#f5f3fa] pb-8">
-        <div className="px-4 pt-5 pb-3 flex items-center justify-between">
+        <div className="px-4 pt-5 pb-3">
+          <div className="native-surface-muted flex items-center justify-between px-3 py-2.5">
           <div>
-            <h1 className="text-2xl font-bold text-[#1a1a3e]">Metas</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#1a1a3e]">Metas</h1>
             <p className="text-sm text-gray-500">Tus objetivos de ahorro</p>
           </div>
           <button
             type="button"
             onClick={() => navigate({ to: '/goals/new' })}
-            className="w-11 h-11 rounded-xl bg-[#4040b0] text-white flex items-center justify-center"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#4040b0] text-white"
             aria-label="Crear meta"
           >
             <Plus className="w-5 h-5" />
           </button>
+          </div>
         </div>
 
         <div className="px-4 space-y-3">

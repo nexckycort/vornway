@@ -59,13 +59,15 @@ function RouteComponent() {
     <GradientLayout className="pb-20">
       <div className="min-h-screen">
         {/* Header */}
-        <div className="px-6 pt-6 pb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-[#1a1a3e]">Mi perfil</h1>
-          {isGuest && (
-            <span className="px-3 py-1.5 bg-[#1a1a3e] text-white text-sm font-medium rounded-full">
-              Modo Invitado
-            </span>
-          )}
+        <div className="px-5 pt-5 pb-4">
+          <div className="native-surface-muted flex items-center justify-between px-4 py-3">
+            <h1 className="text-2xl font-bold tracking-tight text-[#1a1a3e]">Mi perfil</h1>
+            {isGuest && (
+              <span className="rounded-full bg-[#1a1a3e] px-3 py-1.5 text-sm font-medium text-white">
+                Modo Invitado
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Avatar and Name */}

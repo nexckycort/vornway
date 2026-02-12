@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { GradientLayout } from '~/components/gradient-layout';
 import { addGoalContribution } from '../../groups/$id/goals/-actions/add-goal-contribution';
 import { addGoalMember } from '../../groups/$id/goals/-actions/add-goal-member';
 import { createGoal } from '../../groups/$id/goals/-actions/create-goal';
@@ -318,15 +319,15 @@ function RouteComponent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f5f3fa] flex items-center justify-center">
+      <GradientLayout className="flex items-center justify-center pb-8">
         <p className="text-gray-500">Cargando metas...</p>
-      </div>
+      </GradientLayout>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-[#f5f3fa] flex flex-col items-center justify-center p-6">
+      <GradientLayout className="flex flex-col items-center justify-center p-6 pb-8">
         <p className="text-gray-500 mb-6">
           {error instanceof Error ? error.message : 'No se pudo cargar'}
         </p>
@@ -337,19 +338,19 @@ function RouteComponent() {
         >
           Volver a metas
         </button>
-      </div>
+      </GradientLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f3fa] pb-8">
-      <div className="px-4 pt-4 pb-3">
-        <div className="flex items-center justify-between gap-3">
+    <GradientLayout className="pb-8">
+      <div className="px-4 pt-5 pb-3">
+        <div className="native-surface-muted flex items-center justify-between gap-3 px-3 py-2.5">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => router.navigate({ to: '/' })}
-              className="w-10 h-10 flex items-center justify-center"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80"
             >
               <ChevronLeft className="w-6 h-6 text-[#1a1a3e]" />
             </button>
@@ -388,7 +389,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <div className="px-4 pb-3">
+      <div className="px-4 pb-3 pt-1">
         <button
           type="button"
           onClick={() => setShowCreateModal(true)}
@@ -1412,6 +1413,6 @@ function RouteComponent() {
           </div>
         </>
       )}
-    </div>
+    </GradientLayout>
   );
 }

@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { type MouseEvent, type TouchEvent, useState } from 'react';
+import { GradientLayout } from '~/components/gradient-layout';
 import { deleteGroup } from '../../(home)/-actions/delete-group';
 import { deleteExpense } from './-actions/delete-expense';
 import { getGroup } from './-actions/get-group';
@@ -440,17 +441,17 @@ function RouteComponent() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f5f3fa] flex items-center justify-center">
+      <GradientLayout className="flex items-center justify-center pb-8">
         <p className="text-gray-500">Cargando...</p>
-      </div>
+      </GradientLayout>
     );
   }
 
   // Error state (no access or not found)
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f5f3fa] flex flex-col items-center justify-center p-6">
-        <div className="bg-white rounded-3xl p-8 text-center shadow-sm max-w-md w-full">
+      <GradientLayout className="flex items-center justify-center px-6 pb-8">
+        <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white/90 p-8 text-center shadow-sm backdrop-blur-sm">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <X className="w-8 h-8 text-red-500" />
           </div>
@@ -469,18 +470,18 @@ function RouteComponent() {
             Ir al inicio
           </button>
         </div>
-      </div>
+      </GradientLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f3fa]">
+    <GradientLayout className="pb-8">
       {/* Header */}
-      <div className="px-4 pt-4 pb-2">
-        <div className="flex items-center gap-3">
+      <div className="px-4 pt-5 pb-3">
+        <div className="native-surface-muted flex items-center gap-3 px-3 py-2.5">
           <button
             onClick={() => router.navigate({ to: '/' })}
-            className="w-10 h-10 flex items-center justify-center"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80"
           >
             <ChevronLeft className="w-6 h-6 text-[#1a1a3e]" />
           </button>
@@ -496,7 +497,7 @@ function RouteComponent() {
       </div>
 
       {/* Summary Card */}
-      <div className="px-4 py-4">
+      <div className="px-4 py-2">
         <div className="bg-white rounded-3xl p-6 shadow-sm">
           <p className="text-gray-500 text-center mb-1">Total gastado</p>
           <TotalsDisplay totals={data?.totals ?? {}} />
@@ -1133,6 +1134,6 @@ function RouteComponent() {
           </div>
         </>
       )}
-    </div>
+    </GradientLayout>
   );
 }

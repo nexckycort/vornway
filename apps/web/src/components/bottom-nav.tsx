@@ -15,8 +15,8 @@ export function BottomNav() {
   const { pathname } = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-2 pb-2">
-      <div className="max-w-md mx-auto flex items-center justify-around">
+    <nav className="fixed inset-x-0 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-40 px-4">
+      <div className="mx-auto flex w-full max-w-md items-center justify-around rounded-[1.75rem] border border-white/70 bg-white/85 px-3 py-2 shadow-[0_18px_40px_-24px_rgba(19,15,49,0.55)] backdrop-blur-xl">
         {navItems.map((item) => {
           const isActive =
             item.href === '/'
@@ -27,17 +27,19 @@ export function BottomNav() {
             <Link
               key={item.href}
               to={item.href}
-              className={`flex flex-col items-center gap-1 py-2 px-4 ${
-                isActive ? 'text-[#4040b0]' : 'text-gray-400'
+              className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all duration-200 ${
+                isActive
+                  ? 'bg-[#f1efff] text-[#4040b0]'
+                  : 'text-gray-400 active:scale-[0.98]'
               }`}
             >
               <HugeiconsIcon
                 icon={Icon}
-                className="w-6 h-6"
+                className={`h-6 w-6 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}
                 strokeWidth={isActive ? 2.5 : 2}
               />
               <span
-                className={`text-xs ${isActive ? 'font-semibold' : 'font-medium'}`}
+                className={`text-[0.68rem] tracking-tight ${isActive ? 'font-semibold' : 'font-medium'}`}
               >
                 {item.label}
               </span>

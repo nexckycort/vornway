@@ -33,36 +33,46 @@ export function StepLayout({
   };
 
   return (
-    <div className={`min-h-screen bg-white flex flex-col ${className}`}>
-      <div className="flex items-center justify-between px-4 py-4">
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={handleBack} className="p-1">
-            <HugeiconsIcon
-              icon={ChevronLeft}
-              className="w-6 h-6 text-gray-700"
-            />
-          </button>
-          <h1 className="text-xl font-semibold text-[#1a1a3e]">{title}</h1>
+    <div
+      className={`mx-auto flex min-h-dvh w-full max-w-md flex-col bg-white/80 backdrop-blur-sm ${className}`}
+    >
+      <div className="sticky top-0 z-20 border-b border-black/5 bg-white/80 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f2f0fb] active:scale-[0.98]"
+            >
+              <HugeiconsIcon
+                icon={ChevronLeft}
+                className="w-6 h-6 text-gray-700"
+              />
+            </button>
+            <h1 className="text-xl font-semibold tracking-tight text-[#1a1a3e]">{title}</h1>
+          </div>
+          <span className="rounded-full bg-[#f2f0fb] px-3 py-1 text-xs font-medium text-gray-600">
+            Paso {currentStep} de {totalSteps}
+          </span>
         </div>
-        <span className="text-gray-500 text-sm">
-          Paso {currentStep} de {totalSteps}
-        </span>
+
+        <div className="flex gap-1 px-4 pb-4">
+          {Array.from({ length: totalSteps }).map((_, index) => (
+            <div
+              key={`step-${index}`}
+              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                index < currentStep ? 'bg-[#4040b0]' : 'bg-gray-200'
+              }`}
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="flex gap-1 px-4 mb-6">
-        {Array.from({ length: totalSteps }).map((_, index) => (
-          <div
-            key={`step-${index}`}
-            className={`flex-1 h-1.5 rounded-full ${
-              index < currentStep ? 'bg-[#4040b0]' : 'bg-gray-200'
-            }`}
-          />
-        ))}
+      <div className="flex-1 px-4 pt-5 pb-4">
+        {children}
       </div>
 
-      <div className="flex-1 px-4">{children}</div>
-
-      {footer && <div className="p-4 pb-8">{footer}</div>}
+      {footer && <div className="border-t border-black/5 bg-white/90 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-xl">{footer}</div>}
     </div>
   );
 }

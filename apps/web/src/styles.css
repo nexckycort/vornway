@@ -6,11 +6,11 @@
 
 body {
   @apply m-0;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: 'Inter Variable', 'SF Pro Text', 'SF Pro Display', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
 }
 
 code {
@@ -132,7 +132,83 @@ code {
   * {
     @apply border-border outline-ring/50;
   }
+
+  html,
   body {
-    @apply bg-background text-foreground;
+    min-height: 100dvh;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    letter-spacing: -0.01em;
+  }
+
+  button,
+  a {
+    touch-action: manipulation;
+  }
+}
+
+@layer components {
+  .native-app-shell {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .native-app-shell::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(65% 36% at 6% -12%, rgb(255 255 255 / 52%) 0%, transparent 100%),
+      radial-gradient(70% 38% at 94% 0%, rgb(255 255 255 / 42%) 0%, transparent 100%);
+    z-index: 0;
+  }
+
+  .native-screen {
+    position: relative;
+    z-index: 1;
+    padding-top: max(env(safe-area-inset-top), 0.35rem);
+    padding-bottom: calc(max(env(safe-area-inset-bottom), 0.45rem) + 4.5rem);
+  }
+
+  .native-screen .bg-white.rounded-xl,
+  .native-screen .bg-white.rounded-2xl,
+  .native-screen .bg-white.rounded-3xl,
+  .native-screen .bg-white\/90.rounded-xl,
+  .native-screen .bg-white\/90.rounded-2xl,
+  .native-screen .bg-white\/90.rounded-3xl {
+    border: 1px solid rgb(255 255 255 / 70%);
+    box-shadow: 0 16px 36px -24px rgb(23 17 62 / 38%);
+    backdrop-filter: saturate(165%) blur(14px);
+  }
+
+  .native-screen :is(input, select, textarea) {
+    min-height: 2.9rem;
+  }
+
+  .native-screen h1 {
+    letter-spacing: -0.02em;
+  }
+
+  .native-screen .native-section-title {
+    @apply mb-3 text-sm font-semibold text-[#1a1a3e]/80;
+  }
+
+  .native-screen .native-surface-muted {
+    @apply rounded-3xl border border-white/60 bg-white/70 backdrop-blur-xl;
+  }
+
+  .native-screen .fixed.bottom-0.left-0.right-0.bg-white.rounded-t-3xl {
+    border-top: 1px solid rgb(255 255 255 / 76%);
+    box-shadow: 0 -26px 45px -34px rgb(18 14 44 / 45%);
+    padding-bottom: max(env(safe-area-inset-bottom), 0.4rem);
+    backdrop-filter: saturate(140%) blur(12px);
+  }
+
+  .native-screen button[class*='rounded-xl'],
+  .native-screen button[class*='rounded-2xl'] {
+    @apply transition-transform duration-150 active:scale-[0.985];
   }
 }

@@ -55,7 +55,7 @@ function RouteComponent() {
   };
 
   return (
-    <GradientLayout className="flex min-h-dvh items-center justify-center px-5">
+    <GradientLayout className="native-enter flex min-h-dvh items-center justify-center px-5">
       <div className="w-full max-w-sm space-y-8 rounded-3xl border border-white/60 bg-white/80 p-6 shadow-[0_20px_45px_-28px_rgba(26,26,62,0.45)] backdrop-blur-xl">
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold tracking-tight text-[#1a1a3e]">Revisa tu correo electrónico</h1>

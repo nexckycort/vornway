@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { ChevronLeft } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { GradientLayout } from '~/components/gradient-layout';
 import { getGroup } from '../-actions/get-group';
 import { settleDebt } from '../-actions/settle-debt';
 
@@ -139,15 +140,15 @@ function RouteComponent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f5f3fa] flex items-center justify-center">
+      <GradientLayout className="native-enter flex items-center justify-center pb-8">
         <p className="text-gray-500">Cargando...</p>
-      </div>
+      </GradientLayout>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-[#f5f3fa] flex flex-col items-center justify-center p-6">
+      <GradientLayout className="native-enter flex flex-col items-center justify-center p-6 pb-8">
         <p className="text-gray-500 mb-6">
           {error instanceof Error ? error.message : 'No se pudo cargar'}
         </p>
@@ -158,18 +159,18 @@ function RouteComponent() {
         >
           Volver al grupo
         </button>
-      </div>
+      </GradientLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f3fa] pb-8">
-      <div className="px-4 pt-4 pb-3">
-        <div className="flex items-center gap-3">
+    <GradientLayout className="native-enter pb-8">
+      <div className="px-4 pt-5 pb-3">
+        <div className="native-surface-muted flex items-center gap-3 px-3 py-2.5">
           <button
             type="button"
             onClick={() => router.history.back()}
-            className="w-10 h-10 flex items-center justify-center"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80"
           >
             <ChevronLeft className="w-6 h-6 text-[#1a1a3e]" />
           </button>
@@ -185,7 +186,7 @@ function RouteComponent() {
       <div className="px-4">
         <div className="bg-white rounded-3xl p-6 shadow-sm">
           {flexibleOptions.length === 0 ? (
-            <div className="text-center">
+            <div className="native-empty p-4">
               <p className="text-[#1a1a3e] font-semibold mb-2">
                 No tienes deudas para abonar
               </p>
@@ -278,6 +279,6 @@ function RouteComponent() {
           )}
         </div>
       </div>
-    </div>
+    </GradientLayout>
   );
 }

@@ -169,7 +169,7 @@ function ExpenseItem({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
-        className={`relative z-10 w-full flex items-center gap-4 py-4 text-left transition-transform duration-200 ${
+        className={`native-tap relative z-10 w-full flex items-center gap-4 py-4 text-left transition-transform duration-200 ${
           expense.isSettlement ? 'bg-emerald-50' : 'bg-white'
         }`}
         style={{ transform: `translateX(${translateX}px)` }}
@@ -441,7 +441,7 @@ function RouteComponent() {
   // Loading state
   if (isLoading) {
     return (
-      <GradientLayout className="flex items-center justify-center pb-8">
+      <GradientLayout className="native-enter flex items-center justify-center pb-8">
         <p className="text-gray-500">Cargando...</p>
       </GradientLayout>
     );
@@ -450,7 +450,7 @@ function RouteComponent() {
   // Error state (no access or not found)
   if (error) {
     return (
-      <GradientLayout className="flex items-center justify-center px-6 pb-8">
+      <GradientLayout className="native-enter flex items-center justify-center px-6 pb-8">
         <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white/90 p-8 text-center shadow-sm backdrop-blur-sm">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <X className="w-8 h-8 text-red-500" />
@@ -475,7 +475,7 @@ function RouteComponent() {
   }
 
   return (
-    <GradientLayout className="pb-8">
+    <GradientLayout className="native-enter pb-8">
       {/* Header */}
       <div className="px-4 pt-5 pb-3">
         <div className="native-surface-muted flex items-center gap-3 px-3 py-2.5">
@@ -648,7 +648,7 @@ function RouteComponent() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center px-6 py-20">
+          <div className="native-empty flex-1 flex flex-col items-center justify-center px-6 py-20">
             {/* Icon */}
             <div className="relative mb-6">
               <div className="w-20 h-20 bg-[#a8a0e8] rounded-2xl transform rotate-6" />
@@ -743,7 +743,7 @@ function RouteComponent() {
               })}
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center px-6 py-20">
+            <div className="native-empty flex-1 flex flex-col items-center justify-center px-6 py-20">
               <h3 className="text-xl font-semibold text-[#1a1a3e] mb-2">
                 Sin cuentas aún
               </h3>

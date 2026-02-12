@@ -198,7 +198,7 @@ function SwipeableGroupItem({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
-        className="w-full bg-white rounded-2xl p-4 text-left transition-transform duration-200"
+        className="native-tap w-full bg-white rounded-2xl p-4 text-left transition-transform duration-200"
         style={{ transform: `translateX(${translateX}px)` }}
       >
         <div className="flex items-start gap-3">
@@ -402,7 +402,7 @@ function HomePage() {
   };
 
   return (
-    <GradientLayout className="pb-10">
+    <GradientLayout className="native-enter pb-10">
       <header className="px-5 pt-5 pb-4">
         <div className="native-surface-muted flex items-center justify-between px-4 py-3">
           <h1 className="text-2xl font-bold tracking-tight text-[#1a1a3e]">
@@ -519,7 +519,7 @@ function HomePage() {
         </div>
 
         {!hasRegularGroups && !hasMetaGroups ? (
-          <div className="flex flex-col items-center justify-center py-12">
+          <div className="native-empty flex flex-col items-center justify-center py-12">
             <div className="w-20 h-20 bg-[#8080d0] rounded-2xl rotate-[-8deg] flex items-center justify-center mb-6 shadow-lg">
               <HugeiconsIcon icon={Users} className="w-10 h-10 text-white" />
             </div>

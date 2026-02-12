@@ -56,7 +56,7 @@ function RouteComponent() {
   };
 
   return (
-    <GradientLayout className="pb-20">
+    <GradientLayout className="native-enter pb-20">
       <div className="min-h-screen">
         {/* Header */}
         <div className="px-5 pt-5 pb-4">

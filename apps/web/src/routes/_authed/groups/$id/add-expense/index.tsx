@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { ChevronDown, ChevronLeft, Info, LayoutGrid } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { GradientLayout } from '~/components/gradient-layout';
 
 import { getExpense } from '../-actions/get-expense';
 import { createExpense } from './-actions/create-expense';
@@ -249,34 +250,36 @@ function RouteComponent() {
     (isEditMode && isLoadingExpense && !hasLoadedEditData)
   ) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <GradientLayout className="native-enter flex items-center justify-center pb-8">
         <p className="text-gray-500">Cargando...</p>
-      </div>
+      </GradientLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <GradientLayout className="native-enter pb-8">
       {/* Header */}
-      <div className="px-4 py-4 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => router.history.back()}
-          className="w-10 h-10 flex items-center justify-center"
-        >
-          <ChevronLeft className="w-6 h-6 text-[#1a1a3e]" />
-        </button>
-        <h1 className="text-xl font-semibold text-[#1a1a3e]">
-          {isEditMode
-            ? isSettlement
-              ? 'Editar liquidación'
-              : 'Editar gasto'
-            : 'Añadir gasto'}
-        </h1>
+      <div className="px-4 pt-5 pb-3">
+        <div className="native-surface-muted flex items-center gap-3 px-3 py-2.5">
+          <button
+            type="button"
+            onClick={() => router.history.back()}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80"
+          >
+            <ChevronLeft className="w-6 h-6 text-[#1a1a3e]" />
+          </button>
+          <h1 className="text-xl font-semibold text-[#1a1a3e]">
+            {isEditMode
+              ? isSettlement
+                ? 'Editar liquidación'
+                : 'Editar gasto'
+              : 'Añadir gasto'}
+          </h1>
+        </div>
       </div>
 
       {/* Form */}
-      <div className="flex-1 px-4 pt-4 border-t border-gray-100">
+      <div className="flex-1 rounded-t-3xl border-t border-white/70 bg-white/85 px-4 pt-4 backdrop-blur-sm">
         {/* Description */}
         <div className="mb-6">
           <label htmlFor="description" className="block text-[#1a1a3e] mb-2">
@@ -588,7 +591,7 @@ function RouteComponent() {
       </div>
 
       {/* Bottom buttons */}
-      <div className="px-4 py-6 flex items-center gap-4 border-t border-gray-100">
+      <div className="px-4 py-6 flex items-center gap-4 border-t border-black/5 bg-white/90 backdrop-blur-xl">
         <button
           type="button"
           onClick={() => router.history.back()}
@@ -634,6 +637,6 @@ function RouteComponent() {
           </p>
         </div>
       )}
-    </div>
+    </GradientLayout>
   );
 }

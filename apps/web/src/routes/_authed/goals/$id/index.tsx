@@ -319,7 +319,7 @@ function RouteComponent() {
 
   if (isLoading) {
     return (
-      <GradientLayout className="flex items-center justify-center pb-8">
+      <GradientLayout className="native-enter flex items-center justify-center pb-8">
         <p className="text-gray-500">Cargando metas...</p>
       </GradientLayout>
     );
@@ -327,7 +327,7 @@ function RouteComponent() {
 
   if (error || !data) {
     return (
-      <GradientLayout className="flex flex-col items-center justify-center p-6 pb-8">
+      <GradientLayout className="native-enter flex flex-col items-center justify-center p-6 pb-8">
         <p className="text-gray-500 mb-6">
           {error instanceof Error ? error.message : 'No se pudo cargar'}
         </p>
@@ -343,7 +343,7 @@ function RouteComponent() {
   }
 
   return (
-    <GradientLayout className="pb-8">
+    <GradientLayout className="native-enter pb-8">
       <div className="px-4 pt-5 pb-3">
         <div className="native-surface-muted flex items-center justify-between gap-3 px-3 py-2.5">
           <div className="flex items-center gap-3">

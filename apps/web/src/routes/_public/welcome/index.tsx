@@ -17,7 +17,7 @@ function RouteComponent() {
   const [nombre, setNombre] = useState('');
 
   return (
-    <GradientLayout className="flex flex-col items-center justify-center px-5 pb-8">
+    <GradientLayout className="native-enter flex flex-col items-center justify-center px-5 pb-8">
       <div className="mb-5">
         <img src="/logo.svg" alt="logo" className="h-20 w-20 drop-shadow-sm" />
       </div>

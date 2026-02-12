@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { ChevronLeft, Share2, Trash2, UserPlus } from 'lucide-react';
 import { useState } from 'react';
+import { GradientLayout } from '~/components/gradient-layout';
 import { getGroup } from '../-actions/get-group';
 import { removeMember } from '../-actions/remove-member';
 import { addMember } from './-actions/add-member';
@@ -101,32 +102,36 @@ function EditParticipants() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <GradientLayout className="native-enter flex items-center justify-center pb-8">
         <p className="text-gray-500">Cargando...</p>
-      </div>
+      </GradientLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <GradientLayout className="native-enter pb-8">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-4">
-        <button
-          onClick={() => router.navigate({ to: '/groups/$id', params: { id } })}
-          className="p-1"
-        >
-          <ChevronLeft className="w-6 h-6 text-gray-700" />
-        </button>
-        <h1 className="text-xl font-semibold text-[#1a1a3e]">
-          Editar participantes
-        </h1>
+      <div className="px-4 pt-5 pb-4">
+        <div className="native-surface-muted flex items-center gap-2 px-3 py-2.5">
+          <button
+            onClick={() =>
+              router.navigate({ to: '/groups/$id', params: { id } })
+            }
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80"
+          >
+            <ChevronLeft className="w-6 h-6 text-gray-700" />
+          </button>
+          <h1 className="text-xl font-semibold text-[#1a1a3e]">
+            Editar participantes
+          </h1>
+        </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 px-4">
         {/* Share invite link */}
-        <div className="mb-6">
-          <p className="text-gray-600 mb-3">Compatir enlace del grupo</p>
+        <div className="mb-6 rounded-3xl border border-white/60 bg-white/85 p-4 shadow-sm backdrop-blur-sm">
+          <p className="text-gray-600 mb-3">Compartir enlace del grupo</p>
           <div className="flex gap-3">
             <div className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl bg-gray-50 overflow-hidden">
               <span className="text-gray-500 text-sm truncate block">
@@ -211,7 +216,7 @@ function EditParticipants() {
       </div>
 
       {/* Footer */}
-      <div className="p-4 pb-8">
+      <div className="border-t border-black/5 bg-white/85 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -284,6 +289,6 @@ function EditParticipants() {
           </div>
         </>
       )}
-    </div>
+    </GradientLayout>
   );
 }

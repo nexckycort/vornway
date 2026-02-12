@@ -1,8 +1,4 @@
-@import 'tailwindcss';
-
-@import 'tw-animate-css';
-
-@custom-variant dark (&:is(.dark *));
+@import '@workspace/ui/globals.css';
 
 body {
   @apply m-0;

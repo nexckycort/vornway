@@ -97,6 +97,7 @@ function SwipeableGroupItem({
 }) {
   const config = categoryConfig[group.type] ?? categoryConfig.otros;
   const IconComponent = config.icon;
+  const isMetaGroup = group.type === 'meta';
   const SWIPE_WIDTH = 88;
   const SWIPE_THRESHOLD = 44;
   const FULL_SWIPE_THRESHOLD = 78;
@@ -198,22 +199,38 @@ function SwipeableGroupItem({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
-        className="native-tap w-full bg-white rounded-2xl p-4 text-left transition-transform duration-200"
+        className={cn(
+          'native-tap w-full rounded-2xl p-4 text-left transition-transform duration-200',
+          isMetaGroup
+            ? 'bg-[#eefbf5] border border-[#d7f3e5]'
+            : 'bg-white',
+        )}
         style={{ transform: `translateX(${translateX}px)` }}
       >
         <div className="flex items-start gap-3">
-          <div
-            className={`w-10 h-10 ${config.bg} rounded-xl flex items-center justify-center`}
-          >
-            <HugeiconsIcon
-              icon={IconComponent}
-              className={`w-5 h-5 ${config.color}`}
-            />
-          </div>
+          {isMetaGroup ? (
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <Target className="w-5 h-5 text-emerald-700" />
+            </div>
+          ) : (
+            <div
+              className={`w-10 h-10 ${config.bg} rounded-xl flex items-center justify-center`}
+            >
+              <HugeiconsIcon
+                icon={IconComponent}
+                className={`w-5 h-5 ${config.color}`}
+              />
+            </div>
+          )}
           <div className="flex-1">
             <p className="font-semibold text-[#1a1a3e]">{group.name}</p>
             <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span>{config.label}</span>
+              {!isMetaGroup && <span>{config.label}</span>}
+              {isMetaGroup && (
+                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
+                  Meta
+                </span>
+              )}
               {isOwner && (
                 <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#e8e4f8] text-[#4040b0]">
                   Admin

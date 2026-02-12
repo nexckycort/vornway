@@ -8,7 +8,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { createServerFn } from '@tanstack/react-start';
 import { Toaster } from '@workspace/ui/components/sonner';
-import appCss from '@workspace/ui/globals.css?url';
+import stylesCss from '../styles.css?url';
 import { serverEnv } from '~/config/env.server';
 import { getCurrentUserFn } from '~/server/auth';
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools';
@@ -72,7 +72,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       links: [
         {
           rel: 'stylesheet',
-          href: appCss,
+          href: stylesCss,
         },
         {
           rel: 'icon',

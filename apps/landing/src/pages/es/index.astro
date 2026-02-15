@@ -1,6 +1,6 @@
 ---
-import FeatureBlocks from "../../components/FeatureBlocks.astro";
 import FAQSection from "../../components/FAQSection.astro";
+import FeatureBlocks from "../../components/FeatureBlocks.astro";
 import FinalCTA from "../../components/FinalCTA.astro";
 import HeroChaos from "../../components/HeroChaos.astro";
 import SiteFooter from "../../components/SiteFooter.astro";
@@ -33,10 +33,10 @@ const copy = translations[lang];
     <FeatureBlocks copy={copy} />
 
     <TrustLayer copy={copy} />
-    
-    <FAQSection copy={copy} />
 
     <FinalCTA copy={copy} />
+
+    <FAQSection copy={copy} />
   </main>
 
   <SiteFooter copy={copy} />

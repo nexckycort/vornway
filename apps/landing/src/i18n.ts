@@ -14,6 +14,7 @@ export const translations = {
         { id: "how-it-works", label: "How it works" },
         { id: "features", label: "Features" },
         { id: "proof", label: "My commitment" },
+        { id: "faq", label: "FAQ" },
       ],
       cta: "Get started",
       homeAria: "Splitway home",
@@ -250,6 +251,39 @@ export const translations = {
         },
       ],
     },
+    faq: {
+      badge: "FAQ",
+      title: "Answers before you jump in",
+      subtitle:
+        "Straight answers about roadmap, open source, and what to expect while Splitway keeps evolving.",
+      items: [
+        {
+          question: "Will Splitway have a mobile app?",
+          answer:
+            "Yes. I am currently juggling other projects and a few planned trips, so progress is not constant every week. I plan to start building the first app version in June or July 2026 and publish it in that same period.",
+        },
+        {
+          question: "Will the project be 100% open source?",
+          answer:
+            "Yes. I still need to make a few adjustments before opening the repository, but the project will be public.",
+        },
+        {
+          question: "Where can I report bugs or request features?",
+          answer:
+            "Directly from the app. You will be able to report bugs and request features without leaving Splitway.",
+        },
+        {
+          question: "Will there be premium features in the future?",
+          answer:
+            "For now, no premium features are planned. They may appear in the future, but not in the current roadmap.",
+        },
+        {
+          question: "Will there be self-hosting when it becomes open source?",
+          answer:
+            "Yes. Anyone will be able to self-host their own Splitway instance in a very simple way.",
+        },
+      ],
+    },
     finalCta: {
       titleTop: "Less awkward money talk.",
       titleBottom: "More shared moments.",
@@ -279,6 +313,7 @@ export const translations = {
         { id: "how-it-works", label: "Como funciona" },
         { id: "features", label: "Funciones" },
         { id: "proof", label: "Mi compromiso" },
+        { id: "faq", label: "Preguntas" },
       ],
       cta: "Comenzar",
       homeAria: "Inicio de Splitway",
@@ -512,6 +547,39 @@ export const translations = {
           label: "Tus datos van primero",
           sublabel:
             "Aunque la interfaz evolucione, tu informacion se mantiene intacta y no se pierde.",
+        },
+      ],
+    },
+    faq: {
+      badge: "Preguntas",
+      title: "Respuestas claras antes de empezar",
+      subtitle:
+        "Respuestas directas sobre roadmap, open source y que puedes esperar mientras Splitway evoluciona.",
+      items: [
+        {
+          question: "Splitway tendra app movil?",
+          answer:
+            "Si. En este momento estoy trabajando en otros proyectos y tengo varios viajes planeados, por eso no avanzo de forma constante todas las semanas. Planeo comenzar a construir la primera version en junio o julio de 2026 y publicarla en ese mismo periodo.",
+        },
+        {
+          question: "El proyecto sera 100% open source?",
+          answer:
+            "Si. Todavia necesito hacer un par de ajustes antes de abrir el repositorio, pero el proyecto sera publico.",
+        },
+        {
+          question: "Donde puedo reportar bugs o pedir funcionalidades?",
+          answer:
+            "Directamente desde la app. Podras reportar bugs y pedir funcionalidades sin salir de Splitway.",
+        },
+        {
+          question: "Habra funcionalidades premium en el futuro?",
+          answer:
+            "Por ahora no tengo planeada ninguna funcionalidad premium. Puede que salgan en el futuro, pero no estan en el roadmap actual.",
+        },
+        {
+          question: "Se podra hacer self-host cuando sea open source?",
+          answer:
+            "Si. Cualquier persona podra alojar su propio Splitway de manera muy simple.",
         },
       ],
     },

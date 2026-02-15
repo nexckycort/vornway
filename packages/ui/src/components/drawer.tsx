@@ -9,16 +9,36 @@ function Drawer({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
   const lastOpen = useRef(props.open);
+  const openedAtLocationKey = useRef<string | null>(null);
+  const closeBackTimeout = useRef<number | null>(null);
 
+  const getLocationKey = () =>
+    `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (!lastOpen.current && props.open) {
+      if (closeBackTimeout.current !== null) {
+        window.clearTimeout(closeBackTimeout.current);
+        closeBackTimeout.current = null;
+      }
       window.history.pushState({ drawer: true }, '');
+      openedAtLocationKey.current = getLocationKey();
     }
 
     if (lastOpen.current && !props.open) {
       if (window.history.state?.drawer) {
-        window.history.back();
+        closeBackTimeout.current = window.setTimeout(() => {
+          const sameLocation = openedAtLocationKey.current === getLocationKey();
+
+          if (!props.open && sameLocation && window.history.state?.drawer) {
+            window.history.back();
+          }
+
+          closeBackTimeout.current = null;
+        }, 0);
       }
+      openedAtLocationKey.current = null;
     }
 
     lastOpen.current = props.open;
@@ -36,6 +56,14 @@ function Drawer({
       window.removeEventListener('popstate', handlePopState);
     };
   }, [props.open, props.onOpenChange]);
+
+  useEffect(() => {
+    return () => {
+      if (closeBackTimeout.current !== null) {
+        window.clearTimeout(closeBackTimeout.current);
+      }
+    };
+  }, []);
 
   return <DrawerPrimitive.Root data-slot="drawer" {...props} />;
 }

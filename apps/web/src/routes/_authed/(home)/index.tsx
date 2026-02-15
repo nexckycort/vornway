@@ -619,8 +619,7 @@ function HomePage() {
         <HugeiconsIcon icon={Plus} className="w-7 h-7 text-white" />
       </button>
 
-      {showOptions && (
-        <AppDrawer open={showOptions} onOpenChange={setShowOptions}>
+      <AppDrawer open={showOptions} onOpenChange={setShowOptions}>
           <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-4">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -689,21 +688,19 @@ function HomePage() {
             </div>
           </div>
         </AppDrawer>
-      )}
 
       {/* Modal unirse a grupo */}
-      {showJoinModal && (
-        <AppDrawer
-          open={showJoinModal}
-          onOpenChange={(open) => {
-            if (!open) {
-              resetJoinModal();
-              return;
-            }
-            setShowJoinModal(true);
-          }}
-          className="max-h-[80vh]"
-        >
+      <AppDrawer
+        open={showJoinModal}
+        onOpenChange={(open) => {
+          if (!open) {
+            resetJoinModal();
+            return;
+          }
+          setShowJoinModal(true);
+        }}
+        className="max-h-[80vh]"
+      >
           <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-4">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -915,23 +912,22 @@ function HomePage() {
               )}
             </div>
           </div>
-        </AppDrawer>
-      )}
+      </AppDrawer>
 
-      {showDeleteGroupModal && groupToDelete && (
-        <AppDrawer
-          open={showDeleteGroupModal}
-          onOpenChange={(open) => {
-            if (!open) {
-              setShowDeleteGroupModal(false);
-              setGroupToDelete(null);
-              setDeleteGroupNameInput('');
-              setCopiedGroupName(false);
-              return;
-            }
-            setShowDeleteGroupModal(true);
-          }}
-        >
+      <AppDrawer
+        open={showDeleteGroupModal && Boolean(groupToDelete)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowDeleteGroupModal(false);
+            setGroupToDelete(null);
+            setDeleteGroupNameInput('');
+            setCopiedGroupName(false);
+            return;
+          }
+          setShowDeleteGroupModal(true);
+        }}
+      >
+        {groupToDelete ? (
           <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -1019,8 +1015,8 @@ function HomePage() {
               </div>
             </div>
           </div>
-        </AppDrawer>
-      )}
+        ) : null}
+      </AppDrawer>
 
       <BottomNav />
     </GradientLayout>

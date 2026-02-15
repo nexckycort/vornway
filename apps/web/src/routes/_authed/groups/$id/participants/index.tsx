@@ -241,15 +241,15 @@ function EditParticipants() {
       </div>
 
       {/* Confirm delete member modal */}
-      {memberToDelete && (
-        <AppDrawer
-          open={Boolean(memberToDelete)}
-          onOpenChange={(open) => {
-            if (!open) {
-              setMemberToDelete(null);
-            }
-          }}
-        >
+      <AppDrawer
+        open={Boolean(memberToDelete)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMemberToDelete(null);
+          }
+        }}
+      >
+        {memberToDelete ? (
           <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -288,8 +288,8 @@ function EditParticipants() {
               )}
             </div>
           </div>
-        </AppDrawer>
-      )}
+        ) : null}
+      </AppDrawer>
     </GradientLayout>
   );
 }

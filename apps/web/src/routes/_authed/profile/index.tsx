@@ -293,8 +293,7 @@ function RouteComponent() {
 
       <BottomNav />
 
-      {showEditNameModal && (
-        <AppDrawer open={showEditNameModal} onOpenChange={setShowEditNameModal}>
+      <AppDrawer open={showEditNameModal} onOpenChange={setShowEditNameModal}>
           <div className="max-h-[88vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -355,7 +354,6 @@ function RouteComponent() {
             </div>
           </div>
         </AppDrawer>
-      )}
     </GradientLayout>
   );
 }

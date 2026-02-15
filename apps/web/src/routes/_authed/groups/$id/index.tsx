@@ -756,18 +756,18 @@ function RouteComponent() {
         </div>
       )}
 
-      {showDeleteExpenseModal && expenseToDelete && (
-        <AppDrawer
-          open={showDeleteExpenseModal}
-          onOpenChange={(open) => {
-            if (!open) {
-              setShowDeleteExpenseModal(false);
-              setExpenseToDelete(null);
-              return;
-            }
-            setShowDeleteExpenseModal(true);
-          }}
-        >
+      <AppDrawer
+        open={showDeleteExpenseModal && Boolean(expenseToDelete)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowDeleteExpenseModal(false);
+            setExpenseToDelete(null);
+            return;
+          }
+          setShowDeleteExpenseModal(true);
+        }}
+      >
+        {expenseToDelete ? (
           <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -826,12 +826,11 @@ function RouteComponent() {
               )}
             </div>
           </div>
-        </AppDrawer>
-      )}
+        ) : null}
+      </AppDrawer>
 
       {/* Modal de invitación */}
-      {showInviteModal && (
-        <AppDrawer open={showInviteModal} onOpenChange={setShowInviteModal}>
+      <AppDrawer open={showInviteModal} onOpenChange={setShowInviteModal}>
           <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -911,24 +910,22 @@ function RouteComponent() {
             </div>
           </div>
         </AppDrawer>
-      )}
 
       {/* Modal de ajustes */}
-      {showSettingsModal && (
-        <AppDrawer
-          open={showSettingsModal}
-          onOpenChange={(open) => {
-            if (!open) {
-              setShowSettingsModal(false);
-              setShowDeleteGroupConfirm(false);
-              setShowLeaveGroupConfirm(false);
-              setDeleteGroupNameInput('');
-              setCopiedGroupName(false);
-              return;
-            }
-            setShowSettingsModal(true);
-          }}
-        >
+      <AppDrawer
+        open={showSettingsModal}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowSettingsModal(false);
+            setShowDeleteGroupConfirm(false);
+            setShowLeaveGroupConfirm(false);
+            setDeleteGroupNameInput('');
+            setCopiedGroupName(false);
+            return;
+          }
+          setShowSettingsModal(true);
+        }}
+      >
           <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -1127,7 +1124,6 @@ function RouteComponent() {
             </div>
           </div>
         </AppDrawer>
-      )}
     </GradientLayout>
   );
 }

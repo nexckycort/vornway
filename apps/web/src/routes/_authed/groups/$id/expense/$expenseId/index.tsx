@@ -259,8 +259,7 @@ function RouteComponent() {
         </button>
       </div>
 
-      {showDeleteModal && (
-        <AppDrawer open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+      <AppDrawer open={showDeleteModal} onOpenChange={setShowDeleteModal}>
           <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -323,7 +322,6 @@ function RouteComponent() {
             </div>
           </div>
         </AppDrawer>
-      )}
     </div>
   );
 }

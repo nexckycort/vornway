@@ -295,12 +295,11 @@ function RouteComponent() {
         )}
       </div>
 
-      {showCreateModal && (
-        <AppDrawer
-          open={showCreateModal}
-          onOpenChange={setShowCreateModal}
-          className="max-h-[88vh]"
-        >
+      <AppDrawer
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        className="max-h-[88vh]"
+      >
           <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -440,14 +439,13 @@ function RouteComponent() {
             </div>
           </div>
         </AppDrawer>
-      )}
 
-      {showContributionModal && selectedGoal && (
-        <AppDrawer
-          open={showContributionModal}
-          onOpenChange={setShowContributionModal}
-          className="max-h-[88vh]"
-        >
+      <AppDrawer
+        open={showContributionModal && Boolean(selectedGoal)}
+        onOpenChange={setShowContributionModal}
+        className="max-h-[88vh]"
+      >
+        {selectedGoal ? (
           <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -550,8 +548,8 @@ function RouteComponent() {
               ) : null}
             </div>
           </div>
-        </AppDrawer>
-      )}
+        ) : null}
+      </AppDrawer>
     </div>
   );
 }

@@ -254,12 +254,11 @@ function AddParticipants() {
       </div>
 
       {/* Success Modal */}
-      {showSuccessModal && (
-        <AppDrawer
-          open={showSuccessModal}
-          onOpenChange={setShowSuccessModal}
-          className="max-h-[90vh]"
-        >
+      <AppDrawer
+        open={showSuccessModal}
+        onOpenChange={setShowSuccessModal}
+        className="max-h-[90vh]"
+      >
           <div className="overflow-y-auto">
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-2">
@@ -362,7 +361,6 @@ function AddParticipants() {
             </div>
           </div>
         </AppDrawer>
-      )}
     </StepLayout>
   );
 }

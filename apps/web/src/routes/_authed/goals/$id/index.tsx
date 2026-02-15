@@ -648,12 +648,11 @@ function RouteComponent() {
         )}
       </div>
 
-      {showEditGroupModal && (
-        <AppDrawer
-          open={showEditGroupModal}
-          onOpenChange={setShowEditGroupModal}
-          className="max-h-[88vh]"
-        >
+      <AppDrawer
+        open={showEditGroupModal}
+        onOpenChange={setShowEditGroupModal}
+        className="max-h-[88vh]"
+      >
           <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -718,14 +717,12 @@ function RouteComponent() {
             </div>
           </div>
         </AppDrawer>
-      )}
 
-      {showEditGoalModal && (
-        <AppDrawer
-          open={showEditGoalModal}
-          onOpenChange={setShowEditGoalModal}
-          className="max-h-[88vh]"
-        >
+      <AppDrawer
+        open={showEditGoalModal}
+        onOpenChange={setShowEditGoalModal}
+        className="max-h-[88vh]"
+      >
           <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -810,14 +807,12 @@ function RouteComponent() {
             </div>
           </div>
         </AppDrawer>
-      )}
 
-      {showCreateModal && (
-        <AppDrawer
-          open={showCreateModal}
-          onOpenChange={setShowCreateModal}
-          className="max-h-[88vh]"
-        >
+      <AppDrawer
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        className="max-h-[88vh]"
+      >
           <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -956,14 +951,13 @@ function RouteComponent() {
             </div>
           </div>
         </AppDrawer>
-      )}
 
-      {showContributionModal && selectedGoal && (
-        <AppDrawer
-          open={showContributionModal}
-          onOpenChange={setShowContributionModal}
-          className="max-h-[88vh]"
-        >
+      <AppDrawer
+        open={showContributionModal && Boolean(selectedGoal)}
+        onOpenChange={setShowContributionModal}
+        className="max-h-[88vh]"
+      >
+        {selectedGoal ? (
           <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -1067,15 +1061,15 @@ function RouteComponent() {
               ) : null}
             </div>
           </div>
-        </AppDrawer>
-      )}
+        ) : null}
+      </AppDrawer>
 
-      {showDeleteGoalModal && selectedGoal && (
-        <AppDrawer
-          open={showDeleteGoalModal}
-          onOpenChange={setShowDeleteGoalModal}
-          className="max-h-[88vh]"
-        >
+      <AppDrawer
+        open={showDeleteGoalModal && Boolean(selectedGoal)}
+        onOpenChange={setShowDeleteGoalModal}
+        className="max-h-[88vh]"
+      >
+        {selectedGoal ? (
           <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -1127,15 +1121,14 @@ function RouteComponent() {
               ) : null}
             </div>
           </div>
-        </AppDrawer>
-      )}
+        ) : null}
+      </AppDrawer>
 
-      {showParticipantsModal && (
-        <AppDrawer
-          open={showParticipantsModal}
-          onOpenChange={setShowParticipantsModal}
-          className="max-h-[88vh]"
-        >
+      <AppDrawer
+        open={showParticipantsModal}
+        onOpenChange={setShowParticipantsModal}
+        className="max-h-[88vh]"
+      >
           <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -1330,10 +1323,8 @@ function RouteComponent() {
             </div>
           </div>
         </AppDrawer>
-      )}
 
-      {showInviteModal && (
-        <AppDrawer open={showInviteModal} onOpenChange={setShowInviteModal}>
+      <AppDrawer open={showInviteModal} onOpenChange={setShowInviteModal}>
           <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -1395,7 +1386,6 @@ function RouteComponent() {
             </div>
           </div>
         </AppDrawer>
-      )}
     </GradientLayout>
   );
 }

@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { AppDrawer } from '~/components/app-drawer';
 import { GradientLayout } from '~/components/gradient-layout';
 import { addGoalContribution } from '../../groups/$id/goals/-actions/add-goal-contribution';
 import { addGoalMember } from '../../groups/$id/goals/-actions/add-goal-member';
@@ -648,14 +649,12 @@ function RouteComponent() {
       </div>
 
       {showEditGroupModal && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setShowEditGroupModal(false)}
-            aria-label="Cerrar modal"
-          />
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[88vh] overflow-y-auto">
+        <AppDrawer
+          open={showEditGroupModal}
+          onOpenChange={setShowEditGroupModal}
+          className="max-h-[88vh]"
+        >
+          <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -718,18 +717,16 @@ function RouteComponent() {
               ) : null}
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
 
       {showEditGoalModal && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setShowEditGoalModal(false)}
-            aria-label="Cerrar modal"
-          />
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[88vh] overflow-y-auto">
+        <AppDrawer
+          open={showEditGoalModal}
+          onOpenChange={setShowEditGoalModal}
+          className="max-h-[88vh]"
+        >
+          <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -812,18 +809,16 @@ function RouteComponent() {
               ) : null}
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
 
       {showCreateModal && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setShowCreateModal(false)}
-            aria-label="Cerrar modal"
-          />
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[88vh] overflow-y-auto">
+        <AppDrawer
+          open={showCreateModal}
+          onOpenChange={setShowCreateModal}
+          className="max-h-[88vh]"
+        >
+          <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -960,18 +955,16 @@ function RouteComponent() {
               ) : null}
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
 
       {showContributionModal && selectedGoal && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setShowContributionModal(false)}
-            aria-label="Cerrar modal"
-          />
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[88vh] overflow-y-auto">
+        <AppDrawer
+          open={showContributionModal}
+          onOpenChange={setShowContributionModal}
+          className="max-h-[88vh]"
+        >
+          <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -1074,18 +1067,16 @@ function RouteComponent() {
               ) : null}
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
 
       {showDeleteGoalModal && selectedGoal && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setShowDeleteGoalModal(false)}
-            aria-label="Cerrar modal"
-          />
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[88vh] overflow-y-auto">
+        <AppDrawer
+          open={showDeleteGoalModal}
+          onOpenChange={setShowDeleteGoalModal}
+          className="max-h-[88vh]"
+        >
+          <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -1136,18 +1127,16 @@ function RouteComponent() {
               ) : null}
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
 
       {showParticipantsModal && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setShowParticipantsModal(false)}
-            aria-label="Cerrar modal"
-          />
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[88vh] overflow-y-auto">
+        <AppDrawer
+          open={showParticipantsModal}
+          onOpenChange={setShowParticipantsModal}
+          className="max-h-[88vh]"
+        >
+          <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -1340,18 +1329,12 @@ function RouteComponent() {
               ) : null}
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
 
       {showInviteModal && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setShowInviteModal(false)}
-            aria-label="Cerrar modal"
-          />
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
+        <AppDrawer open={showInviteModal} onOpenChange={setShowInviteModal}>
+          <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -1411,7 +1394,7 @@ function RouteComponent() {
               ) : null}
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
     </GradientLayout>
   );

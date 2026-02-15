@@ -21,6 +21,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Target, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { AppDrawer } from '~/components/app-drawer';
 import { BottomNav } from '~/components/bottom-nav';
 import { GradientLayout } from '~/components/gradient-layout';
 import { cn } from '~/lib/utils';
@@ -619,13 +620,8 @@ function HomePage() {
       </button>
 
       {showOptions && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setShowOptions(false)}
-          />
-
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
+        <AppDrawer open={showOptions} onOpenChange={setShowOptions}>
+          <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-4">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -692,18 +688,23 @@ function HomePage() {
               </button>
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
 
       {/* Modal unirse a grupo */}
       {showJoinModal && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={resetJoinModal}
-          />
-
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto">
+        <AppDrawer
+          open={showJoinModal}
+          onOpenChange={(open) => {
+            if (!open) {
+              resetJoinModal();
+              return;
+            }
+            setShowJoinModal(true);
+          }}
+          className="max-h-[80vh]"
+        >
+          <div className="overflow-y-auto">
             <div className="flex justify-center pt-3 pb-4">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -914,24 +915,24 @@ function HomePage() {
               )}
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
 
       {showDeleteGroupModal && groupToDelete && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40 cursor-default"
-            onClick={() => {
+        <AppDrawer
+          open={showDeleteGroupModal}
+          onOpenChange={(open) => {
+            if (!open) {
               setShowDeleteGroupModal(false);
               setGroupToDelete(null);
               setDeleteGroupNameInput('');
               setCopiedGroupName(false);
-            }}
-            aria-label="Cerrar modal"
-          />
-
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
+              return;
+            }
+            setShowDeleteGroupModal(true);
+          }}
+        >
+          <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -1018,7 +1019,7 @@ function HomePage() {
               </div>
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
 
       <BottomNav />

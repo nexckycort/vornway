@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { type MouseEvent, type TouchEvent, useState } from 'react';
+import { AppDrawer } from '~/components/app-drawer';
 import { GradientLayout } from '~/components/gradient-layout';
 import { deleteGroup } from '../../(home)/-actions/delete-group';
 import { deleteExpense } from './-actions/delete-expense';
@@ -756,18 +757,18 @@ function RouteComponent() {
       )}
 
       {showDeleteExpenseModal && expenseToDelete && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40 cursor-default"
-            onClick={() => {
+        <AppDrawer
+          open={showDeleteExpenseModal}
+          onOpenChange={(open) => {
+            if (!open) {
               setShowDeleteExpenseModal(false);
               setExpenseToDelete(null);
-            }}
-            aria-label="Cerrar modal"
-          />
-
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
+              return;
+            }
+            setShowDeleteExpenseModal(true);
+          }}
+        >
+          <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -825,20 +826,13 @@ function RouteComponent() {
               )}
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
 
       {/* Modal de invitación */}
       {showInviteModal && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40 cursor-default"
-            onClick={() => setShowInviteModal(false)}
-            aria-label="Cerrar modal"
-          />
-
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
+        <AppDrawer open={showInviteModal} onOpenChange={setShowInviteModal}>
+          <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -916,26 +910,26 @@ function RouteComponent() {
               </button>
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
 
       {/* Modal de ajustes */}
       {showSettingsModal && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40 cursor-default"
-            onClick={() => {
+        <AppDrawer
+          open={showSettingsModal}
+          onOpenChange={(open) => {
+            if (!open) {
               setShowSettingsModal(false);
               setShowDeleteGroupConfirm(false);
               setShowLeaveGroupConfirm(false);
               setDeleteGroupNameInput('');
               setCopiedGroupName(false);
-            }}
-            aria-label="Cerrar modal"
-          />
-
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
+              return;
+            }
+            setShowSettingsModal(true);
+          }}
+        >
+          <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -1132,7 +1126,7 @@ function RouteComponent() {
               )}
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
     </GradientLayout>
   );

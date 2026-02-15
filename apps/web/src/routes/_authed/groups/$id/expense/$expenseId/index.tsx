@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { ChevronLeft, HandCoins, Pencil, Pizza, X } from 'lucide-react';
 import { useState } from 'react';
+import { AppDrawer } from '~/components/app-drawer';
 
 import { deleteExpense } from '../../-actions/delete-expense';
 import { getExpense } from '../../-actions/get-expense';
@@ -259,15 +260,8 @@ function RouteComponent() {
       </div>
 
       {showDeleteModal && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40 cursor-default"
-            onClick={() => setShowDeleteModal(false)}
-            aria-label="Cerrar modal"
-          />
-
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
+        <AppDrawer open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+          <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -328,7 +322,7 @@ function RouteComponent() {
               )}
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
     </div>
   );

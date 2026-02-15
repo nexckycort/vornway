@@ -5,6 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { Share2, UserPlus, X } from 'lucide-react';
 import { useState } from 'react';
+import { AppDrawer } from '~/components/app-drawer';
 import { StepLayout } from '~/components/layouts/step-layout';
 import { createGroup } from './-actions/create-group';
 import { getKnownUsers } from './-actions/get-known-users';
@@ -254,12 +255,12 @@ function AddParticipants() {
 
       {/* Success Modal */}
       {showSuccessModal && (
-        <>
-          {/* Overlay */}
-          <div className="fixed inset-0 bg-black/30 z-40" />
-
-          {/* Bottom Sheet */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto">
+        <AppDrawer
+          open={showSuccessModal}
+          onOpenChange={setShowSuccessModal}
+          className="max-h-[90vh]"
+        >
+          <div className="overflow-y-auto">
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -360,7 +361,7 @@ function AddParticipants() {
               </button>
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
     </StepLayout>
   );

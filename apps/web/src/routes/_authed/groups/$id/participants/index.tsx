@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { ChevronLeft, Share2, Trash2, UserPlus } from 'lucide-react';
 import { useState } from 'react';
+import { AppDrawer } from '~/components/app-drawer';
 import { GradientLayout } from '~/components/gradient-layout';
 import { getGroup } from '../-actions/get-group';
 import { removeMember } from '../-actions/remove-member';
@@ -241,15 +242,15 @@ function EditParticipants() {
 
       {/* Confirm delete member modal */}
       {memberToDelete && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40 cursor-default"
-            onClick={() => setMemberToDelete(null)}
-            aria-label="Cerrar modal"
-          />
-
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-in slide-in-from-bottom duration-300">
+        <AppDrawer
+          open={Boolean(memberToDelete)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setMemberToDelete(null);
+            }
+          }}
+        >
+          <div className="max-h-[84vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -287,7 +288,7 @@ function EditParticipants() {
               )}
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
     </GradientLayout>
   );

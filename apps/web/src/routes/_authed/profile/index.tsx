@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { ChevronRight, LogOut, Mail, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { AppDrawer } from '~/components/app-drawer';
 import { BottomNav } from '~/components/bottom-nav';
 import { GradientLayout } from '~/components/gradient-layout';
 import { logoutFn } from '~/server/auth';
@@ -293,14 +294,8 @@ function RouteComponent() {
       <BottomNav />
 
       {showEditNameModal && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setShowEditNameModal(false)}
-            aria-label="Cerrar modal"
-          />
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[88vh] overflow-y-auto">
+        <AppDrawer open={showEditNameModal} onOpenChange={setShowEditNameModal}>
+          <div className="max-h-[88vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
@@ -359,7 +354,7 @@ function RouteComponent() {
               ) : null}
             </div>
           </div>
-        </>
+        </AppDrawer>
       )}
     </GradientLayout>
   );

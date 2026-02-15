@@ -85,7 +85,7 @@ const EXPENSE_CHIPS = [
 <section
   data-hero-chaos
   data-mounted="false"
-  class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden"
+  class="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden md:min-h-screen"
   style="background: hsl(240 38% 17%)"
 >
   <div
@@ -109,11 +109,11 @@ const EXPENSE_CHIPS = [
   >
   </div>
 
-  <div class="relative z-10 mx-auto h-[400px] w-full max-w-3xl md:h-[500px]">
+  <div class="relative z-10 mx-auto h-[250px] w-full max-w-3xl sm:h-[320px] md:h-[500px]">
     {
       EXPENSE_CHIPS.map((chip, i) => (
         <div
-          class={`chaotic-chip absolute left-1/2 top-1/2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium shadow-lg ${chip.color}`}
+          class={`chaotic-chip absolute left-1/2 top-1/2 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium shadow-lg sm:px-4 sm:py-2 sm:text-sm ${chip.color}`}
           data-chip
           data-x={chip.x}
           data-y={chip.y}
@@ -126,9 +126,9 @@ const EXPENSE_CHIPS = [
     }
   </div>
 
-  <div class="relative z-20 mx-auto max-w-3xl px-6 text-center">
+  <div class="relative z-20 mx-auto max-w-3xl px-5 text-center sm:px-6">
     <h1
-      class="hero-fade font-display text-4xl font-bold leading-tight tracking-tight text-white transition-all duration-1000 md:text-6xl lg:text-7xl"
+      class="hero-fade font-display text-3xl font-bold leading-tight tracking-tight text-white transition-all duration-1000 sm:text-4xl md:text-6xl lg:text-7xl"
       style="--fade-delay: 800ms"
     >
       <span class="text-balance">
@@ -153,18 +153,18 @@ const EXPENSE_CHIPS = [
       </span>
     </h1>
     <p
-      class="hero-fade mt-6 text-lg leading-relaxed text-[hsl(250_25%_90%)] transition-all duration-1000 md:text-xl"
+      class="hero-fade mt-4 text-base leading-relaxed text-[hsl(250_25%_90%)] transition-all duration-1000 sm:mt-6 sm:text-lg md:text-xl"
       style="--fade-delay: 1100ms"
     >
       {copy.hero.subtitle}
     </p>
     <div
-      class="hero-fade mt-10 transition-all duration-1000"
+      class="hero-fade mt-7 transition-all duration-1000 sm:mt-10"
       style="--fade-delay: 1400ms"
     >
       <a
         href={APP_LOGIN_URL}
-        class="group relative overflow-hidden rounded-full px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+        class="group relative inline-flex w-full items-center justify-center overflow-hidden rounded-full px-7 py-3 text-base font-semibold transition-all duration-300 hover:scale-105 hover:shadow-2xl sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
         style="background: #56E1E9; color: hsl(240 38% 17%)"
       >
         <span class="relative z-10">{copy.hero.cta}</span>
@@ -173,7 +173,7 @@ const EXPENSE_CHIPS = [
   </div>
 
   <div
-    class="hero-fade absolute bottom-8 left-1/2 -translate-x-1/2 transition-all duration-1000"
+    class="hero-fade absolute bottom-6 left-1/2 hidden -translate-x-1/2 transition-all duration-1000 sm:block"
     style="--fade-delay: 1800ms"
   >
     <div class="flex flex-col items-center gap-2">
@@ -205,7 +205,12 @@ const EXPENSE_CHIPS = [
     let mountedTimeout;
 
     const applyChipTransforms = () => {
-      const scale = window.innerWidth < 768 ? 0.5 : 1;
+      let scale = 1;
+      if (window.innerWidth < 480) {
+        scale = 0.34;
+      } else if (window.innerWidth < 768) {
+        scale = 0.5;
+      }
       chips.forEach((chip) => {
         const x = Number(chip.getAttribute("data-x") || "0") * scale;
         const y = Number(chip.getAttribute("data-y") || "0") * scale;
@@ -244,5 +249,21 @@ const EXPENSE_CHIPS = [
   [data-hero-chaos][data-mounted="true"] .chaotic-chip {
     opacity: 1;
     transform: var(--chip-transform);
+  }
+
+  @media (max-width: 767px) {
+    [data-hero-chaos] .geo-circle {
+      opacity: 0.7;
+    }
+
+    [data-hero-chaos] .geo-diamond {
+      opacity: 0.6;
+    }
+  }
+
+  @media (max-width: 479px) {
+    [data-hero-chaos] .chaotic-chip:nth-child(n + 8) {
+      display: none;
+    }
   }
 </style>

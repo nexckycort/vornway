@@ -50,6 +50,36 @@ export const translations = {
       titleMiddle: "to",
       titleClarity: "clarity",
       titleEnd: "with clear balances and goals.",
+      showcase: {
+        title: "How Splitway feels in real use",
+        description:
+          "A quick visual walkthrough of the core flow: add expenses, see live updates, and settle without confusion.",
+        tagExpenseQuick: "Expense added in 2 taps",
+        tagLiveUpdates: "Everyone sees updates live",
+        tagSyncBalances: "Balances always in sync",
+        tagSettleSuggestions: "Clear settle-up suggestions",
+        screenGroupTitle: "Trip Group",
+        screenActivityTitle: "Activity",
+        screenSettleTitle: "Settle",
+        liveLabel: "Live",
+        settleNow: "Settle now",
+        placeholderExpenses: [
+          { label: "Taxi", amount: "$48" },
+          { label: "Dinner", amount: "$120" },
+          { label: "Groceries", amount: "$67" },
+        ],
+        placeholderActivity: [
+          { title: "Sam paid", subtitle: "Hotel · $340" },
+          { title: "Jamie settled", subtitle: "Dinner · $30" },
+          { title: "You added", subtitle: "Museum · $25" },
+          { title: "Alex paid", subtitle: "Gas · $42" },
+        ],
+        placeholderSettle: [
+          { name: "Jamie", amount: "$120" },
+          { name: "Sam", amount: "$200" },
+          { name: "You", amount: "$80" },
+        ],
+      },
       beforeTitle: "Before Splitway",
       afterTitle: "Live activity + goals",
       settled: "logged",
@@ -119,7 +149,7 @@ export const translations = {
           item: "Dinner split",
           amount: "$30",
           time: "5m ago",
-          color: "hsl(174 73% 48%)",
+          color: "#56E1E9",
         },
         {
           avatar: "A",
@@ -137,7 +167,7 @@ export const translations = {
           item: "Coffee run",
           amount: "$16",
           time: "1h ago",
-          color: "hsl(174 73% 48%)",
+          color: "#56E1E9",
         },
         {
           avatar: "S",
@@ -290,9 +320,6 @@ export const translations = {
       description:
         "Splitway is ready for your next trip, dinner, or home expenses, now with shared metas.",
       button: "Start your first group",
-      commitmentTitle: "Our commitment",
-      commitmentMessage:
-        "Splitway is a side project I built first for myself and now share openly. All current core features will remain free forever, with no ads or paywalls on essentials. In the future I may add optional premium features, but the core experience will always stay free. The product may keep evolving visually, but your registered information stays safe and will not be lost.",
     },
     footer: {
       tagline: "Fair splits, fewer awkward conversations.",
@@ -349,6 +376,36 @@ export const translations = {
       titleMiddle: "a",
       titleClarity: "claridad",
       titleEnd: "con balances claros y metas.",
+      showcase: {
+        title: "Asi se ve Splitway en uso real",
+        description:
+          "Un recorrido visual del flujo core: agregar gastos, ver actualizaciones en vivo y liquidar sin confusiones.",
+        tagExpenseQuick: "Gasto agregado en 2 toques",
+        tagLiveUpdates: "Todos ven cambios en vivo",
+        tagSyncBalances: "Balances siempre sincronizados",
+        tagSettleSuggestions: "Sugerencias claras para liquidar",
+        screenGroupTitle: "Grupo de viaje",
+        screenActivityTitle: "Actividad",
+        screenSettleTitle: "Liquidar",
+        liveLabel: "En vivo",
+        settleNow: "Liquidar ahora",
+        placeholderExpenses: [
+          { label: "Taxi", amount: "$48" },
+          { label: "Cena", amount: "$120" },
+          { label: "Supermercado", amount: "$67" },
+        ],
+        placeholderActivity: [
+          { title: "Sam pago", subtitle: "Hotel · $340" },
+          { title: "Jamie liquido", subtitle: "Cena · $30" },
+          { title: "Tu agregaste", subtitle: "Museo · $25" },
+          { title: "Alex pago", subtitle: "Gasolina · $42" },
+        ],
+        placeholderSettle: [
+          { name: "Jamie", amount: "$120" },
+          { name: "Sam", amount: "$200" },
+          { name: "Tu", amount: "$80" },
+        ],
+      },
       beforeTitle: "Antes de Splitway",
       afterTitle: "Actividad + metas en vivo",
       settled: "registrado",
@@ -418,7 +475,7 @@ export const translations = {
           item: "Division de cena",
           amount: "$30",
           time: "hace 5m",
-          color: "hsl(174 73% 48%)",
+          color: "#56E1E9",
         },
         {
           avatar: "A",
@@ -436,7 +493,7 @@ export const translations = {
           item: "Cafe",
           amount: "$16",
           time: "hace 1h",
-          color: "hsl(174 73% 48%)",
+          color: "#56E1E9",
         },
         {
           avatar: "S",
@@ -589,9 +646,6 @@ export const translations = {
       description:
         "Splitway ya esta listo para tu proximo viaje, cena o gastos del hogar, ahora con metas compartidas.",
       button: "Crea tu primer grupo",
-      commitmentTitle: "Nuestro compromiso",
-      commitmentMessage:
-        "Splitway es un side project que construyo porque lo necesito y que comparto de forma desinteresada. Todas las funcionalidades core actuales seran gratis para siempre, sin publicidad ni paywalls en lo esencial. En el futuro puedo agregar funciones premium opcionales, pero la experiencia esencial siempre se mantendra gratuita. El producto puede evolucionar visualmente, pero tu informacion registrada se mantiene segura y no se va a perder.",
     },
     footer: {
       tagline: "Divisiones justas, menos conversaciones incomodas.",

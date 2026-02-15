@@ -6,338 +6,374 @@ export interface Props {
 }
 
 const { copy } = Astro.props;
-
-const BEFORE_ITEMS = copy.transformation.beforeItems;
-const AFTER_ITEMS = copy.transformation.afterItems;
-
-const statusStyles: Record<string, string> = {
-  unpaid: "bg-destructive/10 text-destructive",
-  disputed: "bg-primary/10 text-primary",
-  unclear: "bg-secondary/10 text-secondary",
-  forgot: "bg-muted text-muted-foreground",
-};
+const showcase = copy.transformation.showcase;
 ---
+
+<script src="../scripts/in-view.ts"></script>
 
 <section
   id="how-it-works"
-  data-transformation
+  data-in-view-root
+  data-showcase
   class="relative overflow-hidden py-24 md:py-32"
   style="background: hsl(252 33% 97%)"
 >
   <div
-    class="absolute -right-20 top-20 h-80 w-80 rounded-full opacity-[0.04]"
-    style="background: hsl(240 47% 47%)"
+    class="absolute -left-24 top-10 h-72 w-72 rounded-full blur-3xl"
+    style="background: rgb(86 225 233 / 0.14)"
   >
   </div>
   <div
-    class="absolute -left-10 bottom-10 h-60 w-60 opacity-[0.03]"
-    style="background: hsl(174 73% 48%); transform: rotate(45deg)"
+    class="absolute -right-20 bottom-0 h-80 w-80 rounded-full blur-3xl"
+    style="background: hsl(240 47% 47% / 0.2)"
   >
   </div>
 
-  <div class="mx-auto max-w-6xl px-6">
-    <div class="section-intro mb-16 max-w-2xl transition-all duration-1000">
+  <div class="relative z-10 mx-auto max-w-7xl px-6">
+    <div class="intro mx-auto mb-14 max-w-3xl text-center">
       <span
         class="mb-4 inline-block rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-widest"
-        style="background: hsl(240 47% 47% / 0.08); color: hsl(240 47% 47%)"
+        style="background: rgb(86 225 233 / 0.12); color: #56E1E9"
       >
         {copy.transformation.badge}
       </span>
       <h2
-        class="font-display text-3xl font-bold leading-tight tracking-tight text-foreground md:text-5xl"
+        class="font-display text-3xl font-bold leading-tight tracking-tight md:text-6xl"
+        style="color: hsl(240 38% 17%)"
       >
-        <span class="text-balance">
-          {copy.transformation.titleStart}
-          <span class="relative">
-            {copy.transformation.titleChaos}
-            <svg
-              class="absolute -bottom-1 left-0 w-full"
-              viewBox="0 0 120 8"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M2 6C30 2 80 2 118 6"
-                stroke="hsl(0 84% 60%)"
-                stroke-width="2"
-                stroke-linecap="round"
-                opacity="0.4"></path>
-            </svg>
-          </span>
-          {copy.transformation.titleMiddle}
-          <span style="color: hsl(174 73% 48%)">{copy.transformation.titleClarity}</span>
-          {copy.transformation.titleEnd}
-        </span>
+        <span class="text-balance">{showcase.title}</span>
       </h2>
+      <p
+        class="mx-auto mt-4 max-w-2xl text-base leading-relaxed md:text-lg"
+        style="color: hsl(240 20% 46%)"
+      >
+        {showcase.description}
+      </p>
     </div>
 
-    <div class="grid gap-8 md:grid-cols-2">
-      <div
-        class="before-panel transition-all duration-1000"
-        style="transition-delay: 200ms"
-      >
-        <div
-          class="relative overflow-hidden rounded-2xl border-2 border-dashed p-6"
-          style="border-color: hsl(0 84% 60% / 0.2); background: hsl(0 0% 100% / 0.5)"
-        >
-          <div class="mb-4 flex items-center gap-3">
-            <div
-              class="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold"
-              style="background: hsl(0 84% 60% / 0.1); color: hsl(0 84% 60%)"
-            >
-              ?
+    <div
+      class="showcase-grid grid gap-8 lg:grid-cols-[1fr_1.15fr_1fr] lg:items-end"
+    >
+      <article class="phone-wrap phone-left">
+        <div class="float-tag float-a">{showcase.tagExpenseQuick}</div>
+        <div class="phone-frame">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="app-head">{showcase.screenGroupTitle}</div>
+            <div class="placeholder-lines">
+              <span></span><span></span><span></span>
             </div>
-            <span class="font-display text-lg font-semibold text-foreground"
-              >{copy.transformation.beforeTitle}</span
-            >
+            <div class="card-list">
+              {
+                showcase.placeholderExpenses.map((item) => (
+                  <div class="card-item"><b>{item.label}</b><small>{item.amount}</small></div>
+                ))
+              }
+            </div>
           </div>
-          <div class="space-y-3">
-            {
-              BEFORE_ITEMS.map((item, i) => (
-                <div
-                  class="before-item flex items-center justify-between rounded-xl border bg-card p-3 transition-all duration-500"
-                  data-index={i}
-                  style={`transition-delay: ${300 + i * 100}ms`}
-                >
-                  <div class="flex items-center gap-3">
-                    <div
-                      class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold"
-                      style="background: hsl(240 47% 47% / 0.1); color: hsl(240 47% 47%)"
-                    >
-                      {item.person[0]}
-                    </div>
-                    <div>
-                      <p class="text-sm font-medium text-foreground">
-                        {item.person}
-                      </p>
-                      <p class="text-xs text-muted-foreground">{item.note}</p>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-sm font-semibold text-foreground">
-                      {item.amount}
-                    </span>
-                    <span
-                      class={`rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[item.statusKey] || ""}`}
-                    >
-                      {item.statusLabel}
-                    </span>
-                  </div>
-                </div>
-              ))
-            }
-          </div>
-          <svg
-            class="absolute -right-2 top-1/2 -translate-y-1/2 opacity-10"
-            width="20"
-            height="120"
-            viewBox="0 0 20 120"
-            aria-hidden="true"
-          >
-            <path
-              d="M10 0C15 20 5 40 10 60C15 80 5 100 10 120"
-              stroke="hsl(0 84% 60%)"
-              stroke-width="2"
-              fill="none"></path>
-          </svg>
         </div>
-      </div>
+      </article>
 
-      <div
-        class="after-panel transition-all duration-1000"
-        style="transition-delay: 500ms"
-      >
-        <div
-          class="relative overflow-hidden rounded-2xl border-2 p-6"
-          style="border-color: hsl(174 73% 48% / 0.3); background: hsl(174 73% 48% / 0.04)"
-        >
-          <div class="mb-4 flex items-center gap-3">
-            <div
-              class="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold"
-              style="background: hsl(174 73% 48% / 0.15); color: hsl(174 73% 48%)"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M3 8l3.5 3.5L13 5"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"></path>
-              </svg>
+      <article class="phone-wrap phone-center">
+        <div class="float-tag float-b">{showcase.tagLiveUpdates}</div>
+        <div class="float-tag float-c">{showcase.tagSyncBalances}</div>
+        <div class="phone-frame">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="app-head">{showcase.screenActivityTitle}</div>
+            <div class="timeline">
+              {
+                showcase.placeholderActivity.map((item) => (
+                  <div><b>{item.title}</b><small>{item.subtitle}</small></div>
+                ))
+              }
             </div>
-            <span class="font-display text-lg font-semibold text-foreground"
-              >{copy.transformation.afterTitle}</span
-            >
-          </div>
-          <div class="space-y-3">
-            {
-              AFTER_ITEMS.map((item, i) => (
-                <div
-                  class="after-item flex items-center justify-between rounded-xl border bg-card p-3 transition-all duration-500"
-                  style={`transition-delay: ${600 + i * 150}ms`}
-                >
-                  <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-1">
-                      <div
-                        class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
-                        style="background: hsl(240 47% 47% / 0.1); color: hsl(240 47% 47%)"
-                      >
-                        {item.from[0]}
-                      </div>
-                      <svg
-                        width="16"
-                        height="8"
-                        viewBox="0 0 16 8"
-                        fill="none"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M0 4h12m0 0L9 1m3 3L9 7"
-                          stroke="hsl(174 73% 48%)"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                      <div
-                        class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
-                        style="background: hsl(174 73% 48% / 0.1); color: hsl(174 73% 48%)"
-                      >
-                        {item.to[0]}
-                      </div>
-                    </div>
-                    <div>
-                      <p class="text-sm font-medium text-foreground">
-                        {item.from} -&gt; {item.to}
-                      </p>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span
-                      class="text-sm font-bold"
-                      style="color: hsl(174 73% 48%)"
-                    >
-                      {item.amount}
-                    </span>
-                    {item.settled ? (
-                      <span
-                        class="rounded-full px-2 py-0.5 text-xs font-medium"
-                        style="background: hsl(174 73% 48% / 0.1); color: hsl(174 73% 48%)"
-                      >
-                        {copy.transformation.settled}
-                      </span>
-                    ) : (
-                      <span
-                        class="rounded-full px-2 py-0.5 text-xs font-medium"
-                        style="background: hsl(240 47% 47% / 0.08); color: hsl(240 47% 47%)"
-                      >
-                        {copy.transformation.pending}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
-            }
-          </div>
-          <div
-            class="total-bar mt-4 flex items-center justify-between rounded-xl p-3 transition-all duration-700"
-            style="background: hsl(174 73% 48% / 0.08); transition-delay: 1100ms"
-          >
-            <span class="text-sm font-medium text-muted-foreground"
-              >{copy.transformation.everyoneSquare}</span
-            >
-            <span class="text-sm font-bold" style="color: hsl(174 73% 48%)">
-              {copy.transformation.transfers}
-            </span>
+            <div class="live-pill">{showcase.liveLabel}</div>
           </div>
         </div>
-      </div>
+      </article>
+
+      <article class="phone-wrap phone-right">
+        <div class="float-tag float-d">{showcase.tagSettleSuggestions}</div>
+        <div class="phone-frame">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="app-head">{showcase.screenSettleTitle}</div>
+            <div class="settle-grid">
+              {
+                showcase.placeholderSettle.map((item) => (
+                  <div><b>{item.name}</b><small>{item.amount}</small></div>
+                ))
+              }
+            </div>
+            <button class="cta-placeholder">{showcase.settleNow}</button>
+          </div>
+        </div>
+      </article>
     </div>
   </div>
 </section>
 
-<script is:inline>
-  document.querySelectorAll("[data-transformation]").forEach((section) => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        section.setAttribute("data-in-view", "true");
-        observer.unobserve(section);
-      },
-      { threshold: 0.1 },
-    );
-
-    observer.observe(section);
-  });
-</script>
-
 <style>
-  [data-transformation] .section-intro {
-    opacity: 0;
-    transform: translateY(48px);
+  .showcase-grid {
+    perspective: 1200px;
   }
-  [data-transformation][data-in-view="true"] .section-intro {
+
+  .phone-wrap {
+    position: relative;
+    opacity: 0;
+    transform: translateY(30px);
+    transition:
+      opacity 850ms ease,
+      transform 850ms ease;
+  }
+
+  .phone-left {
+    transition-delay: 120ms;
+  }
+
+  .phone-center {
+    transition-delay: 260ms;
+  }
+
+  .phone-right {
+    transition-delay: 400ms;
+  }
+
+  .phone-frame {
+    position: relative;
+    margin: 0 auto;
+    width: min(100%, 320px);
+    border-radius: 34px;
+    padding: 10px;
+    background: linear-gradient(
+      170deg,
+      hsl(240 47% 47% / 0.75),
+      rgb(86 225 233 / 0.75)
+    );
+    box-shadow: 0 30px 80px hsl(240 38% 3% / 0.45);
+  }
+
+  .phone-center .phone-frame {
+    width: min(100%, 360px);
+    transform: translateY(-10px) scale(1.04);
+  }
+
+  .phone-screen {
+    position: relative;
+    min-height: 520px;
+    border-radius: 26px;
+    padding: 20px 16px;
+    background: linear-gradient(180deg, hsl(240 38% 13%), hsl(240 38% 9%));
+    border: 1px solid hsl(250 25% 90% / 0.08);
+    color: hsl(250 25% 95%);
+  }
+
+  .phone-notch {
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    width: 34%;
+    height: 20px;
+    border-radius: 999px;
+    background: hsl(240 38% 6%);
+    transform: translateX(-50%);
+    z-index: 5;
+  }
+
+  .app-head {
+    margin-top: 16px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #56e1e9;
+  }
+
+  .placeholder-lines {
+    margin-top: 12px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .placeholder-lines span {
+    display: block;
+    height: 8px;
+    border-radius: 999px;
+    background: hsl(250 25% 90% / 0.12);
+  }
+
+  .placeholder-lines span:nth-child(1) {
+    width: 82%;
+  }
+
+  .placeholder-lines span:nth-child(2) {
+    width: 66%;
+  }
+
+  .placeholder-lines span:nth-child(3) {
+    width: 74%;
+  }
+
+  .card-list,
+  .timeline,
+  .settle-grid {
+    margin-top: 16px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .card-item,
+  .timeline div,
+  .settle-grid div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 12px;
+    padding: 12px;
+    background: hsl(240 38% 17%);
+    border: 1px solid hsl(250 25% 90% / 0.08);
+  }
+
+  .card-item b,
+  .timeline b,
+  .settle-grid b {
+    font-size: 13px;
+    color: white;
+  }
+
+  .card-item small,
+  .timeline small,
+  .settle-grid small {
+    font-size: 12px;
+    color: hsl(250 25% 90% / 0.65);
+  }
+
+  .live-pill {
+    margin-top: 14px;
+    display: inline-flex;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(240 38% 10%);
+    background: #56e1e9;
+  }
+
+  .cta-placeholder {
+    margin-top: 14px;
+    width: 100%;
+    border: 0;
+    border-radius: 12px;
+    padding: 11px 12px;
+    background: #56e1e9;
+    color: hsl(240 38% 10%);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .float-tag {
+    position: absolute;
+    z-index: 8;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: hsl(240 38% 10%);
+    background: #56e1e9;
+    box-shadow: 0 12px 24px rgb(86 225 233 / 0.3);
+    animation: floatTag 4s ease-in-out infinite;
+  }
+
+  .float-a {
+    right: -8px;
+    top: 40px;
+  }
+
+  .float-b {
+    left: -20px;
+    top: 64px;
+    animation-delay: 0.8s;
+  }
+
+  .float-c {
+    right: -22px;
+    bottom: 86px;
+    animation-delay: 1.5s;
+  }
+
+  .float-d {
+    left: -14px;
+    top: 48px;
+    animation-delay: 2.2s;
+  }
+
+  @keyframes floatTag {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  [data-showcase] .intro {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+      opacity 700ms ease,
+      transform 700ms ease;
+  }
+
+  [data-showcase][data-in-view="true"] .intro,
+  [data-showcase][data-in-view="true"] .phone-wrap {
     opacity: 1;
     transform: translateY(0);
   }
 
-  [data-transformation] .before-panel {
-    opacity: 0;
-    transform: translateX(-48px);
-  }
-  [data-transformation][data-in-view="true"] .before-panel {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  @media (max-width: 1023px) {
+    .showcase-grid {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      padding: 2px 4px 10px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
 
-  [data-transformation] .before-item {
-    opacity: 0.6;
-  }
-  [data-transformation] .before-item[data-index="0"] {
-    transform: rotate(-2deg) translateX(-10px);
-  }
-  [data-transformation] .before-item[data-index="1"] {
-    transform: rotate(3deg) translateX(10px);
-  }
-  [data-transformation] .before-item[data-index="2"] {
-    transform: rotate(-4deg) translateX(-10px);
-  }
-  [data-transformation] .before-item[data-index="3"] {
-    transform: rotate(5deg) translateX(10px);
-  }
-  [data-transformation][data-in-view="true"] .before-item {
-    opacity: 1;
-    transform: none;
-  }
+    .showcase-grid::-webkit-scrollbar {
+      height: 7px;
+    }
 
-  [data-transformation] .after-panel {
-    opacity: 0;
-    transform: translateX(48px);
-  }
-  [data-transformation][data-in-view="true"] .after-panel {
-    opacity: 1;
-    transform: translateX(0);
-  }
+    .showcase-grid::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgb(86 225 233 / 0.45);
+    }
 
-  [data-transformation] .after-item {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  [data-transformation][data-in-view="true"] .after-item {
-    opacity: 1;
-    transform: none;
-  }
+    .showcase-grid::-webkit-scrollbar-track {
+      background: hsl(240 47% 47% / 0.08);
+      border-radius: 999px;
+    }
 
-  [data-transformation] .total-bar {
-    opacity: 0;
-  }
-  [data-transformation][data-in-view="true"] .total-bar {
-    opacity: 1;
+    .phone-wrap {
+      flex: 0 0 86%;
+      scroll-snap-align: center;
+    }
+
+    .phone-center .phone-frame {
+      transform: none;
+      width: min(100%, 340px);
+    }
+
+    .float-tag {
+      position: static;
+      display: inline-flex;
+      margin: 0 auto 10px;
+    }
   }
 </style>

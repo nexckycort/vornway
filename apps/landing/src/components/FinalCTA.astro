@@ -7,7 +7,7 @@ export interface Props {
 
 const { copy } = Astro.props;
 
-const AVATARS = ["S", "J", "A", "M", "K"];
+const APP_LOGIN_URL = "https://me.splitway.app";
 ---
 
 <script src="../scripts/in-view.ts"></script>
@@ -26,11 +26,6 @@ const AVATARS = ["S", "J", "A", "M", "K"];
   <div
     class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
     style="width: 500px; height: 500px; border-radius: 50%; border: 1px solid hsl(174 73% 48% / 0.06)"
-  >
-  </div>
-  <div
-    class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-    style="width: 300px; height: 300px; border-radius: 50%; background: hsl(240 47% 47% / 0.03)"
   >
   </div>
 
@@ -57,8 +52,8 @@ const AVATARS = ["S", "J", "A", "M", "K"];
       class="cta-fade mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center"
       style="--fade-delay: 400ms"
     >
-      <button
-        type="button"
+      <a
+        href={APP_LOGIN_URL}
         class="group relative overflow-hidden rounded-full px-10 py-5 text-lg font-semibold shadow-2xl transition-all duration-300 hover:scale-105"
         style="background: hsl(174 73% 48%); color: hsl(240 38% 17%)"
       >
@@ -80,125 +75,27 @@ const AVATARS = ["S", "J", "A", "M", "K"];
               stroke-linejoin="round"></path>
           </svg>
         </span>
-        <div
-          class="absolute inset-0 -translate-x-full transition-transform duration-500 group-hover:translate-x-0"
-          style="background: hsl(174 73% 55%)"
-        >
-        </div>
-      </button>
-      <span class="text-sm" style="color: hsl(250 25% 90% / 0.4)">
-        {copy.finalCta.freeNote}
-      </span>
+      </a>
     </div>
 
-    <div
-      class="cta-fade mt-16 flex items-center justify-center gap-3"
-      style="--fade-delay: 700ms"
-    >
-      <div class="flex -space-x-2">
-        {
-          AVATARS.map((letter, i) => (
-            <div
-              class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ring-2"
-              style={`background: ${i % 2 === 0 ? "hsl(240 47% 47%)" : "hsl(240 33% 56%)"}; color: white; ring-color: hsl(240 38% 17%); z-index: ${5 - i}`}
-            >
-              {letter}
-            </div>
-          ))
-        }
-      </div>
-      <span class="text-sm" style="color: hsl(250 25% 90% / 0.5)">
-        {copy.finalCta.joinNote}
-      </span>
-    </div>
-
-    <div
-      data-organic-waitlist
-      class="cta-fade mt-12 rounded-2xl border p-6 text-left"
-      style="--fade-delay: 900ms; border-color: hsl(174 73% 48% / 0.3); background: hsl(240 47% 47% / 0.2)"
-    >
-      <span
-        class="inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest"
-        style="background: hsl(174 73% 48% / 0.18); color: hsl(174 73% 48%)"
+    <div class="cta-fade mx-auto mt-14 max-w-2xl" style="--fade-delay: 700ms">
+      <div
+        class="rounded-2xl border p-5 text-left"
+        style="border-color: hsl(250 25% 90% / 0.14); background: hsl(240 38% 12% / 0.7)"
       >
-        {copy.finalCta.waitlistBadge}
-      </span>
-      <h3 class="mt-3 font-display text-2xl font-bold text-white">
-        {copy.finalCta.waitlistTitle}
-      </h3>
-      <p class="mt-2 text-sm leading-relaxed" style="color: hsl(250 25% 90% / 0.75)">
-        {copy.finalCta.waitlistDescription}
-      </p>
-
-      <form data-waitlist-form class="mt-5 grid gap-3 sm:grid-cols-3">
-        <input
-          name="name"
-          type="text"
-          required
-          class="rounded-xl border px-4 py-3 text-sm outline-none transition focus:ring-2"
-          style="border-color: hsl(240 33% 56% / 0.5); background: hsl(240 38% 17% / 0.5); color: white; focus-ring-color: hsl(174 73% 48% / 0.45)"
-          placeholder={copy.finalCta.waitlistName}
-        />
-        <input
-          name="email"
-          type="email"
-          required
-          class="rounded-xl border px-4 py-3 text-sm outline-none transition focus:ring-2"
-          style="border-color: hsl(240 33% 56% / 0.5); background: hsl(240 38% 17% / 0.5); color: white; focus-ring-color: hsl(174 73% 48% / 0.45)"
-          placeholder={copy.finalCta.waitlistEmail}
-        />
-        <button
-          type="submit"
-          class="rounded-xl px-4 py-3 text-sm font-semibold transition hover:brightness-110"
-          style="background: hsl(174 73% 48%); color: hsl(240 38% 17%)"
+        <p
+          class="text-xs font-semibold uppercase tracking-widest"
+          style="color: hsl(174 73% 70%)"
         >
-          {copy.finalCta.waitlistSubmit}
-        </button>
-      </form>
-
-      <p data-waitlist-success class="mt-3 hidden text-sm font-medium" style="color: hsl(174 73% 48%)">
-        {copy.finalCta.waitlistSuccess}
-      </p>
+          {copy.finalCta.commitmentTitle}
+        </p>
+        <p class="mt-2 text-sm leading-relaxed md:text-base" style="color: hsl(250 25% 90% / 0.85)">
+          {copy.finalCta.commitmentMessage}
+        </p>
+      </div>
     </div>
   </div>
 </section>
-
-<script is:inline>
-  document.querySelectorAll("[data-final-cta]").forEach((section) => {
-    const waitlist = section.querySelector("[data-organic-waitlist]");
-    if (!(waitlist instanceof HTMLElement)) return;
-
-    const form = waitlist.querySelector("[data-waitlist-form]");
-    const success = waitlist.querySelector("[data-waitlist-success]");
-    if (!(form instanceof HTMLFormElement)) return;
-
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const formData = new FormData(form);
-      const name = String(formData.get("name") || "").trim();
-      const email = String(formData.get("email") || "").trim();
-      if (!name || !email) return;
-
-      const storageKey = "splitway.waitlist.v1";
-      const previous = localStorage.getItem(storageKey);
-      const leads = previous ? JSON.parse(previous) : [];
-
-      leads.push({
-        name,
-        email,
-        path: window.location.pathname,
-        referrer: document.referrer || "direct",
-        capturedAt: new Date().toISOString(),
-      });
-
-      localStorage.setItem(storageKey, JSON.stringify(leads));
-      form.reset();
-      if (success instanceof HTMLElement) {
-        success.classList.remove("hidden");
-      }
-    });
-  });
-</script>
 
 <style>
   [data-final-cta] .cta-fade {
@@ -212,9 +109,5 @@ const AVATARS = ["S", "J", "A", "M", "K"];
   [data-final-cta][data-in-view="true"] .cta-fade {
     opacity: 1;
     transform: translateY(0);
-  }
-
-  [data-final-cta] input::placeholder {
-    color: hsl(250 25% 90% / 0.5);
   }
 </style>

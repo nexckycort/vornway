@@ -60,15 +60,8 @@ const stats = copy.trust.stats;
               class="relative z-10 font-display text-4xl font-bold tracking-tight md:text-5xl"
               style={`color: ${i === 1 ? "white" : "hsl(240 47% 47%)"}`}
             >
-              <span
-                class="tabular-nums"
-                data-counter
-                data-end={stat.value}
-                data-prefix={stat.prefix}
-                data-suffix={stat.suffix}
-                data-duration={2000 + i * 400}
-              >
-                {stat.prefix}0{stat.suffix}
+              <span class="tabular-nums">
+                {stat.displayValue}
               </span>
             </div>
             <p

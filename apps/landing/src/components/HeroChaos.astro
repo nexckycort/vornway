@@ -6,6 +6,7 @@ export interface Props {
 }
 
 const { copy } = Astro.props;
+const APP_LOGIN_URL = "https://me.splitway.app";
 
 const EXPENSE_CHIPS = [
   {
@@ -161,8 +162,8 @@ const EXPENSE_CHIPS = [
       class="hero-fade mt-10 transition-all duration-1000"
       style="--fade-delay: 1400ms"
     >
-      <button
-        type="button"
+      <a
+        href={APP_LOGIN_URL}
         class="group relative overflow-hidden rounded-full px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-2xl"
         style="background: hsl(174 73% 48%); color: hsl(240 38% 17%)"
       >
@@ -189,7 +190,7 @@ const EXPENSE_CHIPS = [
           style="background: hsl(174 73% 55%)"
         >
         </div>
-      </button>
+      </a>
     </div>
   </div>
 

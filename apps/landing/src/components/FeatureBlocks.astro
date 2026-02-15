@@ -7,39 +7,25 @@ export interface Props {
 
 const { copy } = Astro.props;
 
-const features = [
-  {
-    icon: "Infinity",
-    iconColor: "text-cyan-400",
-    title: "Gastos ilimitados",
-    description: "Registra tantos gastos como necesites sin restricciones.",
-    badge: "Sin Limites",
-  },
-  {
-    icon: "BarChart3",
-    iconColor: "text-purple-400",
-    title: "Tablas y graficos",
-    description:
-      "Visualiza tus gastos con reportes detallados y graficos interactivos.",
-    badge: "Analisis Visual",
-  },
-  {
-    icon: "Search",
-    iconColor: "text-blue-400",
-    title: "Busqueda de gastos",
-    description:
-      "Encuentra cualquier transaccion al instante con busqueda inteligente.",
-    badge: "Busqueda Rapida",
-  },
-  {
-    icon: "ArrowRightLeft",
-    iconColor: "text-orange-400",
-    title: "Conversion de monedas",
-    description:
-      "Convierte automaticamente entre diferentes monedas en tiempo real.",
-    badge: "Multi-Moneda",
-  },
-] as const;
+const icons = {
+  groups: "M3 6.5h18M3 12h18M3 17.5h18",
+  expenses:
+    "M4 7.5h16M4 12h16M4 16.5h10M14.5 4.5v15M10 4.5v15",
+  goals: "M12 4l2.6 5.3 5.9.9-4.2 4.1 1 5.7L12 17l-5.3 3 1-5.7-4.2-4.1 5.9-.9L12 4z",
+  activity: "M4 12h3l2-5 4 10 2-5h5",
+  participants: "M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm8 1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM3 19a5 5 0 0 1 10 0m1.5 0a4.5 4.5 0 0 1 7 0",
+  settle:
+    "M3.5 8.5h8m0 0-2.2-2.2M11.5 8.5l-2.2 2.2M20.5 15.5h-8m0 0 2.2-2.2m-2.2 2.2 2.2 2.2",
+} as const;
+
+const slotToIcon = {
+  groups: "groups",
+  expenses: "expenses",
+  goals: "goals",
+  activity: "activity",
+  participants: "participants",
+  settle: "settle",
+} as const;
 ---
 
 <script src="../scripts/in-view.ts"></script>
@@ -63,161 +49,58 @@ const features = [
   </div>
 
   <div class="relative z-10 mx-auto max-w-6xl px-6">
-    <div
-      class="feature-title mx-auto max-w-3xl text-center transition-all duration-1000"
-    >
+    <div class="feature-title mx-auto max-w-3xl text-center transition-all duration-1000">
       <span
         class="mb-4 inline-block rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-widest"
         style="background: hsl(174 73% 48% / 0.1); color: hsl(174 73% 48%)"
       >
         {copy.featureBlocks.badge}
       </span>
-      <h2
-        class="font-display text-3xl font-bold leading-tight tracking-tight text-white md:text-5xl"
-      >
-        Todo lo que necesitas para dividir gastos.
+      <h2 class="font-display text-3xl font-bold leading-tight tracking-tight text-white md:text-5xl">
+        {copy.featureBlocks.title}
       </h2>
-      <p
-        class="mx-auto mt-4 max-w-xl text-base"
-        style="color: hsl(250 25% 90% / 0.75)"
-      >
-        Siempre gratis.
-      </p>
     </div>
 
-    <div class="mt-14 grid gap-5 sm:grid-cols-2">
+    <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {
-        features.map((feature, i) => (
-          <article
-            class="feature-card group rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1"
-            style={`border-color: hsl(240 33% 56% / 0.35); background: hsl(240 47% 47% / 0.14); transition-delay: ${i * 100}ms`}
-          >
-            <div class="flex items-start justify-between gap-3">
-              <div
-                class={`flex h-11 w-11 items-center justify-center rounded-xl bg-black/20 ${feature.iconColor}`}
-              >
-                {feature.icon === "Infinity" && (
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M9.5 16C7.015 16 5 13.985 5 11.5S7.015 7 9.5 7c3.5 0 5.5 10 9 10 2.485 0 4.5-2.015 4.5-4.5S20.985 8 18.5 8c-3.5 0-5.5 10-9 10z"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                )}
-                {feature.icon === "BarChart3" && (
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M4 20V10"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                    />
-                    <path
-                      d="M10 20V4"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                    />
-                    <path
-                      d="M16 20v-7"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                    />
-                    <path
-                      d="M22 20v-3"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                )}
-                {feature.icon === "Search" && (
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <circle
-                      cx="11"
-                      cy="11"
-                      r="7"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                    />
-                    <path
-                      d="m20 20-3.5-3.5"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                )}
-                {feature.icon === "ArrowRightLeft" && (
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M8 7h12m0 0-3-3m3 3-3 3"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                    <path
-                      d="M16 17H4m0 0 3-3m-3 3 3 3"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                )}
-              </div>
-              <span
-                class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide"
-                style="background: hsl(174 73% 48% / 0.18); color: hsl(174 73% 48%)"
-              >
-                {feature.badge}
-              </span>
-            </div>
+        copy.featureBlocks.features.map((feature, i) => {
+          const iconKey = slotToIcon[feature.slot as keyof typeof slotToIcon] ?? "groups";
+          const iconPath = icons[iconKey];
 
-            <h3 class="mt-4 font-display text-2xl font-bold text-white">
-              {feature.title}
-            </h3>
-            <p
-              class="mt-2 text-sm leading-relaxed"
-              style="color: hsl(250 25% 90% / 0.75)"
+          return (
+            <article
+              class="feature-card group rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1"
+              style={`border-color: hsl(240 33% 56% / 0.35); background: hsl(240 47% 47% / 0.14); transition-delay: ${i * 100}ms`}
             >
-              {feature.description}
-            </p>
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-black/20 text-cyan-300">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d={iconPath}
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+                <span
+                  class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide"
+                  style="background: hsl(174 73% 48% / 0.18); color: hsl(174 73% 48%)"
+                >
+                  {feature.tag}
+                </span>
+              </div>
 
-            <p class="mt-5 text-xs font-semibold uppercase tracking-wide text-cyan-300">
-              Siempre gratis
-            </p>
-          </article>
-        ))
+              <h3 class="mt-4 font-display text-xl font-bold text-white md:text-2xl">
+                {feature.title}
+              </h3>
+              <p class="mt-2 text-sm leading-relaxed" style="color: hsl(250 25% 90% / 0.75)">
+                {feature.description}
+              </p>
+            </article>
+          );
+        })
       }
     </div>
   </div>

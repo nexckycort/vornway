@@ -141,16 +141,25 @@
   "lang": "es",
   "screenshots": [
     {
-      "src": "screenshots/shot-mobile.png",
-      "sizes": "1345x986",
-      "type": "image/png",
-      "form_factor": "narrow"
+      "src": "screenshots/home.webp",
+      "sizes": "1190x2556",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Pantalla de inicio de Splitway con resumen y lista de grupos"
     },
     {
-      "src": "screenshots/shot-desktop.png",
-      "sizes": "1345x986",
-      "type": "image/png",
-      "form_factor": "wide"
+      "src": "screenshots/create-group.webp",
+      "sizes": "1190x2556",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Flujo de creacion de grupo con enlace compartible"
+    },
+    {
+      "src": "screenshots/group-details.webp",
+      "sizes": "1190x2556",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Detalle de grupo con resumen, acciones y lista de gastos"
     }
   ]
 }

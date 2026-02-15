@@ -57,18 +57,14 @@ const showcase = copy.transformation.showcase;
       <article class="phone-wrap phone-left">
         <div class="float-tag float-a">{showcase.tagExpenseQuick}</div>
         <div class="phone-frame">
-          <div class="phone-notch"></div>
           <div class="phone-screen">
-            <div class="app-head">{showcase.screenGroupTitle}</div>
-            <div class="placeholder-lines">
-              <span></span><span></span><span></span>
-            </div>
-            <div class="card-list">
-              {
-                showcase.placeholderExpenses.map((item) => (
-                  <div class="card-item"><b>{item.label}</b><small>{item.amount}</small></div>
-                ))
-              }
+            <div class="app-image-wrap">
+              <img
+                src="/images/home.svg"
+                alt={showcase.screenGroupTitle}
+                class="app-image"
+                loading="lazy"
+              />
             </div>
           </div>
         </div>
@@ -78,17 +74,15 @@ const showcase = copy.transformation.showcase;
         <div class="float-tag float-b">{showcase.tagLiveUpdates}</div>
         <div class="float-tag float-c">{showcase.tagSyncBalances}</div>
         <div class="phone-frame">
-          <div class="phone-notch"></div>
           <div class="phone-screen">
-            <div class="app-head">{showcase.screenActivityTitle}</div>
-            <div class="timeline">
-              {
-                showcase.placeholderActivity.map((item) => (
-                  <div><b>{item.title}</b><small>{item.subtitle}</small></div>
-                ))
-              }
+            <div class="app-image-wrap">
+              <img
+                src="/images/create-group.svg"
+                alt={showcase.screenActivityTitle}
+                class="app-image"
+                loading="lazy"
+              />
             </div>
-            <div class="live-pill">{showcase.liveLabel}</div>
           </div>
         </div>
       </article>
@@ -96,17 +90,15 @@ const showcase = copy.transformation.showcase;
       <article class="phone-wrap phone-right">
         <div class="float-tag float-d">{showcase.tagSettleSuggestions}</div>
         <div class="phone-frame">
-          <div class="phone-notch"></div>
           <div class="phone-screen">
-            <div class="app-head">{showcase.screenSettleTitle}</div>
-            <div class="settle-grid">
-              {
-                showcase.placeholderSettle.map((item) => (
-                  <div><b>{item.name}</b><small>{item.amount}</small></div>
-                ))
-              }
+            <div class="app-image-wrap">
+              <img
+                src="/images/group-details.svg"
+                alt={showcase.screenSettleTitle}
+                class="app-image"
+                loading="lazy"
+              />
             </div>
-            <button class="cta-placeholder">{showcase.settleNow}</button>
           </div>
         </div>
       </article>
@@ -145,7 +137,7 @@ const showcase = copy.transformation.showcase;
     margin: 0 auto;
     width: min(100%, 320px);
     border-radius: 34px;
-    padding: 10px;
+    padding: 1px;
     background: linear-gradient(
       170deg,
       hsl(240 47% 47% / 0.75),
@@ -163,115 +155,27 @@ const showcase = copy.transformation.showcase;
     position: relative;
     min-height: 520px;
     border-radius: 26px;
-    padding: 20px 16px;
-    background: linear-gradient(180deg, hsl(240 38% 13%), hsl(240 38% 9%));
-    border: 1px solid hsl(250 25% 90% / 0.08);
+    padding: 8px 8px 8px;
+    background: transparent;
+    border: 0;
     color: hsl(250 25% 95%);
   }
 
-  .phone-notch {
-    position: absolute;
-    left: 50%;
-    top: 8px;
-    width: 34%;
-    height: 20px;
-    border-radius: 999px;
-    background: hsl(240 38% 6%);
-    transform: translateX(-50%);
-    z-index: 5;
-  }
-
-  .app-head {
-    margin-top: 16px;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #56e1e9;
-  }
-
-  .placeholder-lines {
-    margin-top: 12px;
-    display: grid;
-    gap: 8px;
-  }
-
-  .placeholder-lines span {
-    display: block;
-    height: 8px;
-    border-radius: 999px;
-    background: hsl(250 25% 90% / 0.12);
-  }
-
-  .placeholder-lines span:nth-child(1) {
-    width: 82%;
-  }
-
-  .placeholder-lines span:nth-child(2) {
-    width: 66%;
-  }
-
-  .placeholder-lines span:nth-child(3) {
-    width: 74%;
-  }
-
-  .card-list,
-  .timeline,
-  .settle-grid {
-    margin-top: 16px;
-    display: grid;
-    gap: 10px;
-  }
-
-  .card-item,
-  .timeline div,
-  .settle-grid div {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-radius: 12px;
-    padding: 12px;
-    background: hsl(240 38% 17%);
-    border: 1px solid hsl(250 25% 90% / 0.08);
-  }
-
-  .card-item b,
-  .timeline b,
-  .settle-grid b {
-    font-size: 13px;
-    color: white;
-  }
-
-  .card-item small,
-  .timeline small,
-  .settle-grid small {
-    font-size: 12px;
-    color: hsl(250 25% 90% / 0.65);
-  }
-
-  .live-pill {
-    margin-top: 14px;
-    display: inline-flex;
-    border-radius: 999px;
-    padding: 6px 10px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: hsl(240 38% 10%);
-    background: #56e1e9;
-  }
-
-  .cta-placeholder {
-    margin-top: 14px;
-    width: 100%;
+  .app-image-wrap {
+    margin-top: 0;
+    height: 100%;
+    min-height: 430px;
+    overflow: hidden;
+    border-radius: 18px;
     border: 0;
-    border-radius: 12px;
-    padding: 11px 12px;
-    background: #56e1e9;
-    color: hsl(240 38% 10%);
-    font-size: 13px;
-    font-weight: 700;
+    background: white;
+  }
+
+  .app-image {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
   }
 
   .float-tag {

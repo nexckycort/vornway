@@ -3,10 +3,10 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { ChevronLeft, Share2, Trash2, UserPlus } from 'lucide-react';
+import { Share2, Trash2, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
-import { GradientLayout } from '~/components/gradient-layout';
+import { PageHeader } from '~/components/page-header';
 import { getGroup } from '../-actions/get-group';
 import { removeMember } from '../-actions/remove-member';
 import { addMember } from './-actions/add-member';
@@ -103,134 +103,129 @@ function EditParticipants() {
 
   if (isLoading) {
     return (
-      <GradientLayout className="native-enter flex items-center justify-center pb-8">
-        <p className="text-gray-500">Cargando...</p>
-      </GradientLayout>
+      <div className="native-app-shell min-h-dvh bg-[#f3f4fa]">
+        <div className="native-screen native-enter mx-auto flex min-h-dvh w-full max-w-md items-center justify-center pb-8">
+          <p className="text-gray-500">Cargando...</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <GradientLayout className="native-enter pb-8">
-      {/* Header */}
-      <div className="px-4 pt-5 pb-4 lg:mx-auto lg:max-w-4xl lg:px-6 lg:pt-6">
-        <div className="native-surface-muted flex items-center gap-2 px-3 py-2.5">
-          <button
-            onClick={() => router.history.back()}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80"
-          >
-            <ChevronLeft className="w-6 h-6 text-gray-700" />
-          </button>
-          <h1 className="text-xl font-semibold text-[#1a1a3e]">
-            Editar participantes
-          </h1>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 px-4 lg:mx-auto lg:max-w-4xl lg:px-6">
-        {/* Share invite link */}
-        <div className="mb-6 rounded-3xl border border-white/60 bg-white/85 p-4 shadow-sm backdrop-blur-sm">
-          <p className="text-gray-600 mb-3">Compartir enlace del grupo</p>
-          <div className="flex gap-3">
-            <div className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl bg-gray-50 overflow-hidden">
-              <span className="text-gray-500 text-sm truncate block">
-                {inviteLink}
-              </span>
-            </div>
-            <button
-              onClick={handleShareLink}
-              className="w-14 h-14 border-2 border-[#4040b0] rounded-xl flex items-center justify-center flex-shrink-0"
-            >
-              <Share2 className="w-5 h-5 text-[#4040b0]" />
-            </button>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200" />
-          </div>
-          <div className="relative flex justify-center">
-            <span className="bg-white px-4 text-sm text-gray-500">
-              Añadir manualmente
-            </span>
-          </div>
-        </div>
-
-        {/* Add participant input */}
-        <div className="flex gap-3 mb-6">
-          <input
-            type="text"
-            placeholder="Nombre del participante"
-            value={participantName}
-            onChange={(e) => setParticipantName(e.target.value)}
-            onKeyDown={handleKeyPress}
-            className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl text-[#1a1a3e] placeholder:text-gray-400 focus:outline-none focus:border-[#6060c0]"
-          />
-          <button
-            onClick={handleAddParticipant}
-            disabled={!participantName.trim() || addMemberMutation.isPending}
-            className="w-14 h-14 bg-[#4040b0] rounded-xl flex items-center justify-center disabled:opacity-50 flex-shrink-0"
-          >
-            <UserPlus className="w-6 h-6 text-white" />
-          </button>
-        </div>
-
-        {addMemberMutation.data && !addMemberMutation.data.success && (
-          <p className="text-red-500 text-sm mb-4">
-            {addMemberMutation.data.error}
-          </p>
-        )}
-
-        {/* Members list */}
-        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
-          {data?.members?.map((member) => (
-            <div
-              key={member.id}
-              className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#e8e4f8] rounded-full flex items-center justify-center">
-                  <span className="text-[#6060c0] font-semibold">
-                    {getInitial(member.name)}
-                  </span>
-                </div>
-                <span className="font-medium text-[#1a1a3e]">
-                  {member.name}
-                  {member.isCurrentUser && ' (Tu)'}
+    <PageHeader
+      title="Editar participantes"
+      goBack
+      onBack={() => router.history.back()}
+    >
+      <div className="max-h-[calc(100dvh-7rem)] overflow-y-auto px-4 pb-28 lg:mx-auto lg:max-w-4xl lg:px-6">
+        {/* Content */}
+        <div className="flex-1">
+          {/* Share invite link */}
+          <div className="mb-6 rounded-3xl border border-white/60 bg-white/85 p-4 shadow-sm backdrop-blur-sm">
+            <p className="text-gray-600 mb-3">Compartir enlace del grupo</p>
+            <div className="flex gap-3">
+              <div className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl bg-gray-50 overflow-hidden">
+                <span className="text-gray-500 text-sm truncate block">
+                  {inviteLink}
                 </span>
               </div>
-              {data?.isOwner && (
-                <button
-                  onClick={() => handleRemoveMember(member.id, member.name)}
-                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              )}
+              <button
+                onClick={handleShareLink}
+                className="w-14 h-14 border-2 border-[#4040b0] rounded-xl flex items-center justify-center flex-shrink-0"
+              >
+                <Share2 className="w-5 h-5 text-[#4040b0]" />
+              </button>
             </div>
-          ))}
+          </div>
+
+          {/* Divider */}
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-4 text-sm text-gray-500">
+                Añadir manualmente
+              </span>
+            </div>
+          </div>
+
+          {/* Add participant input */}
+          <div className="flex gap-3 mb-6">
+            <input
+              type="text"
+              placeholder="Nombre del participante"
+              value={participantName}
+              onChange={(e) => setParticipantName(e.target.value)}
+              onKeyDown={handleKeyPress}
+              className="flex-1 px-4 py-3.5 border border-gray-200 rounded-xl text-[#1a1a3e] placeholder:text-gray-400 focus:outline-none focus:border-[#6060c0]"
+            />
+            <button
+              onClick={handleAddParticipant}
+              disabled={!participantName.trim() || addMemberMutation.isPending}
+              className="w-14 h-14 bg-[#4040b0] rounded-xl flex items-center justify-center disabled:opacity-50 flex-shrink-0"
+            >
+              <UserPlus className="w-6 h-6 text-white" />
+            </button>
+          </div>
+
+          {addMemberMutation.data && !addMemberMutation.data.success && (
+            <p className="text-red-500 text-sm mb-4">
+              {addMemberMutation.data.error}
+            </p>
+          )}
+
+          {/* Members list */}
+          <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+            {data?.members?.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#e8e4f8] rounded-full flex items-center justify-center">
+                    <span className="text-[#6060c0] font-semibold">
+                      {getInitial(member.name)}
+                    </span>
+                  </div>
+                  <span className="font-medium text-[#1a1a3e]">
+                    {member.name}
+                    {member.isCurrentUser && ' (Tu)'}
+                  </span>
+                </div>
+                {data?.isOwner && (
+                  <button
+                    onClick={() => handleRemoveMember(member.id, member.name)}
+                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="border-t border-black/5 bg-white/85 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-xl lg:mx-auto lg:max-w-4xl lg:px-6">
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => router.history.back()}
-            className="flex-1 py-4 text-[#1a1a3e] font-medium"
-          >
-            Omitir
-          </button>
-          <button
-            type="button"
-            onClick={() => router.history.back()}
-            className="flex-1 py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
-          >
-            Actualizar
-          </button>
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-black/5 bg-white/90 backdrop-blur-xl">
+        <div className="mx-auto w-full max-w-md p-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:max-w-6xl lg:px-6 xl:px-10">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => router.history.back()}
+              className="flex-1 py-4 text-[#1a1a3e] font-medium"
+            >
+              Omitir
+            </button>
+            <button
+              type="button"
+              onClick={() => router.history.back()}
+              className="flex-1 py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
+            >
+              Actualizar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -284,6 +279,6 @@ function EditParticipants() {
           </div>
         ) : null}
       </AppDrawer>
-    </GradientLayout>
+    </PageHeader>
   );
 }

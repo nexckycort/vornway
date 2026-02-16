@@ -50,6 +50,22 @@ pnpm dlx shadcn@latest add button
 
 2. Visit the [Better Auth documentation](https://www.better-auth.com) to unlock the full potential of authentication in your app.
 
+### Google OAuth
+
+To enable Google sign in, add these variables to your server environment:
+
+```dotenv
+BETTER_AUTH_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+In Google Cloud Console, configure this redirect URI for local development:
+
+```txt
+http://localhost:3000/api/auth/callback/google
+```
+
 ### Adding a Database (Optional)
 
 Better Auth can work in stateless mode, but to persist user data, add a database:

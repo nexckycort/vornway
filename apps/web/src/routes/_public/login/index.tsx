@@ -119,7 +119,11 @@ function RouteComponent() {
     <GradientLayout className="native-enter">
       <div className="flex min-h-dvh flex-col items-center justify-center px-5">
         <div className="mb-5">
-          <img src="/logo.svg" alt="logo" className="h-20 w-20 drop-shadow-sm" />
+          <img
+            src="/logo.svg"
+            alt="logo"
+            className="h-20 w-20 drop-shadow-sm"
+          />
         </div>
 
         {step === 'email' ? (
@@ -146,8 +150,7 @@ function RouteComponent() {
               </Button>
 
               <div className="mb-4 flex items-center gap-3 text-xs text-[#6a6a86]">
-                <span className="h-px flex-1 bg-[#d9d9e8]" />
-                o con correo
+                <span className="h-px flex-1 bg-[#d9d9e8]" />o con correo
                 <span className="h-px flex-1 bg-[#d9d9e8]" />
               </div>
 
@@ -163,7 +166,6 @@ function RouteComponent() {
                 }}
                 placeholder="tu@correo.com"
                 className="w-full max-w-xl rounded-2xl border-2 bg-white px-4 py-3.5 transition-colors focus:border-[#6b5b9a] focus:outline-none"
-                autoFocus
               />
               {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
 

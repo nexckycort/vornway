@@ -7,7 +7,6 @@ import {
   UserMinus,
   Users,
 } from 'lucide-react';
-import { BottomNav } from '~/components/bottom-nav';
 import { GradientLayout } from '~/components/gradient-layout';
 import { getActivityFeed } from './-actions/get-activity-feed';
 
@@ -206,7 +205,6 @@ function RouteComponent() {
           </div>
         )}
       </div>
-      <BottomNav />
     </GradientLayout>
   );
 }

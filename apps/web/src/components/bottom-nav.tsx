@@ -2,7 +2,8 @@
 
 import { Clock, Home, LayoutGrid, User } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Link, useLocation } from '@tanstack/react-router';
+import { Link, useLocation, useRouter } from '@tanstack/react-router';
+import { Plus } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Inicio', icon: Home },
@@ -11,41 +12,75 @@ const navItems = [
   { href: '/profile', label: 'Perfil', icon: User },
 ];
 
+const OPEN_HOME_OPTIONS_EVENT = 'splitway:open-home-options';
+
 export function BottomNav() {
+  const router = useRouter();
   const { pathname } = useLocation();
+  const leftItems = navItems.slice(0, 2);
+  const rightItems = navItems.slice(2);
+
+  const triggerPrimaryAction = () => {
+    if (pathname === '/') {
+      window.dispatchEvent(new Event(OPEN_HOME_OPTIONS_EVENT));
+      return;
+    }
+
+    try {
+      sessionStorage.setItem(OPEN_HOME_OPTIONS_EVENT, '1');
+    } catch {}
+
+    router.navigate({ to: '/' });
+  };
+
+  const renderItem = (item: (typeof navItems)[number]) => {
+    const isActive =
+      item.href === '/'
+        ? pathname === '/'
+        : pathname === item.href || pathname.startsWith(`${item.href}/`);
+    const Icon = item.icon;
+
+    return (
+      <Link
+        key={item.href}
+        to={item.href}
+        className={`flex min-w-0 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all duration-200 ${
+          isActive
+            ? 'bg-[#f1efff] text-[#4040b0]'
+            : 'text-gray-400 active:scale-[0.98]'
+        }`}
+      >
+        <HugeiconsIcon
+          icon={Icon}
+          className={`h-6 w-6 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}
+          strokeWidth={isActive ? 2.5 : 2}
+        />
+        <span
+          className={`text-[0.68rem] tracking-tight ${isActive ? 'font-semibold' : 'font-medium'}`}
+        >
+          {item.label}
+        </span>
+      </Link>
+    );
+  };
 
   return (
-    <nav className="fixed inset-x-0 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-40 px-4">
-      <div className="mx-auto flex w-full max-w-md items-center justify-around rounded-[1.75rem] border border-white/70 bg-white/85 px-3 py-2 shadow-[0_18px_40px_-24px_rgba(19,15,49,0.55)] backdrop-blur-xl">
-        {navItems.map((item) => {
-          const isActive =
-            item.href === '/'
-              ? pathname === '/'
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all duration-200 ${
-                isActive
-                  ? 'bg-[#f1efff] text-[#4040b0]'
-                  : 'text-gray-400 active:scale-[0.98]'
-              }`}
-            >
-              <HugeiconsIcon
-                icon={Icon}
-                className={`h-6 w-6 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}
-                strokeWidth={isActive ? 2.5 : 2}
-              />
-              <span
-                className={`text-[0.68rem] tracking-tight ${isActive ? 'font-semibold' : 'font-medium'}`}
-              >
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/80 bg-white/95 pb-[max(0.3rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_-22px_rgba(19,15,49,0.45)] backdrop-blur-xl">
+      <div className="relative mx-auto grid w-full max-w-md grid-cols-5 items-center px-3 pt-2">
+        {leftItems.map(renderItem)}
+
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={triggerPrimaryAction}
+            className="flex h-14 w-14 -translate-y-5 items-center justify-center rounded-2xl bg-[#4040b0] text-white shadow-[0_12px_28px_-14px_rgba(64,64,176,0.85)] active:scale-[0.98]"
+            aria-label="Acciones rápidas"
+          >
+            <Plus className="h-7 w-7" />
+          </button>
+        </div>
+
+        {rightItems.map(renderItem)}
       </div>
     </nav>
   );

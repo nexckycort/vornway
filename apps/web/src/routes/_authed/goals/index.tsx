@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ChevronRight, Plus, Target } from 'lucide-react';
-import { BottomNav } from '~/components/bottom-nav';
 import { GradientLayout } from '~/components/gradient-layout';
 import { getUserGoals } from './-actions/get-user-goals';
 
@@ -122,7 +121,6 @@ function RouteComponent() {
           )}
         </div>
       </div>
-      <BottomNav />
     </GradientLayout>
   );
 }

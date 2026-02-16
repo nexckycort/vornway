@@ -20,9 +20,8 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Target, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
-import { BottomNav } from '~/components/bottom-nav';
 import { GradientLayout } from '~/components/gradient-layout';
 import { cn } from '~/lib/utils';
 import { deleteGroup } from './-actions/delete-group';
@@ -33,6 +32,8 @@ import { useUserGroups } from './-hooks/use-user-groups';
 export const Route = createFileRoute('/_authed/(home)/')({
   component: HomePage,
 });
+
+const OPEN_HOME_OPTIONS_EVENT = 'splitway:open-home-options';
 
 const categoryConfig: Record<
   string,
@@ -306,6 +307,25 @@ function HomePage() {
   const [copiedGroupName, setCopiedGroupName] = useState(false);
   const [showDebtsDrawer, setShowDebtsDrawer] = useState(false);
   const [showCreditsDrawer, setShowCreditsDrawer] = useState(false);
+
+  useEffect(() => {
+    const handleOpenHomeOptions = () => {
+      setShowOptions(true);
+    };
+
+    window.addEventListener(OPEN_HOME_OPTIONS_EVENT, handleOpenHomeOptions);
+
+    try {
+      if (sessionStorage.getItem(OPEN_HOME_OPTIONS_EVENT) === '1') {
+        sessionStorage.removeItem(OPEN_HOME_OPTIONS_EVENT);
+        setShowOptions(true);
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener(OPEN_HOME_OPTIONS_EVENT, handleOpenHomeOptions);
+    };
+  }, []);
 
   const { data: userGroups = [] } = useUserGroups();
   const regularGroups = userGroups.filter((group) => group.type !== 'meta');
@@ -678,13 +698,6 @@ function HomePage() {
           </div>
         )}
       </div>
-
-      <button
-        onClick={() => setShowOptions(true)}
-        className="fixed bottom-[calc(max(0.5rem,env(safe-area-inset-bottom))+5rem)] right-5 z-30 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4040b0] shadow-lg shadow-[#4040b0]/30 active:scale-[0.98]"
-      >
-        <HugeiconsIcon icon={Plus} className="w-7 h-7 text-white" />
-      </button>
 
       <AppDrawer open={showDebtsDrawer} onOpenChange={setShowDebtsDrawer}>
         <div className="max-h-[80vh] overflow-y-auto">
@@ -1137,7 +1150,6 @@ function HomePage() {
         ) : null}
       </AppDrawer>
 
-      <BottomNav />
     </GradientLayout>
   );
 }

@@ -1,12 +1,15 @@
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import type { QueryClient } from '@tanstack/react-query';
 import {
+  Outlet,
   createRootRouteWithContext,
   HeadContent,
+  useLocation,
   Scripts,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { createServerFn } from '@tanstack/react-start';
+import { BottomNav } from '~/components/bottom-nav';
 import { Toaster } from '@workspace/ui/components/sonner';
 import stylesCss from '../styles.css?url';
 import { serverEnv } from '~/config/env.server';
@@ -86,8 +89,28 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     };
   },
 
+  component: RootLayout,
   shellComponent: RootDocument,
 });
+
+function RootLayout() {
+  const { user } = Route.useRouteContext();
+  const { pathname } = useLocation();
+
+  const showBottomNav =
+    Boolean(user) &&
+    (pathname === '/' ||
+      pathname === '/goals' ||
+      pathname === '/activity' ||
+      pathname === '/profile');
+
+  return (
+    <>
+      <Outlet />
+      {showBottomNav ? <BottomNav /> : null}
+    </>
+  );
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (

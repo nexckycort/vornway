@@ -5,7 +5,6 @@ import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { ChevronRight, LogOut, Mail, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
-import { BottomNav } from '~/components/bottom-nav';
 import { GradientLayout } from '~/components/gradient-layout';
 import { logoutFn } from '~/server/auth';
 import { updateProfileName } from './-actions/update-profile-name';
@@ -290,8 +289,6 @@ function RouteComponent() {
           </button>
         </div>
       </div>
-
-      <BottomNav />
 
       <AppDrawer open={showEditNameModal} onOpenChange={setShowEditNameModal}>
           <div className="max-h-[88vh] overflow-y-auto">

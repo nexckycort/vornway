@@ -4,7 +4,6 @@ import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
   BarChart3,
   Check,
-  ChevronLeft,
   Copy,
   HandCoins,
   Link,
@@ -18,7 +17,7 @@ import {
 } from 'lucide-react';
 import { type MouseEvent, type TouchEvent, useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
-import { GradientLayout } from '~/components/gradient-layout';
+import { PageHeader } from '~/components/page-header';
 import { deleteGroup } from '../../(home)/-actions/delete-group';
 import { deleteExpense } from './-actions/delete-expense';
 import { getGroup } from './-actions/get-group';
@@ -145,9 +144,7 @@ function ExpenseItem({
   return (
     <div
       className={`relative border-b last:border-b-0 overflow-hidden ${
-        expense.isSettlement
-          ? 'border-emerald-100'
-          : 'border-gray-100'
+        expense.isSettlement ? 'border-emerald-100' : 'border-gray-100'
       }`}
     >
       {showDeleteAction && (
@@ -442,61 +439,49 @@ function RouteComponent() {
   // Loading state
   if (isLoading) {
     return (
-      <GradientLayout className="native-enter flex items-center justify-center pb-8">
-        <p className="text-gray-500">Cargando...</p>
-      </GradientLayout>
+      <div className="native-app-shell min-h-dvh bg-[#f3f4fa]">
+        <div className="native-screen native-enter mx-auto flex min-h-dvh w-full max-w-md items-center justify-center pb-8">
+          <p className="text-gray-500">Cargando...</p>
+        </div>
+      </div>
     );
   }
 
   // Error state (no access or not found)
   if (error) {
     return (
-      <GradientLayout className="native-enter flex items-center justify-center px-6 pb-8">
-        <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white/90 p-8 text-center shadow-sm backdrop-blur-sm">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <X className="w-8 h-8 text-red-500" />
+      <div className="native-app-shell min-h-dvh bg-[#f3f4fa]">
+        <div className="native-screen native-enter mx-auto flex min-h-dvh w-full max-w-md items-center justify-center px-6 pb-8">
+          <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white/90 p-8 text-center shadow-sm backdrop-blur-sm">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <X className="w-8 h-8 text-red-500" />
+            </div>
+            <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
+              Acceso denegado
+            </h2>
+            <p className="text-gray-500 mb-6">
+              {error instanceof Error
+                ? error.message
+                : 'No tienes acceso a este grupo'}
+            </p>
+            <button
+              onClick={() => router.navigate({ to: '/' })}
+              className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
+            >
+              Ir al inicio
+            </button>
           </div>
-          <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
-            Acceso denegado
-          </h2>
-          <p className="text-gray-500 mb-6">
-            {error instanceof Error
-              ? error.message
-              : 'No tienes acceso a este grupo'}
-          </p>
-          <button
-            onClick={() => router.navigate({ to: '/' })}
-            className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
-          >
-            Ir al inicio
-          </button>
         </div>
-      </GradientLayout>
+      </div>
     );
   }
 
   return (
-    <GradientLayout className="native-enter pb-8">
-      {/* Header */}
-      <div className="px-4 pt-5 pb-3">
-        <div className="native-surface-muted flex items-center gap-3 px-3 py-2.5">
-          <button
-            onClick={() => router.navigate({ to: '/' })}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80"
-          >
-            <ChevronLeft className="w-6 h-6 text-[#1a1a3e]" />
-          </button>
-          <div>
-            <h1 className="text-xl font-semibold text-[#1a1a3e]">
-              {data?.name || 'Cargando...'}
-            </h1>
-            <p className="text-sm text-gray-500">
-              {data ? `${data.participantCount} Participantes` : 'Cargando...'}
-            </p>
-          </div>
-        </div>
-      </div>
-
+    <PageHeader
+      title={data?.name || 'Cargando...'}
+      subtitle={data ? `${data.participantCount} Participantes` : 'Cargando...'}
+      goBack
+    >
       {/* Summary Card */}
       <div className="px-4 py-2">
         <div className="bg-white rounded-3xl p-6 shadow-sm">
@@ -831,85 +816,85 @@ function RouteComponent() {
 
       {/* Modal de invitación */}
       <AppDrawer open={showInviteModal} onOpenChange={setShowInviteModal}>
-          <div className="max-h-[84vh] overflow-y-auto">
-            <div className="flex justify-center pt-3 pb-2">
-              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
-            </div>
+        <div className="max-h-[84vh] overflow-y-auto">
+          <div className="flex justify-center pt-3 pb-2">
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+          </div>
 
-            <div className="px-6 pb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-[#1a1a3e]">
-                  Invitar al grupo
-                </h2>
-                <button
-                  onClick={() => setShowInviteModal(false)}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-
-              <p className="text-gray-500 mb-6">
-                Comparte este enlace para que otros se unan a{' '}
-                <strong>{data?.name}</strong>
-              </p>
-
-              {/* Enlace */}
-              <div className="bg-gray-50 rounded-2xl p-4 mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#e8e4f8] rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Link className="w-5 h-5 text-[#6060c0]" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-500 mb-1">
-                      Enlace de invitación
-                    </p>
-                    <p className="text-[#1a1a3e] font-medium truncate text-sm">
-                      {inviteLink}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleCopyLink}
-                    className="w-10 h-10 bg-[#4040b0] rounded-xl flex items-center justify-center flex-shrink-0"
-                  >
-                    {copied ? (
-                      <Check className="w-5 h-5 text-white" />
-                    ) : (
-                      <Copy className="w-5 h-5 text-white" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Código */}
-              <div className="bg-gray-50 rounded-2xl p-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-500 mb-1">
-                      Código de invitación
-                    </p>
-                    <p className="text-2xl font-bold text-[#1a1a3e] tracking-wider">
-                      {data?.inviteCode}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleCopyCode}
-                    className="px-4 py-2 bg-gray-200 rounded-xl text-[#1a1a3e] font-medium text-sm"
-                  >
-                    {copied ? 'Copiado' : 'Copiar'}
-                  </button>
-                </div>
-              </div>
-
+          <div className="px-6 pb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-[#1a1a3e]">
+                Invitar al grupo
+              </h2>
               <button
                 onClick={() => setShowInviteModal(false)}
-                className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
               >
-                Cerrar
+                <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
+
+            <p className="text-gray-500 mb-6">
+              Comparte este enlace para que otros se unan a{' '}
+              <strong>{data?.name}</strong>
+            </p>
+
+            {/* Enlace */}
+            <div className="bg-gray-50 rounded-2xl p-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#e8e4f8] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Link className="w-5 h-5 text-[#6060c0]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-500 mb-1">
+                    Enlace de invitación
+                  </p>
+                  <p className="text-[#1a1a3e] font-medium truncate text-sm">
+                    {inviteLink}
+                  </p>
+                </div>
+                <button
+                  onClick={handleCopyLink}
+                  className="w-10 h-10 bg-[#4040b0] rounded-xl flex items-center justify-center flex-shrink-0"
+                >
+                  {copied ? (
+                    <Check className="w-5 h-5 text-white" />
+                  ) : (
+                    <Copy className="w-5 h-5 text-white" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Código */}
+            <div className="bg-gray-50 rounded-2xl p-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <p className="text-sm text-gray-500 mb-1">
+                    Código de invitación
+                  </p>
+                  <p className="text-2xl font-bold text-[#1a1a3e] tracking-wider">
+                    {data?.inviteCode}
+                  </p>
+                </div>
+                <button
+                  onClick={handleCopyCode}
+                  className="px-4 py-2 bg-gray-200 rounded-xl text-[#1a1a3e] font-medium text-sm"
+                >
+                  {copied ? 'Copiado' : 'Copiar'}
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowInviteModal(false)}
+              className="w-full py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
+            >
+              Cerrar
+            </button>
           </div>
-        </AppDrawer>
+        </div>
+      </AppDrawer>
 
       {/* Modal de ajustes */}
       <AppDrawer
@@ -926,204 +911,203 @@ function RouteComponent() {
           setShowSettingsModal(true);
         }}
       >
-          <div className="max-h-[84vh] overflow-y-auto">
-            <div className="flex justify-center pt-3 pb-2">
-              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
-            </div>
+        <div className="max-h-[84vh] overflow-y-auto">
+          <div className="flex justify-center pt-3 pb-2">
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+          </div>
 
-            <div className="pb-8">
-              {!showDeleteGroupConfirm && !showLeaveGroupConfirm ? (
-                <>
+          <div className="pb-8">
+            {!showDeleteGroupConfirm && !showLeaveGroupConfirm ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSettingsModal(false);
+                    // TODO: navigate to edit group
+                  }}
+                  className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                >
+                  <Pencil className="w-5 h-5 text-[#1a1a3e]" />
+                  <span className="text-[#1a1a3e] font-medium">
+                    Editar grupo
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSettingsModal(false);
+                    router.navigate({
+                      to: '/groups/$id/participants',
+                      params: { id },
+                    });
+                  }}
+                  className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                >
+                  <UserPlus className="w-5 h-5 text-[#1a1a3e]" />
+                  <span className="text-[#1a1a3e] font-medium">
+                    Editar o agregar participantes
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSettingsModal(false);
+                    setShowInviteModal(true);
+                  }}
+                  className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                >
+                  <Share2 className="w-5 h-5 text-[#1a1a3e]" />
+                  <span className="text-[#1a1a3e] font-medium">
+                    Compartir enlace de invitación
+                  </span>
+                </button>
+
+                <div className="mx-6 border-t border-gray-200" />
+
+                {data?.isOwner ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowSettingsModal(false);
-                      // TODO: navigate to edit group
-                    }}
-                    className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                    onClick={() => setShowDeleteGroupConfirm(true)}
+                    className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-red-50 transition-colors"
                   >
-                    <Pencil className="w-5 h-5 text-[#1a1a3e]" />
-                    <span className="text-[#1a1a3e] font-medium">
-                      Editar grupo
+                    <Trash2 className="w-5 h-5 text-red-500" />
+                    <span className="text-red-500 font-medium">
+                      Eliminar grupo
                     </span>
                   </button>
-
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowLeaveGroupConfirm(true)}
+                    className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-red-50 transition-colors"
+                  >
+                    <X className="w-5 h-5 text-red-500" />
+                    <span className="text-red-500 font-medium">
+                      Abandonar grupo
+                    </span>
+                  </button>
+                )}
+              </>
+            ) : showDeleteGroupConfirm ? (
+              <div className="px-6">
+                <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
+                  Eliminar grupo
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  Para confirmar, escribe exactamente el nombre del grupo.
+                </p>
+                <div className="bg-gray-50 rounded-xl p-3 mb-4 border border-gray-100">
+                  <p className="text-sm text-gray-500">Nombre del grupo</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-semibold text-[#1a1a3e] break-all">
+                      {data?.name}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleCopyGroupName}
+                      className="px-3 py-1.5 text-sm rounded-lg bg-white border border-gray-200 text-[#1a1a3e] whitespace-nowrap"
+                    >
+                      {copiedGroupName ? 'Copiado' : 'Copiar'}
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={deleteGroupNameInput}
+                  onChange={(event) =>
+                    setDeleteGroupNameInput(event.target.value)
+                  }
+                  placeholder="Escribe el nombre del grupo"
+                  className="w-full px-4 py-3.5 border border-gray-200 rounded-xl text-[#1a1a3e] placeholder:text-gray-400 focus:outline-none focus:border-[#6060c0] mb-4"
+                />
+                {deleteGroupMutation.data?.error && (
+                  <p className="text-red-500 text-sm mb-4">
+                    {deleteGroupMutation.data.error}
+                  </p>
+                )}
+                <div className="flex gap-3">
                   <button
                     type="button"
                     onClick={() => {
-                      setShowSettingsModal(false);
-                      router.navigate({
-                        to: '/groups/$id/participants',
-                        params: { id },
+                      setShowDeleteGroupConfirm(false);
+                      setDeleteGroupNameInput('');
+                      setCopiedGroupName(false);
+                    }}
+                    className="flex-1 py-3 text-[#1a1a3e] font-medium"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!data?.name || deleteGroupMutation.isPending) return;
+                      deleteGroupMutation.mutate({
+                        data: {
+                          groupId: id,
+                          groupNameConfirm: deleteGroupNameInput.trim(),
+                        },
                       });
                     }}
-                    className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                    disabled={
+                      deleteGroupMutation.isPending ||
+                      !data?.name ||
+                      deleteGroupNameInput.trim() !== data.name
+                    }
+                    className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl disabled:opacity-60"
                   >
-                    <UserPlus className="w-5 h-5 text-[#1a1a3e]" />
-                    <span className="text-[#1a1a3e] font-medium">
-                      Editar o agregar participantes
-                    </span>
+                    {deleteGroupMutation.isPending
+                      ? 'Eliminando...'
+                      : 'Eliminar'}
                   </button>
-
+                </div>
+              </div>
+            ) : (
+              <div className="px-6">
+                <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
+                  Abandonar grupo
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  ¿Seguro que quieres abandonar <strong>{data?.name}</strong>?
+                  Podrás volver a unirte con invitación.
+                </p>
+                {leaveGroupMutation.data?.error && (
+                  <p className="text-red-500 text-sm mb-4">
+                    {leaveGroupMutation.data.error}
+                  </p>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowLeaveGroupConfirm(false)}
+                    className="flex-1 py-3 text-[#1a1a3e] font-medium"
+                  >
+                    Cancelar
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setShowSettingsModal(false);
-                      setShowInviteModal(true);
+                      if (leaveGroupMutation.isPending) return;
+                      leaveGroupMutation.mutate({
+                        data: {
+                          groupId: id,
+                        },
+                      });
                     }}
-                    className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                    disabled={leaveGroupMutation.isPending}
+                    className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl disabled:opacity-60"
                   >
-                    <Share2 className="w-5 h-5 text-[#1a1a3e]" />
-                    <span className="text-[#1a1a3e] font-medium">
-                      Compartir enlace de invitación
-                    </span>
+                    {leaveGroupMutation.isPending
+                      ? 'Abandonando...'
+                      : 'Abandonar'}
                   </button>
-
-                  <div className="mx-6 border-t border-gray-200" />
-
-                  {data?.isOwner ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowDeleteGroupConfirm(true)}
-                      className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 className="w-5 h-5 text-red-500" />
-                      <span className="text-red-500 font-medium">
-                        Eliminar grupo
-                      </span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setShowLeaveGroupConfirm(true)}
-                      className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-red-50 transition-colors"
-                    >
-                      <X className="w-5 h-5 text-red-500" />
-                      <span className="text-red-500 font-medium">
-                        Abandonar grupo
-                      </span>
-                    </button>
-                  )}
-                </>
-              ) : showDeleteGroupConfirm ? (
-                <div className="px-6">
-                  <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
-                    Eliminar grupo
-                  </h2>
-                  <p className="text-gray-600 mb-6">
-                    Para confirmar, escribe exactamente el nombre del grupo.
-                  </p>
-                  <div className="bg-gray-50 rounded-xl p-3 mb-4 border border-gray-100">
-                    <p className="text-sm text-gray-500">Nombre del grupo</p>
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-semibold text-[#1a1a3e] break-all">
-                        {data?.name}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleCopyGroupName}
-                        className="px-3 py-1.5 text-sm rounded-lg bg-white border border-gray-200 text-[#1a1a3e] whitespace-nowrap"
-                      >
-                        {copiedGroupName ? 'Copiado' : 'Copiar'}
-                      </button>
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    value={deleteGroupNameInput}
-                    onChange={(event) =>
-                      setDeleteGroupNameInput(event.target.value)
-                    }
-                    placeholder="Escribe el nombre del grupo"
-                    className="w-full px-4 py-3.5 border border-gray-200 rounded-xl text-[#1a1a3e] placeholder:text-gray-400 focus:outline-none focus:border-[#6060c0] mb-4"
-                  />
-                  {deleteGroupMutation.data?.error && (
-                    <p className="text-red-500 text-sm mb-4">
-                      {deleteGroupMutation.data.error}
-                    </p>
-                  )}
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowDeleteGroupConfirm(false);
-                        setDeleteGroupNameInput('');
-                        setCopiedGroupName(false);
-                      }}
-                      className="flex-1 py-3 text-[#1a1a3e] font-medium"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!data?.name || deleteGroupMutation.isPending)
-                          return;
-                        deleteGroupMutation.mutate({
-                          data: {
-                            groupId: id,
-                            groupNameConfirm: deleteGroupNameInput.trim(),
-                          },
-                        });
-                      }}
-                      disabled={
-                        deleteGroupMutation.isPending ||
-                        !data?.name ||
-                        deleteGroupNameInput.trim() !== data.name
-                      }
-                      className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl disabled:opacity-60"
-                    >
-                      {deleteGroupMutation.isPending
-                        ? 'Eliminando...'
-                        : 'Eliminar'}
-                    </button>
-                  </div>
                 </div>
-              ) : (
-                <div className="px-6">
-                  <h2 className="text-xl font-bold text-[#1a1a3e] mb-2">
-                    Abandonar grupo
-                  </h2>
-                  <p className="text-gray-600 mb-6">
-                    ¿Seguro que quieres abandonar <strong>{data?.name}</strong>?
-                    Podrás volver a unirte con invitación.
-                  </p>
-                  {leaveGroupMutation.data?.error && (
-                    <p className="text-red-500 text-sm mb-4">
-                      {leaveGroupMutation.data.error}
-                    </p>
-                  )}
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowLeaveGroupConfirm(false)}
-                      className="flex-1 py-3 text-[#1a1a3e] font-medium"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (leaveGroupMutation.isPending) return;
-                        leaveGroupMutation.mutate({
-                          data: {
-                            groupId: id,
-                          },
-                        });
-                      }}
-                      disabled={leaveGroupMutation.isPending}
-                      className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl disabled:opacity-60"
-                    >
-                      {leaveGroupMutation.isPending
-                        ? 'Abandonando...'
-                        : 'Abandonar'}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        </AppDrawer>
-    </GradientLayout>
+        </div>
+      </AppDrawer>
+    </PageHeader>
   );
 }

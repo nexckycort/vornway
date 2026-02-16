@@ -525,7 +525,7 @@ function RouteComponent() {
       subtitle={data ? `${data.participantCount} Participantes` : 'Cargando...'}
       goBack
     >
-      <div className="bg-[#f3f4fa] pb-2">
+      <div className="relative z-10 bg-[#f2f4ff] pb-3 rounded-b-2xl">
         <div className="px-4 py-2">
           <div className="bg-white rounded-3xl p-6 shadow-sm">
             <div className="mb-2 flex items-start justify-end">
@@ -575,7 +575,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <div className="bg-white">
+      <div className="-mt-2 bg-white">
         {/* Tabs */}
         <div className="px-4 py-2">
           <div className="flex rounded-2xl p-1">
@@ -672,7 +672,9 @@ function RouteComponent() {
                           )}
                         </p>
                         {entries.length === 0 ? (
-                          <p className="text-sm text-gray-400">Sin movimientos</p>
+                          <p className="text-sm text-gray-400">
+                            Sin movimientos
+                          </p>
                         ) : (
                           entries.map(([currency, amount]) => (
                             <p

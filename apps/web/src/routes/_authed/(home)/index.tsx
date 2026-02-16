@@ -17,7 +17,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { Target, Trash2 } from 'lucide-react';
+import { Compass, Target, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
 import { GradientLayout } from '~/components/gradient-layout';
@@ -429,6 +429,11 @@ function HomePage() {
     navigate({ to: '/goals/new' });
   };
 
+  const handleOpenCreateItinerary = () => {
+    setShowOptions(false);
+    navigate({ to: '/itineraries/new' });
+  };
+
   const handleFindGroup = () => {
     if (!inviteLink.trim()) return;
     findGroupMutation.mutate({ data: { inviteCode: inviteLink } });
@@ -810,6 +815,21 @@ function HomePage() {
                 <p className="font-semibold text-[#1a1a3e]">Crear meta</p>
                 <p className="text-sm text-gray-500">
                   Define un objetivo y registra aportes
+                </p>
+              </div>
+            </button>
+
+            <button
+              onClick={handleOpenCreateItinerary}
+              className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors text-left"
+            >
+              <div className="w-12 h-12 bg-[#e8e4f8] rounded-full flex items-center justify-center">
+                <Compass className="w-5 h-5 text-[#6060c0]" />
+              </div>
+              <div>
+                <p className="font-semibold text-[#1a1a3e]">Crear itinerario</p>
+                <p className="text-sm text-gray-500">
+                  Planea tu viaje por días con ruta optimizada
                 </p>
               </div>
             </button>

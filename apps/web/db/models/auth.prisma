@@ -11,6 +11,7 @@ model User {
   accounts      Account[]
   groups        Group[]
   groupMembers  GroupMember[]
+  itineraries   Itinerary[]
 
   @@unique([email])
   @@map("user")

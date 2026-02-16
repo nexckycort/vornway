@@ -20,7 +20,7 @@ export function PageHeader({
   const { history } = useRouter();
 
   return (
-    <div className={`native-app-shell min-h-dvh bg-[#f3f4fa] ${className}`}>
+    <div className={`native-app-shell min-h-dvh bg-[#F2F4FF] ${className}`}>
       <div className="p-0 pt-2">
         <div className="flex items-center gap-3 px-3 py-2.5">
           {goBack ? (

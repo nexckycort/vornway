@@ -525,156 +525,180 @@ function RouteComponent() {
       subtitle={data ? `${data.participantCount} Participantes` : 'Cargando...'}
       goBack
     >
-      <div className="px-4 py-2">
-        <div className="bg-white rounded-3xl p-6 shadow-sm">
-          <div className="mb-2 flex items-start justify-end">
+      <div className="bg-[#f3f4fa] pb-2">
+        <div className="px-4 py-2">
+          <div className="bg-white rounded-3xl p-6 shadow-sm">
+            <div className="mb-2 flex items-start justify-end">
+              <button
+                type="button"
+                onClick={() => setShowInviteModal(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-gray-100 px-3 py-2 text-sm font-medium text-[#1a1a3e]"
+              >
+                <Share2 className="h-4 w-4" />
+                Compartir
+              </button>
+            </div>
+            <p className="text-gray-500 text-center mb-1">Total gastado</p>
+            <TotalsDisplay totals={data?.totals ?? {}} />
+            <UserBalanceSummary memberBalances={data?.memberBalances} />
+          </div>
+        </div>
+
+        <div className="px-2 py-2">
+          <div className="grid grid-cols-4 gap-2">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <div
+                  key={action.label}
+                  className="flex flex-col items-center gap-2"
+                >
+                  <button
+                    onClick={action.onClick}
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                      action.isPrimary ? 'bg-[#4040b0]' : 'bg-white'
+                    }`}
+                  >
+                    <Icon
+                      className={`w-6 h-6 ${
+                        action.isPrimary ? 'text-white' : 'text-[#1a1a3e]'
+                      }`}
+                    />
+                  </button>
+                  <span className="text-xs font-normal text-[#1a1a3e] text-center">
+                    {action.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white">
+        {/* Tabs */}
+        <div className="px-4 py-2">
+          <div className="flex rounded-2xl p-1">
             <button
-              type="button"
-              onClick={() => setShowInviteModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gray-100 px-3 py-2 text-sm font-medium text-[#1a1a3e]"
+              onClick={() => setActiveTab('gastos')}
+              className={`flex-1 py-3 rounded-xl text-sm transition-colors ${
+                activeTab === 'gastos'
+                  ? 'bg-[#ECEFFF] font-bold text-blue-700 shadow-sm'
+                  : 'text-gray-500 font-normal'
+              }`}
             >
-              <Share2 className="h-4 w-4" />
-              Compartir
+              Gastos
+            </button>
+            <button
+              onClick={() => setActiveTab('cuentas')}
+              className={`flex-1 py-3 rounded-xl text-sm transition-colors ${
+                activeTab === 'cuentas'
+                  ? 'bg-[#ECEFFF] font-bold text-blue-700 shadow-sm'
+                  : 'text-gray-500 font-normal'
+              }`}
+            >
+              Cuentas
             </button>
           </div>
-          <p className="text-gray-500 text-center mb-1">Total gastado</p>
-          <TotalsDisplay totals={data?.totals ?? {}} />
-          <UserBalanceSummary memberBalances={data?.memberBalances} />
         </div>
-      </div>
 
-      <div className="px-2 py-2">
-        <div className="grid grid-cols-4 gap-2">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <div
-                key={action.label}
-                className="flex flex-col items-center gap-2"
-              >
-                <button
-                  onClick={action.onClick}
-                  className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-                    action.isPrimary ? 'bg-[#4040b0]' : 'bg-white'
-                  }`}
-                >
-                  <Icon
-                    className={`w-6 h-6 ${
-                      action.isPrimary ? 'text-white' : 'text-[#1a1a3e]'
-                    }`}
+        {/* Content */}
+        {activeTab === 'gastos' &&
+          (data?.expenses && data.expenses.length > 0 ? (
+            <div className="px-4 py-2">
+              <div className="bg-white rounded-2xl px-4">
+                {data.expenses.map((expense) => (
+                  <ExpenseItem
+                    key={expense.id}
+                    expense={expense}
+                    onOpenExpense={(expenseId) =>
+                      router.navigate({
+                        to: '/groups/$id/expense/$expenseId',
+                        params: { id, expenseId },
+                      })
+                    }
+                    onDeleteExpense={handleDeleteExpense}
                   />
-                </button>
-                <span className="text-xs font-normal text-[#1a1a3e] text-center">
-                  {action.label}
-                </span>
+                ))}
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="px-4 py-2">
-        <div className="flex rounded-2xl p-1">
-          <button
-            onClick={() => setActiveTab('gastos')}
-            className={`flex-1 py-3 rounded-xl text-sm transition-colors ${
-              activeTab === 'gastos'
-                ? 'bg-[#ECEFFF] font-bold text-blue-700 shadow-sm'
-                : 'text-gray-500 font-normal'
-            }`}
-          >
-            Gastos
-          </button>
-          <button
-            onClick={() => setActiveTab('cuentas')}
-            className={`flex-1 py-3 rounded-xl text-sm transition-colors ${
-              activeTab === 'cuentas'
-                ? 'bg-[#ECEFFF] font-bold text-blue-700 shadow-sm'
-                : 'text-gray-500 font-normal'
-            }`}
-          >
-            Cuentas
-          </button>
-        </div>
-      </div>
-
-      {/* Content */}
-      {activeTab === 'gastos' &&
-        (data?.expenses && data.expenses.length > 0 ? (
-          <div className="px-4 py-2">
-            <div className="bg-white rounded-2xl px-4">
-              {data.expenses.map((expense) => (
-                <ExpenseItem
-                  key={expense.id}
-                  expense={expense}
-                  onOpenExpense={(expenseId) =>
-                    router.navigate({
-                      to: '/groups/$id/expense/$expenseId',
-                      params: { id, expenseId },
-                    })
-                  }
-                  onDeleteExpense={handleDeleteExpense}
-                />
-              ))}
             </div>
-          </div>
-        ) : (
-          <div className="native-empty flex-1 flex flex-col items-center justify-center px-6 py-20">
-            {/* Icon */}
-            <div className="relative mb-6">
-              <div className="w-20 h-20 bg-[#a8a0e8] rounded-2xl transform rotate-6" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 bg-[#4040b0] rounded-2xl flex items-center justify-center -rotate-6">
-                  <Plus className="w-8 h-8 text-white" />
+          ) : (
+            <div className="native-empty flex-1 flex flex-col items-center justify-center px-6 py-20">
+              {/* Icon */}
+              <div className="relative mb-6">
+                <div className="w-20 h-20 bg-[#a8a0e8] rounded-2xl transform rotate-6" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-16 h-16 bg-[#4040b0] rounded-2xl flex items-center justify-center -rotate-6">
+                    <Plus className="w-8 h-8 text-white" />
+                  </div>
                 </div>
               </div>
+
+              <h3 className="text-xl font-semibold text-[#1a1a3e] mb-2">
+                No tienes gastos aún
+              </h3>
+              <p className="text-gray-500 text-center">
+                Ingresa tus primeros gastos y comienza a dividirlos
+              </p>
             </div>
+          ))}
 
-            <h3 className="text-xl font-semibold text-[#1a1a3e] mb-2">
-              No tienes gastos aún
-            </h3>
-            <p className="text-gray-500 text-center">
-              Ingresa tus primeros gastos y comienza a dividirlos
-            </p>
-          </div>
-        ))}
+        {activeTab === 'cuentas' && (
+          <div className="px-4 py-2">
+            {data?.memberBalances && data.memberBalances.length > 0 ? (
+              <div className="bg-white rounded-2xl px-4 py-2">
+                {data.memberBalances.map((member) => {
+                  const entries = Object.entries(member.balances).filter(
+                    ([, amount]) => Math.abs(amount) >= 1,
+                  );
 
-      {activeTab === 'cuentas' && (
-        <div className="px-4 py-2">
-          {data?.memberBalances && data.memberBalances.length > 0 ? (
-            <div className="bg-white rounded-2xl px-4 py-2">
-              {data.memberBalances.map((member) => {
-                const entries = Object.entries(member.balances).filter(
-                  ([, amount]) => Math.abs(amount) >= 1,
-                );
-
-                return (
-                  <div
-                    key={member.memberId}
-                    className="flex items-center gap-4 py-4 border-b border-gray-100 last:border-b-0"
-                  >
-                    <div className="w-12 h-12 bg-[#f0f0ff] rounded-xl flex items-center justify-center flex-shrink-0">
-                      <span className="text-lg font-semibold text-[#4040b0]">
-                        {member.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-[#1a1a3e] truncate">
-                        {member.name}
-                        {member.isCurrentUser && (
-                          <span className="text-xs text-gray-400 ml-1">
-                            (tú)
-                          </span>
+                  return (
+                    <div
+                      key={member.memberId}
+                      className="flex items-center gap-4 py-4 border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="w-12 h-12 bg-[#f0f0ff] rounded-xl flex items-center justify-center flex-shrink-0">
+                        <span className="text-lg font-semibold text-[#4040b0]">
+                          {member.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-[#1a1a3e] truncate">
+                          {member.name}
+                          {member.isCurrentUser && (
+                            <span className="text-xs text-gray-400 ml-1">
+                              (tú)
+                            </span>
+                          )}
+                        </p>
+                        {entries.length === 0 ? (
+                          <p className="text-sm text-gray-400">Sin movimientos</p>
+                        ) : (
+                          entries.map(([currency, amount]) => (
+                            <p
+                              key={currency}
+                              className={`text-sm ${
+                                amount > 0
+                                  ? 'text-green-600'
+                                  : amount < 0
+                                    ? 'text-red-500'
+                                    : 'text-gray-400'
+                              }`}
+                            >
+                              {amount > 0
+                                ? `Le deben $${formatCurrency(amount)} ${currency}`
+                                : amount < 0
+                                  ? `Debe $${formatCurrency(Math.abs(amount))} ${currency}`
+                                  : 'Está al día'}
+                            </p>
+                          ))
                         )}
-                      </p>
-                      {entries.length === 0 ? (
-                        <p className="text-sm text-gray-400">Sin movimientos</p>
-                      ) : (
-                        entries.map(([currency, amount]) => (
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        {entries.map(([currency, amount]) => (
                           <p
                             key={currency}
-                            className={`text-sm ${
+                            className={`font-semibold ${
                               amount > 0
                                 ? 'text-green-600'
                                 : amount < 0
@@ -682,50 +706,30 @@ function RouteComponent() {
                                   : 'text-gray-400'
                             }`}
                           >
-                            {amount > 0
-                              ? `Le deben $${formatCurrency(amount)} ${currency}`
-                              : amount < 0
-                                ? `Debe $${formatCurrency(Math.abs(amount))} ${currency}`
-                                : 'Está al día'}
+                            {amount > 0 ? '+' : ''}${formatCurrency(amount)}{' '}
+                            <span className="text-xs font-normal">
+                              {currency}
+                            </span>
                           </p>
-                        ))
-                      )}
+                        ))}
+                      </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      {entries.map(([currency, amount]) => (
-                        <p
-                          key={currency}
-                          className={`font-semibold ${
-                            amount > 0
-                              ? 'text-green-600'
-                              : amount < 0
-                                ? 'text-red-500'
-                                : 'text-gray-400'
-                          }`}
-                        >
-                          {amount > 0 ? '+' : ''}${formatCurrency(amount)}{' '}
-                          <span className="text-xs font-normal">
-                            {currency}
-                          </span>
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="native-empty flex-1 flex flex-col items-center justify-center px-6 py-20">
-              <h3 className="text-xl font-semibold text-[#1a1a3e] mb-2">
-                Sin cuentas aún
-              </h3>
-              <p className="text-gray-500 text-center">
-                Agrega gastos para ver el balance de cada participante
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="native-empty flex-1 flex flex-col items-center justify-center px-6 py-20">
+                <h3 className="text-xl font-semibold text-[#1a1a3e] mb-2">
+                  Sin cuentas aún
+                </h3>
+                <p className="text-gray-500 text-center">
+                  Agrega gastos para ver el balance de cada participante
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <AppDrawer
         open={showDeleteExpenseModal && Boolean(expenseToDelete)}

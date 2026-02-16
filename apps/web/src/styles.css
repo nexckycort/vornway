@@ -230,4 +230,11 @@ code {
   .native-screen .native-tap {
     @apply transition-all duration-150 active:scale-[0.985];
   }
+
+  @media (min-width: 1024px) {
+    .native-screen {
+      padding-top: max(env(safe-area-inset-top), 0.8rem);
+      padding-bottom: 1.5rem;
+    }
+  }
 }

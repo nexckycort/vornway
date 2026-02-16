@@ -130,7 +130,7 @@ function RouteComponent() {
 
   return (
     <GradientLayout className="native-enter pb-20">
-      <div className="min-h-screen px-5 pt-5">
+      <div className="min-h-screen px-5 pt-5 lg:px-6 lg:pt-6">
         <div className="native-surface-muted mb-5 px-4 py-3">
           <h1 className="text-2xl font-bold tracking-tight text-[#1a1a3e]">Actividad</h1>
         </div>
@@ -154,7 +154,7 @@ function RouteComponent() {
         )}
 
         {!isLoading && !error && activities.length > 0 && (
-          <div className="space-y-3 pb-6">
+          <div className="space-y-3 pb-6 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
             {activities.map((activity) => {
               const config = getActivityConfig(activity.action);
               const Icon = config.icon;
@@ -163,7 +163,7 @@ function RouteComponent() {
               return (
                 <article
                   key={activity.id}
-                  className="bg-white rounded-2xl p-4 border border-gray-100"
+                  className="h-full bg-white rounded-2xl p-4 border border-gray-100"
                 >
                   <div className="flex gap-3">
                     <div

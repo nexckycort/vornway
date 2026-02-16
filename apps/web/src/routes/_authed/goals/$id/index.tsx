@@ -345,7 +345,7 @@ function RouteComponent() {
 
   return (
     <GradientLayout className="native-enter pb-8">
-      <div className="px-4 pt-5 pb-3">
+      <div className="px-4 pt-5 pb-3 lg:mx-auto lg:max-w-6xl lg:px-6 lg:pt-6">
         <div className="native-surface-muted flex items-center justify-between gap-3 px-3 py-2.5">
           <div className="flex items-center gap-3">
             <button
@@ -390,7 +390,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <div className="px-4 pb-3 pt-1">
+      <div className="px-4 pb-3 pt-1 lg:mx-auto lg:max-w-6xl lg:px-6">
         <button
           type="button"
           onClick={() => setShowCreateModal(true)}
@@ -406,9 +406,9 @@ function RouteComponent() {
         ) : null}
       </div>
 
-      <div className="px-4 space-y-4">
+      <div className="px-4 space-y-4 lg:mx-auto lg:max-w-6xl lg:px-6 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0">
         {data.goals.length === 0 ? (
-          <div className="bg-white rounded-3xl p-6 text-center">
+          <div className="bg-white rounded-3xl p-6 text-center xl:col-span-2">
             <p className="text-[#1a1a3e] font-semibold mb-2">
               No hay objetivos creados
             </p>
@@ -442,7 +442,7 @@ function RouteComponent() {
             return (
               <article
                 key={goal.id}
-                className="bg-white rounded-3xl p-5 shadow-sm"
+                className="bg-white rounded-3xl p-5 shadow-sm xl:h-full"
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>

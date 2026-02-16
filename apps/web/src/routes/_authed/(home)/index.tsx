@@ -266,7 +266,7 @@ function MetaGroupList({
   onDeleteGroup: (group: HomeGroup) => void;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
       {metaGroups.map((metaGroup) => (
         <SwipeableGroupItem
           key={metaGroup.id}
@@ -475,7 +475,7 @@ function HomePage() {
 
   return (
     <GradientLayout className="native-enter pb-10">
-      <header className="px-5 pt-5 pb-4">
+      <header className="px-5 pt-5 pb-4 lg:px-6 lg:pt-6">
         <div className="native-surface-muted flex items-center justify-between px-4 py-3">
           <h1 className="text-2xl font-bold tracking-tight text-[#1a1a3e]">
           Hola, {user?.name}
@@ -486,7 +486,7 @@ function HomePage() {
         </div>
       </header>
 
-      <div className="mb-6 px-5">
+      <div className="mb-6 px-5 lg:px-6">
         <div className="rounded-3xl border border-white/60 bg-blue-50/85 p-4 backdrop-blur-xl">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="bg-white rounded-2xl p-4">
@@ -582,7 +582,7 @@ function HomePage() {
         </div>
       </div>
 
-      <div className="px-5 pb-32">
+      <div className="px-5 pb-32 lg:px-6 lg:pb-10">
         {!hasRegularGroups && hasMetaGroups && (
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-[#1a1a3e] mb-4">
@@ -601,7 +601,7 @@ function HomePage() {
           Tus grupos
         </h2>
 
-        <div className="mb-8 flex gap-3">
+        <div className="mb-8 flex gap-3 lg:max-w-2xl">
           <div className="flex-1 relative">
             <HugeiconsIcon
               icon={Search}
@@ -624,7 +624,7 @@ function HomePage() {
         </div>
 
         {!hasRegularGroups && !hasMetaGroups ? (
-          <div className="native-empty flex flex-col items-center justify-center py-12">
+          <div className="native-empty flex flex-col items-center justify-center py-12 lg:mx-auto lg:max-w-2xl">
             <div className="w-20 h-20 bg-[#8080d0] rounded-2xl rotate-[-8deg] flex items-center justify-center mb-6 shadow-lg">
               <HugeiconsIcon icon={Users} className="w-10 h-10 text-white" />
             </div>
@@ -658,7 +658,7 @@ function HomePage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
             {regularGroups.map((group) => {
               return (
                 <SwipeableGroupItem

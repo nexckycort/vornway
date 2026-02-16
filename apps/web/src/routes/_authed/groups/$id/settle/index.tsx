@@ -165,7 +165,7 @@ function RouteComponent() {
 
   return (
     <GradientLayout className="native-enter pb-8">
-      <div className="px-4 pt-5 pb-3">
+      <div className="px-4 pt-5 pb-3 lg:mx-auto lg:max-w-4xl lg:px-6 lg:pt-6">
         <div className="native-surface-muted flex items-center gap-3 px-3 py-2.5">
           <button
             type="button"
@@ -183,7 +183,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <div className="px-4">
+      <div className="px-4 lg:mx-auto lg:max-w-4xl lg:px-6">
         <div className="bg-white rounded-3xl p-6 shadow-sm">
           {flexibleOptions.length === 0 ? (
             <div className="native-empty p-4">

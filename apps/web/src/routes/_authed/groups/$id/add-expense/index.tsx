@@ -259,7 +259,7 @@ function RouteComponent() {
   return (
     <GradientLayout className="native-enter pb-8">
       {/* Header */}
-      <div className="px-4 pt-5 pb-3">
+      <div className="px-4 pt-5 pb-3 lg:mx-auto lg:max-w-4xl lg:px-6 lg:pt-6">
         <div className="native-surface-muted flex items-center gap-3 px-3 py-2.5">
           <button
             type="button"
@@ -279,7 +279,7 @@ function RouteComponent() {
       </div>
 
       {/* Form */}
-      <div className="flex-1 rounded-t-3xl border-t border-white/70 bg-white/85 px-4 pt-4 backdrop-blur-sm">
+      <div className="flex-1 rounded-t-3xl border-t border-white/70 bg-white/85 px-4 pt-4 backdrop-blur-sm lg:mx-auto lg:max-w-4xl lg:px-6 lg:pt-6">
         {/* Description */}
         <div className="mb-6">
           <label htmlFor="description" className="block text-[#1a1a3e] mb-2">
@@ -591,7 +591,7 @@ function RouteComponent() {
       </div>
 
       {/* Bottom buttons */}
-      <div className="px-4 py-6 flex items-center gap-4 border-t border-black/5 bg-white/90 backdrop-blur-xl">
+      <div className="px-4 py-6 flex items-center gap-4 border-t border-black/5 bg-white/90 backdrop-blur-xl lg:mx-auto lg:max-w-4xl lg:px-6">
         <button
           type="button"
           onClick={() => router.history.back()}
@@ -630,7 +630,7 @@ function RouteComponent() {
       {/* Error message */}
       {(createExpenseMutation.data?.error ||
         updateExpenseMutation.data?.error) && (
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 lg:mx-auto lg:max-w-4xl lg:px-6">
           <p className="text-red-500 text-sm text-center">
             {createExpenseMutation.data?.error ??
               updateExpenseMutation.data?.error}

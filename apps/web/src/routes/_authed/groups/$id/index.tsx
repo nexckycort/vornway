@@ -526,7 +526,7 @@ function RouteComponent() {
       goBack
     >
       <div className="relative z-10 bg-[#f2f4ff] pb-3 rounded-b-2xl">
-        <div className="px-4 py-2">
+        <div className="px-4 py-2 lg:px-6 lg:pt-3">
           <div className="bg-white rounded-3xl p-6 shadow-sm">
             <div className="mb-2 flex items-start justify-end">
               <button
@@ -544,8 +544,8 @@ function RouteComponent() {
           </div>
         </div>
 
-        <div className="px-2 py-2">
-          <div className="grid grid-cols-4 gap-2">
+        <div className="px-2 py-2 lg:px-4">
+          <div className="grid grid-cols-4 gap-2 lg:gap-3">
             {quickActions.map((action) => {
               const Icon = action.icon;
               return (
@@ -555,7 +555,7 @@ function RouteComponent() {
                 >
                   <button
                     onClick={action.onClick}
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center lg:h-16 lg:w-16 ${
                       action.isPrimary ? 'bg-[#4040b0]' : 'bg-white'
                     }`}
                   >
@@ -565,7 +565,7 @@ function RouteComponent() {
                       }`}
                     />
                   </button>
-                  <span className="text-xs font-normal text-[#1a1a3e] text-center">
+                  <span className="text-xs font-normal text-[#1a1a3e] text-center lg:text-sm">
                     {action.label}
                   </span>
                 </div>
@@ -577,8 +577,8 @@ function RouteComponent() {
 
       <div className="-mt-2 bg-white">
         {/* Tabs */}
-        <div className="px-4 py-2">
-          <div className="flex rounded-2xl p-1">
+        <div className="px-4 py-2 lg:px-6">
+          <div className="flex rounded-2xl p-1 lg:max-w-sm">
             <button
               onClick={() => setActiveTab('gastos')}
               className={`flex-1 py-3 rounded-xl text-sm transition-colors ${

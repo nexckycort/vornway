@@ -21,7 +21,7 @@ export function PageHeader({
 
   return (
     <div className={`native-app-shell min-h-dvh bg-[#F2F4FF] ${className}`}>
-      <div className="p-0 pt-2">
+      <div className="mx-auto w-full max-w-md p-0 pt-2 lg:max-w-6xl lg:px-6 xl:px-10">
         <div className="flex items-center gap-3 px-3 py-2.5">
           {goBack ? (
             <button
@@ -45,7 +45,9 @@ export function PageHeader({
           </div>
         </div>
       </div>
-      {children}
+      <div className="mx-auto w-full max-w-md lg:max-w-6xl lg:px-6 xl:px-10">
+        {children}
+      </div>
     </div>
   );
 }

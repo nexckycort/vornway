@@ -48,8 +48,8 @@ function RouteComponent() {
 
   return (
     <GradientLayout className="native-enter pb-20">
-      <div className="min-h-screen bg-[#f5f3fa] pb-8">
-        <div className="px-4 pt-5 pb-3">
+      <div className="min-h-screen bg-[#f5f3fa] pb-8 lg:pb-10">
+        <div className="px-4 pt-5 pb-3 lg:px-6 lg:pt-6">
           <div className="native-surface-muted flex items-center justify-between px-3 py-2.5">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-[#1a1a3e]">Metas</h1>
@@ -66,9 +66,9 @@ function RouteComponent() {
           </div>
         </div>
 
-        <div className="px-4 space-y-3">
+        <div className="px-4 space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0 lg:px-6">
           {data.goals.length === 0 ? (
-            <div className="native-empty p-6">
+            <div className="native-empty p-6 lg:col-span-2 lg:mx-auto lg:max-w-xl">
               <div className="w-14 h-14 rounded-2xl bg-[#eef0ff] mx-auto mb-3 flex items-center justify-center">
                 <Target className="w-7 h-7 text-[#4040b0]" />
               </div>

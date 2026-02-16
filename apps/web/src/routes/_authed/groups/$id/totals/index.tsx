@@ -95,7 +95,7 @@ function RouteComponent() {
 
   return (
     <GradientLayout className="native-enter pb-8">
-      <div className="px-4 pt-5 pb-3">
+      <div className="px-4 pt-5 pb-3 lg:mx-auto lg:max-w-5xl lg:px-6 lg:pt-6">
         <div className="native-surface-muted flex items-center gap-3 px-3 py-2.5">
           <button
             type="button"
@@ -111,8 +111,8 @@ function RouteComponent() {
         </div>
       </div>
 
-      <div className="px-4 space-y-4">
-        <section className="bg-white rounded-3xl p-5 shadow-sm">
+      <div className="px-4 space-y-4 lg:mx-auto lg:grid lg:max-w-5xl lg:grid-cols-2 lg:gap-4 lg:space-y-0 lg:px-6">
+        <section className="bg-white rounded-3xl p-5 shadow-sm lg:col-span-2">
           <p className="text-sm text-gray-500 mb-2">Total gastado del grupo</p>
           <div className="space-y-1">
             {Object.keys(data.totals).length === 0 ? (

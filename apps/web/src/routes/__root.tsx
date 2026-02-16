@@ -106,7 +106,9 @@ function RootLayout() {
 
   return (
     <>
-      <Outlet />
+      <div className={showBottomNav ? 'lg:pl-28' : ''}>
+        <Outlet />
+      </div>
       {showBottomNav ? <BottomNav /> : null}
     </>
   );

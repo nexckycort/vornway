@@ -112,7 +112,7 @@ function EditParticipants() {
   return (
     <GradientLayout className="native-enter pb-8">
       {/* Header */}
-      <div className="px-4 pt-5 pb-4">
+      <div className="px-4 pt-5 pb-4 lg:mx-auto lg:max-w-4xl lg:px-6 lg:pt-6">
         <div className="native-surface-muted flex items-center gap-2 px-3 py-2.5">
           <button
             onClick={() =>
@@ -129,7 +129,7 @@ function EditParticipants() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 px-4">
+      <div className="flex-1 px-4 lg:mx-auto lg:max-w-4xl lg:px-6">
         {/* Share invite link */}
         <div className="mb-6 rounded-3xl border border-white/60 bg-white/85 p-4 shadow-sm backdrop-blur-sm">
           <p className="text-gray-600 mb-3">Compartir enlace del grupo</p>
@@ -186,7 +186,7 @@ function EditParticipants() {
         )}
 
         {/* Members list */}
-        <div className="space-y-3">
+        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
           {data?.members?.map((member) => (
             <div
               key={member.id}
@@ -217,7 +217,7 @@ function EditParticipants() {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-black/5 bg-white/85 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
+      <div className="border-t border-black/5 bg-white/85 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-xl lg:mx-auto lg:max-w-4xl lg:px-6">
         <div className="flex items-center gap-4">
           <button
             type="button"

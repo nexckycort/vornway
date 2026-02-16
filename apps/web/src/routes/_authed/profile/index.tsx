@@ -59,7 +59,7 @@ function RouteComponent() {
     <GradientLayout className="native-enter pb-20">
       <div className="min-h-screen">
         {/* Header */}
-        <div className="px-5 pt-5 pb-4">
+        <div className="px-5 pt-5 pb-4 lg:mx-auto lg:max-w-3xl lg:px-0 lg:pt-6">
           <div className="native-surface-muted flex items-center justify-between px-4 py-3">
             <h1 className="text-2xl font-bold tracking-tight text-[#1a1a3e]">Mi perfil</h1>
             {isGuest && (
@@ -71,7 +71,7 @@ function RouteComponent() {
         </div>
 
         {/* Avatar and Name */}
-        <div className="flex flex-col items-center py-6">
+        <div className="flex flex-col items-center py-6 lg:py-8">
           <div className="w-24 h-24 bg-[#d8f4f4] rounded-full flex items-center justify-center mb-4">
             <span className="text-4xl font-semibold text-[#1a1a3e]">
               {userInitial}
@@ -83,7 +83,7 @@ function RouteComponent() {
 
         {/* Guest Mode: Auth Options */}
         {isGuest && (
-          <div className="px-6">
+          <div className="px-6 lg:mx-auto lg:max-w-3xl lg:px-0">
             <p className="text-center text-gray-500 mb-6 px-4">
               Inicia sesión o regístrate para usar Splitway en varios
               dispositivos y recibir notificaciones.
@@ -156,7 +156,7 @@ function RouteComponent() {
         )}
 
         {/* Personal Data */}
-        <div className="px-6">
+        <div className="px-6 lg:mx-auto lg:max-w-3xl lg:px-0">
           <h3 className="text-sm font-semibold text-[#1a1a3e] mb-3">
             Mis datos personales
           </h3>
@@ -194,7 +194,7 @@ function RouteComponent() {
         </div>
 
         {/* Settings */}
-        <div className="px-6 mt-6">
+        <div className="px-6 mt-6 lg:mx-auto lg:max-w-3xl lg:px-0">
           <h3 className="text-sm font-semibold text-[#1a1a3e] mb-3">
             Ajustes y preferencias
           </h3>
@@ -246,7 +246,7 @@ function RouteComponent() {
 
         {/* Support (only logged in) */}
         {!isGuest && (
-          <div className="px-6 mt-6 pb-6">
+          <div className="px-6 mt-6 pb-6 lg:mx-auto lg:max-w-3xl lg:px-0">
             <h3 className="text-sm font-semibold text-[#1a1a3e] mb-3">
               Soporte
             </h3>
@@ -271,7 +271,7 @@ function RouteComponent() {
         )}
 
         {/* Logout / Delete session */}
-        <div className="px-6 pb-6">
+        <div className="px-6 pb-6 lg:mx-auto lg:max-w-3xl lg:px-0">
           <button
             type="button"
             disabled={isLoggingOut}

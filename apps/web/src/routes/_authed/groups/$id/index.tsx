@@ -144,8 +144,8 @@ function ExpenseItem({
 
   return (
     <div
-      className={`relative border-b last:border-b-0 overflow-hidden ${
-        expense.isSettlement ? 'border-emerald-100' : 'border-gray-100'
+      className={`relative mb-2 overflow-hidden rounded-2xl border px-3 last:mb-0 ${
+        expense.isSettlement ? 'border-emerald-200' : 'border-gray-200'
       }`}
     >
       {showDeleteAction && (
@@ -168,7 +168,7 @@ function ExpenseItem({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
-        className={`native-tap relative z-10 w-full flex items-center gap-4 py-4 text-left transition-transform duration-200 ${
+        className={`native-tap relative z-10 w-full flex items-center gap-4 py-2 text-left transition-transform duration-200 ${
           expense.isSettlement ? 'bg-emerald-50' : 'bg-white'
         }`}
         style={{ transform: `translateX(${translateX}px)` }}
@@ -248,19 +248,29 @@ function TotalsDisplay({ totals }: { totals: Record<string, number> }) {
 
   if (entries.length === 0) {
     return (
-      <h2 className="text-4xl font-bold text-[#1a1a3e] text-center mb-1">$0</h2>
+      <div className="mx-auto mb-2 max-w-xs rounded-2xl bg-[#f6f7ff] px-3 py-2 text-center">
+        <h2 className="text-2xl font-semibold leading-tight text-[#1a1a3e]">
+          $0
+        </h2>
+      </div>
     );
   }
 
   return (
-    <div className="text-center mb-1">
+    <div className="mx-auto mb-2 max-w-xs rounded-2xl bg-[#f6f7ff] px-3 py-2 text-center">
       {entries.map(([currency, amount], index) => (
         <h2
           key={currency}
-          className={`font-bold text-[#1a1a3e] ${index === 0 ? 'text-4xl' : 'text-2xl text-gray-600'}`}
+          className={`leading-tight ${index === 0 ? 'text-2xl font-semibold text-[#1a1a3e]' : 'mt-1 text-base font-medium text-gray-600'}`}
         >
           ${formatCurrency(amount)}{' '}
-          <span className={index === 0 ? 'text-2xl font-semibold' : 'text-lg'}>
+          <span
+            className={
+              index === 0
+                ? 'text-base font-semibold text-[#3a3a66]'
+                : 'text-sm font-medium text-gray-500'
+            }
+          >
             {currency}
           </span>
         </h2>
@@ -527,7 +537,7 @@ function RouteComponent() {
     >
       <div className="relative z-10 bg-[#f2f4ff] pb-3 rounded-b-2xl">
         <div className="px-4 py-2 lg:px-6 lg:pt-3">
-          <div className="bg-white rounded-3xl p-6 shadow-sm">
+          <div className="bg-white rounded-3xl p-4 pb-1 shadow-sm">
             <div className="mb-2 flex items-start justify-end">
               <button
                 type="button"
@@ -538,7 +548,9 @@ function RouteComponent() {
                 Compartir
               </button>
             </div>
-            <p className="text-gray-500 text-center mb-1">Total gastado</p>
+            <p className="mb-2 text-center text-xs font-medium tracking-wide text-gray-500 uppercase">
+              Total gastado
+            </p>
             <TotalsDisplay totals={data?.totals ?? {}} />
             <UserBalanceSummary memberBalances={data?.memberBalances} />
           </div>
@@ -655,7 +667,7 @@ function RouteComponent() {
                   return (
                     <div
                       key={member.memberId}
-                      className="flex items-center gap-4 py-4 border-b border-gray-100 last:border-b-0"
+                      className="mb-2 flex items-center gap-4 rounded-2xl border border-gray-200 px-3 py-2 last:mb-0"
                     >
                       <div className="w-12 h-12 bg-[#f0f0ff] rounded-xl flex items-center justify-center flex-shrink-0">
                         <span className="text-lg font-semibold text-[#4040b0]">

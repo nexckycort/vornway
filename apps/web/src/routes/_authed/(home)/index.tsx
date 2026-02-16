@@ -24,6 +24,11 @@ import { GradientLayout } from '~/components/gradient-layout';
 import { clientEnv } from '~/config/env.client';
 import { cn } from '~/lib/utils';
 import { deleteGroup } from './-actions/delete-group';
+import {
+  HomeGroupsSkeleton,
+  HomeItinerariesSkeleton,
+  HomeSummarySkeleton,
+} from './-components/home-skeletons';
 import { findGroupByInvite } from './-actions/find-group-by-invite';
 import { joinGroup } from './-actions/join-group';
 import { useUserGroups } from './-hooks/use-user-groups';
@@ -336,9 +341,10 @@ function HomePage() {
     };
   }, []);
 
-  const { data: userGroups = [] } = useUserGroups();
+  const { data: userGroups = [], isLoading: isLoadingGroups } = useUserGroups();
   const isDevApp = clientEnv.APP_ENV === 'dev';
-  const { data: userItineraries = [] } = useUserItineraries({
+  const { data: userItineraries = [], isLoading: isLoadingItineraries } =
+    useUserItineraries({
     enabled: isDevApp,
   });
   const regularGroups = userGroups.filter((group) => group.type !== 'meta');
@@ -512,7 +518,9 @@ function HomePage() {
               <div className="flex items-start justify-between">
                 <div className="min-w-0">
                   <p className="text-gray-500 text-sm">Debes</p>
-                  {debtEntries.length === 0 ? (
+                  {isLoadingGroups ? (
+                    <HomeSummarySkeleton />
+                  ) : debtEntries.length === 0 ? (
                     <p className="text-xl font-bold text-[#1a1a3e]">$0</p>
                   ) : (
                     <div className="mt-1 space-y-0.5">
@@ -542,7 +550,7 @@ function HomePage() {
                   </svg>
                 </div>
               </div>
-              {debtEntries.length > 3 && (
+              {!isLoadingGroups && debtEntries.length > 3 && (
                 <button
                   type="button"
                   onClick={() => setShowDebtsDrawer(true)}
@@ -557,7 +565,9 @@ function HomePage() {
               <div className="flex items-start justify-between">
                 <div className="min-w-0">
                   <p className="text-gray-500 text-sm">Te deben</p>
-                  {creditEntries.length === 0 ? (
+                  {isLoadingGroups ? (
+                    <HomeSummarySkeleton />
+                  ) : creditEntries.length === 0 ? (
                     <p className="text-xl font-bold text-[#1a1a3e]">$0</p>
                   ) : (
                     <div className="mt-1 space-y-0.5">
@@ -587,7 +597,7 @@ function HomePage() {
                   </svg>
                 </div>
               </div>
-              {creditEntries.length > 3 && (
+              {!isLoadingGroups && creditEntries.length > 3 && (
                 <button
                   type="button"
                   onClick={() => setShowCreditsDrawer(true)}
@@ -602,7 +612,7 @@ function HomePage() {
       </div>
 
       <div className="px-5 pb-10 lg:px-6 lg:pb-10">
-        {!hasRegularGroups && hasMetaGroups && (
+        {!isLoadingGroups && !hasRegularGroups && hasMetaGroups && (
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-[#1a1a3e] mb-4">
               Tus metas
@@ -642,7 +652,9 @@ function HomePage() {
           </button>
         </div> */}
 
-        {!hasRegularGroups && !hasMetaGroups ? (
+        {isLoadingGroups ? (
+          <HomeGroupsSkeleton />
+        ) : !hasRegularGroups && !hasMetaGroups ? (
           <div className="native-empty flex flex-col items-center justify-center py-12 lg:mx-auto lg:max-w-2xl">
             <div className="w-20 h-20 bg-[#8080d0] rounded-2xl rotate-[-8deg] flex items-center justify-center mb-6 shadow-lg">
               <HugeiconsIcon icon={Users} className="w-10 h-10 text-white" />
@@ -703,7 +715,7 @@ function HomePage() {
           </div>
         )}
 
-        {hasMetaGroups && hasRegularGroups && (
+        {!isLoadingGroups && hasMetaGroups && hasRegularGroups && (
           <div className="mt-8">
             <h2 className="text-lg font-semibold text-[#1a1a3e] mb-4">
               Tus metas
@@ -732,7 +744,9 @@ function HomePage() {
               </button>
             </div>
 
-            {!hasItineraries ? (
+            {isLoadingItineraries ? (
+              <HomeItinerariesSkeleton />
+            ) : !hasItineraries ? (
               <div className="native-empty flex flex-col items-center justify-center py-8">
                 <Compass className="mb-2 h-6 w-6 text-[#6060c0]" />
                 <p className="text-sm text-gray-500">

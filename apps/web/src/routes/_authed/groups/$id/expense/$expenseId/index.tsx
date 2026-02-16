@@ -70,7 +70,7 @@ function RouteComponent() {
           queryKey: ['expense', groupId, expenseId],
         });
         setShowDeleteModal(false);
-        router.navigate({ to: '/groups/$id', params: { id: groupId } });
+        router.history.back();
       }
     },
   });
@@ -94,7 +94,11 @@ function RouteComponent() {
         <button
           type="button"
           onClick={() =>
-            router.navigate({ to: '/groups/$id', params: { id: groupId } })
+            router.navigate({
+              to: '/groups/$id',
+              params: { id: groupId },
+              replace: true,
+            })
           }
           className="px-6 py-3 bg-[#4040b0] text-white rounded-xl"
         >
@@ -192,7 +196,9 @@ function RouteComponent() {
             {splitParticipants.length === 0 ? (
               <div className="bg-white rounded-2xl px-4 py-4 border border-gray-100">
                 <p className="text-gray-500">
-                  {data.isSettlement ? 'Sin receptor de liquidación' : 'Gasto personal'}
+                  {data.isSettlement
+                    ? 'Sin receptor de liquidación'
+                    : 'Gasto personal'}
                 </p>
               </div>
             ) : (
@@ -260,68 +266,66 @@ function RouteComponent() {
       </div>
 
       <AppDrawer open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-          <div className="max-h-[84vh] overflow-y-auto">
-            <div className="flex justify-center pt-3 pb-2">
-              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
-            </div>
-
-            <div className="px-6 pb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-[#1a1a3e]">
-                  {data.isSettlement ? 'Eliminar liquidación' : 'Eliminar gasto'}
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteModal(false)}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-
-              <p className="text-gray-600 mb-6">
-                {data.isSettlement
-                  ? 'Se eliminará la liquidación'
-                  : 'Se eliminará'}{' '}
-                <strong>{data.description}</strong> por ${formatCurrency(data.amount)}{' '}
-                {data.currency}.
-              </p>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteModal(false)}
-                  className="flex-1 py-3 text-[#1a1a3e] font-medium"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    deleteExpenseMutation.mutate({
-                      data: {
-                        groupId,
-                        expenseId,
-                      },
-                    })
-                  }
-                  disabled={deleteExpenseMutation.isPending}
-                  className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl disabled:opacity-60"
-                >
-                  {deleteExpenseMutation.isPending
-                    ? 'Eliminando...'
-                    : 'Eliminar'}
-                </button>
-              </div>
-
-              {deleteExpenseMutation.data?.error && (
-                <p className="text-red-500 text-sm mt-3">
-                  {deleteExpenseMutation.data.error}
-                </p>
-              )}
-            </div>
+        <div className="max-h-[84vh] overflow-y-auto">
+          <div className="flex justify-center pt-3 pb-2">
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
           </div>
-        </AppDrawer>
+
+          <div className="px-6 pb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-[#1a1a3e]">
+                {data.isSettlement ? 'Eliminar liquidación' : 'Eliminar gasto'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <p className="text-gray-600 mb-6">
+              {data.isSettlement
+                ? 'Se eliminará la liquidación'
+                : 'Se eliminará'}{' '}
+              <strong>{data.description}</strong> por $
+              {formatCurrency(data.amount)} {data.currency}.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 py-3 text-[#1a1a3e] font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  deleteExpenseMutation.mutate({
+                    data: {
+                      groupId,
+                      expenseId,
+                    },
+                  })
+                }
+                disabled={deleteExpenseMutation.isPending}
+                className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl disabled:opacity-60"
+              >
+                {deleteExpenseMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+              </button>
+            </div>
+
+            {deleteExpenseMutation.data?.error && (
+              <p className="text-red-500 text-sm mt-3">
+                {deleteExpenseMutation.data.error}
+              </p>
+            )}
+          </div>
+        </div>
+      </AppDrawer>
     </div>
   );
 }

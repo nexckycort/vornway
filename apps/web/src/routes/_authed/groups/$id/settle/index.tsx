@@ -154,7 +154,13 @@ function RouteComponent() {
         </p>
         <button
           type="button"
-          onClick={() => router.navigate({ to: '/groups/$id', params: { id } })}
+          onClick={() =>
+            router.navigate({
+              to: '/groups/$id',
+              params: { id },
+              replace: true,
+            })
+          }
           className="px-6 py-3 bg-[#4040b0] text-white rounded-xl"
         >
           Volver al grupo

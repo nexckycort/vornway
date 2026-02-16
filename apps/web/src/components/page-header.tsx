@@ -6,6 +6,7 @@ type PageHeaderProps = {
   title: string;
   subtitle?: string;
   goBack?: boolean;
+  onBack?: () => void;
   children?: React.ReactNode;
   className?: string;
 };
@@ -14,6 +15,7 @@ export function PageHeader({
   title,
   subtitle,
   goBack = true,
+  onBack,
   children,
   className = '',
 }: PageHeaderProps) {
@@ -26,7 +28,14 @@ export function PageHeader({
           {goBack ? (
             <button
               type="button"
-              onClick={() => history.back()}
+              onClick={() => {
+                if (onBack) {
+                  onBack();
+                  return;
+                }
+
+                history.back();
+              }}
               aria-label="Volver"
               className="flex h-8 w-8 items-center justify-center rounded-2xl bg-[#ffffff]"
             >

@@ -115,9 +115,7 @@ function EditParticipants() {
       <div className="px-4 pt-5 pb-4 lg:mx-auto lg:max-w-4xl lg:px-6 lg:pt-6">
         <div className="native-surface-muted flex items-center gap-2 px-3 py-2.5">
           <button
-            onClick={() =>
-              router.navigate({ to: '/groups/$id', params: { id } })
-            }
+            onClick={() => router.history.back()}
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80"
           >
             <ChevronLeft className="w-6 h-6 text-gray-700" />
@@ -221,18 +219,14 @@ function EditParticipants() {
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() =>
-              router.navigate({ to: '/groups/$id', params: { id } })
-            }
+            onClick={() => router.history.back()}
             className="flex-1 py-4 text-[#1a1a3e] font-medium"
           >
             Omitir
           </button>
           <button
             type="button"
-            onClick={() =>
-              router.navigate({ to: '/groups/$id', params: { id } })
-            }
+            onClick={() => router.history.back()}
             className="flex-1 py-4 bg-[#4040b0] text-white font-medium rounded-2xl"
           >
             Actualizar

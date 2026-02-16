@@ -78,7 +78,7 @@ function RouteComponent() {
     onSuccess: (result) => {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['group', groupId] });
-        router.navigate({ to: '/groups/$id', params: { id: groupId } });
+        router.history.back();
       }
     },
   });
@@ -92,7 +92,7 @@ function RouteComponent() {
             queryKey: ['expense', groupId, expenseId],
           });
         }
-        router.navigate({ to: '/groups/$id', params: { id: groupId } });
+        router.history.back();
       }
     },
   });
@@ -402,7 +402,7 @@ function RouteComponent() {
                 <span className="text-[#1a1a3e]">
                   {isSettlement
                     ? 'Liquidación entre miembros'
-                    : selectedSplitMethod?.label ?? 'Partes iguales'}
+                    : (selectedSplitMethod?.label ?? 'Partes iguales')}
                 </span>
                 <ChevronDown className="w-5 h-5 text-gray-500" />
               </button>
@@ -434,8 +434,8 @@ function RouteComponent() {
             {isSettlement
               ? 'Esta edición corresponde a una liquidación. No cambia el total gastado del grupo, solo salda deuda entre miembros.'
               : splitMethod === 'exact'
-              ? 'Puedes editar cuánto paga cada participante. La suma debe ser igual al monto total.'
-              : 'Se dividira el monto total en partes iguales y todos pagan lo mismo de este gasto'}
+                ? 'Puedes editar cuánto paga cada participante. La suma debe ser igual al monto total.'
+                : 'Se dividira el monto total en partes iguales y todos pagan lo mismo de este gasto'}
           </p>
         </div>
 

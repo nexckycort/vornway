@@ -124,7 +124,13 @@ function RouteComponent() {
         </p>
         <button
           type="button"
-          onClick={() => router.navigate({ to: '/groups/$id', params: { id } })}
+          onClick={() =>
+            router.navigate({
+              to: '/groups/$id',
+              params: { id },
+              replace: true,
+            })
+          }
           className="px-6 py-3 bg-[#4040b0] text-white rounded-xl"
         >
           Volver al grupo
@@ -174,14 +180,19 @@ function RouteComponent() {
           </div>
         ) : (
           data.goals.map((goal) => (
-            <article key={goal.id} className="bg-white rounded-3xl p-5 shadow-sm">
+            <article
+              key={goal.id}
+              className="bg-white rounded-3xl p-5 shadow-sm"
+            >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <h2 className="text-lg font-semibold text-[#1a1a3e]">
                     {goal.title}
                   </h2>
                   {goal.description ? (
-                    <p className="text-sm text-gray-500 mt-1">{goal.description}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {goal.description}
+                    </p>
                   ) : null}
                 </div>
                 <button
@@ -277,7 +288,8 @@ function RouteComponent() {
                               aportó
                             </p>
                             <p className="text-sm font-semibold text-[#1a1a3e]">
-                              ${formatCurrency(contribution.amount)} {goal.currency}
+                              ${formatCurrency(contribution.amount)}{' '}
+                              {goal.currency}
                             </p>
                           </div>
                           <p className="text-xs text-gray-500">
@@ -300,145 +312,148 @@ function RouteComponent() {
         onOpenChange={setShowCreateModal}
         className="max-h-[88vh]"
       >
-          <div className="overflow-y-auto">
-            <div className="flex justify-center pt-3 pb-2">
-              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+        <div className="overflow-y-auto">
+          <div className="flex justify-center pt-3 pb-2">
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+          </div>
+          <div className="px-6 pb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-[#1a1a3e]">Nueva meta</h2>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="w-8 h-8 flex items-center justify-center"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
             </div>
-            <div className="px-6 pb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-[#1a1a3e]">Nueva meta</h2>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="w-8 h-8 flex items-center justify-center"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
 
-              <div className="space-y-3">
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="Nombre de la meta"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+              />
+              <textarea
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Descripción (opcional)"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl min-h-[88px]"
+              />
+              <div className="grid grid-cols-2 gap-3">
                 <input
-                  type="text"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  placeholder="Nombre de la meta"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={targetAmount}
+                  onChange={(event) => setTargetAmount(event.target.value)}
+                  placeholder="Monto meta"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl"
                 />
-                <textarea
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  placeholder="Descripción (opcional)"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl min-h-[88px]"
+                <input
+                  type="text"
+                  value={currency}
+                  onChange={(event) =>
+                    setCurrency(event.target.value.toUpperCase())
+                  }
+                  placeholder="Moneda"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl"
                 />
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={targetAmount}
-                    onChange={(event) => setTargetAmount(event.target.value)}
-                    placeholder="Monto meta"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl"
-                  />
-                  <input
-                    type="text"
-                    value={currency}
-                    onChange={(event) => setCurrency(event.target.value.toUpperCase())}
-                    placeholder="Moneda"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Fecha inicio</p>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(event) => setStartDate(event.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl"
-                    />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Fecha fin</p>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(event) => setEndDate(event.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl"
-                    />
-                  </div>
-                </div>
-
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Número de cuotas</p>
+                  <p className="text-xs text-gray-500 mb-1">Fecha inicio</p>
                   <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={installmentCount}
-                    onChange={(event) => setInstallmentCount(event.target.value)}
+                    type="date"
+                    value={startDate}
+                    onChange={(event) => setStartDate(event.target.value)}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl"
                   />
                 </div>
-
-                {installmentPreview ? (
-                  <div className="rounded-xl bg-[#eef0ff] px-4 py-3 text-sm text-[#1a1a3e]">
-                    Cuota mensual sugerida: $
-                    <span className="font-semibold">
-                      {formatCurrency(installmentPreview)}
-                    </span>{' '}
-                    {currency || 'COP'}
-                  </div>
-                ) : null}
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Fecha fin</p>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(event) => setEndDate(event.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+                  />
+                </div>
               </div>
 
-              <div className="flex gap-3 mt-5">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 py-3 text-[#1a1a3e] font-medium"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    createGoalMutation.mutate({
-                      data: {
-                        groupId: id,
-                        title,
-                        description,
-                        targetAmount: Number(targetAmount),
-                        currency,
-                        startDate: startDate || new Date().toISOString().slice(0, 10),
-                        endDate: endDate || new Date().toISOString().slice(0, 10),
-                        installmentCount: Number(installmentCount),
-                      },
-                    })
-                  }
-                  disabled={
-                    createGoalMutation.isPending ||
-                    !title.trim() ||
-                    Number(targetAmount) <= 0 ||
-                    !currency.trim() ||
-                    Number(installmentCount) <= 0 ||
-                    !startDate ||
-                    !endDate
-                  }
-                  className="flex-1 py-3 bg-[#4040b0] text-white font-medium rounded-xl disabled:opacity-60"
-                >
-                  {createGoalMutation.isPending ? 'Creando...' : 'Crear meta'}
-                </button>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Número de cuotas</p>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={installmentCount}
+                  onChange={(event) => setInstallmentCount(event.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+                />
               </div>
 
-              {createGoalMutation.data?.error ? (
-                <p className="text-red-500 text-sm mt-3">
-                  {createGoalMutation.data.error}
-                </p>
+              {installmentPreview ? (
+                <div className="rounded-xl bg-[#eef0ff] px-4 py-3 text-sm text-[#1a1a3e]">
+                  Cuota mensual sugerida: $
+                  <span className="font-semibold">
+                    {formatCurrency(installmentPreview)}
+                  </span>{' '}
+                  {currency || 'COP'}
+                </div>
               ) : null}
             </div>
+
+            <div className="flex gap-3 mt-5">
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 py-3 text-[#1a1a3e] font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  createGoalMutation.mutate({
+                    data: {
+                      groupId: id,
+                      title,
+                      description,
+                      targetAmount: Number(targetAmount),
+                      currency,
+                      startDate:
+                        startDate || new Date().toISOString().slice(0, 10),
+                      endDate: endDate || new Date().toISOString().slice(0, 10),
+                      installmentCount: Number(installmentCount),
+                    },
+                  })
+                }
+                disabled={
+                  createGoalMutation.isPending ||
+                  !title.trim() ||
+                  Number(targetAmount) <= 0 ||
+                  !currency.trim() ||
+                  Number(installmentCount) <= 0 ||
+                  !startDate ||
+                  !endDate
+                }
+                className="flex-1 py-3 bg-[#4040b0] text-white font-medium rounded-xl disabled:opacity-60"
+              >
+                {createGoalMutation.isPending ? 'Creando...' : 'Crear meta'}
+              </button>
+            </div>
+
+            {createGoalMutation.data?.error ? (
+              <p className="text-red-500 text-sm mt-3">
+                {createGoalMutation.data.error}
+              </p>
+            ) : null}
           </div>
-        </AppDrawer>
+        </div>
+      </AppDrawer>
 
       <AppDrawer
         open={showContributionModal && Boolean(selectedGoal)}
@@ -486,7 +501,9 @@ function RouteComponent() {
                   min="1"
                   step="1"
                   value={contributionAmount}
-                  onChange={(event) => setContributionAmount(event.target.value)}
+                  onChange={(event) =>
+                    setContributionAmount(event.target.value)
+                  }
                   placeholder={`Monto (${selectedGoal.currency})`}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl"
                 />

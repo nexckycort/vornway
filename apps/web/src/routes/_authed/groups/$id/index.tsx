@@ -534,6 +534,7 @@ function RouteComponent() {
       title={data?.name || 'Cargando...'}
       subtitle={data ? `${data.participantCount} Participantes` : 'Cargando...'}
       goBack
+      onBack={() => router.navigate({ to: '/', replace: true })}
     >
       <div className="relative z-10 bg-[#f2f4ff] pb-3 rounded-b-2xl">
         <div className="px-4 py-2 lg:px-6 lg:pt-3">
@@ -927,7 +928,10 @@ function RouteComponent() {
                   type="button"
                   onClick={() => {
                     setShowSettingsModal(false);
-                    // TODO: navigate to edit group
+                    router.navigate({
+                      to: '/groups/$id/edit',
+                      params: { id },
+                    });
                   }}
                   className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50 transition-colors"
                 >

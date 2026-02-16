@@ -22,7 +22,7 @@ function FitToPlaces({ places }: { places: ItineraryMapPlace[] }) {
 
   useEffect(() => {
     if (places.length === 0) {
-      map.setView([40.4168, -3.7038], 12);
+      map.setView([0, 0], 2);
       return;
     }
 
@@ -185,8 +185,8 @@ export function ItineraryRouteMapLeaflet({
 
       <div className="h-72 overflow-hidden rounded-xl border border-gray-100">
         <MapContainer
-          center={[40.4168, -3.7038]}
-          zoom={12}
+          center={[0, 0]}
+          zoom={2}
           className="h-full w-full"
           scrollWheelZoom
         >

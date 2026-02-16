@@ -224,6 +224,77 @@ const CITY_SEEDS: Record<string, CitySeed> = {
       },
     ],
   },
+  [normalizeLocationKey('Barranquilla', 'Colombia')]: {
+    latitude: 10.9685,
+    longitude: -74.7813,
+    places: [
+      {
+        name: 'Gran Malecon del Rio',
+        type: 'Parque',
+        latitude: 10.9935,
+        longitude: -74.8016,
+        description: 'Paseo ribereno con zonas culturales y miradores.',
+        openingHours: '06:00-22:00',
+        ticketRequired: false,
+        price: 0,
+        visitDurationMinutes: 90,
+        imageUrl:
+          'https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1200&q=80',
+      },
+      {
+        name: 'Museo del Caribe',
+        type: 'Museo',
+        latitude: 10.9874,
+        longitude: -74.7888,
+        description: 'Espacio interactivo sobre identidad y cultura caribena.',
+        openingHours: 'Cerrado lunes · 09:00-17:00',
+        ticketRequired: true,
+        price: 6,
+        visitDurationMinutes: 90,
+        imageUrl:
+          'https://images.unsplash.com/photo-1593341646782-e0b495cff86d?auto=format&fit=crop&w=1200&q=80',
+      },
+      {
+        name: 'Castillo de Salgar',
+        type: 'Monumento',
+        latitude: 11.049,
+        longitude: -74.957,
+        description: 'Fuerte historico frente al mar con vistas panoramicas.',
+        openingHours: '09:00-18:00',
+        ticketRequired: false,
+        price: 0,
+        visitDurationMinutes: 75,
+        imageUrl:
+          'https://images.unsplash.com/photo-1518546305927-5a555bb7020d?auto=format&fit=crop&w=1200&q=80',
+      },
+      {
+        name: 'Barrio El Prado',
+        type: 'Zona cultural',
+        latitude: 10.9973,
+        longitude: -74.8027,
+        description: 'Arquitectura tradicional y ambiente historico.',
+        openingHours: '10:00-20:00',
+        ticketRequired: false,
+        price: 0,
+        visitDurationMinutes: 60,
+        imageUrl:
+          'https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1200&q=80',
+      },
+      {
+        name: 'Caiman del Rio',
+        type: 'Restaurante',
+        latitude: 10.9938,
+        longitude: -74.8011,
+        description: 'Zona gastronomica y cultural junto al malecon.',
+        openingHours: '12:00-23:00',
+        ticketRequired: false,
+        price: 20,
+        visitDurationMinutes: 90,
+        imageUrl:
+          'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=1200&q=80',
+      },
+    ],
+  },
 };
 
 function buildFallback(city: string, country: string): CitySeed {
@@ -240,10 +311,18 @@ function buildFallback(city: string, country: string): CitySeed {
       latitude: 40.7128,
       longitude: -74.006,
     },
+    [normalizeLocationKey('Barranquilla', 'Colombia')]: {
+      latitude: 10.9685,
+      longitude: -74.7813,
+    },
+    [normalizeLocationKey('Bogota', 'Colombia')]: {
+      latitude: 4.711,
+      longitude: -74.0721,
+    },
   };
 
   const key = normalizeLocationKey(city, country);
-  const base = cityCenter[key] ?? { latitude: 40.4168, longitude: -3.7038 };
+  const base = cityCenter[key] ?? { latitude: 4.711, longitude: -74.0721 };
 
   const labels = [
     { name: `Centro historico de ${city}`, type: 'Zona cultural' },

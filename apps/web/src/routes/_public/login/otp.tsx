@@ -55,24 +55,28 @@ function RouteComponent() {
   };
 
   return (
-    <GradientLayout className="native-enter flex min-h-dvh w-full items-center justify-center px-4 py-6 sm:px-5">
-      <div className="mx-auto w-full max-w-sm space-y-8 rounded-3xl border border-white/60 bg-white/80 p-4 shadow-[0_20px_45px_-28px_rgba(26,26,62,0.45)] backdrop-blur-xl sm:p-6">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold tracking-tight text-[#1a1a3e]">Revisa tu correo electrónico</h1>
-          <p className="px-2 text-sm leading-relaxed text-muted-foreground break-words">
-            Enviamos un código de verificación a {email}. Ingrésalo para
-            continuar.
-          </p>
-        </div>
+    <GradientLayout className="native-enter">
+      <div className="mx-auto flex min-h-dvh w-full items-center justify-center px-4 py-6 sm:px-5">
+        <div className="w-full max-w-sm space-y-8 rounded-3xl border border-white/60 bg-white/80 p-4 shadow-[0_20px_45px_-28px_rgba(26,26,62,0.45)] backdrop-blur-xl sm:p-6">
+          <div className="space-y-4 text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-[#1a1a3e]">
+              Revisa tu correo electrónico
+            </h1>
+            <p className="break-words px-2 text-sm leading-relaxed text-muted-foreground">
+              Enviamos un código de verificación a {email}. Ingrésalo para
+              continuar.
+            </p>
+          </div>
 
-        <div className="flex min-w-0 justify-center">
-          <InputOTPForm
-            key={otpKey}
-            onSubmit={handleOtpSubmit}
-            isLoading={isLoading}
-            description="Ingrese la contraseña de un solo uso enviada a su correo electrónico."
-            onResend={handleResend}
-          />
+          <div className="flex w-full items-center justify-center">
+            <InputOTPForm
+              key={otpKey}
+              onSubmit={handleOtpSubmit}
+              isLoading={isLoading}
+              description="Ingrese la contraseña de un solo uso enviada a su correo electrónico."
+              onResend={handleResend}
+            />
+          </div>
         </div>
       </div>
     </GradientLayout>

@@ -21,11 +21,13 @@ import { Compass, Target, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
 import { GradientLayout } from '~/components/gradient-layout';
+import { clientEnv } from '~/config/env.client';
 import { cn } from '~/lib/utils';
 import { deleteGroup } from './-actions/delete-group';
 import { findGroupByInvite } from './-actions/find-group-by-invite';
 import { joinGroup } from './-actions/join-group';
 import { useUserGroups } from './-hooks/use-user-groups';
+import { useUserItineraries } from './-hooks/use-user-itineraries';
 
 export const Route = createFileRoute('/_authed/(home)/')({
   component: HomePage,
@@ -88,6 +90,14 @@ function formatCurrency(amount: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+function formatItineraryDate(date: Date): string {
+  return new Intl.DateTimeFormat('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(date));
 }
 
 function SwipeableGroupItem({
@@ -327,10 +337,15 @@ function HomePage() {
   }, []);
 
   const { data: userGroups = [] } = useUserGroups();
+  const isDevApp = clientEnv.APP_ENV === 'dev';
+  const { data: userItineraries = [] } = useUserItineraries({
+    enabled: isDevApp,
+  });
   const regularGroups = userGroups.filter((group) => group.type !== 'meta');
   const metaGroups = userGroups.filter((group) => group.type === 'meta');
   const hasRegularGroups = regularGroups.length > 0;
   const hasMetaGroups = metaGroups.length > 0;
+  const hasItineraries = userItineraries.length > 0;
 
   const debtsByCurrency: Record<string, number> = {};
   const creditsByCurrency: Record<string, number> = {};
@@ -701,6 +716,65 @@ function HomePage() {
             />
           </div>
         )}
+
+        {isDevApp && (
+          <div className="mt-8">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-[#1a1a3e]">
+                Tus itinerarios
+              </h2>
+              <button
+                type="button"
+                onClick={handleOpenCreateItinerary}
+                className="rounded-xl bg-[#4040b0] px-3 py-2 text-sm font-medium text-white"
+              >
+                Crear
+              </button>
+            </div>
+
+            {!hasItineraries ? (
+              <div className="native-empty flex flex-col items-center justify-center py-8">
+                <Compass className="mb-2 h-6 w-6 text-[#6060c0]" />
+                <p className="text-sm text-gray-500">
+                  No tienes itinerarios todavía
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+                {userItineraries.map((itinerary) => (
+                  <button
+                    key={itinerary.id}
+                    type="button"
+                    onClick={() =>
+                      navigate({
+                        to: '/itineraries/$id',
+                        params: { id: itinerary.id },
+                      })}
+                    className="w-full rounded-2xl border border-white/70 bg-white/90 p-4 text-left transition-colors hover:bg-white"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8e4f8]">
+                        <Compass className="h-5 w-5 text-[#6060c0]" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-[#1a1a3e]">
+                          {itinerary.city}, {itinerary.country}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-500">
+                          {itinerary.dayCount} días
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500">
+                          {formatItineraryDate(itinerary.startDate)} -{' '}
+                          {formatItineraryDate(itinerary.endDate)}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <AppDrawer open={showDebtsDrawer} onOpenChange={setShowDebtsDrawer}>
@@ -819,20 +893,24 @@ function HomePage() {
               </div>
             </button>
 
-            <button
-              onClick={handleOpenCreateItinerary}
-              className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors text-left"
-            >
-              <div className="w-12 h-12 bg-[#e8e4f8] rounded-full flex items-center justify-center">
-                <Compass className="w-5 h-5 text-[#6060c0]" />
-              </div>
-              <div>
-                <p className="font-semibold text-[#1a1a3e]">Crear itinerario</p>
-                <p className="text-sm text-gray-500">
-                  Planea tu viaje por días con ruta optimizada
-                </p>
-              </div>
-            </button>
+            {clientEnv.APP_ENV === 'dev' && (
+              <button
+                onClick={handleOpenCreateItinerary}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors text-left"
+              >
+                <div className="w-12 h-12 bg-[#e8e4f8] rounded-full flex items-center justify-center">
+                  <Compass className="w-5 h-5 text-[#6060c0]" />
+                </div>
+                <div>
+                  <p className="font-semibold text-[#1a1a3e]">
+                    Crear itinerario
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Planea tu viaje por días con ruta optimizada
+                  </p>
+                </div>
+              </button>
+            )}
           </div>
         </div>
       </AppDrawer>

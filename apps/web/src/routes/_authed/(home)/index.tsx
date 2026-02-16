@@ -11,8 +11,6 @@ import {
   Plane,
   Plus,
   QrCode,
-  Search,
-  SlidersHorizontal,
   Sofa,
   Users,
 } from '@hugeicons/core-free-icons';
@@ -211,9 +209,7 @@ function SwipeableGroupItem({
         onTouchCancel={handleTouchEnd}
         className={cn(
           'native-tap w-full rounded-2xl p-4 text-left transition-transform duration-200',
-          isMetaGroup
-            ? 'bg-[#eefbf5] border border-[#d7f3e5]'
-            : 'bg-white',
+          isMetaGroup ? 'bg-[#eefbf5] border border-[#d7f3e5]' : 'bg-white',
         )}
         style={{ transform: `translateX(${translateX}px)` }}
       >
@@ -323,7 +319,10 @@ function HomePage() {
     } catch {}
 
     return () => {
-      window.removeEventListener(OPEN_HOME_OPTIONS_EVENT, handleOpenHomeOptions);
+      window.removeEventListener(
+        OPEN_HOME_OPTIONS_EVENT,
+        handleOpenHomeOptions,
+      );
     };
   }, []);
 
@@ -474,11 +473,11 @@ function HomePage() {
   };
 
   return (
-    <GradientLayout className="native-enter pb-10">
-      <header className="px-5 pt-5 pb-4 lg:px-6 lg:pt-6">
-        <div className="native-surface-muted flex items-center justify-between px-4 py-3">
-          <h1 className="text-2xl font-bold tracking-tight text-[#1a1a3e]">
-          Hola, {user?.name}
+    <GradientLayout className="native-enter pb-0">
+      <header className="px-5 pt-2 pb-2 lg:px-6 lg:pt-6">
+        <div className="flex items-center justify-between px-4 py-3">
+          <h1 className="text-xl font-semibold tracking-tight text-[#292929]">
+            Hola, {user?.name}
           </h1>
           <button className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/70 bg-white/80">
             <HugeiconsIcon icon={Bell} className="h-5 w-5 text-[#1a1a3e]" />
@@ -582,7 +581,7 @@ function HomePage() {
         </div>
       </div>
 
-      <div className="px-5 pb-32 lg:px-6 lg:pb-10">
+      <div className="px-5 pb-10 lg:px-6 lg:pb-10">
         {!hasRegularGroups && hasMetaGroups && (
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-[#1a1a3e] mb-4">
@@ -597,7 +596,7 @@ function HomePage() {
           </div>
         )}
 
-        <h2 className="text-lg font-semibold text-[#1a1a3e] mb-4">
+        {/* <h2 className="text-lg font-semibold text-[#1a1a3e] mb-4">
           Tus grupos
         </h2>
 
@@ -621,7 +620,7 @@ function HomePage() {
               className="w-5 h-5 text-[#6060c0]"
             />
           </button>
-        </div>
+        </div> */}
 
         {!hasRegularGroups && !hasMetaGroups ? (
           <div className="native-empty flex flex-col items-center justify-center py-12 lg:mx-auto lg:max-w-2xl">
@@ -675,12 +674,12 @@ function HomePage() {
             })}
 
             {/* Footer message */}
-            <p className="text-sm text-gray-500 pt-4">
+            {/* <p className="text-sm text-gray-500 pt-4">
               Ocultamos los grupos sin deudas del último mes.{' '}
               <button className="text-[#4040b0] font-medium">
                 Ver todos los grupos
               </button>
-            </p>
+            </p> */}
           </div>
         )}
 
@@ -752,74 +751,71 @@ function HomePage() {
       </AppDrawer>
 
       <AppDrawer open={showOptions} onOpenChange={setShowOptions}>
-          <div className="max-h-[84vh] overflow-y-auto">
-            <div className="flex justify-center pt-3 pb-4">
-              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
-            </div>
-
-            <div className="px-6 pb-8 space-y-2">
-              <button
-                onClick={() => {
-                  setShowOptions(false);
-                  navigate({ to: '/groups/new' });
-                }}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors text-left"
-              >
-                <div className="w-12 h-12 bg-[#e8e4f8] rounded-full flex items-center justify-center">
-                  <HugeiconsIcon
-                    icon={Plus}
-                    className="w-5 h-5 text-[#6060c0]"
-                  />
-                </div>
-                <div>
-                  <p className="font-semibold text-[#1a1a3e]">Crear grupo</p>
-                  <p className="text-sm text-gray-500">
-                    Inicia un nuevo grupo desde cero
-                  </p>
-                </div>
-              </button>
-
-              {/* Unirse a grupo */}
-              <button
-                onClick={() => {
-                  setShowOptions(false);
-                  setShowJoinModal(true);
-                }}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors text-left"
-              >
-                <div className="w-12 h-12 bg-[#e8e4f8] rounded-full flex items-center justify-center">
-                  <HugeiconsIcon
-                    icon={Users}
-                    className="w-5 h-5 text-[#6060c0]"
-                  />
-                </div>
-                <div>
-                  <p className="font-semibold text-[#1a1a3e]">
-                    {'¿Te invitaron a un grupo o a una meta?'}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Usa un enlace o código QR para unirte
-                  </p>
-                </div>
-              </button>
-
-              <button
-                onClick={handleOpenCreateGoal}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors text-left"
-              >
-                <div className="w-12 h-12 bg-[#e8e4f8] rounded-full flex items-center justify-center">
-                  <Target className="w-5 h-5 text-[#6060c0]" />
-                </div>
-                <div>
-                  <p className="font-semibold text-[#1a1a3e]">Crear meta</p>
-                  <p className="text-sm text-gray-500">
-                    Define un objetivo y registra aportes
-                  </p>
-                </div>
-              </button>
-            </div>
+        <div className="max-h-[84vh] overflow-y-auto">
+          <div className="flex justify-center pt-3 pb-4">
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
           </div>
-        </AppDrawer>
+
+          <div className="px-6 pb-8 space-y-2">
+            <button
+              onClick={() => {
+                setShowOptions(false);
+                navigate({ to: '/groups/new' });
+              }}
+              className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors text-left"
+            >
+              <div className="w-12 h-12 bg-[#e8e4f8] rounded-full flex items-center justify-center">
+                <HugeiconsIcon icon={Plus} className="w-5 h-5 text-[#6060c0]" />
+              </div>
+              <div>
+                <p className="font-semibold text-[#1a1a3e]">Crear grupo</p>
+                <p className="text-sm text-gray-500">
+                  Inicia un nuevo grupo desde cero
+                </p>
+              </div>
+            </button>
+
+            {/* Unirse a grupo */}
+            <button
+              onClick={() => {
+                setShowOptions(false);
+                setShowJoinModal(true);
+              }}
+              className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors text-left"
+            >
+              <div className="w-12 h-12 bg-[#e8e4f8] rounded-full flex items-center justify-center">
+                <HugeiconsIcon
+                  icon={Users}
+                  className="w-5 h-5 text-[#6060c0]"
+                />
+              </div>
+              <div>
+                <p className="font-semibold text-[#1a1a3e]">
+                  {'¿Te invitaron a un grupo o a una meta?'}
+                </p>
+                <p className="text-sm text-gray-500">
+                  Usa un enlace o código QR para unirte
+                </p>
+              </div>
+            </button>
+
+            <button
+              onClick={handleOpenCreateGoal}
+              className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors text-left"
+            >
+              <div className="w-12 h-12 bg-[#e8e4f8] rounded-full flex items-center justify-center">
+                <Target className="w-5 h-5 text-[#6060c0]" />
+              </div>
+              <div>
+                <p className="font-semibold text-[#1a1a3e]">Crear meta</p>
+                <p className="text-sm text-gray-500">
+                  Define un objetivo y registra aportes
+                </p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </AppDrawer>
 
       {/* Modal unirse a grupo */}
       <AppDrawer
@@ -833,217 +829,214 @@ function HomePage() {
         }}
         className="max-h-[80vh]"
       >
-          <div className="overflow-y-auto">
-            <div className="flex justify-center pt-3 pb-4">
-              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
-            </div>
+        <div className="overflow-y-auto">
+          <div className="flex justify-center pt-3 pb-4">
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+          </div>
 
-            <div className="px-6 pb-8">
-              <h2 className="text-xl font-bold text-[#1a1a3e] mb-6">
-                Unirse a un grupo
-              </h2>
+          <div className="px-6 pb-8">
+            <h2 className="text-xl font-bold text-[#1a1a3e] mb-6">
+              Unirse a un grupo
+            </h2>
 
-              {joinStep === 'input' && (
-                <>
-                  {/* Opciones */}
-                  <div className="space-y-3 mb-6">
-                    <button className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gray-50 text-left opacity-50">
-                      <div className="w-10 h-10 bg-[#e8e4f8] rounded-xl flex items-center justify-center">
-                        <HugeiconsIcon
-                          icon={QrCode}
-                          className="w-5 h-5 text-[#6060c0]"
-                        />
-                      </div>
-                      <div>
-                        <p className="font-medium text-[#1a1a3e]">
-                          Escanear código QR
-                        </p>
-                        <p className="text-sm text-gray-500">Próximamente</p>
-                      </div>
-                    </button>
+            {joinStep === 'input' && (
+              <>
+                {/* Opciones */}
+                <div className="space-y-3 mb-6">
+                  <button className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gray-50 text-left opacity-50">
+                    <div className="w-10 h-10 bg-[#e8e4f8] rounded-xl flex items-center justify-center">
+                      <HugeiconsIcon
+                        icon={QrCode}
+                        className="w-5 h-5 text-[#6060c0]"
+                      />
+                    </div>
+                    <div>
+                      <p className="font-medium text-[#1a1a3e]">
+                        Escanear código QR
+                      </p>
+                      <p className="text-sm text-gray-500">Próximamente</p>
+                    </div>
+                  </button>
 
-                    <div className="flex items-center gap-4 p-4 rounded-2xl border-2 border-[#6060c0] bg-[#f8f7fc]">
-                      <div className="w-10 h-10 bg-[#e8e4f8] rounded-xl flex items-center justify-center">
-                        <HugeiconsIcon
-                          icon={LinkIcon}
-                          className="w-5 h-5 text-[#6060c0]"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-[#1a1a3e] mb-2">
-                          Pegar enlace de invitación
-                        </p>
-                        <input
-                          type="text"
-                          value={inviteLink}
-                          onChange={(e) => setInviteLink(e.target.value)}
-                          placeholder="https://splitway.app/join/abc123"
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#6060c0]"
-                        />
-                      </div>
+                  <div className="flex items-center gap-4 p-4 rounded-2xl border-2 border-[#6060c0] bg-[#f8f7fc]">
+                    <div className="w-10 h-10 bg-[#e8e4f8] rounded-xl flex items-center justify-center">
+                      <HugeiconsIcon
+                        icon={LinkIcon}
+                        className="w-5 h-5 text-[#6060c0]"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-[#1a1a3e] mb-2">
+                        Pegar enlace de invitación
+                      </p>
+                      <input
+                        type="text"
+                        value={inviteLink}
+                        onChange={(e) => setInviteLink(e.target.value)}
+                        placeholder="https://splitway.app/join/abc123"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#6060c0]"
+                      />
                     </div>
                   </div>
+                </div>
 
-                  {joinError && (
-                    <p className="text-red-500 text-sm mb-4">{joinError}</p>
-                  )}
+                {joinError && (
+                  <p className="text-red-500 text-sm mb-4">{joinError}</p>
+                )}
 
-                  <div className="flex gap-3">
-                    <button
-                      onClick={resetJoinModal}
-                      className="flex-1 py-3 text-[#1a1a3e] font-medium"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={handleFindGroup}
-                      disabled={
-                        !inviteLink.trim() || findGroupMutation.isPending
-                      }
-                      className={cn(
-                        'flex-1 py-3 font-medium rounded-xl transition-colors',
-                        inviteLink.trim() && !findGroupMutation.isPending
-                          ? 'bg-[#4040b0] text-white'
-                          : 'bg-gray-200 text-gray-400',
-                      )}
-                    >
-                      {findGroupMutation.isPending
-                        ? 'Buscando...'
-                        : 'Buscar grupo'}
-                    </button>
-                  </div>
-                </>
-              )}
+                <div className="flex gap-3">
+                  <button
+                    onClick={resetJoinModal}
+                    className="flex-1 py-3 text-[#1a1a3e] font-medium"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleFindGroup}
+                    disabled={!inviteLink.trim() || findGroupMutation.isPending}
+                    className={cn(
+                      'flex-1 py-3 font-medium rounded-xl transition-colors',
+                      inviteLink.trim() && !findGroupMutation.isPending
+                        ? 'bg-[#4040b0] text-white'
+                        : 'bg-gray-200 text-gray-400',
+                    )}
+                  >
+                    {findGroupMutation.isPending
+                      ? 'Buscando...'
+                      : 'Buscar grupo'}
+                  </button>
+                </div>
+              </>
+            )}
 
-              {joinStep === 'select' && foundGroup && (
-                <>
-                  <div className="bg-[#f8f7fc] rounded-2xl p-4 mb-6">
-                    <p className="font-semibold text-[#1a1a3e]">
-                      {foundGroup.name}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {foundGroup.memberCount} participantes
-                    </p>
-                  </div>
-
-                  <p className="text-[#1a1a3e] mb-4">
-                    Hay participantes sin cuenta asociada. ¿Eres alguno de
-                    ellos?
+            {joinStep === 'select' && foundGroup && (
+              <>
+                <div className="bg-[#f8f7fc] rounded-2xl p-4 mb-6">
+                  <p className="font-semibold text-[#1a1a3e]">
+                    {foundGroup.name}
                   </p>
+                  <p className="text-sm text-gray-500">
+                    {foundGroup.memberCount} participantes
+                  </p>
+                </div>
 
-                  <div className="space-y-2 mb-6">
-                    {unregisteredMembers.map((member) => (
-                      <button
-                        key={member.id}
-                        onClick={() => setSelectedMemberId(member.id)}
-                        className={cn(
-                          'w-full flex items-center gap-3 p-4 rounded-xl transition-colors text-left',
-                          selectedMemberId === member.id
-                            ? 'bg-[#4040b0] text-white'
-                            : 'bg-gray-50 text-[#1a1a3e]',
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            'w-8 h-8 rounded-full flex items-center justify-center font-medium',
-                            selectedMemberId === member.id
-                              ? 'bg-white/20 text-white'
-                              : 'bg-[#e8e4f8] text-[#6060c0]',
-                          )}
-                        >
-                          {member.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="font-medium">{member.name}</span>
-                      </button>
-                    ))}
+                <p className="text-[#1a1a3e] mb-4">
+                  Hay participantes sin cuenta asociada. ¿Eres alguno de ellos?
+                </p>
 
+                <div className="space-y-2 mb-6">
+                  {unregisteredMembers.map((member) => (
                     <button
-                      onClick={() => setSelectedMemberId(null)}
+                      key={member.id}
+                      onClick={() => setSelectedMemberId(member.id)}
                       className={cn(
                         'w-full flex items-center gap-3 p-4 rounded-xl transition-colors text-left',
-                        selectedMemberId === null
+                        selectedMemberId === member.id
                           ? 'bg-[#4040b0] text-white'
                           : 'bg-gray-50 text-[#1a1a3e]',
                       )}
                     >
                       <div
                         className={cn(
-                          'w-8 h-8 rounded-full flex items-center justify-center',
-                          selectedMemberId === null
+                          'w-8 h-8 rounded-full flex items-center justify-center font-medium',
+                          selectedMemberId === member.id
                             ? 'bg-white/20 text-white'
-                            : 'bg-gray-200 text-gray-500',
+                            : 'bg-[#e8e4f8] text-[#6060c0]',
                         )}
                       >
-                        <HugeiconsIcon icon={Plus} className="w-4 h-4" />
+                        {member.name.charAt(0).toUpperCase()}
                       </div>
-                      <span className="font-medium">No, soy alguien nuevo</span>
+                      <span className="font-medium">{member.name}</span>
                     </button>
-                  </div>
+                  ))}
 
-                  {joinError && (
-                    <p className="text-red-500 text-sm mb-4">{joinError}</p>
-                  )}
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setJoinStep('input')}
-                      className="flex-1 py-3 text-[#1a1a3e] font-medium"
+                  <button
+                    onClick={() => setSelectedMemberId(null)}
+                    className={cn(
+                      'w-full flex items-center gap-3 p-4 rounded-xl transition-colors text-left',
+                      selectedMemberId === null
+                        ? 'bg-[#4040b0] text-white'
+                        : 'bg-gray-50 text-[#1a1a3e]',
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'w-8 h-8 rounded-full flex items-center justify-center',
+                        selectedMemberId === null
+                          ? 'bg-white/20 text-white'
+                          : 'bg-gray-200 text-gray-500',
+                      )}
                     >
-                      Atrás
-                    </button>
-                    <button
-                      onClick={handleJoinGroup}
-                      disabled={joinGroupMutation.isPending}
-                      className="flex-1 py-3 bg-[#4040b0] text-white font-medium rounded-xl"
-                    >
-                      {joinGroupMutation.isPending
-                        ? 'Uniéndose...'
-                        : 'Unirme al grupo'}
-                    </button>
-                  </div>
-                </>
-              )}
+                      <HugeiconsIcon icon={Plus} className="w-4 h-4" />
+                    </div>
+                    <span className="font-medium">No, soy alguien nuevo</span>
+                  </button>
+                </div>
 
-              {joinStep === 'confirm' && foundGroup && (
-                <>
-                  <div className="bg-[#f8f7fc] rounded-2xl p-4 mb-6">
-                    <p className="font-semibold text-[#1a1a3e]">
-                      {foundGroup.name}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {foundGroup.memberCount} participantes
-                    </p>
-                  </div>
+                {joinError && (
+                  <p className="text-red-500 text-sm mb-4">{joinError}</p>
+                )}
 
-                  <p className="text-[#1a1a3e] mb-6">
-                    Te unirás como <strong>{user?.name}</strong> a este grupo.
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setJoinStep('input')}
+                    className="flex-1 py-3 text-[#1a1a3e] font-medium"
+                  >
+                    Atrás
+                  </button>
+                  <button
+                    onClick={handleJoinGroup}
+                    disabled={joinGroupMutation.isPending}
+                    className="flex-1 py-3 bg-[#4040b0] text-white font-medium rounded-xl"
+                  >
+                    {joinGroupMutation.isPending
+                      ? 'Uniéndose...'
+                      : 'Unirme al grupo'}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {joinStep === 'confirm' && foundGroup && (
+              <>
+                <div className="bg-[#f8f7fc] rounded-2xl p-4 mb-6">
+                  <p className="font-semibold text-[#1a1a3e]">
+                    {foundGroup.name}
                   </p>
+                  <p className="text-sm text-gray-500">
+                    {foundGroup.memberCount} participantes
+                  </p>
+                </div>
 
-                  {joinError && (
-                    <p className="text-red-500 text-sm mb-4">{joinError}</p>
-                  )}
+                <p className="text-[#1a1a3e] mb-6">
+                  Te unirás como <strong>{user?.name}</strong> a este grupo.
+                </p>
 
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setJoinStep('input')}
-                      className="flex-1 py-3 text-[#1a1a3e] font-medium"
-                    >
-                      Atrás
-                    </button>
-                    <button
-                      onClick={handleJoinGroup}
-                      disabled={joinGroupMutation.isPending}
-                      className="flex-1 py-3 bg-[#4040b0] text-white font-medium rounded-xl"
-                    >
-                      {joinGroupMutation.isPending
-                        ? 'Uniéndose...'
-                        : 'Unirme al grupo'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+                {joinError && (
+                  <p className="text-red-500 text-sm mb-4">{joinError}</p>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setJoinStep('input')}
+                    className="flex-1 py-3 text-[#1a1a3e] font-medium"
+                  >
+                    Atrás
+                  </button>
+                  <button
+                    onClick={handleJoinGroup}
+                    disabled={joinGroupMutation.isPending}
+                    className="flex-1 py-3 bg-[#4040b0] text-white font-medium rounded-xl"
+                  >
+                    {joinGroupMutation.isPending
+                      ? 'Uniéndose...'
+                      : 'Unirme al grupo'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
+        </div>
       </AppDrawer>
 
       <AppDrawer
@@ -1149,7 +1142,6 @@ function HomePage() {
           </div>
         ) : null}
       </AppDrawer>
-
     </GradientLayout>
   );
 }

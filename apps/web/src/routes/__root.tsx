@@ -10,11 +10,13 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { createServerFn } from '@tanstack/react-start';
 import { BottomNav } from '~/components/bottom-nav';
+import { DesktopSidebar } from '~/components/desktop-sidebar';
 import { Toaster } from '@workspace/ui/components/sonner';
 import stylesCss from '../styles.css?url';
 import { serverEnv } from '~/config/env.server';
 import { getCurrentUserFn } from '~/server/auth';
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools';
+import { useIsMobile } from '~/hooks/use-mobile';
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -96,8 +98,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 function RootLayout() {
   const { user } = Route.useRouteContext();
   const { pathname } = useLocation();
+  const isMobile = useIsMobile();
 
-  const showBottomNav =
+  const showPrimaryNav =
     Boolean(user) &&
     (pathname === '/' ||
       pathname === '/goals' ||
@@ -106,10 +109,16 @@ function RootLayout() {
 
   return (
     <>
-      <div className={showBottomNav ? 'lg:pl-28' : ''}>
+      <div className={showPrimaryNav && isMobile === false ? 'lg:pl-[18rem]' : ''}>
         <Outlet />
       </div>
-      {showBottomNav ? <BottomNav /> : null}
+      {showPrimaryNav
+        ? isMobile === undefined
+          ? null
+          : isMobile
+            ? <BottomNav />
+            : <DesktopSidebar />
+        : null}
     </>
   );
 }

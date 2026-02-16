@@ -66,34 +66,9 @@ export function BottomNav() {
     );
   };
 
-  const renderDesktopItem = (item: (typeof navItems)[number]) => {
-    const isActive = isItemActive(item.href);
-    const Icon = item.icon;
-
-    return (
-      <Link
-        key={`desktop-${item.href}`}
-        to={item.href}
-        aria-label={item.label}
-        className={`flex h-12 w-full items-center justify-center rounded-2xl transition-all duration-200 ${
-          isActive
-            ? 'bg-[#f1efff] text-[#4040b0]'
-            : 'text-gray-400 hover:bg-white/80 hover:text-[#1a1a3e]'
-        }`}
-      >
-        <HugeiconsIcon
-          icon={Icon}
-          className={`h-6 w-6 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}
-          strokeWidth={isActive ? 2.5 : 2}
-        />
-        <span className="sr-only">{item.label}</span>
-      </Link>
-    );
-  };
-
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/80 bg-white/95 pb-[max(0.3rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_-22px_rgba(19,15,49,0.45)] backdrop-blur-xl lg:inset-y-6 lg:left-6 lg:right-auto lg:w-20 lg:rounded-3xl lg:border lg:border-white/80 lg:bg-white/92 lg:pb-0 lg:shadow-[0_24px_45px_-30px_rgba(17,14,43,0.55)]">
-      <div className="relative mx-auto w-full max-w-md px-3 pt-2 lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/80 bg-white/95 pb-[max(0.3rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_-22px_rgba(19,15,49,0.45)] backdrop-blur-xl lg:hidden">
+      <div className="relative mx-auto w-full max-w-md px-3 pt-2">
         <div className="grid grid-cols-5 items-center">
           {leftItems.map(renderMobileItem)}
 
@@ -110,19 +85,6 @@ export function BottomNav() {
 
           {rightItems.map(renderMobileItem)}
         </div>
-      </div>
-
-      <div className="hidden h-full flex-col justify-between px-2 py-3 lg:flex">
-        <div className="space-y-1">{leftItems.map(renderDesktopItem)}</div>
-        <button
-          type="button"
-          onClick={triggerPrimaryAction}
-          className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#4040b0] text-white shadow-[0_12px_24px_-14px_rgba(64,64,176,0.85)] hover:brightness-105"
-          aria-label="Acciones rápidas"
-        >
-          <Plus className="h-6 w-6" />
-        </button>
-        <div className="space-y-1">{rightItems.map(renderDesktopItem)}</div>
       </div>
     </nav>
   );

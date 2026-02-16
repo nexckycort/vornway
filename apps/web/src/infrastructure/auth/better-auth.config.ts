@@ -8,11 +8,18 @@ import { db } from '~/infrastructure/database/connection';
 import { resend } from '~/infrastructure/email/resend.config';
 
 const authConfig = {
+  baseURL: serverEnv.BETTER_AUTH_URL,
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),
   emailAndPassword: {
     enabled: true,
+  },
+  socialProviders: {
+    google: {
+      clientId: serverEnv.GOOGLE_CLIENT_ID,
+      clientSecret: serverEnv.GOOGLE_CLIENT_SECRET,
+    },
   },
   plugins: [
     emailOTP({
@@ -36,7 +43,15 @@ const authConfig = {
       },
     }),
     tanstackStartCookies(),
-    anonymous(),
+    anonymous({
+      onLinkAccount: async ({ anonymousUser, newUser }) => {
+        // Transferir membresías de grupo del usuario anónimo al nuevo usuario
+        await db.groupMember.updateMany({
+          where: { userId: anonymousUser.user.id },
+          data: { userId: newUser.user.id },
+        });
+      },
+    }),
   ],
 } satisfies BetterAuthOptions;
 

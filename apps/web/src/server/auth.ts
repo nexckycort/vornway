@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
+import { getRequestHeaders } from '@tanstack/react-start/server';
 
 import { auth } from '~/infrastructure/auth/better-auth.config';
 import { db } from '~/infrastructure/database/connection';
@@ -175,6 +176,55 @@ export const getCurrentUserFn = createServerFn({ method: 'GET' }).handler(
       email: session.data.email,
       name: session.data.name,
       isAnonymous: session.data.isAnonymous ?? false,
+    };
+  },
+);
+
+export const syncGoogleSessionFn = createServerFn({ method: 'POST' }).handler(
+  async () => {
+    const session = await useAppSession();
+    const previousUserId = session.data.userId;
+    const wasAnonymous = session.data.isAnonymous === true;
+
+    const betterAuthSession = await auth.api.getSession({
+      headers: new Headers(getRequestHeaders()),
+    });
+
+    if (!betterAuthSession?.user) {
+      return {
+        success: false,
+        error: 'No se encontró una sesión activa de Google.',
+      };
+    }
+
+    const user = betterAuthSession.user;
+
+    // Transferir membresías de grupo si venía de un usuario anónimo
+    if (wasAnonymous && previousUserId && previousUserId !== user.id) {
+      await db.groupMember.updateMany({
+        where: { userId: previousUserId },
+        data: { userId: user.id },
+      });
+
+      // Eliminar el usuario anónimo
+      try {
+        await db.session.deleteMany({ where: { userId: previousUserId } });
+        await db.account.deleteMany({ where: { userId: previousUserId } });
+        await db.user.delete({ where: { id: previousUserId } });
+      } catch (e) {
+        console.error('Error cleaning up anonymous user:', e);
+      }
+    }
+
+    await session.update({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      isAnonymous: false,
+    });
+
+    return {
+      success: true,
     };
   },
 );

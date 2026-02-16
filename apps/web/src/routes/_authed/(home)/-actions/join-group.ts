@@ -31,7 +31,7 @@ export const joinGroup = createServerFn({ method: 'POST' })
       const preferredName = data.name?.trim();
 
       if (!userId) {
-        const result = await auth.api.signInAnonymous({ body: {} });
+        const result = await auth.api.signInAnonymous({});
         if (!result) {
           return {
             success: false,

@@ -1,3 +1,4 @@
+// @ts-expect-error
 await Bun.build({
   entrypoints: ['./.output/server/index.mjs'],
   compile: {

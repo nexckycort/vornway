@@ -284,7 +284,7 @@ function HomePage() {
   const navigate = Route.useNavigate();
   const queryClient = useQueryClient();
 
-  const [searchQuery, setSearchQuery] = useState('');
+  // const [searchQuery, setSearchQuery] = useState('');
   const [showOptions, setShowOptions] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [inviteLink, setInviteLink] = useState('');

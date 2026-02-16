@@ -81,6 +81,14 @@ interface HomeGroup {
   name: string;
   type: string;
   ownerId: string;
+  currentUserBalances: Record<string, number>;
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('es-CO', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
 }
 
 function SwipeableGroupItem({
@@ -296,12 +304,38 @@ function HomePage() {
   const [showDeleteGroupModal, setShowDeleteGroupModal] = useState(false);
   const [deleteGroupNameInput, setDeleteGroupNameInput] = useState('');
   const [copiedGroupName, setCopiedGroupName] = useState(false);
+  const [showDebtsDrawer, setShowDebtsDrawer] = useState(false);
+  const [showCreditsDrawer, setShowCreditsDrawer] = useState(false);
 
   const { data: userGroups = [] } = useUserGroups();
   const regularGroups = userGroups.filter((group) => group.type !== 'meta');
   const metaGroups = userGroups.filter((group) => group.type === 'meta');
   const hasRegularGroups = regularGroups.length > 0;
   const hasMetaGroups = metaGroups.length > 0;
+
+  const debtsByCurrency: Record<string, number> = {};
+  const creditsByCurrency: Record<string, number> = {};
+
+  for (const group of regularGroups) {
+    for (const [currency, balance] of Object.entries(
+      group.currentUserBalances ?? {},
+    )) {
+      if (balance < 0) {
+        debtsByCurrency[currency] =
+          (debtsByCurrency[currency] ?? 0) + Math.abs(balance);
+      } else if (balance > 0) {
+        creditsByCurrency[currency] =
+          (creditsByCurrency[currency] ?? 0) + balance;
+      }
+    }
+  }
+
+  const debtEntries = Object.entries(debtsByCurrency).sort(
+    (a, b) => b[1] - a[1],
+  );
+  const creditEntries = Object.entries(creditsByCurrency).sort(
+    (a, b) => b[1] - a[1],
+  );
 
   const findGroupMutation = useMutation({
     mutationFn: findGroupByInvite,
@@ -434,23 +468,25 @@ function HomePage() {
 
       <div className="mb-6 px-5">
         <div className="rounded-3xl border border-white/60 bg-blue-50/85 p-4 backdrop-blur-xl">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white rounded-2xl p-4 row-span-2">
-              <div className="w-10 h-10 bg-[#e8e4f8] rounded-xl flex items-center justify-center mb-8">
-                <div className="flex flex-col gap-0.5">
-                  <div className="w-4 h-0.5 bg-[#6060c0] rounded-full" />
-                  <div className="w-4 h-0.5 bg-[#6060c0] rounded-full" />
-                </div>
-              </div>
-              <p className="text-gray-500 text-sm">Total gastado</p>
-              <p className="text-2xl font-bold text-[#1a1a3e]">$0</p>
-            </div>
-
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="bg-white rounded-2xl p-4">
               <div className="flex items-start justify-between">
-                <div>
+                <div className="min-w-0">
                   <p className="text-gray-500 text-sm">Debes</p>
-                  <p className="text-xl font-bold text-[#1a1a3e]">$0</p>
+                  {debtEntries.length === 0 ? (
+                    <p className="text-xl font-bold text-[#1a1a3e]">$0</p>
+                  ) : (
+                    <div className="mt-1 space-y-0.5">
+                      {debtEntries.slice(0, 3).map(([currency, amount]) => (
+                        <p
+                          key={currency}
+                          className="text-base font-semibold text-[#1a1a3e]"
+                        >
+                          ${formatCurrency(amount)} {currency}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
                   <svg
@@ -467,13 +503,35 @@ function HomePage() {
                   </svg>
                 </div>
               </div>
+              {debtEntries.length > 3 && (
+                <button
+                  type="button"
+                  onClick={() => setShowDebtsDrawer(true)}
+                  className="mt-3 text-sm font-medium text-[#4040b0]"
+                >
+                  Ver más
+                </button>
+              )}
             </div>
 
             <div className="bg-white rounded-2xl p-4">
               <div className="flex items-start justify-between">
-                <div>
+                <div className="min-w-0">
                   <p className="text-gray-500 text-sm">Te deben</p>
-                  <p className="text-xl font-bold text-[#1a1a3e]">$0</p>
+                  {creditEntries.length === 0 ? (
+                    <p className="text-xl font-bold text-[#1a1a3e]">$0</p>
+                  ) : (
+                    <div className="mt-1 space-y-0.5">
+                      {creditEntries.slice(0, 3).map(([currency, amount]) => (
+                        <p
+                          key={currency}
+                          className="text-base font-semibold text-[#1a1a3e]"
+                        >
+                          ${formatCurrency(amount)} {currency}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                   <svg
@@ -490,6 +548,15 @@ function HomePage() {
                   </svg>
                 </div>
               </div>
+              {creditEntries.length > 3 && (
+                <button
+                  type="button"
+                  onClick={() => setShowCreditsDrawer(true)}
+                  className="mt-3 text-sm font-medium text-[#4040b0]"
+                >
+                  Ver más
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -618,6 +685,58 @@ function HomePage() {
       >
         <HugeiconsIcon icon={Plus} className="w-7 h-7 text-white" />
       </button>
+
+      <AppDrawer open={showDebtsDrawer} onOpenChange={setShowDebtsDrawer}>
+        <div className="max-h-[80vh] overflow-y-auto">
+          <div className="flex justify-center pt-3 pb-4">
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+          </div>
+          <div className="px-6 pb-8">
+            <h2 className="text-xl font-bold text-[#1a1a3e] mb-4">
+              Debes por moneda
+            </h2>
+            <div className="space-y-3">
+              {debtEntries.map(([currency, amount]) => (
+                <div
+                  key={currency}
+                  className="rounded-2xl border border-gray-100 bg-white p-4"
+                >
+                  <p className="text-sm text-gray-500">{currency}</p>
+                  <p className="text-lg font-semibold text-[#1a1a3e]">
+                    ${formatCurrency(amount)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </AppDrawer>
+
+      <AppDrawer open={showCreditsDrawer} onOpenChange={setShowCreditsDrawer}>
+        <div className="max-h-[80vh] overflow-y-auto">
+          <div className="flex justify-center pt-3 pb-4">
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+          </div>
+          <div className="px-6 pb-8">
+            <h2 className="text-xl font-bold text-[#1a1a3e] mb-4">
+              Te deben por moneda
+            </h2>
+            <div className="space-y-3">
+              {creditEntries.map(([currency, amount]) => (
+                <div
+                  key={currency}
+                  className="rounded-2xl border border-gray-100 bg-white p-4"
+                >
+                  <p className="text-sm text-gray-500">{currency}</p>
+                  <p className="text-lg font-semibold text-[#1a1a3e]">
+                    ${formatCurrency(amount)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </AppDrawer>
 
       <AppDrawer open={showOptions} onOpenChange={setShowOptions}>
           <div className="max-h-[84vh] overflow-y-auto">

@@ -102,14 +102,14 @@ export function InputOTPForm({
           onChange={setValue}
           className="w-full"
         >
-          <InputOTPGroup className="w-full justify-between">
-            <InputOTPSlot index={0} className="flex-1" />
-            <InputOTPSlot index={1} className="flex-1" />
-            <InputOTPSlot index={2} className="flex-1" />
+          <InputOTPGroup className="w-full justify-between gap-0.5 sm:gap-1">
+            <InputOTPSlot index={0} className="size-9 flex-1 sm:size-12" />
+            <InputOTPSlot index={1} className="size-9 flex-1 sm:size-12" />
+            <InputOTPSlot index={2} className="size-9 flex-1 sm:size-12" />
             <InputOTPSeparator />
-            <InputOTPSlot index={3} className="flex-1" />
-            <InputOTPSlot index={4} className="flex-1" />
-            <InputOTPSlot index={5} className="flex-1" />
+            <InputOTPSlot index={3} className="size-9 flex-1 sm:size-12" />
+            <InputOTPSlot index={4} className="size-9 flex-1 sm:size-12" />
+            <InputOTPSlot index={5} className="size-9 flex-1 sm:size-12" />
           </InputOTPGroup>
         </InputOTP>
         {description && <FieldDescription>{description}</FieldDescription>}

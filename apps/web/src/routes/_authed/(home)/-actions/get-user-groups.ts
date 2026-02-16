@@ -11,6 +11,7 @@ interface Group {
   createdAt: Date;
   updatedAt: Date;
   ownerId: string;
+  currentUserBalances: Record<string, number>;
 }
 
 interface GetUserGroupsResponse {
@@ -33,7 +34,40 @@ export const getUserGroups = createServerFn({ method: 'GET' }).handler(
         };
       }
 
-      const groups = await db.group.findMany({
+      const groupsResult = await db.group.findMany({
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true,
+          ownerId: true,
+          GroupMember: {
+            select: {
+              id: true,
+              userId: true,
+            },
+          },
+          Expense: {
+            select: {
+              amount: true,
+              currency: true,
+              notes: true,
+              paidBy: {
+                select: {
+                  id: true,
+                },
+              },
+              participants: {
+                select: {
+                  memberId: true,
+                  share: true,
+                },
+              },
+            },
+          },
+        },
         where: {
           OR: [
             { ownerId: userId },
@@ -49,6 +83,51 @@ export const getUserGroups = createServerFn({ method: 'GET' }).handler(
         orderBy: {
           createdAt: 'desc',
         },
+      });
+
+      const groups: Group[] = groupsResult.map((group) => {
+        const currentMemberId = group.GroupMember.find(
+          (member) => member.userId === userId,
+        )?.id;
+
+        const currentUserBalances: Record<string, number> = {};
+
+        if (currentMemberId) {
+          for (const expense of group.Expense) {
+            const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
+            if (isDeleted) continue;
+
+            let delta = 0;
+
+            if (expense.paidBy.id === currentMemberId) {
+              delta += expense.amount;
+            }
+
+            const participation = expense.participants.find(
+              (participant) => participant.memberId === currentMemberId,
+            );
+
+            if (participation) {
+              delta -= participation.share;
+            }
+
+            if (delta !== 0) {
+              currentUserBalances[expense.currency] =
+                (currentUserBalances[expense.currency] ?? 0) + delta;
+            }
+          }
+        }
+
+        return {
+          id: group.id,
+          name: group.name,
+          type: group.type,
+          description: group.description,
+          createdAt: group.createdAt,
+          updatedAt: group.updatedAt,
+          ownerId: group.ownerId,
+          currentUserBalances,
+        };
       });
 
       return {

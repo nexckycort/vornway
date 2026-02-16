@@ -20,6 +20,7 @@ import { Route as AuthedhomeIndexRouteImport } from './routes/_authed/(home)/ind
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as SharedJoinInviteCodeRouteImport } from './routes/_shared/join/$inviteCode'
 import { Route as PublicLoginOtpRouteImport } from './routes/_public/login/otp'
+import { Route as PublicLoginGoogleSyncRouteImport } from './routes/_public/login/google-sync'
 import { Route as AuthedGroupsNewIndexRouteImport } from './routes/_authed/groups/new/index'
 import { Route as AuthedGroupsIdIndexRouteImport } from './routes/_authed/groups/$id/index'
 import { Route as AuthedGoalsNewIndexRouteImport } from './routes/_authed/goals/new/index'
@@ -83,6 +84,11 @@ const SharedJoinInviteCodeRoute = SharedJoinInviteCodeRouteImport.update({
 const PublicLoginOtpRoute = PublicLoginOtpRouteImport.update({
   id: '/login/otp',
   path: '/login/otp',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicLoginGoogleSyncRoute = PublicLoginGoogleSyncRouteImport.update({
+  id: '/login/google-sync',
+  path: '/login/google-sync',
   getParentRoute: () => PublicRoute,
 } as any)
 const AuthedGroupsNewIndexRoute = AuthedGroupsNewIndexRouteImport.update({
@@ -150,6 +156,7 @@ const AuthedGroupsIdExpenseExpenseIdIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedhomeIndexRoute
+  '/login/google-sync': typeof PublicLoginGoogleSyncRoute
   '/login/otp': typeof PublicLoginOtpRoute
   '/join/$inviteCode': typeof SharedJoinInviteCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AuthedhomeIndexRoute
+  '/login/google-sync': typeof PublicLoginGoogleSyncRoute
   '/login/otp': typeof PublicLoginOtpRoute
   '/join/$inviteCode': typeof SharedJoinInviteCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
+  '/_public/login/google-sync': typeof PublicLoginGoogleSyncRoute
   '/_public/login/otp': typeof PublicLoginOtpRoute
   '/_shared/join/$inviteCode': typeof SharedJoinInviteCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login/google-sync'
     | '/login/otp'
     | '/join/$inviteCode'
     | '/api/auth/$'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login/google-sync'
     | '/login/otp'
     | '/join/$inviteCode'
     | '/api/auth/$'
@@ -266,6 +277,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/_public'
+    | '/_public/login/google-sync'
     | '/_public/login/otp'
     | '/_shared/join/$inviteCode'
     | '/api/auth/$'
@@ -372,6 +384,13 @@ declare module '@tanstack/react-router' {
       path: '/login/otp'
       fullPath: '/login/otp'
       preLoaderRoute: typeof PublicLoginOtpRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/login/google-sync': {
+      id: '/_public/login/google-sync'
+      path: '/login/google-sync'
+      fullPath: '/login/google-sync'
+      preLoaderRoute: typeof PublicLoginGoogleSyncRouteImport
       parentRoute: typeof PublicRoute
     }
     '/_authed/groups/new/': {
@@ -495,12 +514,14 @@ const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
 
 interface PublicRouteChildren {
+  PublicLoginGoogleSyncRoute: typeof PublicLoginGoogleSyncRoute
   PublicLoginOtpRoute: typeof PublicLoginOtpRoute
   PublicLoginIndexRoute: typeof PublicLoginIndexRoute
   PublicWelcomeIndexRoute: typeof PublicWelcomeIndexRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
+  PublicLoginGoogleSyncRoute: PublicLoginGoogleSyncRoute,
   PublicLoginOtpRoute: PublicLoginOtpRoute,
   PublicLoginIndexRoute: PublicLoginIndexRoute,
   PublicWelcomeIndexRoute: PublicWelcomeIndexRoute,

@@ -4,6 +4,7 @@ import { Input } from '@workspace/ui/components/input';
 import { Label } from '@workspace/ui/components/label';
 import { useState } from 'react';
 import { GradientLayout } from '~/components/gradient-layout';
+import { authClient } from '~/lib/auth-client';
 
 import { sendOtp } from '~/server/auth';
 
@@ -34,6 +35,7 @@ function RouteComponent() {
   const [name, setName] = useState('');
   const [step, setStep] = useState<'email' | 'name'>('email');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
   const validateEmail = (email: string): boolean => {
@@ -93,6 +95,26 @@ function RouteComponent() {
     setError('');
   };
 
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setIsGoogleLoading(true);
+    try {
+      const callbackURL = redirect
+        ? `/login/google-sync?redirect=${encodeURIComponent(redirect)}`
+        : '/login/google-sync';
+
+      await authClient.signIn.social({
+        provider: 'google',
+        callbackURL,
+      });
+    } catch (err) {
+      console.error('Error en login con Google:', err);
+      setError('No se pudo iniciar sesión con Google. Intenta de nuevo.');
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
   return (
     <GradientLayout className="native-enter">
       <div className="flex min-h-dvh flex-col items-center justify-center px-5">
@@ -113,6 +135,22 @@ function RouteComponent() {
               className="w-full max-w-sm rounded-3xl border border-white/60 bg-blue-50/90 p-6 shadow-[0_20px_45px_-28px_rgba(26,26,62,0.45)] backdrop-blur-xl"
               onSubmit={handleEmailSubmit}
             >
+              <Button
+                size="lg"
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isLoading || isGoogleLoading}
+                className="mb-4 !h-14 w-full rounded-2xl border border-[#d9d9e8] bg-white py-4 text-base font-medium text-[#1a1a3e] hover:bg-[#f5f5fa]"
+              >
+                {isGoogleLoading ? 'Redirigiendo...' : 'Continuar con Google'}
+              </Button>
+
+              <div className="mb-4 flex items-center gap-3 text-xs text-[#6a6a86]">
+                <span className="h-px flex-1 bg-[#d9d9e8]" />
+                o con correo
+                <span className="h-px flex-1 bg-[#d9d9e8]" />
+              </div>
+
               <Label className="mb-2 block text-sm text-[#1a1a3e]">
                 Correo electrónico
               </Label>

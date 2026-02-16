@@ -575,23 +575,23 @@ function RouteComponent() {
 
       {/* Tabs */}
       <div className="px-4 py-2">
-        <div className="flex bg-gray-100 rounded-2xl p-1">
+        <div className="flex rounded-2xl p-1">
           <button
             onClick={() => setActiveTab('gastos')}
-            className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+            className={`flex-1 py-3 rounded-xl text-sm transition-colors ${
               activeTab === 'gastos'
-                ? 'bg-white text-[#4040b0] shadow-sm'
-                : 'text-gray-500'
+                ? 'bg-[#ECEFFF] font-bold text-blue-700 shadow-sm'
+                : 'text-gray-500 font-normal'
             }`}
           >
             Gastos
           </button>
           <button
             onClick={() => setActiveTab('cuentas')}
-            className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+            className={`flex-1 py-3 rounded-xl text-sm transition-colors ${
               activeTab === 'cuentas'
-                ? 'bg-white text-[#4040b0] shadow-sm'
-                : 'text-gray-500'
+                ? 'bg-[#ECEFFF] font-bold text-blue-700 shadow-sm'
+                : 'text-gray-500 font-normal'
             }`}
           >
             Cuentas

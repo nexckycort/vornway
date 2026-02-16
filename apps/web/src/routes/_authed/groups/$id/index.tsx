@@ -7,6 +7,7 @@ import {
   Copy,
   HandCoins,
   Link,
+  type LucideIcon,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -436,6 +437,48 @@ function RouteComponent() {
     }
   };
 
+  const quickActions: Array<{
+    label: string;
+    icon: LucideIcon;
+    onClick: () => void;
+    isPrimary?: boolean;
+  }> = [
+    {
+      label: 'Crear gasto',
+      icon: Plus,
+      onClick: () =>
+        router.navigate({
+          to: '/groups/$id/add-expense',
+          params: { id },
+          search: {},
+        }),
+      isPrimary: true,
+    },
+    {
+      label: 'Liquidar',
+      icon: HandCoins,
+      onClick: () =>
+        router.navigate({
+          to: '/groups/$id/settle',
+          params: { id },
+        }),
+    },
+    {
+      label: 'Participantes',
+      icon: UserPlus,
+      onClick: () =>
+        router.navigate({
+          to: '/groups/$id/participants',
+          params: { id },
+        }),
+    },
+    {
+      label: 'Más',
+      icon: MoreHorizontal,
+      onClick: () => setShowSettingsModal(true),
+    },
+  ];
+
   // Loading state
   if (isLoading) {
     return (
@@ -482,108 +525,51 @@ function RouteComponent() {
       subtitle={data ? `${data.participantCount} Participantes` : 'Cargando...'}
       goBack
     >
-      {/* Summary Card */}
       <div className="px-4 py-2">
         <div className="bg-white rounded-3xl p-6 shadow-sm">
+          <div className="mb-2 flex items-start justify-end">
+            <button
+              type="button"
+              onClick={() => setShowInviteModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gray-100 px-3 py-2 text-sm font-medium text-[#1a1a3e]"
+            >
+              <Share2 className="h-4 w-4" />
+              Compartir
+            </button>
+          </div>
           <p className="text-gray-500 text-center mb-1">Total gastado</p>
           <TotalsDisplay totals={data?.totals ?? {}} />
           <UserBalanceSummary memberBalances={data?.memberBalances} />
+        </div>
+      </div>
 
-          {/* Action buttons */}
-          <div className="flex justify-start md:justify-center gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex flex-col items-center gap-2 min-w-[96px]">
-              <button
-                onClick={() =>
-                  router.navigate({
-                    to: '/groups/$id/add-expense',
-                    params: { id },
-                    search: {},
-                  })
-                }
-                className="w-14 h-14 bg-[#4040b0] rounded-2xl flex items-center justify-center"
+      <div className="px-2 py-2">
+        <div className="grid grid-cols-4 gap-2">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <div
+                key={action.label}
+                className="flex flex-col items-center gap-2"
               >
-                <Plus className="w-6 h-6 text-white" />
-              </button>
-              <span className="text-sm text-[#1a1a3e] text-center">
-                Añadir gastos
-              </span>
-            </div>
-
-            <div className="flex flex-col items-center gap-2 min-w-[96px]">
-              <button
-                onClick={() =>
-                  router.navigate({
-                    to: '/groups/$id/participants',
-                    params: { id },
-                  })
-                }
-                className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center"
-              >
-                <UserPlus className="w-6 h-6 text-[#1a1a3e]" />
-              </button>
-              <span className="text-sm text-[#1a1a3e] text-center">
-                Participantes
-              </span>
-            </div>
-
-            <div className="flex flex-col items-center gap-2 min-w-[96px]">
-              <button
-                onClick={() => setShowInviteModal(true)}
-                className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center"
-              >
-                <Share2 className="w-6 h-6 text-[#1a1a3e]" />
-              </button>
-              <span className="text-sm text-[#1a1a3e] text-center">
-                Compartir
-              </span>
-            </div>
-
-            <div className="flex flex-col items-center gap-2 min-w-[96px]">
-              <button
-                onClick={() =>
-                  router.navigate({
-                    to: '/groups/$id/totals',
-                    params: { id },
-                  })
-                }
-                className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center"
-              >
-                <BarChart3 className="w-6 h-6 text-[#1a1a3e]" />
-              </button>
-              <span className="text-sm text-[#1a1a3e] text-center">
-                Totales
-              </span>
-            </div>
-
-            <div className="flex flex-col items-center gap-2 min-w-[96px]">
-              <button
-                onClick={() =>
-                  router.navigate({
-                    to: '/groups/$id/settle',
-                    params: { id },
-                  })
-                }
-                className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center"
-              >
-                <HandCoins className="w-6 h-6 text-[#1a1a3e]" />
-              </button>
-              <span className="text-sm text-[#1a1a3e] text-center">
-                Liquidar
-              </span>
-            </div>
-
-            <div className="flex flex-col items-center gap-2 min-w-[96px]">
-              <button
-                onClick={() => setShowSettingsModal(true)}
-                className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center"
-              >
-                <MoreHorizontal className="w-6 h-6 text-[#1a1a3e]" />
-              </button>
-              <span className="text-sm text-[#1a1a3e] text-center">
-                Ajustes
-              </span>
-            </div>
-          </div>
+                <button
+                  onClick={action.onClick}
+                  className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                    action.isPrimary ? 'bg-[#4040b0]' : 'bg-white'
+                  }`}
+                >
+                  <Icon
+                    className={`w-6 h-6 ${
+                      action.isPrimary ? 'text-white' : 'text-[#1a1a3e]'
+                    }`}
+                  />
+                </button>
+                <span className="text-xs font-normal text-[#1a1a3e] text-center">
+                  {action.label}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -954,14 +940,15 @@ function RouteComponent() {
                   type="button"
                   onClick={() => {
                     setShowSettingsModal(false);
-                    setShowInviteModal(true);
+                    router.navigate({
+                      to: '/groups/$id/totals',
+                      params: { id },
+                    });
                   }}
                   className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50 transition-colors"
                 >
-                  <Share2 className="w-5 h-5 text-[#1a1a3e]" />
-                  <span className="text-[#1a1a3e] font-medium">
-                    Compartir enlace de invitación
-                  </span>
+                  <BarChart3 className="w-5 h-5 text-[#1a1a3e]" />
+                  <span className="text-[#1a1a3e] font-medium">Totales</span>
                 </button>
 
                 <div className="mx-6 border-t border-gray-200" />

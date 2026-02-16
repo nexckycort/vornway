@@ -618,7 +618,7 @@ function RouteComponent() {
         {activeTab === 'gastos' &&
           (data?.expenses && data.expenses.length > 0 ? (
             <div className="px-4 py-2">
-              <div className="bg-white rounded-2xl px-4">
+              <div className="bg-white rounded-2xl">
                 {data.expenses.map((expense) => (
                   <ExpenseItem
                     key={expense.id}
@@ -658,7 +658,7 @@ function RouteComponent() {
         {activeTab === 'cuentas' && (
           <div className="px-4 py-2">
             {data?.memberBalances && data.memberBalances.length > 0 ? (
-              <div className="bg-white rounded-2xl px-4 py-2">
+              <div className="bg-white rounded-2xl py-2">
                 {data.memberBalances.map((member) => {
                   const entries = Object.entries(member.balances).filter(
                     ([, amount]) => Math.abs(amount) >= 1,

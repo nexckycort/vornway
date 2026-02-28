@@ -24,13 +24,13 @@ import { GradientLayout } from '~/components/gradient-layout';
 import { clientEnv } from '~/config/env.client';
 import { cn } from '~/lib/utils';
 import { deleteGroup } from './-actions/delete-group';
+import { findGroupByInvite } from './-actions/find-group-by-invite';
+import { joinGroup } from './-actions/join-group';
 import {
   HomeGroupsSkeleton,
   HomeItinerariesSkeleton,
   HomeSummarySkeleton,
 } from './-components/home-skeletons';
-import { findGroupByInvite } from './-actions/find-group-by-invite';
-import { joinGroup } from './-actions/join-group';
 import { useUserGroups } from './-hooks/use-user-groups';
 import { useUserItineraries } from './-hooks/use-user-itineraries';
 
@@ -88,6 +88,8 @@ interface HomeGroup {
   type: string;
   ownerId: string;
   currentUserBalances: Record<string, number>;
+  currentUserDebtsByCurrency: Record<string, number>;
+  currentUserCreditsByCurrency: Record<string, number>;
 }
 
 function formatCurrency(amount: number): string {
@@ -345,8 +347,8 @@ function HomePage() {
   const isDevApp = clientEnv.APP_ENV === 'dev';
   const { data: userItineraries = [], isLoading: isLoadingItineraries } =
     useUserItineraries({
-    enabled: isDevApp,
-  });
+      enabled: isDevApp,
+    });
   const regularGroups = userGroups.filter((group) => group.type !== 'meta');
   const metaGroups = userGroups.filter((group) => group.type === 'meta');
   const hasRegularGroups = regularGroups.length > 0;
@@ -357,15 +359,20 @@ function HomePage() {
   const creditsByCurrency: Record<string, number> = {};
 
   for (const group of regularGroups) {
-    for (const [currency, balance] of Object.entries(
-      group.currentUserBalances ?? {},
+    for (const [currency, amount] of Object.entries(
+      group.currentUserDebtsByCurrency ?? {},
     )) {
-      if (balance < 0) {
-        debtsByCurrency[currency] =
-          (debtsByCurrency[currency] ?? 0) + Math.abs(balance);
-      } else if (balance > 0) {
+      if (amount > 0) {
+        debtsByCurrency[currency] = (debtsByCurrency[currency] ?? 0) + amount;
+      }
+    }
+
+    for (const [currency, amount] of Object.entries(
+      group.currentUserCreditsByCurrency ?? {},
+    )) {
+      if (amount > 0) {
         creditsByCurrency[currency] =
-          (creditsByCurrency[currency] ?? 0) + balance;
+          (creditsByCurrency[currency] ?? 0) + amount;
       }
     }
   }
@@ -763,7 +770,8 @@ function HomePage() {
                       navigate({
                         to: '/itineraries/$id',
                         params: { id: itinerary.id },
-                      })}
+                      })
+                    }
                     className="w-full rounded-2xl border border-white/70 bg-white/90 p-4 text-left transition-colors hover:bg-white"
                   >
                     <div className="flex items-start gap-3">

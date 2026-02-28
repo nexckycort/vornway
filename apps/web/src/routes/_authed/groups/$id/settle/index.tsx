@@ -48,52 +48,24 @@ function RouteComponent() {
   });
 
   const flexibleOptions = useMemo<FlexibleDebtOption[]>(() => {
-    if (!data?.memberBalances || data.memberBalances.length === 0) return [];
+    if (!data?.directDebts || data.directDebts.length === 0) return [];
 
-    const currentMember = data.memberBalances.find(
+    const currentMemberId = data.members.find(
       (member) => member.isCurrentUser,
-    );
+    )?.id;
+    if (!currentMemberId) return [];
 
-    if (!currentMember) return [];
-
-    const options: FlexibleDebtOption[] = [];
-    const currencies = Object.keys(currentMember.balances);
-
-    for (const currency of currencies) {
-      const currentBalance = currentMember.balances[currency] ?? 0;
-      if (currentBalance >= -1) continue;
-
-      let remaining = Math.abs(currentBalance);
-      const creditors = data.memberBalances
-        .filter((member) => member.memberId !== currentMember.memberId)
-        .map((member) => ({
-          memberId: member.memberId,
-          name: member.name,
-          amount: member.balances[currency] ?? 0,
-        }))
-        .filter((member) => member.amount > 0)
-        .sort((a, b) => b.amount - a.amount);
-
-      for (const creditor of creditors) {
-        if (remaining <= 0) break;
-
-        const amount = Math.min(remaining, creditor.amount);
-        if (amount < 1) continue;
-
-        options.push({
-          key: `${creditor.memberId}-${currency}`,
-          fromMemberId: currentMember.memberId,
-          toMemberId: creditor.memberId,
-          toName: creditor.name,
-          currency,
-          maxAmount: amount,
-        });
-
-        remaining -= amount;
-      }
-    }
-
-    return options;
+    return data.directDebts
+      .filter((debt) => debt.amount > 0)
+      .map((debt) => ({
+        key: `${debt.toMemberId}-${debt.currency}`,
+        fromMemberId: currentMemberId,
+        toMemberId: debt.toMemberId,
+        toName: debt.toName,
+        currency: debt.currency,
+        maxAmount: debt.amount,
+      }))
+      .sort((a, b) => b.maxAmount - a.maxAmount);
   }, [data]);
 
   useEffect(() => {

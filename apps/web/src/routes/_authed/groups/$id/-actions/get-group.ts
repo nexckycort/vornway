@@ -41,6 +41,13 @@ interface MemberBalance {
   balances: Record<string, number>; // { "COP": -50000, "USD": 10 } positivo = le deben, negativo = debe
 }
 
+interface DirectDebt {
+  toMemberId: string;
+  toName: string;
+  currency: string;
+  amount: number;
+}
+
 interface GetGroupResponse {
   name: string;
   participantCount: number;
@@ -49,6 +56,7 @@ interface GetGroupResponse {
   inviteCode: string | null;
   members: Member[];
   memberBalances: MemberBalance[];
+  directDebts: DirectDebt[];
   isOwner: boolean;
 }
 
@@ -227,6 +235,54 @@ export const getGroup = createServerFn({ method: 'POST' })
         }),
       );
 
+      const directDebtByPair = new Map<string, number>();
+      if (currentMemberId) {
+        for (const expense of groupRecord.Expense) {
+          const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
+          if (isDeleted) continue;
+
+          if (expense.paidBy.id === currentMemberId) {
+            for (const participant of expense.participants) {
+              if (participant.memberId === currentMemberId) continue;
+              const key = `${participant.memberId}:${expense.currency}`;
+              directDebtByPair.set(
+                key,
+                (directDebtByPair.get(key) ?? 0) - participant.share,
+              );
+            }
+            continue;
+          }
+
+          const currentParticipation = expense.participants.find(
+            (participant) => participant.memberId === currentMemberId,
+          );
+          if (!currentParticipation) continue;
+
+          const key = `${expense.paidBy.id}:${expense.currency}`;
+          directDebtByPair.set(
+            key,
+            (directDebtByPair.get(key) ?? 0) + currentParticipation.share,
+          );
+        }
+      }
+
+      const memberNameById = new Map(
+        groupRecord.GroupMember.map((member) => [member.id, member.name]),
+      );
+
+      const directDebts: DirectDebt[] = Array.from(directDebtByPair.entries())
+        .map(([pairKey, amount]) => {
+          const [toMemberId, currency] = pairKey.split(':');
+          return {
+            toMemberId,
+            toName: memberNameById.get(toMemberId) ?? 'Miembro',
+            currency,
+            amount,
+          };
+        })
+        .filter((entry) => entry.amount > 0)
+        .sort((a, b) => b.amount - a.amount);
+
       return {
         name: groupRecord.name,
         participantCount: groupRecord.GroupMember.length,
@@ -235,6 +291,7 @@ export const getGroup = createServerFn({ method: 'POST' })
         inviteCode: groupRecord.inviteCode,
         members,
         memberBalances,
+        directDebts,
         isOwner: groupRecord.ownerId === userId,
       };
     } catch (error) {

@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/correctness/useHookAtTopLevel: useAppSession is a server helper */
 import { createServerFn } from '@tanstack/react-start';
 
 import { db } from '~/infrastructure/database/connection';
@@ -12,6 +13,8 @@ interface Group {
   updatedAt: Date;
   ownerId: string;
   currentUserBalances: Record<string, number>;
+  currentUserDebtsByCurrency: Record<string, number>;
+  currentUserCreditsByCurrency: Record<string, number>;
 }
 
 interface GetUserGroupsResponse {
@@ -91,8 +94,12 @@ export const getUserGroups = createServerFn({ method: 'GET' }).handler(
         )?.id;
 
         const currentUserBalances: Record<string, number> = {};
+        const currentUserDebtsByCurrency: Record<string, number> = {};
+        const currentUserCreditsByCurrency: Record<string, number> = {};
 
         if (currentMemberId) {
+          const directDebtByPair = new Map<string, number>();
+
           for (const expense of group.Expense) {
             const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
             if (isDeleted) continue;
@@ -115,6 +122,44 @@ export const getUserGroups = createServerFn({ method: 'GET' }).handler(
               currentUserBalances[expense.currency] =
                 (currentUserBalances[expense.currency] ?? 0) + delta;
             }
+
+            if (expense.paidBy.id === currentMemberId) {
+              for (const participant of expense.participants) {
+                if (participant.memberId === currentMemberId) continue;
+                const key = `${participant.memberId}:${expense.currency}`;
+                directDebtByPair.set(
+                  key,
+                  (directDebtByPair.get(key) ?? 0) - participant.share,
+                );
+              }
+              continue;
+            }
+
+            const myParticipation = expense.participants.find(
+              (participant) => participant.memberId === currentMemberId,
+            );
+
+            if (myParticipation) {
+              const key = `${expense.paidBy.id}:${expense.currency}`;
+              directDebtByPair.set(
+                key,
+                (directDebtByPair.get(key) ?? 0) + myParticipation.share,
+              );
+            }
+          }
+
+          for (const [pairKey, amount] of directDebtByPair.entries()) {
+            const [, currency] = pairKey.split(':');
+            if (!currency || amount === 0) continue;
+
+            if (amount > 0) {
+              currentUserDebtsByCurrency[currency] =
+                (currentUserDebtsByCurrency[currency] ?? 0) + amount;
+            } else {
+              currentUserCreditsByCurrency[currency] =
+                (currentUserCreditsByCurrency[currency] ?? 0) +
+                Math.abs(amount);
+            }
           }
         }
 
@@ -127,6 +172,8 @@ export const getUserGroups = createServerFn({ method: 'GET' }).handler(
           updatedAt: group.updatedAt,
           ownerId: group.ownerId,
           currentUserBalances,
+          currentUserDebtsByCurrency,
+          currentUserCreditsByCurrency,
         };
       });
 
@@ -140,7 +187,9 @@ export const getUserGroups = createServerFn({ method: 'GET' }).handler(
         success: false,
         groups: [],
         error:
-          error instanceof Error ? error.message : 'Error al obtener los grupos',
+          error instanceof Error
+            ? error.message
+            : 'Error al obtener los grupos',
       };
     }
   },

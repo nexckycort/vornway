@@ -280,50 +280,57 @@ function TotalsDisplay({ totals }: { totals: Record<string, number> }) {
 }
 
 function UserBalanceSummary({
-  memberBalances,
+  directDebts,
+  directCredits,
 }: {
-  memberBalances?: Array<{
-    memberId: string;
-    name: string;
-    isCurrentUser: boolean;
-    balances: Record<string, number>;
+  directDebts?: Array<{
+    toMemberId: string;
+    toName: string;
+    currency: string;
+    amount: number;
+  }>;
+  directCredits?: Array<{
+    fromMemberId: string;
+    fromName: string;
+    currency: string;
+    amount: number;
   }>;
 }) {
-  if (!memberBalances) {
-    return <p className="text-gray-500 text-center mb-6">Sin deudas</p>;
+  const debtByCurrency: Record<string, number> = {};
+  for (const debt of directDebts ?? []) {
+    if (debt.amount <= 0) continue;
+    debtByCurrency[debt.currency] =
+      (debtByCurrency[debt.currency] ?? 0) + debt.amount;
   }
 
-  const currentMember = memberBalances.find((member) => member.isCurrentUser);
-  if (!currentMember) {
-    return <p className="text-gray-500 text-center mb-6">Sin deudas</p>;
+  const creditByCurrency: Record<string, number> = {};
+  for (const credit of directCredits ?? []) {
+    if (credit.amount <= 0) continue;
+    creditByCurrency[credit.currency] =
+      (creditByCurrency[credit.currency] ?? 0) + credit.amount;
   }
 
-  const entries = Object.entries(currentMember.balances ?? {}).filter(
-    ([, amount]) => Math.abs(amount) >= 1,
+  const debtEntries = Object.entries(debtByCurrency).filter(
+    ([, amount]) => amount >= 1,
+  );
+  const creditEntries = Object.entries(creditByCurrency).filter(
+    ([, amount]) => amount >= 1,
   );
 
-  if (entries.length === 0) {
+  if (debtEntries.length === 0 && creditEntries.length === 0) {
     return <p className="text-gray-500 text-center mb-6">Sin deudas</p>;
   }
 
   return (
     <div className="text-center mb-6 space-y-1">
-      {entries.map(([currency, amount]) => (
-        <p
-          key={currency}
-          className={`font-medium ${
-            amount > 0
-              ? 'text-green-600'
-              : amount < 0
-                ? 'text-red-500'
-                : 'text-gray-500'
-          }`}
-        >
-          {amount > 0
-            ? `Te deben $${formatCurrency(amount)} ${currency}`
-            : amount < 0
-              ? `Debes $${formatCurrency(Math.abs(amount))} ${currency}`
-              : 'Estás al día'}
+      {debtEntries.map(([currency, amount]) => (
+        <p key={`debt-${currency}`} className="font-medium text-red-500">
+          Debes ${formatCurrency(amount)} {currency}
+        </p>
+      ))}
+      {creditEntries.map(([currency, amount]) => (
+        <p key={`credit-${currency}`} className="font-medium text-green-600">
+          Te deben ${formatCurrency(amount)} {currency}
         </p>
       ))}
     </div>
@@ -553,7 +560,10 @@ function RouteComponent() {
               Total gastado
             </p>
             <TotalsDisplay totals={data?.totals ?? {}} />
-            <UserBalanceSummary memberBalances={data?.memberBalances} />
+            <UserBalanceSummary
+              directDebts={data?.directDebts}
+              directCredits={data?.directCredits}
+            />
           </div>
         </div>
 

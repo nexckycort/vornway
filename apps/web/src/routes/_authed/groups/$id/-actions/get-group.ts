@@ -48,6 +48,13 @@ interface DirectDebt {
   amount: number;
 }
 
+interface DirectCredit {
+  fromMemberId: string;
+  fromName: string;
+  currency: string;
+  amount: number;
+}
+
 interface GetGroupResponse {
   name: string;
   participantCount: number;
@@ -57,6 +64,7 @@ interface GetGroupResponse {
   members: Member[];
   memberBalances: MemberBalance[];
   directDebts: DirectDebt[];
+  directCredits: DirectCredit[];
   isOwner: boolean;
 }
 
@@ -283,6 +291,25 @@ export const getGroup = createServerFn({ method: 'POST' })
         .filter((entry) => entry.amount > 0)
         .sort((a, b) => b.amount - a.amount);
 
+      const directCredits: DirectCredit[] = Array.from(
+        directDebtByPair.entries(),
+      )
+        .map(([pairKey, amount]) => {
+          const [fromMemberId, currency] = pairKey.split(':');
+          return {
+            fromMemberId,
+            fromName: memberNameById.get(fromMemberId) ?? 'Miembro',
+            currency,
+            amount: Math.abs(amount),
+          };
+        })
+        .filter((entry) => entry.amount > 0)
+        .filter((entry) => {
+          const key = `${entry.fromMemberId}:${entry.currency}`;
+          return (directDebtByPair.get(key) ?? 0) < 0;
+        })
+        .sort((a, b) => b.amount - a.amount);
+
       return {
         name: groupRecord.name,
         participantCount: groupRecord.GroupMember.length,
@@ -292,6 +319,7 @@ export const getGroup = createServerFn({ method: 'POST' })
         members,
         memberBalances,
         directDebts,
+        directCredits,
         isOwner: groupRecord.ownerId === userId,
       };
     } catch (error) {

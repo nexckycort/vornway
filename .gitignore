@@ -1,3 +1,5 @@
+.env
+
 # Local
 .DS_Store
 *.local

@@ -1,12 +1,28 @@
 {
   "name": "@splitway/api",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "postinstall": "bun db:generate",
+    "dev": "bun run --hot src/index.ts",
+    "check": "biome check --write",
+    "clean": "rm -rf node_modules",
+    "db:generate": "DATABASE_URL=dummy prisma generate",
+    "db:migrate:dev": "dotenvx run -- prisma migrate dev --name init",
+    "db:migrate": "dotenvx run -- prisma migrate dev",
+    "db:migrate:deploy": "dotenvx run -- prisma migrate deploy",
+    "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
-    "hono": "^4.12.3"
+    "@prisma/adapter-pg": "catalog:",
+    "@prisma/client": "catalog:",
+    "better-auth": "catalog:",
+    "hono": "^4.12.3",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@dotenvx/dotenvx": "catalog:",
+    "@types/bun": "latest",
+    "@typescript/native-preview": "catalog:",
+    "prisma": "catalog:",
+    "typescript": "catalog:"
   }
 }

@@ -1,0 +1,15 @@
+model ActivityLog {
+  id          String   @id @default(cuid())
+  groupId     String
+  actorUserId String?
+  actorName   String
+  action      String
+  targetName  String?
+  details     Json?
+  createdAt   DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
+  @@map("activity_log")
+}

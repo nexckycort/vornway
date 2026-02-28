@@ -23,7 +23,7 @@ export default function TabLayout() {
   };
 
   const handleDrawerAction = (
-    path: '/create-group' | '/create-goal' | '/join-group'
+    path: '/groups/new' | '/goals/new' | '/join-group'
   ) => {
     closeCreateDrawer();
     setTimeout(() => router.push(path), 120);
@@ -125,7 +125,7 @@ export default function TabLayout() {
 
       <BottomDrawer visible={isCreateDrawerVisible} onClose={closeCreateDrawer}>
         <Pressable
-          onPress={() => handleDrawerAction('/create-group')}
+          onPress={() => handleDrawerAction('/groups/new')}
           className="mb-2 flex-row items-center gap-4 rounded-2xl px-2 py-3 active:bg-slate-50">
           <View className="h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
             <MaterialIcons name="group-add" size={22} color="#4F46E5" />
@@ -139,7 +139,7 @@ export default function TabLayout() {
         </Pressable>
 
         <Pressable
-          onPress={() => handleDrawerAction('/create-goal')}
+          onPress={() => handleDrawerAction('/goals/new')}
           className="mb-2 flex-row items-center gap-4 rounded-2xl px-2 py-3 active:bg-slate-50">
           <View className="h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
             <MaterialIcons name="track-changes" size={22} color="#4F46E5" />

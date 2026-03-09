@@ -231,17 +231,31 @@ function ExpenseItem({
       >
         <div
           className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-            expense.isSettlement ? 'bg-emerald-100' : 'bg-[#f0f0ff]'
+            expense.isSettlement
+              ? 'bg-emerald-100'
+              : expense.expenseType === 'composite'
+                ? 'bg-blue-100'
+                : 'bg-[#f0f0ff]'
           }`}
         >
-          <span className="text-lg">{expense.isSettlement ? '🤝' : '💰'}</span>
+          <span className="text-lg">
+            {expense.isSettlement
+              ? '🤝'
+              : expense.expenseType === 'composite'
+                ? '🧾'
+                : '💰'}
+          </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-[#1a1a3e] truncate flex items-center gap-2">
+          <div className="flex items-center gap-2">
             {expense.isPinned ? (
               <Pin className="h-3.5 w-3.5 fill-current text-amber-500" />
             ) : null}
-            {expense.description}
+            <p className="min-w-0 truncate font-medium text-[#1a1a3e]">
+              {expense.description}
+            </p>
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
             {expense.isSettlement ? (
               <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700">
                 Liquidación
@@ -252,7 +266,7 @@ function ExpenseItem({
                 {expense.subExpenseCount === 1 ? '' : 's'}
               </span>
             ) : null}
-          </p>
+          </div>
           <p className="text-sm text-gray-500">
             {formatDate(expense.date)}
             {expense.participantCount > 0 &&

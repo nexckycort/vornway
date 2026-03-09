@@ -19,6 +19,8 @@ interface Expense {
   isDeleted: boolean;
   isSettlement: boolean;
   isPersonal: boolean;
+  isPinned: boolean;
+  pinnedAt: string | null;
   expenseType: 'standard' | 'composite';
   subExpenseCount: number;
   settlementToName: string | null;
@@ -160,9 +162,7 @@ export const getGroup = createServerFn({ method: 'POST' })
         const isSettlement = expense.notes?.includes('[SETTLEMENT') ?? false;
         const isPersonal = !isSettlement && expense.participants.length === 0;
         const metadata = parseExpenseMetadata(expense.metadata);
-        const expenseType: Expense['expenseType'] = metadata
-          ? 'composite'
-          : 'standard';
+        const expenseType: Expense['expenseType'] = metadata.expenseType;
         const settlementToName = isSettlement
           ? (expense.participants[0]?.member.name ?? null)
           : null;
@@ -194,8 +194,10 @@ export const getGroup = createServerFn({ method: 'POST' })
           isDeleted,
           isSettlement,
           isPersonal,
+          isPinned: Boolean(metadata.pinnedAt),
+          pinnedAt: metadata.pinnedAt,
           expenseType,
-          subExpenseCount: metadata?.items.length ?? 0,
+          subExpenseCount: metadata.items.length,
           settlementToName,
           paidBy: {
             id: expense.paidBy.id,
@@ -204,7 +206,22 @@ export const getGroup = createServerFn({ method: 'POST' })
           participantCount: expense._count.participants,
           currentUserBalance,
         };
-      }).filter((expense) => !(expense.isSettlement && expense.isDeleted));
+      })
+        .filter((expense) => !(expense.isSettlement && expense.isDeleted))
+        .sort((a, b) => {
+          if (a.isPinned !== b.isPinned) {
+            return a.isPinned ? -1 : 1;
+          }
+
+          if (a.isPinned && b.isPinned) {
+            return (
+              new Date(b.pinnedAt ?? 0).getTime() -
+              new Date(a.pinnedAt ?? 0).getTime()
+            );
+          }
+
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        });
 
       const members: Member[] = groupRecord.GroupMember.map((member) => ({
         id: member.id,

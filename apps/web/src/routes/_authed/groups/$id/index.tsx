@@ -10,6 +10,7 @@ import {
   type LucideIcon,
   MoreHorizontal,
   Pencil,
+  Pin,
   Plus,
   Share2,
   Trash2,
@@ -45,6 +46,7 @@ interface Expense {
   isDeleted: boolean;
   isSettlement: boolean;
   isPersonal: boolean;
+  isPinned: boolean;
   expenseType: 'standard' | 'composite';
   subExpenseCount: number;
   settlementToName: string | null;
@@ -179,6 +181,9 @@ function ExpenseItem({
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-[#1a1a3e] truncate flex items-center gap-2">
+            {expense.isPinned ? (
+              <Pin className="h-3.5 w-3.5 fill-current text-amber-500" />
+            ) : null}
             {expense.description}
             {expense.isSettlement ? (
               <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700">

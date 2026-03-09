@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   HandCoins,
   Pencil,
+  Pin,
   Pizza,
   ReceiptText,
   X,
@@ -16,6 +17,7 @@ import { formatMoney } from '~/lib/money';
 
 import { deleteExpense } from '../../-actions/delete-expense';
 import { getExpense } from '../../-actions/get-expense';
+import { toggleExpensePin } from '../../-actions/toggle-expense-pin';
 
 export const Route = createFileRoute('/_authed/groups/$id/expense/$expenseId/')(
   {
@@ -82,6 +84,17 @@ function RouteComponent() {
         });
         setShowDeleteModal(false);
         router.history.back();
+      }
+    },
+  });
+  const togglePinMutation = useMutation({
+    mutationFn: toggleExpensePin,
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+        queryClient.invalidateQueries({
+          queryKey: ['expense', groupId, expenseId],
+        });
       }
     },
   });
@@ -169,6 +182,11 @@ function RouteComponent() {
               {compositeItems.length === 1 ? '' : 's'}
             </p>
           ) : null}
+          {!data.isSettlement && data.isPinned ? (
+            <p className="mb-2 text-sm font-medium text-amber-600">
+              Este gasto esta fijado
+            </p>
+          ) : null}
           <p className="text-gray-500">{formatRelativeTime(data.date)}</p>
         </div>
       </div>
@@ -216,6 +234,26 @@ function RouteComponent() {
         ) : null}
 
         <section>
+          {!data.isSettlement ? (
+            <button
+              type="button"
+              onClick={() =>
+                togglePinMutation.mutate({
+                  data: {
+                    groupId,
+                    expenseId,
+                  },
+                })
+              }
+              disabled={data.isDeleted || togglePinMutation.isPending}
+              className="mb-3 inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 disabled:opacity-60"
+            >
+              <Pin
+                className={`h-4 w-4 ${data.isPinned ? 'fill-current' : ''}`}
+              />
+              {data.isPinned ? 'Desfijar gasto' : 'Fijar gasto'}
+            </button>
+          ) : null}
           <h3 className="text-2xl font-semibold text-[#474747] mb-3">
             {data.isSettlement ? 'Liquidado por' : 'Pagado por'}
           </h3>
@@ -320,6 +358,14 @@ function RouteComponent() {
           {data.isSettlement ? 'Editar liquidación' : 'Editar gasto'}
         </button>
       </div>
+
+      {togglePinMutation.data?.error ? (
+        <div className="px-4 pb-3">
+          <p className="text-sm text-center text-red-500">
+            {togglePinMutation.data.error}
+          </p>
+        </div>
+      ) : null}
 
       <AppDrawer open={showDeleteModal} onOpenChange={setShowDeleteModal}>
         <div className="max-h-[84vh] overflow-y-auto">

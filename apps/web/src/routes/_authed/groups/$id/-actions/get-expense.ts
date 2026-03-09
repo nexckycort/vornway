@@ -29,6 +29,7 @@ interface GetExpenseResponse {
   date: Date;
   isDeleted: boolean;
   isSettlement: boolean;
+  isPinned: boolean;
   expenseType: 'standard' | 'composite';
   compositeItems: CompositeExpenseItem[];
   paidBy: {
@@ -121,8 +122,9 @@ export const getExpense = createServerFn({ method: 'POST' })
       date: expenseRecord.date,
       isDeleted: expenseRecord.notes?.includes('[DELETED]') ?? false,
       isSettlement: expenseRecord.notes?.includes('[SETTLEMENT') ?? false,
-      expenseType: metadata ? 'composite' : 'standard',
-      compositeItems: metadata?.items ?? [],
+      isPinned: Boolean(metadata.pinnedAt),
+      expenseType: metadata.expenseType,
+      compositeItems: metadata.items,
       paidBy: {
         memberId: expenseRecord.paidBy.id,
         name: expenseRecord.paidBy.name,

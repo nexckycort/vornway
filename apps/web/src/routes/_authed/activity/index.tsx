@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import {
   CircleDollarSign,
   Pencil,
+  Pin,
   Trash2,
   UserMinus,
   Users,
@@ -57,6 +58,22 @@ function RouteComponent() {
         title: 'Eliminó un gasto',
         icon: Trash2,
         iconClasses: 'bg-[#fde8e8] text-[#c53030]',
+      };
+    }
+
+    if (action === 'expense.pinned') {
+      return {
+        title: 'Fijó un gasto',
+        icon: Pin,
+        iconClasses: 'bg-[#fff7d6] text-[#b7791f]',
+      };
+    }
+
+    if (action === 'expense.unpinned') {
+      return {
+        title: 'Desfijó un gasto',
+        icon: Pin,
+        iconClasses: 'bg-[#f3f4f6] text-[#6b7280]',
       };
     }
 

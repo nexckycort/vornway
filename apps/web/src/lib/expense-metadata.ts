@@ -10,18 +10,27 @@ export interface CompositeExpenseMetadata {
   items: CompositeExpenseItem[];
 }
 
-export type ExpenseMetadata = CompositeExpenseMetadata | null;
+export interface ParsedExpenseMetadata {
+  expenseType: 'standard' | 'composite';
+  items: CompositeExpenseItem[];
+  pinnedAt: string | null;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-export function parseExpenseMetadata(value: unknown): ExpenseMetadata {
-  if (!isRecord(value) || value.type !== 'composite') {
-    return null;
+export function parseExpenseMetadata(value: unknown): ParsedExpenseMetadata {
+  if (!isRecord(value)) {
+    return {
+      expenseType: 'standard',
+      items: [],
+      pinnedAt: null,
+    };
   }
 
-  const items = Array.isArray(value.items) ? value.items : [];
+  const items =
+    value.type === 'composite' && Array.isArray(value.items) ? value.items : [];
   const normalizedItems = items
     .filter(isRecord)
     .map((item) => ({
@@ -46,8 +55,9 @@ export function parseExpenseMetadata(value: unknown): ExpenseMetadata {
     );
 
   return {
-    type: 'composite',
+    expenseType: value.type === 'composite' ? 'composite' : 'standard',
     items: normalizedItems,
+    pinnedAt: typeof value.pinnedAt === 'string' ? value.pinnedAt : null,
   };
 }
 
@@ -59,11 +69,27 @@ export function sumCompositeExpenseItems(
   );
 }
 
-export function buildCompositeExpenseMetadata(
-  items: CompositeExpenseItem[],
-): CompositeExpenseMetadata {
+export function buildExpenseMetadata({
+  items,
+  pinnedAt,
+}: {
+  items?: CompositeExpenseItem[];
+  pinnedAt?: string | null;
+}): Record<string, unknown> | null {
+  const hasItems = Boolean(items && items.length > 0);
+  const hasPinnedAt = Boolean(pinnedAt);
+
+  if (!hasItems && !hasPinnedAt) {
+    return null;
+  }
+
   return {
-    type: 'composite',
-    items,
+    ...(hasItems
+      ? {
+          type: 'composite',
+          items,
+        }
+      : {}),
+    ...(hasPinnedAt ? { pinnedAt } : {}),
   };
 }

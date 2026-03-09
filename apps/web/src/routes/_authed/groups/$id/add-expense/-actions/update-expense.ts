@@ -4,7 +4,8 @@ import * as z from 'zod';
 import { Prisma } from '~/generated/prisma/client';
 import { db } from '~/infrastructure/database/connection';
 import {
-  buildCompositeExpenseMetadata,
+  buildExpenseMetadata,
+  parseExpenseMetadata,
   sumCompositeExpenseItems,
 } from '~/lib/expense-metadata';
 import { useAppSession } from '~/utils/session';
@@ -132,6 +133,7 @@ export const updateExpense = createServerFn({ method: 'POST' })
         }
         const isSettlement =
           existingExpense.notes?.includes('[SETTLEMENT') ?? false;
+        const existingMetadata = parseExpenseMetadata(existingExpense.metadata);
 
         await tx.expense.update({
           where: {
@@ -142,11 +144,10 @@ export const updateExpense = createServerFn({ method: 'POST' })
             amount: computedAmount,
             currency: data.currency,
             paidById: data.paidById,
-            metadata: isComposite
-              ? (buildCompositeExpenseMetadata(
-                  compositeItems,
-                ) as unknown as Prisma.InputJsonValue)
-              : Prisma.JsonNull,
+            metadata: (buildExpenseMetadata({
+              items: isComposite ? compositeItems : [],
+              pinnedAt: existingMetadata.pinnedAt,
+            }) ?? Prisma.JsonNull) as Prisma.InputJsonValue,
           },
         });
 

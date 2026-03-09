@@ -766,9 +766,16 @@ function RouteComponent() {
                   );
 
                   return (
-                    <div
+                    <button
                       key={member.memberId}
-                      className="mb-2 flex items-center gap-4 rounded-2xl border border-gray-200 px-3 py-2 last:mb-0"
+                      type="button"
+                      onClick={() =>
+                        router.navigate({
+                          to: '/groups/$id/member/$memberId',
+                          params: { id, memberId: member.memberId },
+                        })
+                      }
+                      className="mb-2 flex w-full items-center gap-4 rounded-2xl border border-gray-200 px-3 py-2 text-left last:mb-0"
                     >
                       <div className="w-12 h-12 bg-[#f0f0ff] rounded-xl flex items-center justify-center flex-shrink-0">
                         <span className="text-lg font-semibold text-[#4040b0]">
@@ -826,7 +833,7 @@ function RouteComponent() {
                           </p>
                         ))}
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>

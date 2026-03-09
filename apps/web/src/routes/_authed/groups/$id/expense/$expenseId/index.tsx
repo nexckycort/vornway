@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
 
 import type { CompositeExpenseItem } from '~/lib/expense-metadata';
+import { formatMoney } from '~/lib/money';
 
 import { deleteExpense } from '../../-actions/delete-expense';
 import { getExpense } from '../../-actions/get-expense';
@@ -21,15 +22,6 @@ export const Route = createFileRoute('/_authed/groups/$id/expense/$expenseId/')(
     component: RouteComponent,
   },
 );
-
-function formatCurrency(amount: number): string {
-  const truncatedAmount = Math.trunc(amount * 100) / 100;
-
-  return new Intl.NumberFormat('es-CO', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(truncatedAmount);
-}
 
 function formatRelativeTime(date: Date): string {
   const now = Date.now();
@@ -161,10 +153,7 @@ function RouteComponent() {
           <p className="text-gray-500 mb-1">{data.description}</p>
           <div className="flex flex-col items-center gap-1 mb-4 sm:flex-row sm:justify-center sm:gap-2">
             <p className="text-4xl sm:text-5xl font-bold text-[#2b2d33] leading-none">
-              ${formatCurrency(data.amount)}
-            </p>
-            <p className="text-2xl sm:text-4xl font-semibold text-[#4a4a4a] leading-none">
-              {data.currency}
+              {formatMoney(data.amount, data.currency)}
             </p>
           </div>
           {data.isDeleted ? (
@@ -215,7 +204,7 @@ function RouteComponent() {
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-[#3a3a3a] text-lg">
-                          ${formatCurrency(item.amount)} {data.currency}
+                          {formatMoney(item.amount, data.currency)}
                         </p>
                       </div>
                     </div>
@@ -245,7 +234,7 @@ function RouteComponent() {
               </div>
               <div className="text-right">
                 <p className="font-bold text-[#3a3a3a] text-lg">
-                  ${formatCurrency(data.amount)} {data.currency}
+                  {formatMoney(data.amount, data.currency)}
                 </p>
                 <p className="text-[#7a7a7a] text-sm">
                   {data.isSettlement ? 'Pago aplicado' : 'Sin deudas'}
@@ -288,7 +277,7 @@ function RouteComponent() {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-red-500 text-lg">
-                        ${formatCurrency(participant.share)} {data.currency}
+                        {formatMoney(participant.share, data.currency)}
                       </p>
                       <p className="text-[#7a7a7a] text-sm">
                         {data.isSettlement
@@ -356,8 +345,8 @@ function RouteComponent() {
               {data.isSettlement
                 ? 'Se eliminará la liquidación'
                 : 'Se eliminará'}{' '}
-              <strong>{data.description}</strong> por $
-              {formatCurrency(data.amount)} {data.currency}.
+              <strong>{data.description}</strong> por{' '}
+              {formatMoney(data.amount, data.currency)}.
             </p>
 
             <div className="flex gap-3">

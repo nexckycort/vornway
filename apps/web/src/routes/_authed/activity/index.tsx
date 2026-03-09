@@ -8,6 +8,7 @@ import {
   Users,
 } from 'lucide-react';
 import { GradientLayout } from '~/components/gradient-layout';
+import { formatMoney } from '~/lib/money';
 import { getActivityFeed } from './-actions/get-activity-feed';
 
 export const Route = createFileRoute('/_authed/activity/')({
@@ -106,15 +107,6 @@ function RouteComponent() {
     };
   };
 
-  const formatCurrency = (amount: number) => {
-    const truncatedAmount = Math.trunc(amount * 100) / 100;
-
-    return new Intl.NumberFormat('es-CO', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(truncatedAmount);
-  };
-
   const getActivityAmount = (details: unknown) => {
     if (!details || typeof details !== 'object') return null;
 
@@ -196,8 +188,7 @@ function RouteComponent() {
                       </p>
                       {activityAmount && (
                         <p className="text-sm font-semibold text-[#1a1a3e] mt-1">
-                          Valor: ${formatCurrency(activityAmount.amount)}{' '}
-                          {activityAmount.currency}
+                          Valor: {formatMoney(activityAmount.amount, activityAmount.currency)}
                         </p>
                       )}
                     </div>

@@ -19,6 +19,7 @@ import {
 import { type MouseEvent, type TouchEvent, useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
 import { PageHeader } from '~/components/page-header';
+import { formatMoney, formatMoneyAmount } from '~/lib/money';
 import { deleteGroup } from '../../(home)/-actions/delete-group';
 import { deleteExpense } from './-actions/delete-expense';
 import { getGroup } from './-actions/get-group';
@@ -27,15 +28,6 @@ import { leaveGroup } from './-actions/leave-group';
 export const Route = createFileRoute('/_authed/groups/$id/')({
   component: RouteComponent,
 });
-
-function formatCurrency(amount: number): string {
-  const truncatedAmount = Math.trunc(amount * 100) / 100;
-
-  return new Intl.NumberFormat('es-CO', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(truncatedAmount);
-}
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat('es-CO', {
@@ -218,7 +210,7 @@ function ExpenseItem({
           <p
             className={`font-semibold ${expense.isDeleted ? 'text-gray-400 line-through' : 'text-[#1a1a3e]'}`}
           >
-            ${formatCurrency(expense.amount)}
+            {formatMoney(expense.amount, expense.currency)}
           </p>
           {!expense.isDeleted &&
           !expense.isSettlement &&
@@ -234,9 +226,9 @@ function ExpenseItem({
               }`}
             >
               {expense.currentUserBalance > 0
-                ? `Te deben $${formatCurrency(expense.currentUserBalance)}`
+                ? `Te deben ${formatMoney(expense.currentUserBalance, expense.currency)}`
                 : expense.currentUserBalance < 0
-                  ? `Debes $${formatCurrency(Math.abs(expense.currentUserBalance))}`
+                  ? `Debes ${formatMoney(Math.abs(expense.currentUserBalance), expense.currency)}`
                   : 'Estás al día'}
             </p>
           ) : (
@@ -261,7 +253,7 @@ function TotalsDisplay({ totals }: { totals: Record<string, number> }) {
     return (
       <div className="mx-auto mb-2 max-w-xs rounded-2xl bg-[#f6f7ff] px-3 py-2 text-center">
         <h2 className="text-2xl font-semibold leading-tight text-[#1a1a3e]">
-          $0
+          {formatMoneyAmount(0)}
         </h2>
       </div>
     );
@@ -274,16 +266,7 @@ function TotalsDisplay({ totals }: { totals: Record<string, number> }) {
           key={currency}
           className={`leading-tight ${index === 0 ? 'text-2xl font-semibold text-[#1a1a3e]' : 'mt-1 text-base font-medium text-gray-600'}`}
         >
-          ${formatCurrency(amount)}{' '}
-          <span
-            className={
-              index === 0
-                ? 'text-base font-semibold text-[#3a3a66]'
-                : 'text-sm font-medium text-gray-500'
-            }
-          >
-            {currency}
-          </span>
+          {formatMoney(amount, currency)}
         </h2>
       ))}
     </div>
@@ -336,12 +319,12 @@ function UserBalanceSummary({
     <div className="text-center mb-6 space-y-1">
       {debtEntries.map(([currency, amount]) => (
         <p key={`debt-${currency}`} className="font-medium text-red-500">
-          Debes ${formatCurrency(amount)} {currency}
+          Debes {formatMoney(amount, currency)}
         </p>
       ))}
       {creditEntries.map(([currency, amount]) => (
         <p key={`credit-${currency}`} className="font-medium text-green-600">
-          Te deben ${formatCurrency(amount)} {currency}
+          Te deben {formatMoney(amount, currency)}
         </p>
       ))}
     </div>
@@ -722,9 +705,9 @@ function RouteComponent() {
                               }`}
                             >
                               {amount > 0
-                                ? `Le deben $${formatCurrency(amount)} ${currency}`
+                                ? `Le deben ${formatMoney(amount, currency)}`
                                 : amount < 0
-                                  ? `Debe $${formatCurrency(Math.abs(amount))} ${currency}`
+                                  ? `Debe ${formatMoney(Math.abs(amount), currency)}`
                                   : 'Está al día'}
                             </p>
                           ))
@@ -742,10 +725,8 @@ function RouteComponent() {
                                   : 'text-gray-400'
                             }`}
                           >
-                            {amount > 0 ? '+' : ''}${formatCurrency(amount)}{' '}
-                            <span className="text-xs font-normal">
-                              {currency}
-                            </span>
+                            {amount > 0 ? '+' : ''}
+                            {formatMoney(amount, currency)}
                           </p>
                         ))}
                       </div>
@@ -803,8 +784,8 @@ function RouteComponent() {
 
               <p className="text-gray-600 mb-6">
                 Se eliminará <strong>{expenseToDelete.description}</strong> por
-                ${formatCurrency(expenseToDelete.amount)}{' '}
-                {expenseToDelete.currency}.
+                {' '}
+                {formatMoney(expenseToDelete.amount, expenseToDelete.currency)}.
               </p>
 
               <div className="flex gap-3">

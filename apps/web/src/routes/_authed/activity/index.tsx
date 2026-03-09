@@ -106,11 +106,14 @@ function RouteComponent() {
     };
   };
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('es-CO', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+  const formatCurrency = (amount: number) => {
+    const truncatedAmount = Math.trunc(amount * 100) / 100;
+
+    return new Intl.NumberFormat('es-CO', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(truncatedAmount);
+  };
 
   const getActivityAmount = (details: unknown) => {
     if (!details || typeof details !== 'object') return null;

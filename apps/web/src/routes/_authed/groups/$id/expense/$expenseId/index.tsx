@@ -23,10 +23,12 @@ export const Route = createFileRoute('/_authed/groups/$id/expense/$expenseId/')(
 );
 
 function formatCurrency(amount: number): string {
+  const truncatedAmount = Math.trunc(amount * 100) / 100;
+
   return new Intl.NumberFormat('es-CO', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(truncatedAmount);
 }
 
 function formatRelativeTime(date: Date): string {

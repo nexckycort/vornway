@@ -5,6 +5,7 @@ import {
   BarChart3,
   Check,
   Copy,
+  Eye,
   HandCoins,
   Link,
   type LucideIcon,
@@ -17,7 +18,7 @@ import {
   UserPlus,
   X,
 } from 'lucide-react';
-import { type MouseEvent, type TouchEvent, useState } from 'react';
+import { type MouseEvent, type TouchEvent, useRef, useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
 import { PageHeader } from '~/components/page-header';
 import { formatMoney, formatMoneyAmount } from '~/lib/money';
@@ -25,6 +26,7 @@ import { deleteGroup } from '../../(home)/-actions/delete-group';
 import { deleteExpense } from './-actions/delete-expense';
 import { getGroup } from './-actions/get-group';
 import { leaveGroup } from './-actions/leave-group';
+import { toggleExpensePin } from './-actions/toggle-expense-pin';
 
 export const Route = createFileRoute('/_authed/groups/$id/')({
   component: RouteComponent,
@@ -62,21 +64,45 @@ function ExpenseItem({
   expense,
   onOpenExpense,
   onDeleteExpense,
+  onOpenOptions,
 }: {
   expense: Expense;
   onOpenExpense: (expenseId: string) => void;
   onDeleteExpense: (expenseId: string) => void;
+  onOpenOptions: (expense: Expense) => void;
 }) {
   const SWIPE_WIDTH = 88;
   const SWIPE_THRESHOLD = 44;
   const FULL_SWIPE_THRESHOLD = 78;
+  const LONG_PRESS_MS = 450;
   const [translateX, setTranslateX] = useState(0);
   const [startX, setStartX] = useState<number | null>(null);
   const [startY, setStartY] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [didSwipe, setDidSwipe] = useState(false);
+  const [didLongPress, setDidLongPress] = useState(false);
+  const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const isOpen = translateX <= -SWIPE_THRESHOLD;
   const showDeleteAction = !expense.isDeleted && translateX < -2;
+
+  const clearLongPressTimeout = () => {
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+  };
+
+  const startLongPressTimeout = () => {
+    clearLongPressTimeout();
+    longPressTimeoutRef.current = setTimeout(() => {
+      setDidLongPress(true);
+      setDidSwipe(true);
+      setTranslateX(0);
+      onOpenOptions(expense);
+    }, LONG_PRESS_MS);
+  };
 
   const handleTouchStart = (event: TouchEvent<HTMLButtonElement>) => {
     if (expense.isDeleted) return;
@@ -85,6 +111,8 @@ function ExpenseItem({
     setStartY(touch.clientY);
     setIsDragging(true);
     setDidSwipe(false);
+    setDidLongPress(false);
+    startLongPressTimeout();
   };
 
   const handleTouchMove = (event: TouchEvent<HTMLButtonElement>) => {
@@ -95,17 +123,29 @@ function ExpenseItem({
     const deltaX = touch.clientX - startX;
     const deltaY = touch.clientY - startY;
 
-    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      clearLongPressTimeout();
+      return;
+    }
 
     const nextTranslateX = Math.max(-SWIPE_WIDTH, Math.min(0, deltaX));
     if (Math.abs(nextTranslateX) > 6) {
       setDidSwipe(true);
+      clearLongPressTimeout();
     }
     setTranslateX(nextTranslateX);
   };
 
   const handleTouchEnd = () => {
+    clearLongPressTimeout();
     if (!isDragging || expense.isDeleted) return;
+    if (didLongPress) {
+      setIsDragging(false);
+      setStartX(null);
+      setStartY(null);
+      setDidLongPress(false);
+      return;
+    }
     const shouldTriggerDelete = translateX <= -FULL_SWIPE_THRESHOLD;
     const shouldOpenActions = translateX <= -SWIPE_THRESHOLD;
 
@@ -121,6 +161,16 @@ function ExpenseItem({
     setIsDragging(false);
     setStartX(null);
     setStartY(null);
+  };
+
+  const handleMouseDown = () => {
+    if (expense.isDeleted) return;
+    setDidLongPress(false);
+    startLongPressTimeout();
+  };
+
+  const handleMouseUp = () => {
+    clearLongPressTimeout();
   };
 
   const handleOpenExpense = () => {
@@ -167,6 +217,13 @@ function ExpenseItem({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          onOpenOptions(expense);
+        }}
         className={`native-tap relative z-10 w-full flex items-center gap-4 py-2 text-left transition-transform duration-200 ${
           expense.isSettlement ? 'bg-emerald-50' : 'bg-white'
         }`}
@@ -345,7 +402,11 @@ function RouteComponent() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+  const [expenseForOptions, setExpenseForOptions] = useState<Expense | null>(
+    null,
+  );
   const [showDeleteExpenseModal, setShowDeleteExpenseModal] = useState(false);
+  const [showExpenseOptionsModal, setShowExpenseOptionsModal] = useState(false);
   const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false);
   const [showLeaveGroupConfirm, setShowLeaveGroupConfirm] = useState(false);
   const [deleteGroupNameInput, setDeleteGroupNameInput] = useState('');
@@ -363,6 +424,16 @@ function RouteComponent() {
         queryClient.invalidateQueries({ queryKey: ['group', id] });
         setShowDeleteExpenseModal(false);
         setExpenseToDelete(null);
+      }
+    },
+  });
+  const toggleExpensePinMutation = useMutation({
+    mutationFn: toggleExpensePin,
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['group', id] });
+        setShowExpenseOptionsModal(false);
+        setExpenseForOptions(null);
       }
     },
   });
@@ -404,6 +475,11 @@ function RouteComponent() {
 
     setExpenseToDelete(expense);
     setShowDeleteExpenseModal(true);
+  };
+
+  const handleOpenExpenseOptions = (expense: Expense) => {
+    setExpenseForOptions(expense);
+    setShowExpenseOptionsModal(true);
   };
 
   const handleConfirmDeleteExpense = () => {
@@ -633,6 +709,7 @@ function RouteComponent() {
                   <ExpenseItem
                     key={expense.id}
                     expense={expense}
+                    onOpenOptions={handleOpenExpenseOptions}
                     onOpenExpense={(expenseId) =>
                       router.navigate({
                         to: '/groups/$id/expense/$expenseId',
@@ -752,6 +829,105 @@ function RouteComponent() {
           </div>
         )}
       </div>
+
+      <AppDrawer
+        open={showExpenseOptionsModal && Boolean(expenseForOptions)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowExpenseOptionsModal(false);
+            setExpenseForOptions(null);
+            return;
+          }
+          setShowExpenseOptionsModal(true);
+        }}
+      >
+        {expenseForOptions ? (
+          <div className="max-h-[84vh] overflow-y-auto">
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+            </div>
+
+            <div className="px-6 pb-8">
+              <div className="mb-6">
+                <p className="text-sm text-gray-500">Opciones del gasto</p>
+                <h2 className="text-xl font-bold text-[#1a1a3e]">
+                  {expenseForOptions.description}
+                </h2>
+                <p className="text-sm text-gray-500">
+                  {formatMoney(expenseForOptions.amount, expenseForOptions.currency)}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowExpenseOptionsModal(false);
+                    router.navigate({
+                      to: '/groups/$id/expense/$expenseId',
+                      params: { id, expenseId: expenseForOptions.id },
+                    });
+                  }}
+                  className="flex w-full items-center gap-3 rounded-2xl px-4 py-4 text-left hover:bg-gray-50"
+                >
+                  <Eye className="h-5 w-5 text-[#1a1a3e]" />
+                  <span className="font-medium text-[#1a1a3e]">Abrir</span>
+                </button>
+
+                {!expenseForOptions.isSettlement && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      toggleExpensePinMutation.mutate({
+                        data: {
+                          groupId: id,
+                          expenseId: expenseForOptions.id,
+                        },
+                      })
+                    }
+                    disabled={
+                      expenseForOptions.isDeleted ||
+                      toggleExpensePinMutation.isPending
+                    }
+                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-4 text-left hover:bg-gray-50 disabled:opacity-60"
+                  >
+                    <Pin
+                      className={`h-5 w-5 ${
+                        expenseForOptions.isPinned
+                          ? 'fill-current text-amber-500'
+                          : 'text-[#1a1a3e]'
+                      }`}
+                    />
+                    <span className="font-medium text-[#1a1a3e]">
+                      {expenseForOptions.isPinned ? 'Desfijar' : 'Fijar'}
+                    </span>
+                  </button>
+                )}
+
+                {!expenseForOptions.isDeleted && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExpenseOptionsModal(false);
+                      handleDeleteExpense(expenseForOptions.id);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-4 text-left hover:bg-red-50"
+                  >
+                    <Trash2 className="h-5 w-5 text-red-500" />
+                    <span className="font-medium text-red-500">Eliminar</span>
+                  </button>
+                )}
+              </div>
+
+              {toggleExpensePinMutation.data?.error ? (
+                <p className="mt-3 text-sm text-red-500">
+                  {toggleExpensePinMutation.data.error}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </AppDrawer>
 
       <AppDrawer
         open={showDeleteExpenseModal && Boolean(expenseToDelete)}

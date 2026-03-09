@@ -1,9 +1,20 @@
 /** biome-ignore-all lint/correctness/useHookAtTopLevel: useAppSession is a server helper */
 import { createServerFn } from '@tanstack/react-start';
 import * as z from 'zod';
-
+import { Prisma } from '~/generated/prisma/client';
 import { db } from '~/infrastructure/database/connection';
+import {
+  buildCompositeExpenseMetadata,
+  sumCompositeExpenseItems,
+} from '~/lib/expense-metadata';
 import { useAppSession } from '~/utils/session';
+
+const CompositeExpenseItemSchema = z.object({
+  id: z.string().min(1),
+  description: z.string().min(1),
+  amount: z.number().nonnegative(),
+  createdAt: z.string().min(1),
+});
 
 const CreateExpenseInputSchema = z.object({
   groupId: z.string(),
@@ -12,6 +23,8 @@ const CreateExpenseInputSchema = z.object({
   currency: z.string(),
   paidById: z.string(), // GroupMember ID
   participantIds: z.array(z.string()), // GroupMember IDs (vacío = gasto personal)
+  expenseType: z.enum(['standard', 'composite']).default('standard'),
+  compositeItems: z.array(CompositeExpenseItemSchema).optional(),
   splitMethod: z.enum(['equal', 'percentage', 'exact']),
   exactShares: z.record(z.string(), z.number().nonnegative()).optional(),
 });
@@ -51,6 +64,19 @@ export const createExpense = createServerFn({ method: 'POST' })
         };
       }
 
+      const isComposite = data.expenseType === 'composite';
+      const compositeItems = isComposite ? (data.compositeItems ?? []) : [];
+      const computedAmount = isComposite
+        ? sumCompositeExpenseItems(compositeItems)
+        : data.amount;
+
+      if (isComposite && compositeItems.length === 0) {
+        return {
+          success: false,
+          error: 'Debes agregar al menos un subgasto',
+        };
+      }
+
       let participantShares: Record<string, number> = {};
 
       if (data.participantIds.length > 0) {
@@ -68,14 +94,14 @@ export const createExpense = createServerFn({ method: 'POST' })
             0,
           );
 
-          if (Math.abs(exactTotal - data.amount) >= 0.01) {
+          if (Math.abs(exactTotal - computedAmount) >= 0.01) {
             return {
               success: false,
               error: 'La suma de montos exactos debe ser igual al monto total',
             };
           }
         } else {
-          const equalShare = data.amount / data.participantIds.length;
+          const equalShare = computedAmount / data.participantIds.length;
           participantShares = Object.fromEntries(
             data.participantIds.map((memberId) => [memberId, equalShare]),
           );
@@ -87,8 +113,13 @@ export const createExpense = createServerFn({ method: 'POST' })
           groupId: data.groupId,
           paidById: data.paidById,
           description: data.description,
-          amount: data.amount,
+          amount: computedAmount,
           currency: data.currency,
+          metadata: isComposite
+            ? (buildCompositeExpenseMetadata(
+                compositeItems,
+              ) as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
           // Solo crear participantes si hay seleccionados (no es gasto personal)
           ...(data.participantIds.length > 0 && {
             participants: {
@@ -110,10 +141,12 @@ export const createExpense = createServerFn({ method: 'POST' })
           targetName: data.description,
           details: {
             expenseId: expense.id,
-            amount: data.amount,
+            amount: computedAmount,
             currency: data.currency,
             paidById: data.paidById,
             participants: data.participantIds.length,
+            expenseType: data.expenseType,
+            subExpenseCount: compositeItems.length,
           },
         },
       });
@@ -127,7 +160,7 @@ export const createExpense = createServerFn({ method: 'POST' })
       const currentTotals = (group?.totals as Record<string, number>) ?? {};
       const newTotals = {
         ...currentTotals,
-        [data.currency]: (currentTotals[data.currency] ?? 0) + data.amount,
+        [data.currency]: (currentTotals[data.currency] ?? 0) + computedAmount,
       };
 
       await db.group.update({

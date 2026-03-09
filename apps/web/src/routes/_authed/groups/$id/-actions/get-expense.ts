@@ -2,6 +2,10 @@ import { createServerFn } from '@tanstack/react-start';
 import * as z from 'zod';
 
 import { db } from '~/infrastructure/database/connection';
+import {
+  type CompositeExpenseItem,
+  parseExpenseMetadata,
+} from '~/lib/expense-metadata';
 import { useAppSession } from '~/utils/session';
 
 const GetExpenseInputSchema = z.object({
@@ -25,6 +29,8 @@ interface GetExpenseResponse {
   date: Date;
   isDeleted: boolean;
   isSettlement: boolean;
+  expenseType: 'standard' | 'composite';
+  compositeItems: CompositeExpenseItem[];
   paidBy: {
     memberId: string;
     name: string;
@@ -69,6 +75,7 @@ export const getExpense = createServerFn({ method: 'POST' })
         currency: true,
         date: true,
         notes: true,
+        metadata: true,
         group: {
           select: {
             name: true,
@@ -103,6 +110,8 @@ export const getExpense = createServerFn({ method: 'POST' })
       throw new Error('Gasto no encontrado');
     }
 
+    const metadata = parseExpenseMetadata(expenseRecord.metadata);
+
     return {
       id: expenseRecord.id,
       groupName: expenseRecord.group.name,
@@ -112,6 +121,8 @@ export const getExpense = createServerFn({ method: 'POST' })
       date: expenseRecord.date,
       isDeleted: expenseRecord.notes?.includes('[DELETED]') ?? false,
       isSettlement: expenseRecord.notes?.includes('[SETTLEMENT') ?? false,
+      expenseType: metadata ? 'composite' : 'standard',
+      compositeItems: metadata?.items ?? [],
       paidBy: {
         memberId: expenseRecord.paidBy.id,
         name: expenseRecord.paidBy.name,

@@ -1,8 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { ChevronLeft, HandCoins, Pencil, Pizza, X } from 'lucide-react';
+import {
+  ChevronLeft,
+  HandCoins,
+  Pencil,
+  Pizza,
+  ReceiptText,
+  X,
+} from 'lucide-react';
 import { useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
+
+import type { CompositeExpenseItem } from '~/lib/expense-metadata';
 
 import { deleteExpense } from '../../-actions/delete-expense';
 import { getExpense } from '../../-actions/get-expense';
@@ -48,6 +57,14 @@ function formatRelativeTime(date: Date): string {
 
   const years = Math.floor(days / 365);
   return `Hace ${years} año${years === 1 ? '' : 's'}`;
+}
+
+function formatAbsoluteDate(date: string): string {
+  return new Intl.DateTimeFormat('es-CO', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(date));
 }
 
 function RouteComponent() {
@@ -111,6 +128,7 @@ function RouteComponent() {
   const splitParticipants = data.participants.filter(
     (participant) => participant.memberId !== data.paidBy.memberId,
   );
+  const compositeItems = data.compositeItems;
 
   return (
     <div className="min-h-screen bg-[#f5f3fa] pb-32">
@@ -154,11 +172,58 @@ function RouteComponent() {
                 : 'Este gasto fue eliminado (se conserva por historial)'}
             </p>
           ) : null}
+          {!data.isSettlement && data.expenseType === 'composite' ? (
+            <p className="mb-2 text-sm text-blue-600">
+              Bolsa de gastos con {compositeItems.length} movimiento
+              {compositeItems.length === 1 ? '' : 's'}
+            </p>
+          ) : null}
           <p className="text-gray-500">{formatRelativeTime(data.date)}</p>
         </div>
       </div>
 
       <div className="px-4 space-y-5">
+        {!data.isSettlement && data.expenseType === 'composite' ? (
+          <section>
+            <h3 className="text-2xl font-semibold text-[#474747] mb-3">
+              Subgastos
+            </h3>
+            <div className="space-y-3">
+              {compositeItems.length === 0 ? (
+                <div className="bg-white rounded-2xl px-4 py-4 border border-gray-100">
+                  <p className="text-gray-500">Sin subgastos registrados</p>
+                </div>
+              ) : (
+                compositeItems.map((item: CompositeExpenseItem) => (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-2xl px-4 py-3 border border-gray-100"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 bg-[#eef3ff] rounded-xl flex items-center justify-center flex-shrink-0">
+                        <ReceiptText className="w-5 h-5 text-[#4040b0]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-[#1a1a3e] truncate">
+                          {item.description}
+                        </p>
+                        <p className="text-[#7a7a7a] text-sm">
+                          {formatAbsoluteDate(item.createdAt)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-[#3a3a3a] text-lg">
+                          ${formatCurrency(item.amount)} {data.currency}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        ) : null}
+
         <section>
           <h3 className="text-2xl font-semibold text-[#474747] mb-3">
             {data.isSettlement ? 'Liquidado por' : 'Pagado por'}

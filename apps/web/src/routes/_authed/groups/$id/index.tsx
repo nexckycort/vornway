@@ -50,6 +50,9 @@ interface Expense {
   date: Date;
   isDeleted: boolean;
   isSettlement: boolean;
+  isPersonal: boolean;
+  expenseType: 'standard' | 'composite';
+  subExpenseCount: number;
   settlementToName: string | null;
   paidBy: {
     id: string;
@@ -187,6 +190,11 @@ function ExpenseItem({
               <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700">
                 Liquidación
               </span>
+            ) : expense.expenseType === 'composite' ? (
+              <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700">
+                {expense.subExpenseCount} subgasto
+                {expense.subExpenseCount === 1 ? '' : 's'}
+              </span>
             ) : null}
           </p>
           <p className="text-sm text-gray-500">
@@ -212,6 +220,7 @@ function ExpenseItem({
           </p>
           {!expense.isDeleted &&
           !expense.isSettlement &&
+          expense.participantCount > 0 &&
           expense.currentUserBalance !== null ? (
             <p
               className={`text-xs font-medium ${

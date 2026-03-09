@@ -103,6 +103,7 @@ export const getUserGroups = createServerFn({ method: 'GET' }).handler(
           for (const expense of group.Expense) {
             const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
             if (isDeleted) continue;
+            if (expense.participants.length === 0) continue;
 
             let delta = 0;
 

@@ -14,7 +14,7 @@ interface ActivityItem {
     id: string;
     name: string;
   };
-  details: unknown;
+  details: Record<string, {}>;
 }
 
 interface GetActivityFeedResponse {
@@ -81,7 +81,15 @@ export const getActivityFeed = createServerFn({ method: 'GET' }).handler(
 
       return {
         success: true,
-        activities,
+        activities: activities.map((activity) => ({
+          ...activity,
+          details:
+            activity.details &&
+            typeof activity.details === 'object' &&
+            !Array.isArray(activity.details)
+              ? (activity.details as Record<string, {}>)
+              : {},
+        })),
       };
     } catch (error) {
       console.error('Error loading activity feed:', error);

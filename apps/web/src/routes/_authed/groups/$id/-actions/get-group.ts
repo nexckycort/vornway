@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start';
 import * as z from 'zod';
 
 import { db } from '~/infrastructure/database/connection';
+import { parseExpenseMetadata } from '~/lib/expense-metadata';
 import { useAppSession } from '~/utils/session';
 
 const GetGroupInputSchema = z.object({
@@ -17,6 +18,9 @@ interface Expense {
   date: Date;
   isDeleted: boolean;
   isSettlement: boolean;
+  isPersonal: boolean;
+  expenseType: 'standard' | 'composite';
+  subExpenseCount: number;
   settlementToName: string | null;
   paidBy: {
     id: string;
@@ -102,6 +106,7 @@ export const getGroup = createServerFn({ method: 'POST' })
               currency: true,
               date: true,
               notes: true,
+              metadata: true,
               paidBy: {
                 select: {
                   id: true,
@@ -153,12 +158,17 @@ export const getGroup = createServerFn({ method: 'POST' })
       const expenses: Expense[] = groupRecord.Expense.map((expense) => {
         const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
         const isSettlement = expense.notes?.includes('[SETTLEMENT') ?? false;
+        const isPersonal = !isSettlement && expense.participants.length === 0;
+        const metadata = parseExpenseMetadata(expense.metadata);
+        const expenseType: Expense['expenseType'] = metadata
+          ? 'composite'
+          : 'standard';
         const settlementToName = isSettlement
           ? (expense.participants[0]?.member.name ?? null)
           : null;
         let currentUserBalance: number | null = null;
 
-        if (!isDeleted && currentMemberId) {
+        if (!isDeleted && !isPersonal && currentMemberId) {
           const isPayer = expense.paidBy.id === currentMemberId;
           const participation = expense.participants.find(
             (p) => p.memberId === currentMemberId,
@@ -183,6 +193,9 @@ export const getGroup = createServerFn({ method: 'POST' })
           date: expense.date,
           isDeleted,
           isSettlement,
+          isPersonal,
+          expenseType,
+          subExpenseCount: metadata?.items.length ?? 0,
           settlementToName,
           paidBy: {
             id: expense.paidBy.id,
@@ -213,6 +226,7 @@ export const getGroup = createServerFn({ method: 'POST' })
       for (const expense of groupRecord.Expense) {
         const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
         if (isDeleted) continue;
+        if (expense.participants.length === 0) continue;
 
         const currency = expense.currency;
         const payerId = expense.paidBy.id;
@@ -248,6 +262,7 @@ export const getGroup = createServerFn({ method: 'POST' })
         for (const expense of groupRecord.Expense) {
           const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
           if (isDeleted) continue;
+          if (expense.participants.length === 0) continue;
 
           if (expense.paidBy.id === currentMemberId) {
             for (const participant of expense.participants) {

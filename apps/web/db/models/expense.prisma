@@ -8,6 +8,7 @@ model Expense {
   date        DateTime @default(now())
   notes       String?
   attachment  String? // URL de foto del recibo
+  metadata    Json?
 
   group        Group                @relation(fields: [groupId], references: [id])
   paidBy       GroupMember          @relation("MemberPaidExpenses", fields: [paidById], references: [id])

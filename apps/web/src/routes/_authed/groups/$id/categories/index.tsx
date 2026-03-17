@@ -128,6 +128,13 @@ function RouteComponent() {
   const activeCurrency = selectedCurrency ?? primaryCurrency;
   const drawerCategory =
     categories.find((category) => category.id === drawerCategoryId) ?? null;
+  const drawerExpenses = drawerCategoryId
+    ? assignableExpenses.filter(
+        (expense) =>
+          expense.currentCategoryId === null ||
+          expense.currentCategoryId === drawerCategoryId,
+      )
+    : [];
 
   function openCategoryDrawer(categoryId: string) {
     setDrawerCategoryId(categoryId);
@@ -695,8 +702,13 @@ function RouteComponent() {
             </button>
           </div>
 
+          <p className="mb-3 text-xs text-[#68768a]">
+            Aquí solo aparecen gastos sin categoría y los que ya pertenecen a
+            esta categoría.
+          </p>
+
           <div className="max-h-[52vh] space-y-3 overflow-y-auto pb-2">
-            {assignableExpenses.map((expense) => {
+            {drawerExpenses.map((expense) => {
               const isSelected = selectedExpenseIds.includes(expense.id);
 
               return (
@@ -766,6 +778,11 @@ function RouteComponent() {
                 </button>
               );
             })}
+            {drawerExpenses.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-gray-200 bg-[#fafbff] p-4 text-sm text-[#68768a]">
+                No hay gastos sin categoría disponibles para agregar aquí.
+              </div>
+            ) : null}
           </div>
         </div>
 

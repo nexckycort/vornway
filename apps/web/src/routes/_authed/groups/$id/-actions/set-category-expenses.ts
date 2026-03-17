@@ -69,13 +69,21 @@ export const setCategoryExpenses = createServerFn({ method: 'POST' })
             id: { in: data.expenseIds },
             groupId: data.groupId,
             OR: [
-              { notes: null },
+              { categoryId: null },
+              { categoryId: data.categoryId },
+            ],
+            AND: [
               {
-                notes: {
-                  not: {
-                    contains: '[SETTLEMENT',
+                OR: [
+                  { notes: null },
+                  {
+                    notes: {
+                      not: {
+                        contains: '[SETTLEMENT',
+                      },
+                    },
                   },
-                },
+                ],
               },
             ],
           },
@@ -87,7 +95,8 @@ export const setCategoryExpenses = createServerFn({ method: 'POST' })
         if (validExpenses.length !== data.expenseIds.length) {
           return {
             success: false,
-            error: 'Uno o más gastos no son válidos para esta categoría',
+            error:
+              'Solo puedes asignar gastos sin categoría o que ya pertenezcan a esta categoría',
           };
         }
       }

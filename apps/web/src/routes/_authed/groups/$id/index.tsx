@@ -19,7 +19,7 @@ import {
   UserPlus,
   X,
 } from 'lucide-react';
-import { type MouseEvent, type TouchEvent, useRef, useState } from 'react';
+import { type MouseEvent, type TouchEvent, useEffect, useRef, useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
 import { PageHeader } from '~/components/page-header';
 import { formatMoney, formatMoneyAmount } from '~/lib/money';
@@ -63,6 +63,11 @@ interface Expense {
   };
   participantCount: number;
   currentUserBalance: number | null;
+}
+
+interface GroupViewState {
+  activeTab: 'gastos' | 'cuentas';
+  scrollY: number;
 }
 
 function ExpenseItem({
@@ -431,6 +436,7 @@ function RouteComponent() {
   const [showLeaveGroupConfirm, setShowLeaveGroupConfirm] = useState(false);
   const [deleteGroupNameInput, setDeleteGroupNameInput] = useState('');
   const [copiedGroupName, setCopiedGroupName] = useState(false);
+  const scrollRestoreKey = `group-view-state:${id}`;
 
   const { data, error, isLoading } = useQuery({
     queryKey: ['group', id],
@@ -591,6 +597,40 @@ function RouteComponent() {
     },
   ];
 
+  const saveViewState = () => {
+    if (typeof window === 'undefined') return;
+
+    const viewState: GroupViewState = {
+      activeTab,
+      scrollY: window.scrollY,
+    };
+
+    window.sessionStorage.setItem(scrollRestoreKey, JSON.stringify(viewState));
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || isLoading) return;
+
+    const rawState = window.sessionStorage.getItem(scrollRestoreKey);
+    if (!rawState) return;
+
+    try {
+      const viewState = JSON.parse(rawState) as GroupViewState;
+
+      setActiveTab(viewState.activeTab);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: viewState.scrollY, behavior: 'auto' });
+          window.sessionStorage.removeItem(scrollRestoreKey);
+        });
+      });
+    } catch (error) {
+      console.error('Error restoring group scroll state:', error);
+      window.sessionStorage.removeItem(scrollRestoreKey);
+    }
+  }, [isLoading, scrollRestoreKey]);
+
   // Loading state
   if (isLoading) {
     return (
@@ -730,12 +770,13 @@ function RouteComponent() {
                     key={expense.id}
                     expense={expense}
                     onOpenOptions={handleOpenExpenseOptions}
-                    onOpenExpense={(expenseId) =>
+                    onOpenExpense={(expenseId) => {
+                      saveViewState();
                       router.navigate({
                         to: '/groups/$id/expense/$expenseId',
                         params: { id, expenseId },
-                      })
-                    }
+                      });
+                    }}
                     onDeleteExpense={handleDeleteExpense}
                   />
                 ))}
@@ -775,12 +816,13 @@ function RouteComponent() {
                     <button
                       key={member.memberId}
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
+                        saveViewState();
                         router.navigate({
                           to: '/groups/$id/member/$memberId',
                           params: { id, memberId: member.memberId },
-                        })
-                      }
+                        });
+                      }}
                       className="mb-2 flex w-full items-center gap-4 rounded-2xl border border-gray-200 px-3 py-2 text-left last:mb-0"
                     >
                       <div className="w-12 h-12 bg-[#f0f0ff] rounded-xl flex items-center justify-center flex-shrink-0">
@@ -890,6 +932,7 @@ function RouteComponent() {
                   type="button"
                   onClick={() => {
                     setShowExpenseOptionsModal(false);
+                    saveViewState();
                     router.navigate({
                       to: '/groups/$id/expense/$expenseId',
                       params: { id, expenseId: expenseForOptions.id },

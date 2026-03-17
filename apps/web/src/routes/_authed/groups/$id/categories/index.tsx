@@ -72,6 +72,11 @@ function shortenLabel(value: string) {
   return value.length > 12 ? `${value.slice(0, 12)}…` : value;
 }
 
+interface CategoryViewState {
+  scrollY: number;
+  selectedCurrency: string | null;
+}
+
 function RouteComponent() {
   const { id: groupId } = Route.useParams();
   const router = useRouter();
@@ -83,6 +88,7 @@ function RouteComponent() {
   const [selectedExpenseIds, setSelectedExpenseIds] = useState<string[]>([]);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState('');
+  const scrollRestoreKey = `group-categories-view-state:${groupId}`;
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['category-breakdown', groupId],
@@ -204,6 +210,17 @@ function RouteComponent() {
     setEditingCategoryName(currentName);
   }
 
+  function saveViewState() {
+    if (typeof window === 'undefined') return;
+
+    const viewState: CategoryViewState = {
+      scrollY: window.scrollY,
+      selectedCurrency,
+    };
+
+    window.sessionStorage.setItem(scrollRestoreKey, JSON.stringify(viewState));
+  }
+
   useEffect(() => {
     if (!currencyEntries.length) {
       setSelectedCurrency(null);
@@ -225,6 +242,31 @@ function RouteComponent() {
     setEditingCategoryId(null);
     setEditingCategoryName('');
   }, [groupId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || isLoading) return;
+
+    const rawState = window.sessionStorage.getItem(scrollRestoreKey);
+    if (!rawState) return;
+
+    try {
+      const viewState = JSON.parse(rawState) as CategoryViewState;
+
+      if (viewState.selectedCurrency) {
+        setSelectedCurrency(viewState.selectedCurrency);
+      }
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: viewState.scrollY, behavior: 'auto' });
+          window.sessionStorage.removeItem(scrollRestoreKey);
+        });
+      });
+    } catch (error) {
+      console.error('Error restoring categories scroll state:', error);
+      window.sessionStorage.removeItem(scrollRestoreKey);
+    }
+  }, [isLoading, scrollRestoreKey]);
 
   if (isLoading) {
     return (
@@ -702,12 +744,13 @@ function RouteComponent() {
                     <button
                       key={expense.id}
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
+                        saveViewState();
                         router.navigate({
                           to: '/groups/$id/expense/$expenseId',
                           params: { id: groupId, expenseId: expense.id },
-                        })
-                      }
+                        });
+                      }}
                       className="w-full rounded-[24px] border border-white/70 bg-white/95 px-4 py-4 text-left shadow-sm"
                     >
                       <div className="flex items-start gap-3">

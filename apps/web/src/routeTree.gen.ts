@@ -33,8 +33,8 @@ import { Route as AuthedGroupsIdSettleIndexRouteImport } from './routes/_authed/
 import { Route as AuthedGroupsIdParticipantsIndexRouteImport } from './routes/_authed/groups/$id/participants/index'
 import { Route as AuthedGroupsIdGoalsIndexRouteImport } from './routes/_authed/groups/$id/goals/index'
 import { Route as AuthedGroupsIdEditIndexRouteImport } from './routes/_authed/groups/$id/edit/index'
-import { Route as AuthedGroupsIdAddExpenseIndexRouteImport } from './routes/_authed/groups/$id/add-expense/index'
 import { Route as AuthedGroupsIdCategoriesIndexRouteImport } from './routes/_authed/groups/$id/categories/index'
+import { Route as AuthedGroupsIdAddExpenseIndexRouteImport } from './routes/_authed/groups/$id/add-expense/index'
 import { Route as AuthedGroupsIdMemberMemberIdIndexRouteImport } from './routes/_authed/groups/$id/member/$memberId/index'
 import { Route as AuthedGroupsIdExpenseExpenseIdIndexRouteImport } from './routes/_authed/groups/$id/expense/$expenseId/index'
 
@@ -163,16 +163,16 @@ const AuthedGroupsIdEditIndexRoute = AuthedGroupsIdEditIndexRouteImport.update({
   path: '/groups/$id/edit/',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedGroupsIdAddExpenseIndexRoute =
-  AuthedGroupsIdAddExpenseIndexRouteImport.update({
-    id: '/groups/$id/add-expense/',
-    path: '/groups/$id/add-expense/',
-    getParentRoute: () => AuthedRoute,
-  } as any)
 const AuthedGroupsIdCategoriesIndexRoute =
   AuthedGroupsIdCategoriesIndexRouteImport.update({
     id: '/groups/$id/categories/',
     path: '/groups/$id/categories/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedGroupsIdAddExpenseIndexRoute =
+  AuthedGroupsIdAddExpenseIndexRouteImport.update({
+    id: '/groups/$id/add-expense/',
+    path: '/groups/$id/add-expense/',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedGroupsIdMemberMemberIdIndexRoute =
@@ -541,18 +541,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedGroupsIdEditIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/groups/$id/add-expense/': {
-      id: '/_authed/groups/$id/add-expense/'
-      path: '/groups/$id/add-expense'
-      fullPath: '/groups/$id/add-expense/'
-      preLoaderRoute: typeof AuthedGroupsIdAddExpenseIndexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/groups/$id/categories/': {
       id: '/_authed/groups/$id/categories/'
       path: '/groups/$id/categories'
       fullPath: '/groups/$id/categories/'
       preLoaderRoute: typeof AuthedGroupsIdCategoriesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/groups/$id/add-expense/': {
+      id: '/_authed/groups/$id/add-expense/'
+      path: '/groups/$id/add-expense'
+      fullPath: '/groups/$id/add-expense/'
+      preLoaderRoute: typeof AuthedGroupsIdAddExpenseIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/groups/$id/member/$memberId/': {

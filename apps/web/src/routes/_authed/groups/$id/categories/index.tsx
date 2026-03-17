@@ -36,6 +36,8 @@ const CATEGORY_COLORS = [
   '#ca8a04',
 ];
 
+const CURRENCY_COLORS = ['#1d4ed8', '#d97706', '#dc2626', '#059669', '#7c3aed'];
+
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat('es-CO', {
     day: 'numeric',
@@ -75,6 +77,35 @@ function RouteComponent() {
     },
   });
 
+  const categories = data?.categories ?? [];
+  const currencyTotals = new Map<string, number>();
+  for (const category of categories) {
+    for (const [currency, amount] of Object.entries(category.totals)) {
+      currencyTotals.set(currency, (currencyTotals.get(currency) ?? 0) + amount);
+    }
+  }
+
+  const currencyEntries = Array.from(currencyTotals.entries()).sort(
+    (a, b) => b[1] - a[1],
+  );
+
+  const primaryCurrency = currencyEntries[0]?.[0] ?? null;
+  const activeCurrency = selectedCurrency ?? primaryCurrency;
+
+  useEffect(() => {
+    if (!currencyEntries.length) {
+      setSelectedCurrency(null);
+      return;
+    }
+
+    if (
+      !selectedCurrency ||
+      !currencyEntries.some(([currency]) => currency === selectedCurrency)
+    ) {
+      setSelectedCurrency(currencyEntries[0][0]);
+    }
+  }, [currencyEntries, selectedCurrency]);
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f4f5f8]">
@@ -108,33 +139,6 @@ function RouteComponent() {
     0,
   );
 
-  const currencyTotals = new Map<string, number>();
-  for (const category of data.categories) {
-    for (const [currency, amount] of Object.entries(category.totals)) {
-      currencyTotals.set(currency, (currencyTotals.get(currency) ?? 0) + amount);
-    }
-  }
-
-  const currencyEntries = Array.from(currencyTotals.entries()).sort(
-    (a, b) => b[1] - a[1],
-  );
-  const primaryCurrency = currencyEntries[0]?.[0] ?? null;
-  const activeCurrency = selectedCurrency ?? primaryCurrency;
-
-  useEffect(() => {
-    if (!currencyEntries.length) {
-      setSelectedCurrency(null);
-      return;
-    }
-
-    if (
-      !selectedCurrency ||
-      !currencyEntries.some(([currency]) => currency === selectedCurrency)
-    ) {
-      setSelectedCurrency(currencyEntries[0][0]);
-    }
-  }, [currencyEntries, selectedCurrency]);
-
   const categorySeries = activeCurrency
     ? data.categories
         .map((category, index) => ({
@@ -148,16 +152,73 @@ function RouteComponent() {
     : [];
 
   const topCategory = categorySeries[0] ?? null;
-  const totalPrimaryAmount = categorySeries.reduce(
+  const totalActiveAmount = categorySeries.reduce(
     (sum, item) => sum + item.amount,
     0,
   );
   const chartData = categorySeries.slice(0, 6);
+  const comparisonData = data.categories
+    .map((category) => {
+      const amounts = Object.fromEntries(
+        currencyEntries.map(([currency]) => [currency, category.totals[currency] ?? 0]),
+      );
+      const total = Object.values(amounts).reduce(
+        (sum, amount) => sum + (typeof amount === 'number' ? amount : 0),
+        0,
+      );
+
+      return {
+        id: category.id ?? 'uncategorized',
+        name: category.name,
+        shortName: shortenLabel(category.name),
+        total,
+        ...amounts,
+      };
+    })
+    .filter((category) => category.total > 0)
+    .sort((a, b) => b.total - a.total);
+  const comparisonPercentData = comparisonData.map((category) => {
+    const shares = Object.fromEntries(
+      currencyEntries.map(([currency]) => {
+        const amount = category[currency as keyof typeof category];
+        const numericAmount = typeof amount === 'number' ? amount : 0;
+
+        return [
+          currency,
+          category.total > 0 ? (numericAmount / category.total) * 100 : 0,
+        ];
+      }),
+    );
+    const rawAmounts = Object.fromEntries(
+      currencyEntries.map(([currency]) => {
+        const amount = category[currency as keyof typeof category];
+        return [`raw_${currency}`, typeof amount === 'number' ? amount : 0];
+      }),
+    );
+
+    return {
+      ...category,
+      ...shares,
+      ...rawAmounts,
+    };
+  });
+  const comparisonChartData = comparisonPercentData.slice(0, 6);
+  const comparisonChartHeight = Math.max(
+    240,
+    comparisonChartData.length * 56 + 24,
+  );
 
   const chartConfig = chartData.reduce((config, item) => {
     config[item.id] = {
       label: item.name,
       color: item.fill,
+    };
+    return config;
+  }, {} as ChartConfig);
+  const comparisonChartConfig = currencyEntries.reduce((config, [currency], index) => {
+    config[currency] = {
+      label: currency,
+      color: CURRENCY_COLORS[index % CURRENCY_COLORS.length],
     };
     return config;
   }, {} as ChartConfig);
@@ -207,10 +268,10 @@ function RouteComponent() {
               <p className="mt-1 truncate text-base font-semibold text-[#132238]">
                 {topCategory?.name ?? 'Sin datos'}
               </p>
-              {primaryCurrency && totalPrimaryAmount > 0 ? (
+              {activeCurrency && totalActiveAmount > 0 ? (
                 <p className="mt-1 text-sm text-[#68768a]">
-                  {formatMoney(totalPrimaryAmount, primaryCurrency)} en{' '}
-                  {primaryCurrency}
+                  {formatMoney(totalActiveAmount, activeCurrency)} en{' '}
+                  {activeCurrency}
                 </p>
               ) : null}
             </div>
@@ -324,8 +385,8 @@ function RouteComponent() {
               <div className="mt-3 space-y-2">
                 {chartData.filter((entry) => entry.amount > 0).map((entry) => {
                   const share =
-                    totalPrimaryAmount > 0
-                      ? (entry.amount / totalPrimaryAmount) * 100
+                    totalActiveAmount > 0
+                      ? (entry.amount / totalActiveAmount) * 100
                       : 0;
 
                   return (
@@ -355,74 +416,143 @@ function RouteComponent() {
               <div className="mb-3 flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-[#1f4ed8]" />
                 <p className="text-sm font-medium text-[#132238]">
-                  Comparación por categoría en {activeCurrency}
+                  Comparación por categoría
                 </p>
               </div>
+              <p className="mb-3 text-xs text-[#68768a]">
+                Cada barra muestra la composición porcentual por moneda dentro de la categoría.
+              </p>
+              <div className="mb-3 flex flex-wrap gap-2">
+                {currencyEntries.map(([currency], index) => (
+                  <div
+                    key={currency}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#f5f7fb] px-2.5 py-1 text-xs font-medium text-[#132238]"
+                  >
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{
+                        backgroundColor:
+                          CURRENCY_COLORS[index % CURRENCY_COLORS.length],
+                      }}
+                    />
+                    {currency}
+                  </div>
+                ))}
+              </div>
               <ChartContainer
-                config={chartConfig}
-                className="h-[260px] w-full"
+                config={comparisonChartConfig}
+                className="w-full"
+                style={{ height: `${comparisonChartHeight}px` }}
               >
                 <BarChart
                   accessibilityLayer
-                  data={chartData}
-                  margin={{ top: 10, right: 8, left: -18, bottom: 0 }}
+                  data={comparisonChartData}
+                  layout="vertical"
+                  margin={{ top: 4, right: 8, left: 8, bottom: 4 }}
+                  barCategoryGap={12}
                 >
                   <XAxis
+                    type="number"
+                    domain={[0, 100]}
+                    hide
+                  />
+                  <YAxis
+                    type="category"
                     dataKey="shortName"
                     tickLine={false}
                     axisLine={false}
-                    interval={0}
                     tickMargin={8}
                     fontSize={11}
+                    width={92}
                   />
-                  <YAxis hide />
                   <ChartTooltip
                     cursor={false}
                     content={
                       <ChartTooltipContent
-                        hideLabel
-                        formatter={(_, __, item) => {
-                          const payload = item.payload as {
-                            amount: number;
-                            name: string;
-                          };
-                          return (
-                            <div className="flex min-w-32 items-center justify-between gap-3">
-                              <span>{payload.name}</span>
-                              <span className="font-semibold">
-                                {formatMoney(payload.amount, activeCurrency)}
-                              </span>
-                            </div>
-                          );
+                        labelFormatter={(_, payload) => {
+                          const item = payload?.[0]?.payload as { name?: string } | undefined;
+                          return item?.name ?? '';
+                        }}
+                        formatter={(value, name, item) => {
+                          const payload = item.payload as Record<string, unknown>;
+                          const currency = String(name);
+                          const rawAmount = payload[`raw_${currency}`];
+
+                          return [
+                            typeof rawAmount === 'number'
+                              ? formatMoney(rawAmount, currency)
+                              : `${Number(value).toFixed(1)}%`,
+                            currency,
+                          ];
                         }}
                       />
                     }
                   />
-                  <Bar dataKey="amount" radius={[10, 10, 0, 0]}>
-                    {chartData.map((entry) => (
-                      <Cell key={entry.id} fill={entry.fill} />
-                    ))}
-                  </Bar>
+                  {currencyEntries.map(([currency], index) => (
+                    <Bar
+                      key={currency}
+                      dataKey={currency}
+                      stackId="category"
+                      fill={CURRENCY_COLORS[index % CURRENCY_COLORS.length]}
+                      radius={[0, 10, 10, 0]}
+                    />
+                  ))}
                 </BarChart>
               </ChartContainer>
               <div className="mt-3 space-y-2">
-                {categorySeries.map((entry) => (
+                {comparisonData.map((entry) => (
                   <div
                     key={entry.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl bg-[#f5f7fb] px-3 py-2"
+                    className="rounded-2xl bg-[#f5f7fb] px-3 py-3"
                   >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span
-                        className="h-3 w-3 shrink-0 rounded-full"
-                        style={{ backgroundColor: entry.fill }}
-                      />
-                      <p className="truncate text-sm font-medium text-[#132238]">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="min-w-0 truncate text-sm font-medium text-[#132238]">
                         {entry.name}
                       </p>
+                      <p className="shrink-0 text-xs text-[#68768a]">
+                        {Object.entries(entry)
+                          .filter(
+                            ([key, amount]) =>
+                              !['id', 'name', 'shortName', 'total'].includes(key) &&
+                              typeof amount === 'number' &&
+                              amount > 0,
+                          )
+                          .length}{' '}
+                        moneda
+                        {Object.entries(entry)
+                          .filter(
+                            ([key, amount]) =>
+                              !['id', 'name', 'shortName', 'total'].includes(key) &&
+                              typeof amount === 'number' &&
+                              amount > 0,
+                          )
+                          .length === 1
+                          ? ''
+                          : 's'}
+                      </p>
                     </div>
-                    <p className="shrink-0 text-sm font-semibold text-[#132238]">
-                      {formatMoney(entry.amount, activeCurrency)}
-                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {currencyEntries.map(([currency], index) => {
+                        const amount = entry[currency as keyof typeof entry];
+                        if (typeof amount !== 'number' || amount <= 0) return null;
+
+                        return (
+                          <div
+                            key={`${entry.id}-${currency}`}
+                            className="inline-flex items-center gap-2 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[#132238]"
+                          >
+                            <span
+                              className="h-2.5 w-2.5 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  CURRENCY_COLORS[index % CURRENCY_COLORS.length],
+                              }}
+                            />
+                            {formatMoney(amount, currency)}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>

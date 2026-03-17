@@ -17,6 +17,7 @@ import {
 import { useEffect, useState } from 'react';
 
 import { AppDrawer } from '~/components/app-drawer';
+import { useViewStateRestoration } from '~/hooks/use-view-state-restoration';
 import {
   ChartContainer,
   ChartTooltip,
@@ -73,7 +74,6 @@ function shortenLabel(value: string) {
 }
 
 interface CategoryViewState {
-  scrollY: number;
   selectedCurrency: string | null;
 }
 
@@ -94,6 +94,17 @@ function RouteComponent() {
     queryKey: ['category-breakdown', groupId],
     queryFn: () => getCategoryBreakdown({ data: { groupId } }),
   });
+  const { saveViewState } = useViewStateRestoration<CategoryViewState>(
+    scrollRestoreKey,
+    {
+      enabled: !isLoading,
+      onRestore: (viewState) => {
+        if (viewState.selectedCurrency) {
+          setSelectedCurrency(viewState.selectedCurrency);
+        }
+      },
+    },
+  );
 
   const createCategoryMutation = useMutation({
     mutationFn: createExpenseCategory,
@@ -210,17 +221,6 @@ function RouteComponent() {
     setEditingCategoryName(currentName);
   }
 
-  function saveViewState() {
-    if (typeof window === 'undefined') return;
-
-    const viewState: CategoryViewState = {
-      scrollY: window.scrollY,
-      selectedCurrency,
-    };
-
-    window.sessionStorage.setItem(scrollRestoreKey, JSON.stringify(viewState));
-  }
-
   useEffect(() => {
     if (!currencyEntries.length) {
       setSelectedCurrency(null);
@@ -242,31 +242,6 @@ function RouteComponent() {
     setEditingCategoryId(null);
     setEditingCategoryName('');
   }, [groupId]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || isLoading) return;
-
-    const rawState = window.sessionStorage.getItem(scrollRestoreKey);
-    if (!rawState) return;
-
-    try {
-      const viewState = JSON.parse(rawState) as CategoryViewState;
-
-      if (viewState.selectedCurrency) {
-        setSelectedCurrency(viewState.selectedCurrency);
-      }
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.scrollTo({ top: viewState.scrollY, behavior: 'auto' });
-          window.sessionStorage.removeItem(scrollRestoreKey);
-        });
-      });
-    } catch (error) {
-      console.error('Error restoring categories scroll state:', error);
-      window.sessionStorage.removeItem(scrollRestoreKey);
-    }
-  }, [isLoading, scrollRestoreKey]);
 
   if (isLoading) {
     return (
@@ -745,7 +720,7 @@ function RouteComponent() {
                       key={expense.id}
                       type="button"
                       onClick={() => {
-                        saveViewState();
+                        saveViewState({ selectedCurrency });
                         router.navigate({
                           to: '/groups/$id/expense/$expenseId',
                           params: { id: groupId, expenseId: expense.id },

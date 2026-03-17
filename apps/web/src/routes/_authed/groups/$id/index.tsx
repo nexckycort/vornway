@@ -19,8 +19,9 @@ import {
   UserPlus,
   X,
 } from 'lucide-react';
-import { type MouseEvent, type TouchEvent, useEffect, useRef, useState } from 'react';
+import { type MouseEvent, type TouchEvent, useRef, useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
+import { useViewStateRestoration } from '~/hooks/use-view-state-restoration';
 import { PageHeader } from '~/components/page-header';
 import { formatMoney, formatMoneyAmount } from '~/lib/money';
 import { deleteGroup } from '../../(home)/-actions/delete-group';
@@ -67,7 +68,6 @@ interface Expense {
 
 interface GroupViewState {
   activeTab: 'gastos' | 'cuentas';
-  scrollY: number;
 }
 
 function ExpenseItem({
@@ -437,11 +437,19 @@ function RouteComponent() {
   const [deleteGroupNameInput, setDeleteGroupNameInput] = useState('');
   const [copiedGroupName, setCopiedGroupName] = useState(false);
   const scrollRestoreKey = `group-view-state:${id}`;
-
   const { data, error, isLoading } = useQuery({
     queryKey: ['group', id],
     queryFn: async () => getGroup({ data: { groupId: id } }),
   });
+  const { saveViewState } = useViewStateRestoration<GroupViewState>(
+    scrollRestoreKey,
+    {
+      enabled: !isLoading,
+      onRestore: (viewState) => {
+        setActiveTab(viewState.activeTab);
+      },
+    },
+  );
 
   const deleteExpenseMutation = useMutation({
     mutationFn: deleteExpense,
@@ -597,40 +605,6 @@ function RouteComponent() {
     },
   ];
 
-  const saveViewState = () => {
-    if (typeof window === 'undefined') return;
-
-    const viewState: GroupViewState = {
-      activeTab,
-      scrollY: window.scrollY,
-    };
-
-    window.sessionStorage.setItem(scrollRestoreKey, JSON.stringify(viewState));
-  };
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || isLoading) return;
-
-    const rawState = window.sessionStorage.getItem(scrollRestoreKey);
-    if (!rawState) return;
-
-    try {
-      const viewState = JSON.parse(rawState) as GroupViewState;
-
-      setActiveTab(viewState.activeTab);
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.scrollTo({ top: viewState.scrollY, behavior: 'auto' });
-          window.sessionStorage.removeItem(scrollRestoreKey);
-        });
-      });
-    } catch (error) {
-      console.error('Error restoring group scroll state:', error);
-      window.sessionStorage.removeItem(scrollRestoreKey);
-    }
-  }, [isLoading, scrollRestoreKey]);
-
   // Loading state
   if (isLoading) {
     return (
@@ -771,7 +745,7 @@ function RouteComponent() {
                     expense={expense}
                     onOpenOptions={handleOpenExpenseOptions}
                     onOpenExpense={(expenseId) => {
-                      saveViewState();
+                      saveViewState({ activeTab });
                       router.navigate({
                         to: '/groups/$id/expense/$expenseId',
                         params: { id, expenseId },
@@ -817,7 +791,7 @@ function RouteComponent() {
                       key={member.memberId}
                       type="button"
                       onClick={() => {
-                        saveViewState();
+                        saveViewState({ activeTab });
                         router.navigate({
                           to: '/groups/$id/member/$memberId',
                           params: { id, memberId: member.memberId },
@@ -932,7 +906,7 @@ function RouteComponent() {
                   type="button"
                   onClick={() => {
                     setShowExpenseOptionsModal(false);
-                    saveViewState();
+                    saveViewState({ activeTab });
                     router.navigate({
                       to: '/groups/$id/expense/$expenseId',
                       params: { id, expenseId: expenseForOptions.id },

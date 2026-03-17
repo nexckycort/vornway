@@ -2,6 +2,7 @@ model Expense {
   id          String   @id @default(cuid())
   groupId     String
   paidById    String // ID del GroupMember que pagó
+  categoryId  String?
   description String
   amount      Float
   currency    String // Código de moneda: "COP", "USD", "EUR", etc.
@@ -11,6 +12,7 @@ model Expense {
   metadata    Json?
 
   group        Group                @relation(fields: [groupId], references: [id])
+  category     ExpenseCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   paidBy       GroupMember          @relation("MemberPaidExpenses", fields: [paidById], references: [id])
   participants ExpenseParticipant[]
 

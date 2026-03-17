@@ -11,6 +11,7 @@ model Group {
   owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   GroupMember GroupMember[]
   Expense     Expense[]
+  categories  ExpenseCategory[]
   Goal        Goal[]
   ActivityLog ActivityLog[]
 
@@ -34,4 +35,18 @@ model GroupMember {
 
   @@unique([userId, groupId])
   @@map("group_member")
+}
+
+model ExpenseCategory {
+  id        String   @id @default(cuid())
+  groupId   String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  expenses Expense[]
+
+  @@unique([groupId, name])
+  @@map("expense_category")
 }

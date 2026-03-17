@@ -7,6 +7,7 @@ import {
   Copy,
   Eye,
   HandCoins,
+  LayoutGrid,
   Link,
   type LucideIcon,
   MoreHorizontal,
@@ -41,6 +42,10 @@ function formatDate(date: Date): string {
 
 interface Expense {
   id: string;
+  category: {
+    id: string;
+    name: string;
+  } | null;
   description: string;
   amount: number;
   currency: string;
@@ -269,6 +274,7 @@ function ExpenseItem({
           </div>
           <p className="text-sm text-gray-500">
             {formatDate(expense.date)}
+            {expense.category ? ` · ${expense.category.name}` : ''}
             {expense.participantCount > 0 &&
               ` · ${expense.participantCount} participantes`}
           </p>
@@ -1159,6 +1165,23 @@ function RouteComponent() {
                   <UserPlus className="w-5 h-5 text-[#1a1a3e]" />
                   <span className="text-[#1a1a3e] font-medium">
                     Editar o agregar participantes
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSettingsModal(false);
+                    router.navigate({
+                      to: '/groups/$id/categories',
+                      params: { id },
+                    });
+                  }}
+                  className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                >
+                  <LayoutGrid className="w-5 h-5 text-[#1a1a3e]" />
+                  <span className="text-[#1a1a3e] font-medium">
+                    Categorías
                   </span>
                 </button>
 

@@ -20,6 +20,7 @@ import { getExpense } from '../-actions/get-expense';
 import { createExpense } from './-actions/create-expense';
 import { getGroupMembers } from './-actions/get-group-members';
 import { updateExpense } from './-actions/update-expense';
+import { getGroupCategories } from '../-actions/get-group-categories';
 
 export const Route = createFileRoute('/_authed/groups/$id/add-expense/')({
   validateSearch: (
@@ -49,6 +50,7 @@ function RouteComponent() {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('COP');
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [paidById, setPaidById] = useState<string | null>(null);
   const [expenseType, setExpenseType] = useState<'standard' | 'composite'>(
     'standard',
@@ -67,6 +69,7 @@ function RouteComponent() {
     useState('');
   const [newCompositeItemAmount, setNewCompositeItemAmount] = useState('');
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showPaidByDropdown, setShowPaidByDropdown] = useState(false);
   const [showSplitDropdown, setShowSplitDropdown] = useState(false);
   const [showExpenseTypeDropdown, setShowExpenseTypeDropdown] = useState(false);
@@ -98,8 +101,13 @@ function RouteComponent() {
       }),
     enabled: isEditMode,
   });
+  const { data: categoriesData } = useQuery({
+    queryKey: ['group-categories', groupId],
+    queryFn: () => getGroupCategories({ data: { groupId } }),
+  });
 
   const members = membersData?.members ?? [];
+  const categories = categoriesData?.categories ?? [];
   const isSettlement = expenseData?.isSettlement ?? false;
   const isComposite = expenseType === 'composite';
 
@@ -163,6 +171,7 @@ function RouteComponent() {
     setDescription(expenseData.description);
     setAmount(expenseData.amount.toString());
     setCurrency(expenseData.currency);
+    setCategoryId(expenseData.category?.id ?? null);
     setPaidById(expenseData.paidBy.memberId);
     setExpenseType(expenseData.expenseType);
     setCompositeItems(expenseData.compositeItems);
@@ -281,6 +290,7 @@ function RouteComponent() {
 
     const payload = {
       groupId,
+      categoryId: categoryId ?? undefined,
       description,
       amount: parseFloat(amount),
       currency,
@@ -314,6 +324,7 @@ function RouteComponent() {
   };
 
   const selectedPayer = members.find((m) => m.id === paidById);
+  const selectedCategory = categories.find((category) => category.id === categoryId);
   const selectedExpenseType = expenseTypes.find((m) => m.value === expenseType);
   const selectedSplitMethod = splitMethods.find((m) => m.value === splitMethod);
 
@@ -369,6 +380,63 @@ function RouteComponent() {
               placeholder="Ej. Almuerzo, Caja chica, Reserva"
               className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-[#1a1a3e] placeholder:text-gray-400"
             />
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <span className="block text-[#1a1a3e]">Categoría</span>
+            <button
+              type="button"
+              onClick={() =>
+                router.navigate({
+                  to: '/groups/$id/categories',
+                  params: { id: groupId },
+                })
+              }
+              className="text-sm font-medium text-[#4040b0]"
+            >
+              Gestionar
+            </button>
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+              className="flex w-full items-center justify-between rounded-xl bg-gray-100 px-4 py-3.5"
+            >
+              <span className="text-[#1a1a3e]">
+                {selectedCategory?.name ?? 'Sin categoría'}
+              </span>
+              <ChevronDown className="h-5 w-5 text-gray-500" />
+            </button>
+            {showCategoryDropdown && (
+              <div className="absolute top-full left-0 right-0 z-10 mt-1 rounded-xl border border-gray-200 bg-white shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryId(null);
+                    setShowCategoryDropdown(false);
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50"
+                >
+                  Sin categoría
+                </button>
+                {categories.map((category) => (
+                  <button
+                    type="button"
+                    key={category.id}
+                    onClick={() => {
+                      setCategoryId(category.id);
+                      setShowCategoryDropdown(false);
+                    }}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50"
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

@@ -23,6 +23,10 @@ interface ExpenseParticipant {
 interface GetExpenseResponse {
   id: string;
   groupName: string;
+  category: {
+    id: string;
+    name: string;
+  } | null;
   description: string;
   amount: number;
   currency: string;
@@ -82,6 +86,12 @@ export const getExpense = createServerFn({ method: 'POST' })
             name: true,
           },
         },
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         paidBy: {
           select: {
             id: true,
@@ -116,6 +126,7 @@ export const getExpense = createServerFn({ method: 'POST' })
     return {
       id: expenseRecord.id,
       groupName: expenseRecord.group.name,
+      category: expenseRecord.category,
       description: expenseRecord.description,
       amount: expenseRecord.amount,
       currency: expenseRecord.currency,

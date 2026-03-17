@@ -187,6 +187,11 @@ function RouteComponent() {
               Este gasto esta fijado
             </p>
           ) : null}
+          {data.category ? (
+            <p className="mb-2 text-sm text-[#4040b0]">
+              Categoría: {data.category.name}
+            </p>
+          ) : null}
           <p className="text-gray-500">{formatRelativeTime(data.date)}</p>
         </div>
       </div>

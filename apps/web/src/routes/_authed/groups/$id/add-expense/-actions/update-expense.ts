@@ -20,6 +20,7 @@ const CompositeExpenseItemSchema = z.object({
 const UpdateExpenseInputSchema = z.object({
   groupId: z.string(),
   expenseId: z.string(),
+  categoryId: z.string().optional(),
   description: z.string().min(1),
   amount: z.number().positive(),
   currency: z.string(),
@@ -63,6 +64,23 @@ export const updateExpense = createServerFn({ method: 'POST' })
           success: false,
           error: 'No tienes acceso a este grupo',
         };
+      }
+
+      if (data.categoryId) {
+        const category = await db.expenseCategory.findFirst({
+          where: {
+            id: data.categoryId,
+            groupId: data.groupId,
+          },
+          select: { id: true },
+        });
+
+        if (!category) {
+          return {
+            success: false,
+            error: 'La categoría no existe en este grupo',
+          };
+        }
       }
 
       const isComposite = data.expenseType === 'composite';
@@ -144,6 +162,7 @@ export const updateExpense = createServerFn({ method: 'POST' })
             amount: computedAmount,
             currency: data.currency,
             paidById: data.paidById,
+            categoryId: data.categoryId ?? null,
             metadata: (buildExpenseMetadata({
               items: isComposite ? compositeItems : [],
               pinnedAt: existingMetadata.pinnedAt,
@@ -217,6 +236,7 @@ export const updateExpense = createServerFn({ method: 'POST' })
               currency: data.currency,
               previousAmount: existingExpense.amount,
               previousCurrency: existingExpense.currency,
+              categoryId: data.categoryId ?? null,
               expenseType: data.expenseType,
               subExpenseCount: compositeItems.length,
             },

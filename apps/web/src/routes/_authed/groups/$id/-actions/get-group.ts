@@ -12,6 +12,10 @@ const GetGroupInputSchema = z.object({
 
 interface Expense {
   id: string;
+  category: {
+    id: string;
+    name: string;
+  } | null;
   description: string;
   amount: number;
   currency: string;
@@ -103,6 +107,12 @@ export const getGroup = createServerFn({ method: 'POST' })
           Expense: {
             select: {
               id: true,
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
               description: true,
               amount: true,
               currency: true,
@@ -187,6 +197,7 @@ export const getGroup = createServerFn({ method: 'POST' })
 
         return {
           id: expense.id,
+          category: expense.category,
           description: expense.description,
           amount: expense.amount,
           currency: expense.currency,

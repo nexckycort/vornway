@@ -179,6 +179,7 @@ function RouteComponent() {
 
                     <p className="mt-2 text-sm text-gray-500">
                       {formatDate(expense.date)}
+                      {expense.category ? ` · ${expense.category.name}` : ''}
                       {expense.participantCount > 0 &&
                         ` · ${expense.participantCount} participantes`}
                     </p>

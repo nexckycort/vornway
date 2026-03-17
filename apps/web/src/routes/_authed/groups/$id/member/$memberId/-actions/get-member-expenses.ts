@@ -12,6 +12,10 @@ const GetMemberExpensesInputSchema = z.object({
 
 interface MemberExpenseItem {
   id: string;
+  category: {
+    id: string;
+    name: string;
+  } | null;
   description: string;
   amount: number;
   currency: string;
@@ -89,6 +93,12 @@ export const getMemberExpenses = createServerFn({ method: 'POST' })
             date: true,
             notes: true,
             metadata: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
             paidBy: {
               select: {
                 id: true,
@@ -160,6 +170,7 @@ export const getMemberExpenses = createServerFn({ method: 'POST' })
 
       expenses.push({
         id: expense.id,
+        category: expense.category,
         description: expense.description,
         amount: expense.amount,
         currency: expense.currency,

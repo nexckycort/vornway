@@ -159,50 +159,16 @@ function RouteComponent() {
   const chartData = categorySeries.slice(0, 6);
   const comparisonData = data.categories
     .map((category) => {
-      const amounts = Object.fromEntries(
-        currencyEntries.map(([currency]) => [currency, category.totals[currency] ?? 0]),
-      );
-      const total = Object.values(amounts).reduce(
-        (sum, amount) => sum + (typeof amount === 'number' ? amount : 0),
-        0,
-      );
-
       return {
         id: category.id ?? 'uncategorized',
         name: category.name,
         shortName: shortenLabel(category.name),
-        total,
-        ...amounts,
+        amount: activeCurrency ? (category.totals[activeCurrency] ?? 0) : 0,
       };
     })
-    .filter((category) => category.total > 0)
-    .sort((a, b) => b.total - a.total);
-  const comparisonPercentData = comparisonData.map((category) => {
-    const shares = Object.fromEntries(
-      currencyEntries.map(([currency]) => {
-        const amount = category[currency as keyof typeof category];
-        const numericAmount = typeof amount === 'number' ? amount : 0;
-
-        return [
-          currency,
-          category.total > 0 ? (numericAmount / category.total) * 100 : 0,
-        ];
-      }),
-    );
-    const rawAmounts = Object.fromEntries(
-      currencyEntries.map(([currency]) => {
-        const amount = category[currency as keyof typeof category];
-        return [`raw_${currency}`, typeof amount === 'number' ? amount : 0];
-      }),
-    );
-
-    return {
-      ...category,
-      ...shares,
-      ...rawAmounts,
-    };
-  });
-  const comparisonChartData = comparisonPercentData.slice(0, 6);
+    .filter((category) => category.amount > 0)
+    .sort((a, b) => b.amount - a.amount);
+  const comparisonChartData = comparisonData.slice(0, 6);
   const comparisonChartHeight = Math.max(
     240,
     comparisonChartData.length * 56 + 24,
@@ -215,13 +181,17 @@ function RouteComponent() {
     };
     return config;
   }, {} as ChartConfig);
-  const comparisonChartConfig = currencyEntries.reduce((config, [currency], index) => {
-    config[currency] = {
-      label: currency,
-      color: CURRENCY_COLORS[index % CURRENCY_COLORS.length],
-    };
-    return config;
-  }, {} as ChartConfig);
+  const comparisonChartConfig = activeCurrency
+    ? ({
+        amount: {
+          label: activeCurrency,
+          color: CURRENCY_COLORS[
+            currencyEntries.findIndex(([currency]) => currency === activeCurrency) %
+              CURRENCY_COLORS.length
+          ],
+        },
+      } as ChartConfig)
+    : ({} as ChartConfig);
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f3f7ff_0%,#f8f4ec_42%,#f5f6fa_100%)] pb-12">
@@ -416,29 +386,30 @@ function RouteComponent() {
               <div className="mb-3 flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-[#1f4ed8]" />
                 <p className="text-sm font-medium text-[#132238]">
-                  Comparación por categoría
+                  Comparación por categoría en {activeCurrency}
                 </p>
               </div>
+              {currencyEntries.length > 1 ? (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {currencyEntries.map(([currency]) => (
+                    <button
+                      key={currency}
+                      type="button"
+                      onClick={() => setSelectedCurrency(currency)}
+                      className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                        currency === activeCurrency
+                          ? 'bg-[#132238] text-white'
+                          : 'bg-[#f5f7fb] text-[#132238]'
+                      }`}
+                    >
+                      {currency}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               <p className="mb-3 text-xs text-[#68768a]">
-                Cada barra muestra la composición porcentual por moneda dentro de la categoría.
+                Cada barra compara categorías dentro de la misma moneda.
               </p>
-              <div className="mb-3 flex flex-wrap gap-2">
-                {currencyEntries.map(([currency], index) => (
-                  <div
-                    key={currency}
-                    className="inline-flex items-center gap-2 rounded-full bg-[#f5f7fb] px-2.5 py-1 text-xs font-medium text-[#132238]"
-                  >
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{
-                        backgroundColor:
-                          CURRENCY_COLORS[index % CURRENCY_COLORS.length],
-                      }}
-                    />
-                    {currency}
-                  </div>
-                ))}
-              </div>
               <ChartContainer
                 config={comparisonChartConfig}
                 className="w-full"
@@ -450,10 +421,10 @@ function RouteComponent() {
                   layout="vertical"
                   margin={{ top: 4, right: 8, left: 8, bottom: 4 }}
                   barCategoryGap={12}
+                  barGap={6}
                 >
                   <XAxis
                     type="number"
-                    domain={[0, 100]}
                     hide
                   />
                   <YAxis
@@ -473,30 +444,29 @@ function RouteComponent() {
                           const item = payload?.[0]?.payload as { name?: string } | undefined;
                           return item?.name ?? '';
                         }}
-                        formatter={(value, name, item) => {
-                          const payload = item.payload as Record<string, unknown>;
-                          const currency = String(name);
-                          const rawAmount = payload[`raw_${currency}`];
-
+                        formatter={(value, name) => {
+                          const currency = activeCurrency ?? String(name);
                           return [
-                            typeof rawAmount === 'number'
-                              ? formatMoney(rawAmount, currency)
-                              : `${Number(value).toFixed(1)}%`,
-                            currency,
+                            typeof value === 'number'
+                              ? formatMoney(value, currency)
+                              : value,
+                            activeCurrency ?? String(name),
                           ];
                         }}
                       />
                     }
                   />
-                  {currencyEntries.map(([currency], index) => (
-                    <Bar
-                      key={currency}
-                      dataKey={currency}
-                      stackId="category"
-                      fill={CURRENCY_COLORS[index % CURRENCY_COLORS.length]}
-                      radius={[0, 10, 10, 0]}
-                    />
-                  ))}
+                  <Bar
+                    dataKey="amount"
+                    fill={
+                      CURRENCY_COLORS[
+                        currencyEntries.findIndex(([currency]) => currency === activeCurrency) %
+                          CURRENCY_COLORS.length
+                      ]
+                    }
+                    radius={[0, 10, 10, 0]}
+                    barSize={18}
+                  />
                 </BarChart>
               </ChartContainer>
               <div className="mt-3 space-y-2">
@@ -509,49 +479,21 @@ function RouteComponent() {
                       <p className="min-w-0 truncate text-sm font-medium text-[#132238]">
                         {entry.name}
                       </p>
-                      <p className="shrink-0 text-xs text-[#68768a]">
-                        {Object.entries(entry)
-                          .filter(
-                            ([key, amount]) =>
-                              !['id', 'name', 'shortName', 'total'].includes(key) &&
-                              typeof amount === 'number' &&
-                              amount > 0,
-                          )
-                          .length}{' '}
-                        moneda
-                        {Object.entries(entry)
-                          .filter(
-                            ([key, amount]) =>
-                              !['id', 'name', 'shortName', 'total'].includes(key) &&
-                              typeof amount === 'number' &&
-                              amount > 0,
-                          )
-                          .length === 1
-                          ? ''
-                          : 's'}
-                      </p>
+                      <p className="shrink-0 text-xs text-[#68768a]">{activeCurrency}</p>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {currencyEntries.map(([currency], index) => {
-                        const amount = entry[currency as keyof typeof entry];
-                        if (typeof amount !== 'number' || amount <= 0) return null;
-
-                        return (
-                          <div
-                            key={`${entry.id}-${currency}`}
-                            className="inline-flex items-center gap-2 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[#132238]"
-                          >
-                            <span
-                              className="h-2.5 w-2.5 rounded-full"
-                              style={{
-                                backgroundColor:
-                                  CURRENCY_COLORS[index % CURRENCY_COLORS.length],
-                              }}
-                            />
-                            {formatMoney(amount, currency)}
-                          </div>
-                        );
-                      })}
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[#132238]">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{
+                          backgroundColor:
+                            CURRENCY_COLORS[
+                              currencyEntries.findIndex(
+                                ([currency]) => currency === activeCurrency,
+                              ) % CURRENCY_COLORS.length
+                            ],
+                        }}
+                      />
+                      {formatMoney(entry.amount, activeCurrency ?? '')}
                     </div>
                   </div>
                 ))}

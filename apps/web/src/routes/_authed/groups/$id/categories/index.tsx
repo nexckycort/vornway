@@ -8,7 +8,7 @@ import {
   ReceiptText,
   TrendingUp,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   ChartContainer,
@@ -53,6 +53,7 @@ function RouteComponent() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [categoryName, setCategoryName] = useState('');
+  const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['category-breakdown', groupId],
@@ -118,17 +119,31 @@ function RouteComponent() {
     (a, b) => b[1] - a[1],
   );
   const primaryCurrency = currencyEntries[0]?.[0] ?? null;
+  const activeCurrency = selectedCurrency ?? primaryCurrency;
 
-  const categorySeries = primaryCurrency
+  useEffect(() => {
+    if (!currencyEntries.length) {
+      setSelectedCurrency(null);
+      return;
+    }
+
+    if (
+      !selectedCurrency ||
+      !currencyEntries.some(([currency]) => currency === selectedCurrency)
+    ) {
+      setSelectedCurrency(currencyEntries[0][0]);
+    }
+  }, [currencyEntries, selectedCurrency]);
+
+  const categorySeries = activeCurrency
     ? data.categories
         .map((category, index) => ({
           id: category.id ?? 'uncategorized',
           name: category.name,
           shortName: shortenLabel(category.name),
-          amount: category.totals[primaryCurrency] ?? 0,
+          amount: category.totals[activeCurrency] ?? 0,
           fill: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
         }))
-        .filter((item) => item.amount > 0)
         .sort((a, b) => b.amount - a.amount)
     : [];
 
@@ -238,15 +253,33 @@ function RouteComponent() {
           ) : null}
         </div>
 
-        {primaryCurrency && chartData.length > 0 ? (
+        {activeCurrency && chartData.some((item) => item.amount > 0) ? (
           <>
             <div className="mt-4 overflow-hidden rounded-[30px] bg-[#132238] p-4 text-white shadow-sm">
               <div className="mb-3 flex items-center gap-2">
                 <PieChartIcon className="h-4 w-4" />
                 <p className="text-sm font-medium text-white/80">
-                  Distribución en {primaryCurrency}
+                  Distribución en {activeCurrency}
                 </p>
               </div>
+              {currencyEntries.length > 1 ? (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {currencyEntries.map(([currency]) => (
+                    <button
+                      key={currency}
+                      type="button"
+                      onClick={() => setSelectedCurrency(currency)}
+                      className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                        currency === activeCurrency
+                          ? 'bg-white text-[#132238]'
+                          : 'bg-white/10 text-white/80'
+                      }`}
+                    >
+                      {currency}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               <ChartContainer
                 config={chartConfig}
                 className="h-[220px] w-full"
@@ -265,7 +298,7 @@ function RouteComponent() {
                             <div className="flex min-w-32 items-center justify-between gap-3">
                               <span>{payload.name}</span>
                               <span className="font-semibold">
-                                {formatMoney(payload.amount, primaryCurrency)}
+                                {formatMoney(payload.amount, activeCurrency)}
                               </span>
                             </div>
                           );
@@ -289,7 +322,7 @@ function RouteComponent() {
               </ChartContainer>
 
               <div className="mt-3 space-y-2">
-                {chartData.map((entry) => {
+                {chartData.filter((entry) => entry.amount > 0).map((entry) => {
                   const share =
                     totalPrimaryAmount > 0
                       ? (entry.amount / totalPrimaryAmount) * 100
@@ -322,7 +355,7 @@ function RouteComponent() {
               <div className="mb-3 flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-[#1f4ed8]" />
                 <p className="text-sm font-medium text-[#132238]">
-                  Comparación por categoría
+                  Comparación por categoría en {activeCurrency}
                 </p>
               </div>
               <ChartContainer
@@ -357,7 +390,7 @@ function RouteComponent() {
                             <div className="flex min-w-32 items-center justify-between gap-3">
                               <span>{payload.name}</span>
                               <span className="font-semibold">
-                                {formatMoney(payload.amount, primaryCurrency)}
+                                {formatMoney(payload.amount, activeCurrency)}
                               </span>
                             </div>
                           );
@@ -372,6 +405,27 @@ function RouteComponent() {
                   </Bar>
                 </BarChart>
               </ChartContainer>
+              <div className="mt-3 space-y-2">
+                {categorySeries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between gap-3 rounded-2xl bg-[#f5f7fb] px-3 py-2"
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        className="h-3 w-3 shrink-0 rounded-full"
+                        style={{ backgroundColor: entry.fill }}
+                      />
+                      <p className="truncate text-sm font-medium text-[#132238]">
+                        {entry.name}
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-sm font-semibold text-[#132238]">
+                      {formatMoney(entry.amount, activeCurrency)}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </>
         ) : null}

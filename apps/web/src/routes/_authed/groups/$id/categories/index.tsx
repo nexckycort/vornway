@@ -240,7 +240,7 @@ function RouteComponent() {
 
         {primaryCurrency && chartData.length > 0 ? (
           <>
-            <div className="mt-4 rounded-[30px] bg-[#132238] p-4 text-white shadow-sm">
+            <div className="mt-4 overflow-hidden rounded-[30px] bg-[#132238] p-4 text-white shadow-sm">
               <div className="mb-3 flex items-center gap-2">
                 <PieChartIcon className="h-4 w-4" />
                 <p className="text-sm font-medium text-white/80">
@@ -249,7 +249,7 @@ function RouteComponent() {
               </div>
               <ChartContainer
                 config={chartConfig}
-                className="h-[220px] w-full aspect-auto"
+                className="h-[220px] w-full"
               >
                 <PieChart>
                   <ChartTooltip
@@ -318,7 +318,7 @@ function RouteComponent() {
               </div>
             </div>
 
-            <div className="mt-4 rounded-[30px] border border-white/70 bg-white/90 p-4 shadow-sm">
+            <div className="mt-4 overflow-hidden rounded-[30px] border border-white/70 bg-white/90 p-4 shadow-sm">
               <div className="mb-3 flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-[#1f4ed8]" />
                 <p className="text-sm font-medium text-[#132238]">
@@ -327,7 +327,7 @@ function RouteComponent() {
               </div>
               <ChartContainer
                 config={chartConfig}
-                className="h-[260px] w-full aspect-auto"
+                className="h-[260px] w-full"
               >
                 <BarChart
                   accessibilityLayer

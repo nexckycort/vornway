@@ -7,8 +7,10 @@ import {
   FolderPlus,
   Layers3,
   MoreHorizontal,
+  Pencil,
   PieChart as PieChartIcon,
   ReceiptText,
+  Trash2,
   TrendingUp,
   X,
 } from 'lucide-react';
@@ -36,8 +38,10 @@ import {
 import { formatMoney } from '~/lib/money';
 
 import { createExpenseCategory } from '../-actions/create-expense-category';
+import { deleteExpenseCategory } from '../-actions/delete-expense-category';
 import { getCategoryBreakdown } from '../-actions/get-category-breakdown';
 import { setCategoryExpenses } from '../-actions/set-category-expenses';
+import { updateExpenseCategory } from '../-actions/update-expense-category';
 
 export const Route = createFileRoute('/_authed/groups/$id/categories/')({
   component: RouteComponent,
@@ -77,6 +81,8 @@ function RouteComponent() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerCategoryId, setDrawerCategoryId] = useState<string | null>(null);
   const [selectedExpenseIds, setSelectedExpenseIds] = useState<string[]>([]);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState('');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['category-breakdown', groupId],
@@ -111,6 +117,34 @@ function RouteComponent() {
       }
     },
   });
+  const updateCategoryMutation = useMutation({
+    mutationFn: updateExpenseCategory,
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({
+          queryKey: ['category-breakdown', groupId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['group-categories', groupId],
+        });
+        setEditingCategoryId(null);
+        setEditingCategoryName('');
+      }
+    },
+  });
+  const deleteCategoryMutation = useMutation({
+    mutationFn: deleteExpenseCategory,
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({
+          queryKey: ['category-breakdown', groupId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['group-categories', groupId],
+        });
+      }
+    },
+  });
 
   const categories = data?.categories ?? [];
   const assignableExpenses = categories
@@ -137,6 +171,8 @@ function RouteComponent() {
   const activeCurrency = selectedCurrency ?? primaryCurrency;
   const drawerCategory =
     categories.find((category) => category.id === drawerCategoryId) ?? null;
+  const editingCategory =
+    categories.find((category) => category.id === editingCategoryId) ?? null;
   const drawerExpenses = drawerCategoryId
     ? assignableExpenses.filter(
         (expense) =>
@@ -163,6 +199,11 @@ function RouteComponent() {
     );
   }
 
+  function openEditCategory(categoryId: string, currentName: string) {
+    setEditingCategoryId(categoryId);
+    setEditingCategoryName(currentName);
+  }
+
   useEffect(() => {
     if (!currencyEntries.length) {
       setSelectedCurrency(null);
@@ -181,6 +222,8 @@ function RouteComponent() {
     setIsDrawerOpen(false);
     setDrawerCategoryId(null);
     setSelectedExpenseIds([]);
+    setEditingCategoryId(null);
+    setEditingCategoryName('');
   }, [groupId]);
 
   if (isLoading) {
@@ -357,6 +400,11 @@ function RouteComponent() {
           {createCategoryMutation.data?.error ? (
             <p className="mt-3 text-sm text-red-500">
               {createCategoryMutation.data.error}
+            </p>
+          ) : null}
+          {deleteCategoryMutation.data?.error ? (
+            <p className="mt-3 text-sm text-red-500">
+              {deleteCategoryMutation.data.error}
             </p>
           ) : null}
         </div>
@@ -614,9 +662,30 @@ function RouteComponent() {
                       }
                     />
                     <DropdownMenuContent align="end" className="min-w-44">
+                      <DropdownMenuItem
+                        onClick={() => openEditCategory(category.id!, category.name)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Editar categoría
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openCategoryDrawer(category.id!)}>
                         <Layers3 className="h-4 w-4" />
                         Seleccionar gastos
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        disabled={category.expenseCount > 0 || deleteCategoryMutation.isPending}
+                        onClick={() =>
+                          deleteCategoryMutation.mutate({
+                            data: {
+                              groupId,
+                              categoryId: category.id!,
+                            },
+                          })
+                        }
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Eliminar categoría
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -833,6 +902,69 @@ function RouteComponent() {
               {setCategoryExpensesMutation.isPending
                 ? 'Guardando...'
                 : 'Guardar selección'}
+            </button>
+          </DrawerFooter>
+        </AppDrawer>
+      ) : null}
+
+      {editingCategory ? (
+        <AppDrawer
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingCategoryId(null);
+              setEditingCategoryName('');
+            }
+          }}
+        >
+          <DrawerHeader>
+            <DrawerTitle className="text-left text-[#132238]">
+              Editar categoría
+            </DrawerTitle>
+            <DrawerDescription className="text-left">
+              Cambia el nombre de {editingCategory.name}.
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="px-5 pb-4">
+            <input
+              type="text"
+              value={editingCategoryName}
+              onChange={(event) => setEditingCategoryName(event.target.value)}
+              placeholder="Nombre de la categoría"
+              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-[#132238] placeholder:text-gray-400"
+            />
+            {updateCategoryMutation.data?.error ? (
+              <p className="mt-3 text-sm text-red-500">
+                {updateCategoryMutation.data.error}
+              </p>
+            ) : null}
+          </div>
+
+          <DrawerFooter className="border-t border-black/5 bg-white/90 px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <button
+              type="button"
+              onClick={() => {
+                if (!editingCategoryId) return;
+
+                updateCategoryMutation.mutate({
+                  data: {
+                    groupId,
+                    categoryId: editingCategoryId,
+                    name: editingCategoryName,
+                  },
+                });
+              }}
+              disabled={
+                !editingCategoryId ||
+                !editingCategoryName.trim() ||
+                updateCategoryMutation.isPending
+              }
+              className="w-full rounded-2xl bg-[#132238] px-4 py-3 font-medium text-white disabled:bg-gray-200 disabled:text-gray-400"
+            >
+              {updateCategoryMutation.isPending
+                ? 'Guardando...'
+                : 'Guardar cambios'}
             </button>
           </DrawerFooter>
         </AppDrawer>

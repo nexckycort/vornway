@@ -657,158 +657,156 @@ function RouteComponent() {
         </div>
       </div>
 
-      <AppDrawer
-        open={Boolean(drawerCategory)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDrawerCategoryId(null);
-            setSelectedExpenseIds([]);
-          }
-        }}
-        className="data-[vaul-drawer-direction=bottom]:max-h-[92vh]"
-      >
-        <DrawerHeader>
-          <DrawerTitle className="text-left text-[#132238]">
-            Asignar gastos
-          </DrawerTitle>
-          <DrawerDescription className="text-left">
-            {drawerCategory
-              ? `Selecciona qué gastos pertenecen a ${drawerCategory.name}.`
-              : 'Selecciona los gastos de esta categoría.'}
-          </DrawerDescription>
-        </DrawerHeader>
+      {drawerCategory ? (
+        <AppDrawer
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setDrawerCategoryId(null);
+              setSelectedExpenseIds([]);
+            }
+          }}
+          className="data-[vaul-drawer-direction=bottom]:max-h-[92vh]"
+        >
+          <DrawerHeader>
+            <DrawerTitle className="text-left text-[#132238]">
+              Asignar gastos
+            </DrawerTitle>
+            <DrawerDescription className="text-left">
+              {`Selecciona qué gastos pertenecen a ${drawerCategory.name}.`}
+            </DrawerDescription>
+          </DrawerHeader>
 
-        <div className="px-5 pb-4">
-          <div className="mb-4 flex items-center justify-between rounded-2xl bg-[#f5f7fb] px-4 py-3">
-            <div>
-              <p className="text-sm font-semibold text-[#132238]">
-                {drawerCategory?.name}
-              </p>
-              <p className="text-xs text-[#68768a]">
-                {selectedExpenseIds.length} gasto
-                {selectedExpenseIds.length === 1 ? '' : 's'} seleccionado
-                {selectedExpenseIds.length === 1 ? '' : 's'}
-              </p>
+          <div className="px-5 pb-4">
+            <div className="mb-4 flex items-center justify-between rounded-2xl bg-[#f5f7fb] px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-[#132238]">
+                  {drawerCategory.name}
+                </p>
+                <p className="text-xs text-[#68768a]">
+                  {selectedExpenseIds.length} gasto
+                  {selectedExpenseIds.length === 1 ? '' : 's'} seleccionado
+                  {selectedExpenseIds.length === 1 ? '' : 's'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setDrawerCategoryId(null);
+                  setSelectedExpenseIds([]);
+                }}
+                className="rounded-full bg-white p-2 text-[#68768a]"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setDrawerCategoryId(null);
-                setSelectedExpenseIds([]);
-              }}
-              className="rounded-full bg-white p-2 text-[#68768a]"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
 
-          <p className="mb-3 text-xs text-[#68768a]">
-            Aquí solo aparecen gastos sin categoría y los que ya pertenecen a
-            esta categoría.
-          </p>
+            <p className="mb-3 text-xs text-[#68768a]">
+              Aquí solo aparecen gastos sin categoría y los que ya pertenecen a
+              esta categoría.
+            </p>
 
-          <div className="max-h-[52vh] space-y-3 overflow-y-auto pb-2">
-            {drawerExpenses.map((expense) => {
-              const isSelected = selectedExpenseIds.includes(expense.id);
+            <div className="max-h-[52vh] space-y-3 overflow-y-auto pb-2">
+              {drawerExpenses.map((expense) => {
+                const isSelected = selectedExpenseIds.includes(expense.id);
 
-              return (
-                <button
-                  key={expense.id}
-                  type="button"
-                  onClick={() => toggleExpenseSelection(expense.id)}
-                  className={`w-full rounded-[22px] border px-4 py-3 text-left transition ${
-                    isSelected
-                      ? 'border-[#132238] bg-[#132238] text-white'
-                      : 'border-white/70 bg-white text-[#132238]'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-                        isSelected ? 'bg-white text-[#132238]' : 'bg-[#eef3ff]'
-                      }`}
-                    >
-                      {isSelected ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <span className="h-2.5 w-2.5 rounded-full bg-[#1f4ed8]" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="truncate font-medium">{expense.description}</p>
-                        <p className="shrink-0 font-semibold">
-                          {formatMoney(expense.amount, expense.currency)}
-                        </p>
-                      </div>
-                      <p
-                        className={`mt-1 text-sm ${
-                          isSelected ? 'text-white/70' : 'text-[#68768a]'
+                return (
+                  <button
+                    key={expense.id}
+                    type="button"
+                    onClick={() => toggleExpenseSelection(expense.id)}
+                    className={`w-full rounded-[22px] border px-4 py-3 text-left transition ${
+                      isSelected
+                        ? 'border-[#132238] bg-[#132238] text-white'
+                        : 'border-white/70 bg-white text-[#132238]'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                          isSelected ? 'bg-white text-[#132238]' : 'bg-[#eef3ff]'
                         }`}
                       >
-                        {formatDate(expense.date)} · Pagó {expense.paidByName}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                            isSelected
-                              ? 'bg-white/15 text-white'
-                              : expense.currentCategoryName
-                                ? 'bg-[#eef3ff] text-[#1f4ed8]'
-                                : 'bg-[#f5f7fb] text-[#68768a]'
+                        {isSelected ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <span className="h-2.5 w-2.5 rounded-full bg-[#1f4ed8]" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="truncate font-medium">{expense.description}</p>
+                          <p className="shrink-0 font-semibold">
+                            {formatMoney(expense.amount, expense.currency)}
+                          </p>
+                        </div>
+                        <p
+                          className={`mt-1 text-sm ${
+                            isSelected ? 'text-white/70' : 'text-[#68768a]'
                           }`}
                         >
-                          {expense.currentCategoryName ?? 'Sin categoría'}
-                        </span>
-                        {expense.expenseType === 'composite' ? (
+                          {formatDate(expense.date)} · Pagó {expense.paidByName}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
                           <span
                             className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                               isSelected
                                 ? 'bg-white/15 text-white'
-                                : 'bg-blue-50 text-blue-700'
+                                : expense.currentCategoryName
+                                  ? 'bg-[#eef3ff] text-[#1f4ed8]'
+                                  : 'bg-[#f5f7fb] text-[#68768a]'
                             }`}
                           >
-                            {expense.subExpenseCount} subgasto
-                            {expense.subExpenseCount === 1 ? '' : 's'}
+                            {expense.currentCategoryName ?? 'Sin categoría'}
                           </span>
-                        ) : null}
+                          {expense.expenseType === 'composite' ? (
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                                isSelected
+                                  ? 'bg-white/15 text-white'
+                                  : 'bg-blue-50 text-blue-700'
+                              }`}
+                            >
+                              {expense.subExpenseCount} subgasto
+                              {expense.subExpenseCount === 1 ? '' : 's'}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </button>
-              );
-            })}
-            {drawerExpenses.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-gray-200 bg-[#fafbff] p-4 text-sm text-[#68768a]">
-                No hay gastos sin categoría disponibles para agregar aquí.
-              </div>
-            ) : null}
+                  </button>
+                );
+              })}
+              {drawerExpenses.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-gray-200 bg-[#fafbff] p-4 text-sm text-[#68768a]">
+                  No hay gastos sin categoría disponibles para agregar aquí.
+                </div>
+              ) : null}
+            </div>
           </div>
-        </div>
 
-        <DrawerFooter className="border-t border-black/5 bg-white/90 px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <button
-            type="button"
-            onClick={() => {
-              if (!drawerCategory) return;
-
-              setCategoryExpensesMutation.mutate({
-                data: {
-                  groupId,
-                  categoryId: drawerCategory.id!,
-                  expenseIds: selectedExpenseIds,
-                },
-              });
-            }}
-            disabled={!drawerCategory || setCategoryExpensesMutation.isPending}
-            className="w-full rounded-2xl bg-[#132238] px-4 py-3 font-medium text-white disabled:bg-gray-200 disabled:text-gray-400"
-          >
-            {setCategoryExpensesMutation.isPending
-              ? 'Guardando...'
-              : 'Guardar selección'}
-          </button>
-        </DrawerFooter>
-      </AppDrawer>
+          <DrawerFooter className="border-t border-black/5 bg-white/90 px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <button
+              type="button"
+              onClick={() => {
+                setCategoryExpensesMutation.mutate({
+                  data: {
+                    groupId,
+                    categoryId: drawerCategory.id!,
+                    expenseIds: selectedExpenseIds,
+                  },
+                });
+              }}
+              disabled={setCategoryExpensesMutation.isPending}
+              className="w-full rounded-2xl bg-[#132238] px-4 py-3 font-medium text-white disabled:bg-gray-200 disabled:text-gray-400"
+            >
+              {setCategoryExpensesMutation.isPending
+                ? 'Guardando...'
+                : 'Guardar selección'}
+            </button>
+          </DrawerFooter>
+        </AppDrawer>
+      ) : null}
     </div>
   );
 }

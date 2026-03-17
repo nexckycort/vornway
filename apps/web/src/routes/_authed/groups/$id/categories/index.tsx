@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   FolderPlus,
   Layers3,
+  MoreHorizontal,
   PieChart as PieChartIcon,
   ReceiptText,
   TrendingUp,
@@ -20,6 +21,12 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@workspace/ui/components/chart';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@workspace/ui/components/dropdown-menu';
 import {
   DrawerDescription,
   DrawerFooter,
@@ -67,6 +74,7 @@ function RouteComponent() {
   const queryClient = useQueryClient();
   const [categoryName, setCategoryName] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerCategoryId, setDrawerCategoryId] = useState<string | null>(null);
   const [selectedExpenseIds, setSelectedExpenseIds] = useState<string[]>([]);
 
@@ -97,6 +105,7 @@ function RouteComponent() {
           queryKey: ['category-breakdown', groupId],
         });
         queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+        setIsDrawerOpen(false);
         setDrawerCategoryId(null);
         setSelectedExpenseIds([]);
       }
@@ -143,6 +152,7 @@ function RouteComponent() {
         .filter((expense) => expense.currentCategoryId === categoryId)
         .map((expense) => expense.id),
     );
+    setIsDrawerOpen(true);
   }
 
   function toggleExpenseSelection(expenseId: string) {
@@ -166,6 +176,12 @@ function RouteComponent() {
       setSelectedCurrency(currencyEntries[0][0]);
     }
   }, [currencyEntries, selectedCurrency]);
+
+  useEffect(() => {
+    setIsDrawerOpen(false);
+    setDrawerCategoryId(null);
+    setSelectedExpenseIds([]);
+  }, [groupId]);
 
   if (isLoading) {
     return (
@@ -585,14 +601,26 @@ function RouteComponent() {
                 </div>
               </div>
               {category.id ? (
-                <button
-                  type="button"
-                  onClick={() => openCategoryDrawer(category.id!)}
-                  className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#132238] px-3 py-2 text-xs font-medium text-white"
-                >
-                  <Layers3 className="h-3.5 w-3.5" />
-                  Seleccionar gastos
-                </button>
+                <div className="-mt-1 mb-3 flex justify-end">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <button
+                          type="button"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#eef3ff] text-[#132238]"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      }
+                    />
+                    <DropdownMenuContent align="end" className="min-w-44">
+                      <DropdownMenuItem onClick={() => openCategoryDrawer(category.id!)}>
+                        <Layers3 className="h-4 w-4" />
+                        Seleccionar gastos
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               ) : null}
 
               {category.expenses.length === 0 ? (
@@ -657,11 +685,12 @@ function RouteComponent() {
         </div>
       </div>
 
-      {drawerCategory ? (
+      {drawerCategory && isDrawerOpen ? (
         <AppDrawer
-          open
+          open={isDrawerOpen}
           onOpenChange={(open) => {
             if (!open) {
+              setIsDrawerOpen(false);
               setDrawerCategoryId(null);
               setSelectedExpenseIds([]);
             }
@@ -692,6 +721,7 @@ function RouteComponent() {
               <button
                 type="button"
                 onClick={() => {
+                  setIsDrawerOpen(false);
                   setDrawerCategoryId(null);
                   setSelectedExpenseIds([]);
                 }}

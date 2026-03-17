@@ -2,24 +2,35 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { Bar, BarChart, Cell, Pie, PieChart, XAxis, YAxis } from 'recharts';
 import {
+  Check,
   ChevronLeft,
   FolderPlus,
+  Layers3,
   PieChart as PieChartIcon,
   ReceiptText,
   TrendingUp,
+  X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { AppDrawer } from '~/components/app-drawer';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
 } from '@workspace/ui/components/chart';
+import {
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@workspace/ui/components/drawer';
 import { formatMoney } from '~/lib/money';
 
 import { createExpenseCategory } from '../-actions/create-expense-category';
 import { getCategoryBreakdown } from '../-actions/get-category-breakdown';
+import { setCategoryExpenses } from '../-actions/set-category-expenses';
 
 export const Route = createFileRoute('/_authed/groups/$id/categories/')({
   component: RouteComponent,
@@ -56,6 +67,8 @@ function RouteComponent() {
   const queryClient = useQueryClient();
   const [categoryName, setCategoryName] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
+  const [drawerCategoryId, setDrawerCategoryId] = useState<string | null>(null);
+  const [selectedExpenseIds, setSelectedExpenseIds] = useState<string[]>([]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['category-breakdown', groupId],
@@ -76,8 +89,30 @@ function RouteComponent() {
       }
     },
   });
+  const setCategoryExpensesMutation = useMutation({
+    mutationFn: setCategoryExpenses,
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({
+          queryKey: ['category-breakdown', groupId],
+        });
+        queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+        setDrawerCategoryId(null);
+        setSelectedExpenseIds([]);
+      }
+    },
+  });
 
   const categories = data?.categories ?? [];
+  const assignableExpenses = categories
+    .flatMap((category) =>
+      category.expenses.map((expense) => ({
+        ...expense,
+        currentCategoryId: category.id,
+        currentCategoryName: category.id ? category.name : null,
+      })),
+    )
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const currencyTotals = new Map<string, number>();
   for (const category of categories) {
     for (const [currency, amount] of Object.entries(category.totals)) {
@@ -91,6 +126,25 @@ function RouteComponent() {
 
   const primaryCurrency = currencyEntries[0]?.[0] ?? null;
   const activeCurrency = selectedCurrency ?? primaryCurrency;
+  const drawerCategory =
+    categories.find((category) => category.id === drawerCategoryId) ?? null;
+
+  function openCategoryDrawer(categoryId: string) {
+    setDrawerCategoryId(categoryId);
+    setSelectedExpenseIds(
+      assignableExpenses
+        .filter((expense) => expense.currentCategoryId === categoryId)
+        .map((expense) => expense.id),
+    );
+  }
+
+  function toggleExpenseSelection(expenseId: string) {
+    setSelectedExpenseIds((current) =>
+      current.includes(expenseId)
+        ? current.filter((id) => id !== expenseId)
+        : [...current, expenseId],
+    );
+  }
 
   useEffect(() => {
     if (!currencyEntries.length) {
@@ -523,6 +577,16 @@ function RouteComponent() {
                   ))}
                 </div>
               </div>
+              {category.id ? (
+                <button
+                  type="button"
+                  onClick={() => openCategoryDrawer(category.id!)}
+                  className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#132238] px-3 py-2 text-xs font-medium text-white"
+                >
+                  <Layers3 className="h-3.5 w-3.5" />
+                  Seleccionar gastos
+                </button>
+              ) : null}
 
               {category.expenses.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-gray-200 bg-white/80 p-4 text-sm text-gray-500">
@@ -585,6 +649,149 @@ function RouteComponent() {
           ))}
         </div>
       </div>
+
+      <AppDrawer
+        open={Boolean(drawerCategory)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDrawerCategoryId(null);
+            setSelectedExpenseIds([]);
+          }
+        }}
+        className="data-[vaul-drawer-direction=bottom]:max-h-[92vh]"
+      >
+        <DrawerHeader>
+          <DrawerTitle className="text-left text-[#132238]">
+            Asignar gastos
+          </DrawerTitle>
+          <DrawerDescription className="text-left">
+            {drawerCategory
+              ? `Selecciona qué gastos pertenecen a ${drawerCategory.name}.`
+              : 'Selecciona los gastos de esta categoría.'}
+          </DrawerDescription>
+        </DrawerHeader>
+
+        <div className="px-5 pb-4">
+          <div className="mb-4 flex items-center justify-between rounded-2xl bg-[#f5f7fb] px-4 py-3">
+            <div>
+              <p className="text-sm font-semibold text-[#132238]">
+                {drawerCategory?.name}
+              </p>
+              <p className="text-xs text-[#68768a]">
+                {selectedExpenseIds.length} gasto
+                {selectedExpenseIds.length === 1 ? '' : 's'} seleccionado
+                {selectedExpenseIds.length === 1 ? '' : 's'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setDrawerCategoryId(null);
+                setSelectedExpenseIds([]);
+              }}
+              className="rounded-full bg-white p-2 text-[#68768a]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="max-h-[52vh] space-y-3 overflow-y-auto pb-2">
+            {assignableExpenses.map((expense) => {
+              const isSelected = selectedExpenseIds.includes(expense.id);
+
+              return (
+                <button
+                  key={expense.id}
+                  type="button"
+                  onClick={() => toggleExpenseSelection(expense.id)}
+                  className={`w-full rounded-[22px] border px-4 py-3 text-left transition ${
+                    isSelected
+                      ? 'border-[#132238] bg-[#132238] text-white'
+                      : 'border-white/70 bg-white text-[#132238]'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                        isSelected ? 'bg-white text-[#132238]' : 'bg-[#eef3ff]'
+                      }`}
+                    >
+                      {isSelected ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <span className="h-2.5 w-2.5 rounded-full bg-[#1f4ed8]" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="truncate font-medium">{expense.description}</p>
+                        <p className="shrink-0 font-semibold">
+                          {formatMoney(expense.amount, expense.currency)}
+                        </p>
+                      </div>
+                      <p
+                        className={`mt-1 text-sm ${
+                          isSelected ? 'text-white/70' : 'text-[#68768a]'
+                        }`}
+                      >
+                        {formatDate(expense.date)} · Pagó {expense.paidByName}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                            isSelected
+                              ? 'bg-white/15 text-white'
+                              : expense.currentCategoryName
+                                ? 'bg-[#eef3ff] text-[#1f4ed8]'
+                                : 'bg-[#f5f7fb] text-[#68768a]'
+                          }`}
+                        >
+                          {expense.currentCategoryName ?? 'Sin categoría'}
+                        </span>
+                        {expense.expenseType === 'composite' ? (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                              isSelected
+                                ? 'bg-white/15 text-white'
+                                : 'bg-blue-50 text-blue-700'
+                            }`}
+                          >
+                            {expense.subExpenseCount} subgasto
+                            {expense.subExpenseCount === 1 ? '' : 's'}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <DrawerFooter className="border-t border-black/5 bg-white/90 px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            onClick={() => {
+              if (!drawerCategory) return;
+
+              setCategoryExpensesMutation.mutate({
+                data: {
+                  groupId,
+                  categoryId: drawerCategory.id!,
+                  expenseIds: selectedExpenseIds,
+                },
+              });
+            }}
+            disabled={!drawerCategory || setCategoryExpensesMutation.isPending}
+            className="w-full rounded-2xl bg-[#132238] px-4 py-3 font-medium text-white disabled:bg-gray-200 disabled:text-gray-400"
+          >
+            {setCategoryExpensesMutation.isPending
+              ? 'Guardando...'
+              : 'Guardar selección'}
+          </button>
+        </DrawerFooter>
+      </AppDrawer>
     </div>
   );
 }

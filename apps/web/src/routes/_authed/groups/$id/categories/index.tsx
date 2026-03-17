@@ -86,6 +86,7 @@ function RouteComponent() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerCategoryId, setDrawerCategoryId] = useState<string | null>(null);
   const [selectedExpenseIds, setSelectedExpenseIds] = useState<string[]>([]);
+  const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState('');
   const scrollRestoreKey = `group-categories-view-state:${groupId}`;
@@ -144,6 +145,7 @@ function RouteComponent() {
         queryClient.invalidateQueries({
           queryKey: ['group-categories', groupId],
         });
+        setIsEditDrawerOpen(false);
         setEditingCategoryId(null);
         setEditingCategoryName('');
       }
@@ -219,6 +221,7 @@ function RouteComponent() {
   function openEditCategory(categoryId: string, currentName: string) {
     setEditingCategoryId(categoryId);
     setEditingCategoryName(currentName);
+    setIsEditDrawerOpen(true);
   }
 
   useEffect(() => {
@@ -239,6 +242,7 @@ function RouteComponent() {
     setIsDrawerOpen(false);
     setDrawerCategoryId(null);
     setSelectedExpenseIds([]);
+    setIsEditDrawerOpen(false);
     setEditingCategoryId(null);
     setEditingCategoryName('');
   }, [groupId]);
@@ -925,11 +929,12 @@ function RouteComponent() {
         </AppDrawer>
       ) : null}
 
-      {editingCategory ? (
+      {editingCategory && isEditDrawerOpen ? (
         <AppDrawer
-          open
+          open={isEditDrawerOpen}
           onOpenChange={(open) => {
             if (!open) {
+              setIsEditDrawerOpen(false);
               setEditingCategoryId(null);
               setEditingCategoryName('');
             }

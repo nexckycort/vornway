@@ -15,6 +15,7 @@ import { Route as PublicWelcomeIndexRouteImport } from './routes/_public/welcome
 import { Route as PublicLoginIndexRouteImport } from './routes/_public/login/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
 import { Route as AuthedGoalsIndexRouteImport } from './routes/_authed/goals/index'
+import { Route as AuthedConverterIndexRouteImport } from './routes/_authed/converter/index'
 import { Route as AuthedActivityIndexRouteImport } from './routes/_authed/activity/index'
 import { Route as AuthedhomeIndexRouteImport } from './routes/_authed/(home)/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -64,6 +65,11 @@ const AuthedProfileIndexRoute = AuthedProfileIndexRouteImport.update({
 const AuthedGoalsIndexRoute = AuthedGoalsIndexRouteImport.update({
   id: '/goals/',
   path: '/goals/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedConverterIndexRoute = AuthedConverterIndexRouteImport.update({
+  id: '/converter/',
+  path: '/converter/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedActivityIndexRoute = AuthedActivityIndexRouteImport.update({
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/join/$inviteCode': typeof SharedJoinInviteCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/activity/': typeof AuthedActivityIndexRoute
+  '/converter/': typeof AuthedConverterIndexRoute
   '/goals/': typeof AuthedGoalsIndexRoute
   '/profile/': typeof AuthedProfileIndexRoute
   '/login/': typeof PublicLoginIndexRoute
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/join/$inviteCode': typeof SharedJoinInviteCodeRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/activity': typeof AuthedActivityIndexRoute
+  '/converter': typeof AuthedConverterIndexRoute
   '/goals': typeof AuthedGoalsIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
   '/login': typeof PublicLoginIndexRoute
@@ -254,6 +262,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authed/(home)/': typeof AuthedhomeIndexRoute
   '/_authed/activity/': typeof AuthedActivityIndexRoute
+  '/_authed/converter/': typeof AuthedConverterIndexRoute
   '/_authed/goals/': typeof AuthedGoalsIndexRoute
   '/_authed/profile/': typeof AuthedProfileIndexRoute
   '/_public/login/': typeof PublicLoginIndexRoute
@@ -284,6 +293,7 @@ export interface FileRouteTypes {
     | '/join/$inviteCode'
     | '/api/auth/$'
     | '/activity/'
+    | '/converter/'
     | '/goals/'
     | '/profile/'
     | '/login/'
@@ -312,6 +322,7 @@ export interface FileRouteTypes {
     | '/join/$inviteCode'
     | '/api/auth/$'
     | '/activity'
+    | '/converter'
     | '/goals'
     | '/profile'
     | '/login'
@@ -342,6 +353,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/_authed/(home)/'
     | '/_authed/activity/'
+    | '/_authed/converter/'
     | '/_authed/goals/'
     | '/_authed/profile/'
     | '/_public/login/'
@@ -413,6 +425,13 @@ declare module '@tanstack/react-router' {
       path: '/goals'
       fullPath: '/goals/'
       preLoaderRoute: typeof AuthedGoalsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/converter/': {
+      id: '/_authed/converter/'
+      path: '/converter'
+      fullPath: '/converter/'
+      preLoaderRoute: typeof AuthedConverterIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/activity/': {
@@ -575,6 +594,7 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedhomeIndexRoute: typeof AuthedhomeIndexRoute
   AuthedActivityIndexRoute: typeof AuthedActivityIndexRoute
+  AuthedConverterIndexRoute: typeof AuthedConverterIndexRoute
   AuthedGoalsIndexRoute: typeof AuthedGoalsIndexRoute
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
   AuthedGoalsIdIndexRoute: typeof AuthedGoalsIdIndexRoute
@@ -598,6 +618,7 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedhomeIndexRoute: AuthedhomeIndexRoute,
   AuthedActivityIndexRoute: AuthedActivityIndexRoute,
+  AuthedConverterIndexRoute: AuthedConverterIndexRoute,
   AuthedGoalsIndexRoute: AuthedGoalsIndexRoute,
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
   AuthedGoalsIdIndexRoute: AuthedGoalsIdIndexRoute,

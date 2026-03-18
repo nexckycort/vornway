@@ -17,7 +17,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { Compass, Target, Trash2 } from 'lucide-react';
+import { Compass, Repeat2, Target, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
 import { GradientLayout } from '~/components/gradient-layout';
@@ -616,6 +616,31 @@ function HomePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mb-6 px-5 lg:px-6">
+        <button
+          type="button"
+          onClick={() => navigate({ to: '/converter' })}
+          className="flex w-full items-center justify-between rounded-3xl border border-white/70 bg-white/90 px-4 py-4 text-left shadow-sm backdrop-blur-xl"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#eef3ff] text-[#4040b0]">
+              <Repeat2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-semibold text-[#1a1a3e]">
+                Conversor de monedas
+              </p>
+              <p className="text-sm text-gray-500">
+                EUR, USD y COP con tasa diaria aproximada
+              </p>
+            </div>
+          </div>
+          <span className="rounded-full bg-[#eef3ff] px-3 py-1 text-xs font-medium text-[#4040b0]">
+            Abrir
+          </span>
+        </button>
       </div>
 
       <div className="px-5 pb-10 lg:px-6 lg:pb-10">

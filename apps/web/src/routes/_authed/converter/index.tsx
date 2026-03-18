@@ -1,23 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { ArrowLeftRight, ChevronLeft, Info, Repeat2 } from 'lucide-react';
+import { ArrowLeftRight, ChevronLeft, Repeat2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-import { formatMoney, formatMoneyAmount } from '~/lib/money';
+import { formatMoney } from '~/lib/money';
 
 import { getCurrencyConverter } from '../(home)/-actions/get-currency-converter';
 
 export const Route = createFileRoute('/_authed/converter/')({
   component: RouteComponent,
 });
-
-function formatRateDate(date: Date): string {
-  return new Intl.DateTimeFormat('es-CO', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(date));
-}
 
 function RouteComponent() {
   const router = useRouter();
@@ -202,38 +194,7 @@ function RouteComponent() {
           </div>
         </div>
 
-        <div className="mt-4 rounded-[28px] border border-white/70 bg-white/90 p-4 shadow-sm">
-          <div className="mb-3 flex items-center gap-2">
-            <Info className="h-4 w-4 text-[#1f4ed8]" />
-            <p className="font-medium text-[#132238]">Tasas actuales</p>
-          </div>
-          <p className="text-sm text-[#68768a]">
-            Última actualización:{' '}
-            {data.lastUpdatedAt ? formatRateDate(data.lastUpdatedAt) : 'Sin datos'}
-          </p>
-          <p className="mt-2 text-sm text-[#68768a]">{data.disclaimer}</p>
-
-          <div className="mt-4 space-y-2">
-            {data.rates.map((rate) => (
-              <div
-                key={rate.id}
-                className="flex items-center justify-between gap-3 rounded-2xl bg-[#f5f7fb] px-3 py-3"
-              >
-                <div>
-                  <p className="font-medium text-[#132238]">
-                    {rate.baseCurrency} {'->'} {rate.quoteCurrency}
-                  </p>
-                  <p className="text-sm text-[#68768a]">
-                    1 {rate.baseCurrency} = {formatMoneyAmount(rate.rate)} {rate.quoteCurrency}
-                  </p>
-                </div>
-                <p className="shrink-0 text-xs text-[#68768a]">
-                  {formatRateDate(rate.effectiveDate)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
+        <p className="mt-4 px-1 text-sm text-[#68768a]">{data.disclaimer}</p>
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ interface CategoryExpenseItem {
   amount: number;
   currency: string;
   date: Date;
+  isSettlement: boolean;
   isPinned: boolean;
   expenseType: 'standard' | 'composite';
   subExpenseCount: number;
@@ -127,6 +128,7 @@ export const getCategoryBreakdown = createServerFn({ method: 'POST' })
 
     for (const expense of group.Expense) {
       const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
+      const isSettlement = expense.notes?.includes('[SETTLEMENT') ?? false;
       if (isDeleted) continue;
 
       const metadata = parseExpenseMetadata(expense.metadata);
@@ -145,6 +147,7 @@ export const getCategoryBreakdown = createServerFn({ method: 'POST' })
         amount: expense.amount,
         currency: expense.currency,
         date: expense.date,
+        isSettlement,
         isPinned: Boolean(metadata.pinnedAt),
         expenseType: metadata.expenseType,
         subExpenseCount: metadata.items.length,

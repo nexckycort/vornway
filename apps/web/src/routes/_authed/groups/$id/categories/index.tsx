@@ -174,6 +174,7 @@ function RouteComponent() {
         currentCategoryName: category.id ? category.name : null,
       })),
     )
+    .filter((expense) => !expense.isSettlement)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const currencyTotals = new Map<string, number>();
   for (const category of categories) {

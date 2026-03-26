@@ -297,7 +297,7 @@ function RouteComponent() {
     (sum, item) => sum + item.amount,
     0,
   );
-  const chartData = categorySeries.slice(0, 6);
+  const chartData = categorySeries.filter((item) => item.amount > 0);
   const comparisonData = data.categories
     .map((category) => {
       return {
@@ -309,7 +309,7 @@ function RouteComponent() {
     })
     .filter((category) => category.amount > 0)
     .sort((a, b) => b.amount - a.amount);
-  const comparisonChartData = comparisonData.slice(0, 6);
+  const comparisonChartData = comparisonData;
   const comparisonChartHeight = Math.max(
     240,
     comparisonChartData.length * 56 + 24,
@@ -498,8 +498,8 @@ function RouteComponent() {
                 </PieChart>
               </ChartContainer>
 
-              <div className="mt-3 space-y-2">
-                {chartData.filter((entry) => entry.amount > 0).map((entry) => {
+              <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
+                {chartData.map((entry) => {
                   const share =
                     totalActiveAmount > 0
                       ? (entry.amount / totalActiveAmount) * 100

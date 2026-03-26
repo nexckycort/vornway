@@ -475,7 +475,6 @@ function RouteComponent() {
             ref={imageInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             className="hidden"
             onChange={handleExpenseImageChange}
           />

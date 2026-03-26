@@ -20,6 +20,7 @@ function formatCurrency(amount: number): string {
 interface FlexibleDebtOption {
   key: string;
   fromMemberId: string;
+  fromName: string;
   toMemberId: string;
   toName: string;
   currency: string;
@@ -48,18 +49,14 @@ function RouteComponent() {
   });
 
   const flexibleOptions = useMemo<FlexibleDebtOption[]>(() => {
-    if (!data?.directDebts || data.directDebts.length === 0) return [];
+    if (!data?.settlementDebts || data.settlementDebts.length === 0) return [];
 
-    const currentMemberId = data.members.find(
-      (member) => member.isCurrentUser,
-    )?.id;
-    if (!currentMemberId) return [];
-
-    return data.directDebts
+    return data.settlementDebts
       .filter((debt) => debt.amount > 0)
       .map((debt) => ({
-        key: `${debt.toMemberId}-${debt.currency}`,
-        fromMemberId: currentMemberId,
+        key: `${debt.fromMemberId}-${debt.toMemberId}-${debt.currency}`,
+        fromMemberId: debt.fromMemberId,
+        fromName: debt.fromName,
         toMemberId: debt.toMemberId,
         toName: debt.toName,
         currency: debt.currency,
@@ -166,16 +163,16 @@ function RouteComponent() {
           {flexibleOptions.length === 0 ? (
             <div className="native-empty p-4">
               <p className="text-[#1a1a3e] font-semibold mb-2">
-                No tienes deudas para abonar
+                No hay deudas para liquidar
               </p>
               <p className="text-gray-500 text-sm">
-                Cuando debas un monto a alguien, podrás abonar total o parcial
-                aquí.
+                Cuando exista una deuda entre miembros del grupo, podrás
+                registrarla aquí aunque el celular lo tenga otra persona.
               </p>
             </div>
           ) : (
             <>
-              <p className="text-sm text-gray-500 mb-2">¿A quién abonar?</p>
+              <p className="text-sm text-gray-500 mb-2">¿Qué deuda liquidar?</p>
               <select
                 value={flexOptionKey}
                 onChange={(event) => setFlexOptionKey(event.target.value)}
@@ -183,7 +180,7 @@ function RouteComponent() {
               >
                 {flexibleOptions.map((option) => (
                   <option key={option.key} value={option.key}>
-                    {option.toName} · {option.currency} · Máx $
+                    {option.fromName} → {option.toName} · {option.currency} · Máx $
                     {formatCurrency(option.maxAmount)}
                   </option>
                 ))}
@@ -192,6 +189,9 @@ function RouteComponent() {
               {selectedFlexOption && (
                 <div className="bg-gray-50 rounded-xl p-3 mb-4">
                   <p className="text-sm text-gray-500">Deuda actual</p>
+                  <p className="text-sm font-medium text-[#1a1a3e]">
+                    {selectedFlexOption.fromName} debe a {selectedFlexOption.toName}
+                  </p>
                   <p className="font-semibold text-[#1a1a3e]">
                     ${formatCurrency(selectedFlexOption.maxAmount)}{' '}
                     {selectedFlexOption.currency}

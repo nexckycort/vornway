@@ -51,16 +51,6 @@ export const settleDebt = createServerFn({ method: 'POST' })
         };
       }
 
-      if (
-        currentMembership.id !== data.fromMemberId &&
-        currentMembership.id !== data.toMemberId
-      ) {
-        return {
-          success: false,
-          error: 'Solo puedes liquidar deudas donde participas',
-        };
-      }
-
       const members = await db.groupMember.findMany({
         where: {
           groupId: data.groupId,
@@ -90,6 +80,13 @@ export const settleDebt = createServerFn({ method: 'POST' })
         return {
           success: false,
           error: 'No se pudieron identificar los participantes',
+        };
+      }
+
+      if (fromMember.id === toMember.id) {
+        return {
+          success: false,
+          error: 'La liquidación debe ser entre dos miembros distintos',
         };
       }
 

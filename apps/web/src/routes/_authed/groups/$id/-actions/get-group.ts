@@ -65,6 +65,15 @@ interface DirectCredit {
   amount: number;
 }
 
+interface SettlementDebt {
+  fromMemberId: string;
+  fromName: string;
+  toMemberId: string;
+  toName: string;
+  currency: string;
+  amount: number;
+}
+
 interface GetGroupResponse {
   name: string;
   participantCount: number;
@@ -75,6 +84,7 @@ interface GetGroupResponse {
   memberBalances: MemberBalance[];
   directDebts: DirectDebt[];
   directCredits: DirectCredit[];
+  settlementDebts: SettlementDebt[];
   isOwner: boolean;
 }
 
@@ -286,6 +296,7 @@ export const getGroup = createServerFn({ method: 'POST' })
       );
 
       const directDebtByPair = new Map<string, number>();
+      const allDebtByPair = new Map<string, number>();
       if (currentMemberId) {
         for (const expense of groupRecord.Expense) {
           const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
@@ -313,6 +324,22 @@ export const getGroup = createServerFn({ method: 'POST' })
           directDebtByPair.set(
             key,
             (directDebtByPair.get(key) ?? 0) + currentParticipation.share,
+          );
+        }
+      }
+
+      for (const expense of groupRecord.Expense) {
+        const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
+        if (isDeleted) continue;
+        if (expense.participants.length === 0) continue;
+
+        for (const participant of expense.participants) {
+          if (participant.memberId === expense.paidBy.id) continue;
+
+          const key = `${participant.memberId}:${expense.paidBy.id}:${expense.currency}`;
+          allDebtByPair.set(
+            key,
+            (allDebtByPair.get(key) ?? 0) + participant.share,
           );
         }
       }
@@ -353,6 +380,32 @@ export const getGroup = createServerFn({ method: 'POST' })
         })
         .sort((a, b) => b.amount - a.amount);
 
+      const settlementPairMap = new Map<string, SettlementDebt>();
+
+      for (const [pairKey, amount] of allDebtByPair.entries()) {
+        if (amount <= 0) continue;
+
+        const [fromMemberId, toMemberId, currency] = pairKey.split(':');
+        const reverseKey = `${toMemberId}:${fromMemberId}:${currency}`;
+        const reverseAmount = allDebtByPair.get(reverseKey) ?? 0;
+        const netAmount = amount - reverseAmount;
+
+        if (netAmount <= 0) continue;
+
+        settlementPairMap.set(pairKey, {
+          fromMemberId,
+          fromName: memberNameById.get(fromMemberId) ?? 'Miembro',
+          toMemberId,
+          toName: memberNameById.get(toMemberId) ?? 'Miembro',
+          currency,
+          amount: netAmount,
+        });
+      }
+
+      const settlementDebts = Array.from(settlementPairMap.values()).sort(
+        (a, b) => b.amount - a.amount,
+      );
+
       return {
         name: groupRecord.name,
         participantCount: groupRecord.GroupMember.length,
@@ -363,6 +416,7 @@ export const getGroup = createServerFn({ method: 'POST' })
         memberBalances,
         directDebts,
         directCredits,
+        settlementDebts,
         isOwner: groupRecord.ownerId === userId,
       };
     } catch (error) {

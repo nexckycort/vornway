@@ -1,15 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
+  Camera,
   ChevronDown,
   ChevronLeft,
   Info,
-  LayoutGrid,
+  Loader2,
   Plus,
   ReceiptText,
   Trash2,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 import { GradientLayout } from '~/components/gradient-layout';
 import {
   type CompositeExpenseItem,
@@ -17,10 +18,11 @@ import {
 } from '~/lib/expense-metadata';
 
 import { getExpense } from '../-actions/get-expense';
+import { getGroupCategories } from '../-actions/get-group-categories';
 import { createExpense } from './-actions/create-expense';
+import { extractExpenseFromImage } from './-actions/extract-expense-from-image';
 import { getGroupMembers } from './-actions/get-group-members';
 import { updateExpense } from './-actions/update-expense';
-import { getGroupCategories } from '../-actions/get-group-categories';
 
 export const Route = createFileRoute('/_authed/groups/$id/add-expense/')({
   validateSearch: (
@@ -40,12 +42,43 @@ function createCompositeItemId() {
   return `subexpense-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function readImageAsBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = reader.result;
+
+      if (typeof result !== 'string') {
+        reject(new Error('No se pudo leer la imagen'));
+        return;
+      }
+
+      const base64 = result.split(',')[1];
+
+      if (!base64) {
+        reject(new Error('No se pudo convertir la imagen'));
+        return;
+      }
+
+      resolve(base64);
+    };
+
+    reader.onerror = () => {
+      reject(new Error('No se pudo leer la imagen seleccionada'));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
 function RouteComponent() {
   const { id: groupId } = Route.useParams();
   const { expenseId } = Route.useSearch();
   const isEditMode = Boolean(expenseId);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -74,6 +107,8 @@ function RouteComponent() {
   const [showSplitDropdown, setShowSplitDropdown] = useState(false);
   const [showExpenseTypeDropdown, setShowExpenseTypeDropdown] = useState(false);
   const [hasLoadedEditData, setHasLoadedEditData] = useState(false);
+  const [scanFeedback, setScanFeedback] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   const currencies = ['COP', 'USD', 'EUR', 'AED'];
   const expenseTypes = [
@@ -136,6 +171,33 @@ function RouteComponent() {
         }
         router.history.back();
       }
+    },
+  });
+  const extractExpenseFromImageMutation = useMutation({
+    mutationFn: extractExpenseFromImage,
+    onSuccess: (result) => {
+      if (!result.success || !result.expense) {
+        setScanError(result.error ?? 'No se pudo leer la imagen');
+        setScanFeedback(null);
+        return;
+      }
+
+      setDescription(result.expense.description);
+      setAmount(result.expense.amount.toString());
+      setCurrency(result.expense.currency);
+      setScanError(null);
+      setScanFeedback(
+        result.expense.notes ??
+          `Campos completados automaticamente con confianza ${result.expense.confidence === 'high' ? 'alta' : result.expense.confidence === 'medium' ? 'media' : 'baja'}.`,
+      );
+    },
+    onError: (error) => {
+      setScanFeedback(null);
+      setScanError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo analizar la imagen del gasto',
+      );
     },
   });
 
@@ -285,6 +347,50 @@ function RouteComponent() {
     setCompositeItems((prev) => prev.filter((item) => item.id !== itemId));
   };
 
+  const handleSelectExpenseImage = () => {
+    imageInputRef.current?.click();
+  };
+
+  const handleExpenseImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setScanFeedback(null);
+      setScanError('Selecciona una imagen valida');
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setScanFeedback(null);
+      setScanError('La imagen es muy pesada. Usa una foto de hasta 8 MB.');
+      return;
+    }
+
+    try {
+      setScanError(null);
+      setScanFeedback(null);
+
+      const imageBase64 = await readImageAsBase64(file);
+
+      extractExpenseFromImageMutation.mutate({
+        data: {
+          groupId,
+          imageBase64,
+          mimeType: file.type,
+          fileName: file.name,
+        },
+      });
+    } catch (error) {
+      setScanFeedback(null);
+      setScanError(
+        error instanceof Error ? error.message : 'No se pudo leer la imagen',
+      );
+    }
+  };
+
   const handleSubmit = () => {
     if (!canAdd || !paidById) return;
 
@@ -365,12 +471,29 @@ function RouteComponent() {
           <label htmlFor="description" className="mb-2 block text-[#1a1a3e]">
             Descripción
           </label>
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleExpenseImageChange}
+          />
           <div className="flex gap-3">
             <button
               type="button"
-              className="h-14 w-14 flex-shrink-0 rounded-xl bg-gray-100 flex items-center justify-center"
+              onClick={handleSelectExpenseImage}
+              disabled={extractExpenseFromImageMutation.isPending}
+              className="flex h-14 w-20 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-gray-100 text-[#1a1a3e] disabled:opacity-60"
             >
-              <LayoutGrid className="h-6 w-6 text-gray-600" />
+              {extractExpenseFromImageMutation.isPending ? (
+                <Loader2 className="h-5 w-5 animate-spin text-[#4040b0]" />
+              ) : (
+                <Camera className="h-5 w-5 text-[#4040b0]" />
+              )}
+              <span className="mt-1 text-[11px] font-medium">
+                {extractExpenseFromImageMutation.isPending ? 'Leyendo' : 'Escanear'}
+              </span>
             </button>
             <input
               id="description"
@@ -381,6 +504,22 @@ function RouteComponent() {
               className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-[#1a1a3e] placeholder:text-gray-400"
             />
           </div>
+          {scanError ? (
+            <p className="mt-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {scanError}
+            </p>
+          ) : null}
+          {scanFeedback ? (
+            <p className="mt-3 rounded-xl border border-[#d7e3ff] bg-[#f5f8ff] px-4 py-3 text-sm text-[#385183]">
+              {scanFeedback}
+            </p>
+          ) : null}
+          {!scanError && !scanFeedback ? (
+            <p className="mt-3 text-sm text-gray-500">
+              Sube una foto del recibo o factura y completamos descripción,
+              monto y moneda automáticamente.
+            </p>
+          ) : null}
         </div>
 
         <div className="mb-6">

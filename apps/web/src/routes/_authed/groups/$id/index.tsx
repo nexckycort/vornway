@@ -3,12 +3,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
   BarChart3,
+  Camera,
   Check,
   Copy,
   Eye,
   HandCoins,
+  Images,
   LayoutGrid,
   Link,
+  Loader2,
   type LucideIcon,
   MoreHorizontal,
   Pencil,
@@ -23,8 +26,16 @@ import { type MouseEvent, type TouchEvent, useRef, useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
 import { useViewStateRestoration } from '~/hooks/use-view-state-restoration';
 import { PageHeader } from '~/components/page-header';
+import {
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@workspace/ui/components/drawer';
 import { formatMoney, formatMoneyAmount } from '~/lib/money';
 import { deleteGroup } from '../../(home)/-actions/delete-group';
+import { createImportedExpenses } from './add-expense/-actions/create-imported-expenses';
+import { extractExpensesFromImage } from './add-expense/-actions/extract-expenses-from-image';
 import { deleteExpense } from './-actions/delete-expense';
 import { getGroup } from './-actions/get-group';
 import { leaveGroup } from './-actions/leave-group';
@@ -68,6 +79,55 @@ interface Expense {
 
 interface GroupViewState {
   activeTab: 'gastos' | 'cuentas';
+}
+
+interface ImportedExpenseDraft {
+  id: string;
+  description: string;
+  amount: string;
+  currency: string;
+  paidById: string;
+  shouldSplit: boolean;
+  participantIds: string[];
+  notes: string | null;
+}
+
+function createImportedExpenseId() {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `group-import-expense-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function readImageAsBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = reader.result;
+
+      if (typeof result !== 'string') {
+        reject(new Error('No se pudo leer la imagen'));
+        return;
+      }
+
+      const base64 = result.split(',')[1];
+
+      if (!base64) {
+        reject(new Error('No se pudo convertir la imagen'));
+        return;
+      }
+
+      resolve(base64);
+    };
+
+    reader.onerror = () => {
+      reject(new Error('No se pudo leer la imagen seleccionada'));
+    };
+
+    reader.readAsDataURL(file);
+  });
 }
 
 function ExpenseItem({
@@ -436,6 +496,13 @@ function RouteComponent() {
   const [showLeaveGroupConfirm, setShowLeaveGroupConfirm] = useState(false);
   const [deleteGroupNameInput, setDeleteGroupNameInput] = useState('');
   const [copiedGroupName, setCopiedGroupName] = useState(false);
+  const importImageInputRef = useRef<HTMLInputElement | null>(null);
+  const [showImportDrawer, setShowImportDrawer] = useState(false);
+  const [importedExpenses, setImportedExpenses] = useState<
+    ImportedExpenseDraft[]
+  >([]);
+  const [importFeedback, setImportFeedback] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
   const scrollRestoreKey = `group-view-state:${id}`;
   const { data, error, isLoading } = useQuery({
     queryKey: ['group', id],
@@ -499,6 +566,73 @@ function RouteComponent() {
       }
     },
   });
+  const extractExpensesFromImageMutation = useMutation({
+    mutationFn: extractExpensesFromImage,
+    onSuccess: (result) => {
+      if (!result.success || !result.expenses?.length) {
+        setImportError(result.error ?? 'No se pudieron detectar gastos');
+        setImportFeedback(null);
+        setImportedExpenses([]);
+        setShowImportDrawer(false);
+        return;
+      }
+
+      const defaultPaidById =
+        data?.members.find((member) => member.isCurrentUser)?.id ??
+        data?.members[0]?.id ??
+        '';
+      const defaultParticipantIds = data?.members.map((member) => member.id) ?? [];
+
+      setImportedExpenses(
+        result.expenses.map((expense) => ({
+          id: createImportedExpenseId(),
+          description: expense.description,
+          amount: expense.amount.toString(),
+          currency: expense.currency,
+          paidById: defaultPaidById,
+          shouldSplit: defaultParticipantIds.length > 0,
+          participantIds: defaultParticipantIds,
+          notes: expense.notes,
+        })),
+      );
+      setImportError(null);
+      setImportFeedback(
+        result.notes ??
+          `Detecté ${result.expenses.length} gasto${result.expenses.length === 1 ? '' : 's'}. Revísalos antes de crear.`,
+      );
+      setShowImportDrawer(true);
+    },
+    onError: (error) => {
+      setImportFeedback(null);
+      setImportError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo analizar la captura de gastos',
+      );
+    },
+  });
+  const createImportedExpensesMutation = useMutation({
+    mutationFn: createImportedExpenses,
+    onSuccess: (result) => {
+      if (!result.success) {
+        setImportError(result.error ?? 'No se pudieron crear los gastos');
+        return;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      setShowImportDrawer(false);
+      setImportedExpenses([]);
+      setImportFeedback(null);
+      setImportError(null);
+    },
+    onError: (error) => {
+      setImportError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudieron crear los gastos importados',
+      );
+    },
+  });
 
   const handleDeleteExpense = (expenseId: string) => {
     if (deleteExpenseMutation.isPending) return;
@@ -529,6 +663,107 @@ function RouteComponent() {
   const inviteLink = data?.inviteCode
     ? `${window.location.origin}/join/${data.inviteCode}`
     : '';
+
+  const handleSelectImportImage = () => {
+    importImageInputRef.current?.click();
+  };
+
+  const handleImportImageChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setImportFeedback(null);
+      setImportError('Selecciona una imagen válida');
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setImportFeedback(null);
+      setImportError('La imagen es muy pesada. Usa una foto de hasta 8 MB.');
+      return;
+    }
+
+    try {
+      setImportError(null);
+      setImportFeedback(null);
+      const imageBase64 = await readImageAsBase64(file);
+
+      extractExpensesFromImageMutation.mutate({
+        data: {
+          groupId: id,
+          imageBase64,
+          mimeType: file.type,
+          fileName: file.name,
+        },
+      });
+    } catch (error) {
+      setImportFeedback(null);
+      setImportError(
+        error instanceof Error ? error.message : 'No se pudo leer la imagen',
+      );
+    }
+  };
+
+  const updateImportedExpense = (
+    expenseId: string,
+    updater: (current: ImportedExpenseDraft) => ImportedExpenseDraft,
+  ) => {
+    setImportedExpenses((current) =>
+      current.map((expense) =>
+        expense.id === expenseId ? updater(expense) : expense,
+      ),
+    );
+  };
+
+  const removeImportedExpense = (expenseId: string) => {
+    setImportedExpenses((current) =>
+      current.filter((expense) => expense.id !== expenseId),
+    );
+  };
+
+  const toggleImportedParticipant = (expenseId: string, participantId: string) => {
+    updateImportedExpense(expenseId, (expense) => ({
+      ...expense,
+      participantIds: expense.participantIds.includes(participantId)
+        ? expense.participantIds.filter((id) => id !== participantId)
+        : [...expense.participantIds, participantId],
+    }));
+  };
+
+  const canImportExpenses =
+    importedExpenses.length > 0 &&
+    importedExpenses.every((expense) => {
+      const parsedAmount = parseFloat(expense.amount);
+      return (
+        expense.description.trim().length > 0 &&
+        Number.isFinite(parsedAmount) &&
+        parsedAmount > 0 &&
+        expense.paidById.length > 0 &&
+        (!expense.shouldSplit || expense.participantIds.length > 0)
+      );
+    });
+
+  const handleImportSubmit = () => {
+    const payload = importedExpenses.map((expense) => ({
+      description: expense.description.trim(),
+      amount: parseFloat(expense.amount),
+      currency: expense.currency,
+      paidById: expense.paidById,
+      participantIds: expense.shouldSplit ? expense.participantIds : [],
+    }));
+
+    createImportedExpensesMutation.mutate({
+      data: {
+        groupId: id,
+        expenses: payload,
+      },
+    });
+  };
 
   const handleCopyLink = async () => {
     if (!inviteLink) return;
@@ -653,6 +888,13 @@ function RouteComponent() {
       onBack={() => router.navigate({ to: '/', replace: true })}
     >
       <div className="relative z-10 bg-[#f2f4ff] pb-3 rounded-b-2xl">
+        <input
+          ref={importImageInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImportImageChange}
+        />
         <div className="px-4 py-2 lg:px-6 lg:pt-3">
           <div className="bg-white rounded-3xl p-4 pb-1 shadow-sm">
             <div className="mb-2 flex items-start justify-end">
@@ -704,6 +946,35 @@ function RouteComponent() {
               );
             })}
           </div>
+        </div>
+
+        <div className="px-4 pt-1 lg:px-6">
+          <button
+            type="button"
+            onClick={handleSelectImportImage}
+            disabled={extractExpensesFromImageMutation.isPending}
+            className="flex w-full items-center gap-3 rounded-2xl border border-[#d7e3ff] bg-white px-4 py-3 text-left shadow-sm disabled:opacity-60"
+          >
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#eef3ff]">
+              {extractExpensesFromImageMutation.isPending ? (
+                <Loader2 className="h-5 w-5 animate-spin text-[#4040b0]" />
+              ) : (
+                <Images className="h-5 w-5 text-[#4040b0]" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-[#1a1a3e]">
+                Importar varios gastos desde una captura
+              </p>
+              <p className="text-sm text-gray-500">
+                Súbela aquí y revisa gasto por gasto antes de agregarlos
+              </p>
+            </div>
+            <Camera className="h-5 w-5 text-[#4040b0]" />
+          </button>
+          {importError && !showImportDrawer ? (
+            <p className="mt-2 text-sm text-red-500">{importError}</p>
+          ) : null}
         </div>
       </div>
 
@@ -872,6 +1143,267 @@ function RouteComponent() {
           </div>
         )}
       </div>
+
+      <AppDrawer
+        open={showImportDrawer}
+        onOpenChange={(open) => {
+          setShowImportDrawer(open);
+          if (!open && !createImportedExpensesMutation.isPending) {
+            setImportedExpenses([]);
+            setImportFeedback(null);
+          }
+        }}
+        className="data-[vaul-drawer-direction=bottom]:max-h-[92vh]"
+      >
+        <DrawerHeader>
+          <DrawerTitle className="text-left text-[#132238]">
+            Revisar gastos importados
+          </DrawerTitle>
+          <DrawerDescription className="text-left">
+            Edita cada gasto detectado y decide cómo se divide antes de crearlo.
+          </DrawerDescription>
+        </DrawerHeader>
+
+        <div className="px-5 pb-4">
+          <div className="mb-4 flex items-center justify-between rounded-2xl bg-[#f5f7fb] px-4 py-3">
+            <div>
+              <p className="text-sm font-semibold text-[#132238]">
+                {importedExpenses.length} gasto
+                {importedExpenses.length === 1 ? '' : 's'} detectado
+                {importedExpenses.length === 1 ? '' : 's'}
+              </p>
+              <p className="text-xs text-[#68768a]">
+                Puedes corregir descripción, monto, pagador y participantes.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowImportDrawer(false);
+                setImportedExpenses([]);
+                setImportFeedback(null);
+              }}
+              className="rounded-full bg-white p-2 text-[#68768a]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {importFeedback ? (
+            <p className="mb-4 rounded-2xl border border-[#d7e3ff] bg-[#f5f8ff] px-4 py-3 text-sm text-[#385183]">
+              {importFeedback}
+            </p>
+          ) : null}
+
+          <div className="max-h-[58vh] space-y-4 overflow-y-auto pb-2">
+            {importedExpenses.map((expense, index) => (
+              <div
+                key={expense.id}
+                className="rounded-[24px] border border-white/70 bg-white px-4 py-4 shadow-sm"
+              >
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#6b7a90]">
+                      Gasto {index + 1}
+                    </p>
+                    {expense.notes ? (
+                      <p className="mt-1 text-xs text-[#68768a]">
+                        {expense.notes}
+                      </p>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeImportedExpense(expense.id)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50 text-red-500"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={expense.description}
+                    onChange={(event) =>
+                      updateImportedExpense(expense.id, (current) => ({
+                        ...current,
+                        description: event.target.value,
+                      }))
+                    }
+                    placeholder="Descripción"
+                    className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-[#132238] placeholder:text-gray-400"
+                  />
+
+                  <div className="grid grid-cols-[1fr_110px] gap-3">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={expense.amount}
+                      onChange={(event) =>
+                        updateImportedExpense(expense.id, (current) => ({
+                          ...current,
+                          amount: event.target.value,
+                        }))
+                      }
+                      placeholder="Monto"
+                      className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-[#132238] placeholder:text-gray-400"
+                    />
+                    <input
+                      type="text"
+                      value={expense.currency}
+                      onChange={(event) =>
+                        updateImportedExpense(expense.id, (current) => ({
+                          ...current,
+                          currency: event.target.value.toUpperCase(),
+                        }))
+                      }
+                      className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-[#132238]"
+                    />
+                  </div>
+
+                  <select
+                    value={expense.paidById}
+                    onChange={(event) =>
+                      updateImportedExpense(expense.id, (current) => ({
+                        ...current,
+                        paidById: event.target.value,
+                      }))
+                    }
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-[#132238]"
+                  >
+                    {(data?.members ?? []).map((member) => (
+                      <option key={member.id} value={member.id}>
+                        Pagó {member.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="rounded-2xl bg-[#f7f8fb] px-3 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-[#132238]">
+                          ¿Dividir este gasto?
+                        </p>
+                        <p className="text-xs text-[#68768a]">
+                          {expense.shouldSplit
+                            ? `${expense.participantIds.length} participante${expense.participantIds.length === 1 ? '' : 's'}`
+                            : 'Quedará como gasto personal'}
+                        </p>
+                      </div>
+                      <div className="flex rounded-full bg-white p-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateImportedExpense(expense.id, (current) => ({
+                              ...current,
+                              shouldSplit: true,
+                              participantIds:
+                                current.participantIds.length > 0
+                                  ? current.participantIds
+                                  : (data?.members ?? []).map((member) => member.id),
+                            }))
+                          }
+                          className={`rounded-full px-3 py-1 text-xs font-medium ${
+                            expense.shouldSplit
+                              ? 'bg-[#132238] text-white'
+                              : 'text-[#68768a]'
+                          }`}
+                        >
+                          Sí
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateImportedExpense(expense.id, (current) => ({
+                              ...current,
+                              shouldSplit: false,
+                              participantIds: [],
+                            }))
+                          }
+                          className={`rounded-full px-3 py-1 text-xs font-medium ${
+                            !expense.shouldSplit
+                              ? 'bg-[#132238] text-white'
+                              : 'text-[#68768a]'
+                          }`}
+                        >
+                          No
+                        </button>
+                      </div>
+                    </div>
+
+                    {expense.shouldSplit ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateImportedExpense(expense.id, (current) => ({
+                              ...current,
+                              participantIds:
+                                current.participantIds.length ===
+                                (data?.members.length ?? 0)
+                                  ? []
+                                  : (data?.members ?? []).map((member) => member.id),
+                            }))
+                          }
+                          className="mt-3 rounded-full bg-white px-3 py-1 text-xs font-medium text-[#132238]"
+                        >
+                          {expense.participantIds.length ===
+                          (data?.members.length ?? 0)
+                            ? 'Quitar todos'
+                            : 'Seleccionar todos'}
+                        </button>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {(data?.members ?? []).map((member) => {
+                            const isSelected = expense.participantIds.includes(
+                              member.id,
+                            );
+
+                            return (
+                              <button
+                                key={member.id}
+                                type="button"
+                                onClick={() =>
+                                  toggleImportedParticipant(expense.id, member.id)
+                                }
+                                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                                  isSelected
+                                    ? 'bg-[#132238] text-white'
+                                    : 'bg-white text-[#132238]'
+                                }`}
+                              >
+                                {member.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {importError ? (
+            <p className="mt-4 text-sm text-red-500">{importError}</p>
+          ) : null}
+        </div>
+
+        <DrawerFooter className="border-t border-black/5 bg-white/90 px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            onClick={handleImportSubmit}
+            disabled={!canImportExpenses || createImportedExpensesMutation.isPending}
+            className="w-full rounded-2xl bg-[#132238] px-4 py-3 font-medium text-white disabled:bg-gray-200 disabled:text-gray-400"
+          >
+            {createImportedExpensesMutation.isPending
+              ? 'Importando...'
+              : `Crear ${importedExpenses.length} gasto${importedExpenses.length === 1 ? '' : 's'}`}
+          </button>
+        </DrawerFooter>
+      </AppDrawer>
 
       <AppDrawer
         open={showExpenseOptionsModal && Boolean(expenseForOptions)}

@@ -88,9 +88,9 @@ export const extractExpenseFromImage = createServerFn({ method: 'POST' })
         };
       }
 
-      const geminiApiKey = serverEnv.AI_API_KEY ?? serverEnv.AI_API_KEY;
+      const aiApiKey = serverEnv.AI_API_KEY;
 
-      if (!geminiApiKey) {
+      if (!aiApiKey) {
         return {
           success: false,
           error: 'Configura AI_API_KEY para usar el escaneo de gastos',
@@ -98,7 +98,7 @@ export const extractExpenseFromImage = createServerFn({ method: 'POST' })
       }
 
       const google = createGoogleGenerativeAI({
-        apiKey: geminiApiKey,
+        apiKey: aiApiKey,
       });
 
       const result = await generateText({

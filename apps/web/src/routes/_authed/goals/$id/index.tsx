@@ -1248,10 +1248,13 @@ function RouteComponent() {
                     className="rounded-xl border border-gray-100 px-4 py-3"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-medium text-[#1a1a3e]">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-[#1a1a3e]">
                           {member.name}
                           {member.isCurrentUser ? ' (Tú)' : ''}
+                        </p>
+                        <p className="truncate text-xs text-gray-500 mt-1">
+                          {member.email ?? 'Sin cuenta vinculada'}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           <p className="text-xs text-gray-500">
@@ -1272,7 +1275,7 @@ function RouteComponent() {
                       </div>
 
                       {isCurrentUserAdmin && !member.isCurrentUser ? (
-                        <div className="flex items-center gap-2">
+                        <div className="shrink-0 flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() =>

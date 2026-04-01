@@ -543,8 +543,10 @@ function RouteComponent() {
                       }}
                       className="w-full px-4 py-3 text-left hover:bg-gray-50 first:rounded-t-xl last:rounded-b-xl"
                     >
-                      <span className="block text-[#1a1a3e]">{p.name}</span>
-                      <span className="block text-xs text-gray-500">
+                      <span className="block truncate text-[#1a1a3e]">
+                        {p.name}
+                      </span>
+                      <span className="block truncate text-xs text-gray-500">
                         {p.email ?? 'Sin cuenta vinculada'}
                       </span>
                     </button>
@@ -783,9 +785,9 @@ function RouteComponent() {
                     </svg>
                   )}
                 </div>
-                <span className="flex-1 text-left text-[#1a1a3e]">
-                  <span className="block">{participant.name}</span>
-                  <span className="block text-xs text-gray-500">
+                <span className="min-w-0 flex-1 text-left text-[#1a1a3e]">
+                  <span className="block truncate">{participant.name}</span>
+                  <span className="block truncate text-xs text-gray-500">
                     {participant.email ?? 'Sin cuenta vinculada'}
                   </span>
                 </span>

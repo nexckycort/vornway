@@ -46,6 +46,7 @@ interface GetGoalsResponse {
   members: Array<{
     id: string;
     name: string;
+    email: string | null;
     role: string;
     isCurrentUser: boolean;
     isRegisteredUser: boolean;
@@ -93,6 +94,11 @@ export const getGoals = createServerFn({ method: 'POST' })
             name: true,
             role: true,
             userId: true,
+            user: {
+              select: {
+                email: true,
+              },
+            },
           },
           orderBy: {
             joinedAt: 'asc',
@@ -157,6 +163,7 @@ export const getGoals = createServerFn({ method: 'POST' })
       members: group.GroupMember.map((member) => ({
         id: member.id,
         name: member.name,
+        email: member.user?.email ?? null,
         role: member.role,
         isCurrentUser: member.userId === userId,
         isRegisteredUser: member.userId !== null,

@@ -182,7 +182,7 @@ function EditParticipants() {
                 key={member.id}
                 className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <div className="w-10 h-10 bg-[#e8e4f8] rounded-full flex items-center justify-center">
                     <span className="text-[#6060c0] font-semibold">
                       {getInitial(member.name)}

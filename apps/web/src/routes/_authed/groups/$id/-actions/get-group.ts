@@ -39,6 +39,7 @@ interface Expense {
 interface Member {
   id: string;
   name: string;
+  email: string | null;
   role: string;
   userId: string | null;
   isCurrentUser: boolean;
@@ -111,6 +112,11 @@ export const getGroup = createServerFn({ method: 'POST' })
               name: true,
               role: true,
               userId: true,
+              user: {
+                select: {
+                  email: true,
+                },
+              },
             },
             orderBy: { joinedAt: 'asc' },
           },
@@ -247,6 +253,7 @@ export const getGroup = createServerFn({ method: 'POST' })
       const members: Member[] = groupRecord.GroupMember.map((member) => ({
         id: member.id,
         name: member.name,
+        email: member.user?.email ?? null,
         role: member.role,
         userId: member.userId,
         isCurrentUser: member.userId === userId,

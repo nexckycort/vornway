@@ -188,10 +188,15 @@ function EditParticipants() {
                       {getInitial(member.name)}
                     </span>
                   </div>
-                  <span className="font-medium text-[#1a1a3e]">
-                    {member.name}
-                    {member.isCurrentUser && ' (Tu)'}
-                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-[#1a1a3e]">
+                      {member.name}
+                      {member.isCurrentUser && ' (Tu)'}
+                    </p>
+                    <p className="truncate text-sm text-gray-500">
+                      {member.email ?? 'Sin cuenta vinculada'}
+                    </p>
+                  </div>
                 </div>
                 {data?.isOwner && (
                   <button

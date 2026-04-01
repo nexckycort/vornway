@@ -11,6 +11,7 @@ const GetGroupMembersInputSchema = z.object({
 interface GroupMember {
   id: string;
   name: string;
+  email: string | null;
   isCurrentUser: boolean;
 }
 
@@ -43,6 +44,11 @@ export const getGroupMembers = createServerFn({ method: 'POST' })
           id: true,
           name: true,
           userId: true,
+          user: {
+            select: {
+              email: true,
+            },
+          },
         },
         orderBy: { joinedAt: 'asc' },
       });
@@ -52,6 +58,7 @@ export const getGroupMembers = createServerFn({ method: 'POST' })
       const members: GroupMember[] = groupMembers.map((member) => ({
         id: member.id,
         name: member.userId === userId ? `${member.name} (Tú)` : member.name,
+        email: member.user?.email ?? null,
         isCurrentUser: member.userId === userId,
       }));
 

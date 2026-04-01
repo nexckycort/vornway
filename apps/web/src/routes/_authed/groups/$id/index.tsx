@@ -77,6 +77,15 @@ interface Expense {
   currentUserBalance: number | null;
 }
 
+interface MemberIdentity {
+  id: string;
+  name: string;
+  email: string | null;
+  role: string;
+  userId: string | null;
+  isCurrentUser: boolean;
+}
+
 interface GroupViewState {
   activeTab: 'gastos' | 'cuentas';
 }
@@ -1083,6 +1092,11 @@ function RouteComponent() {
                               (tú)
                             </span>
                           )}
+                        </p>
+                        <p className="truncate text-xs text-gray-400">
+                          {(data?.members as MemberIdentity[] | undefined)?.find(
+                            (groupMember) => groupMember.id === member.memberId,
+                          )?.email ?? 'Sin cuenta vinculada'}
                         </p>
                         {entries.length === 0 ? (
                           <p className="text-sm text-gray-400">

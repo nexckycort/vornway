@@ -7,7 +7,7 @@ import { serverEnv } from '~/config/env.server';
 import { db } from '~/infrastructure/database/connection';
 import { resend } from '~/infrastructure/email/resend.config';
 
-const TEN_YEARS_IN_SECONDS = 60 * 60 * 24 * 365 * 10;
+const ONE_YEAR_IN_SECONDS = 60 * 60 * 24 * 365;
 
 const authConfig = {
   baseURL: serverEnv.BETTER_AUTH_URL,
@@ -15,7 +15,7 @@ const authConfig = {
     provider: 'postgresql',
   }),
   session: {
-    expiresIn: TEN_YEARS_IN_SECONDS,
+    expiresIn: ONE_YEAR_IN_SECONDS,
     updateAge: 60 * 60 * 24,
   },
   emailAndPassword: {

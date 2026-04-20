@@ -1,0 +1,33 @@
+---
+import type { LandingContent } from "../content/landing";
+import Icon from "./Icon.astro";
+
+export interface Props {
+  content: LandingContent["cta"];
+}
+
+const { content } = Astro.props;
+---
+
+<section id="cta" class="section cta-section">
+  <div class="cta-glow cta-glow-left"></div>
+  <div class="cta-glow cta-glow-right"></div>
+
+  <div class="shell narrow-shell centered-copy">
+    <h2>
+      {content.title}
+      <span>{content.highlight}</span>
+    </h2>
+    <p>{content.description}</p>
+
+    <div class="hero-actions centered-actions">
+      <a class="button button-primary button-large" href={content.primaryHref ?? "#"}>
+        {content.primaryCta}
+        <Icon name="arrow-right" class="icon" />
+      </a>
+      <a class="button button-secondary button-large" href={content.secondaryHref ?? "#"} target={content.secondaryHref ? "_blank" : undefined} rel={content.secondaryHref ? "noreferrer" : undefined}>{content.secondaryCta}</a>
+    </div>
+
+    <small>{content.footnote}</small>
+  </div>
+</section>

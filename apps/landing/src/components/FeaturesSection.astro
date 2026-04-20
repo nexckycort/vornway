@@ -1,0 +1,123 @@
+---
+import type { LandingContent } from "../content/landing";
+import Icon from "./Icon.astro";
+
+export interface Props {
+  content: LandingContent["features"];
+}
+
+const { content } = Astro.props;
+---
+
+<section id={content.id} class="section section-muted">
+  <div class="shell">
+    <div class="section-heading centered">
+      <span class="eyebrow static">{content.badge}</span>
+      <h2>
+        {content.title}
+        <span>{content.highlight}</span>
+      </h2>
+    </div>
+
+    <div class="feature-tabs" data-feature-tabs>
+      <div class="feature-tab-list" role="tablist" aria-label={content.badge}>
+        {
+          content.tabs.map((tab, index) => (
+            <button
+              type="button"
+              class:list={["feature-tab", index === 0 && "is-active"]}
+              data-feature-trigger={tab.id}
+              role="tab"
+              aria-selected={index === 0 ? "true" : "false"}
+              aria-controls={`panel-${tab.id}`}
+            >
+              <Icon name={tab.icon} class="icon" />
+              <span>{tab.label}</span>
+            </button>
+          ))
+        }
+      </div>
+
+      {
+        content.tabs.map((tab, index) => (
+          <div
+            id={`panel-${tab.id}`}
+            class:list={["feature-panel", index === 0 && "is-active"]}
+            data-feature-panel={tab.id}
+            hidden={index !== 0}
+            role="tabpanel"
+          >
+            <div class="feature-copy">
+              <h3>{tab.title}</h3>
+              <p>{tab.description}</p>
+
+              <div class="feature-items">
+                {
+                  tab.items.map((item) => (
+                    <article class="feature-item">
+                      <span>{item.label}</span>
+                      <strong class:list={[item.positive === true && "positive", item.positive === false && "negative"]}>
+                        {item.value}
+                      </strong>
+                    </article>
+                  ))
+                }
+              </div>
+            </div>
+
+            <div class="feature-phone">
+              <div class="phone-frame compact">
+                <div class="phone-notch"></div>
+                <div class="phone-content compact">
+                  <div class="feature-phone-head">
+                    <span class="icon-badge large">
+                      <Icon name={tab.icon} class="icon" />
+                    </span>
+                    <strong>{tab.label}</strong>
+                  </div>
+                  <div class="feature-phone-items">
+                    {
+                      tab.items.map((item) => (
+                        <article class="feature-phone-item">
+                          <span>{item.label}</span>
+                          <strong class:list={[item.positive === true && "positive", item.positive === false && "negative"]}>
+                            {item.value}
+                          </strong>
+                        </article>
+                      ))
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<script is:inline>
+  document.querySelectorAll("[data-feature-tabs]").forEach((root) => {
+    const triggers = root.querySelectorAll("[data-feature-trigger]");
+    const panels = root.querySelectorAll("[data-feature-panel]");
+
+    triggers.forEach((trigger) => {
+      trigger.addEventListener("click", () => {
+        const id = trigger.getAttribute("data-feature-trigger");
+
+        triggers.forEach((button) => {
+          const active = button === trigger;
+          button.classList.toggle("is-active", active);
+          button.setAttribute("aria-selected", String(active));
+        });
+
+        panels.forEach((panel) => {
+          const active = panel.getAttribute("data-feature-panel") === id;
+          panel.classList.toggle("is-active", active);
+          panel.hidden = !active;
+        });
+      });
+    });
+  });
+</script>

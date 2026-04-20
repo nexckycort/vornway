@@ -1,0 +1,73 @@
+---
+import type { LandingContent } from "../content/landing";
+import Icon from "./Icon.astro";
+
+export interface Props {
+  content: LandingContent["goals"];
+}
+
+const { content } = Astro.props;
+---
+
+<section id={content.id} class="section">
+  <div class="shell split-grid">
+    <div class="section-heading">
+      <span class="eyebrow static">
+        <Icon name="sparkles" class="icon tiny" />
+        {content.badge}
+      </span>
+      <h2>
+        {content.title}
+        <span>{content.highlight}</span>
+      </h2>
+      <p>{content.description}</p>
+
+      <div class="feature-points">
+        {
+          content.points.map((point) => (
+            <article class="point-item">
+              <span class="icon-badge">
+                <Icon name={point.icon} class="icon" />
+              </span>
+              <div>
+                <h3>{point.title}</h3>
+                <p>{point.description}</p>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+
+      <a class="button button-primary button-large" href="#cta">{content.cta}</a>
+    </div>
+
+    <div class="goal-stack">
+      {
+        content.items.map((goal, index) => {
+          const progress = Math.round((goal.current / goal.target) * 100);
+
+          return (
+            <article class="surface-card goal-card" style={`--offset:${index * 20}px`}>
+              <div class="goal-head">
+                <div>
+                  <span class="goal-emoji">{goal.emoji}</span>
+                  <div>
+                    <strong>{goal.name}</strong>
+                    <p>
+                      €{goal.current.toLocaleString()} de €{goal.target.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                <strong class="goal-progress">{progress}%</strong>
+              </div>
+
+              <div class="progress-track">
+                <div class="progress-bar" style={`width:${progress}%`}></div>
+              </div>
+            </article>
+          );
+        })
+      }
+    </div>
+  </div>
+</section>

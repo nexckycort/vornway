@@ -1,0 +1,36 @@
+---
+import type { LandingContent } from "../content/landing";
+import Icon from "./Icon.astro";
+
+export interface Props {
+  content: LandingContent["problem"];
+}
+
+const { content } = Astro.props;
+---
+
+<section class="section section-muted">
+  <div class="shell">
+    <div class="section-heading centered">
+      <h2>
+        {content.title}
+        <span>{content.highlight}</span>
+      </h2>
+      <p>{content.description}</p>
+    </div>
+
+    <div class="card-grid card-grid-4">
+      {
+        content.items.map((item) => (
+          <article class="surface-card problem-card">
+            <span class="icon-badge">
+              <Icon name={item.icon} class="icon" />
+            </span>
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>

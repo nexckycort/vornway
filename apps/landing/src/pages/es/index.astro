@@ -1,17 +1,10 @@
 ---
-import FAQSection from "../../components/FAQSection.astro";
-import FeatureBlocks from "../../components/FeatureBlocks.astro";
-import FinalCTA from "../../components/FinalCTA.astro";
-import HeroChaos from "../../components/HeroChaos.astro";
-import SiteFooter from "../../components/SiteFooter.astro";
-import SiteHeader from "../../components/SiteHeader.astro";
-import Transformation from "../../components/Transformation.astro";
-import TrustLayer from "../../components/TrustLayer.astro";
-import { translations } from "../../i18n";
+import LandingPage from "../../components/LandingPage.astro";
+import { landingContent } from "../../content/landing";
 import Layout from "../../layouts/Layout.astro";
 
 const lang = "es";
-const copy = translations[lang];
+const copy = landingContent[lang];
 ---
 
 <Layout
@@ -21,23 +14,5 @@ const copy = translations[lang];
   ogImageAlt={copy.layout.ogImageAlt}
   twitterImageAlt={copy.layout.twitterImageAlt}
 >
-  <div class="noise-overlay" aria-hidden="true"></div>
-
-  <SiteHeader lang={lang} copy={copy} />
-
-  <main>
-    <HeroChaos copy={copy} />
-
-    <Transformation copy={copy} />
-
-    <FeatureBlocks copy={copy} />
-
-    <TrustLayer copy={copy} />
-
-    <FinalCTA copy={copy} />
-
-    <FAQSection copy={copy} />
-  </main>
-
-  <SiteFooter copy={copy} />
+  <LandingPage content={copy} />
 </Layout>

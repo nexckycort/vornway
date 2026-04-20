@@ -1,7 +1,7 @@
 ---
 import "../styles/global.css";
 
-import type { Lang } from "../i18n";
+import type { Lang } from "../content/landing";
 
 export interface Props {
   title: string;
@@ -13,19 +13,20 @@ export interface Props {
 
 const {
   title,
-  description = "Stop the awkward money talk. Splitway turns expense chaos into crystal-clear group balances.",
+  description = "Vornway keeps your money, balances and shared flows in sync in one clean experience.",
   lang = "en",
-  ogImageAlt = "Splitway - Money between friends, made obvious",
-  twitterImageAlt = "Splitway - group expense sharing made clear",
+  ogImageAlt = "Vornway — Your money, in sync",
+  twitterImageAlt = "Vornway — Your money, in sync",
 } = Astro.props;
 ---
 
 <!doctype html>
-<html lang={lang} class="dark">
+<html lang={lang} suppress-hydration-warning>
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#050002" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <meta name="generator" content={Astro.generator} />
@@ -33,18 +34,30 @@ const {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://splitway.app/logo.svg" />
+    <meta property="og:image" content="/logo.svg" />
     <meta property="og:image:alt" content={ogImageAlt} />
     <meta property="og:url" content={Astro.url} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content="https://splitway.app/logo.svg" />
+    <meta name="twitter:image" content="/logo.svg" />
     <meta name="twitter:image:alt" content={twitterImageAlt} />
 
     <title>{title}</title>
+
+    <script is:inline>
+      (() => {
+        const storageKey = "vornway-theme";
+        const root = document.documentElement;
+        const stored = localStorage.getItem(storageKey);
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const theme = stored ?? (prefersDark ? "dark" : "light");
+        root.classList.toggle("dark", theme === "dark");
+        root.dataset.theme = theme;
+      })();
+    </script>
   </head>
-  <body class="font-mono antialiased">
+  <body>
     <slot />
   </body>
 </html>

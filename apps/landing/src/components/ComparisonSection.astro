@@ -1,0 +1,55 @@
+---
+import type { LandingContent } from "../content/landing";
+import Icon from "./Icon.astro";
+
+export interface Props {
+  content: LandingContent["comparison"];
+}
+
+const { content } = Astro.props;
+---
+
+<section class="section section-muted">
+  <div class="shell narrow-shell">
+    <div class="section-heading centered">
+      <span class="eyebrow static">{content.badge}</span>
+      <h2>
+        {content.title}
+        <span>{content.highlight}</span>
+      </h2>
+      <p>{content.description}</p>
+    </div>
+
+    <div class="comparison-table">
+      <div class="comparison-row comparison-head">
+        <strong>Función</strong>
+        <strong>{content.brandLabel}</strong>
+        <strong>Alternativas</strong>
+      </div>
+
+      {
+        content.rows.map((row) => (
+          <div class="comparison-row">
+            <span>{row.feature}</span>
+            <span class="comparison-icon positive">
+              <Icon name="check" class="icon" />
+            </span>
+            <span class="comparison-alt">
+              {
+                row.alternatives === false ? (
+                  <span class="comparison-icon negative">
+                    <Icon name="close" class="icon" />
+                  </span>
+                ) : (
+                  row.alternatives
+                )
+              }
+            </span>
+          </div>
+        ))
+      }
+    </div>
+
+    <p class="comparison-summary">{content.summary}</p>
+  </div>
+</section>

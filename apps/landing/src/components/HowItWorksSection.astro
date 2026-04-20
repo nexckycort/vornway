@@ -1,0 +1,39 @@
+---
+import type { LandingContent } from "../content/landing";
+import Icon from "./Icon.astro";
+
+export interface Props {
+  content: LandingContent["howItWorks"];
+}
+
+const { content } = Astro.props;
+---
+
+<section id={content.id} class="section">
+  <div class="shell">
+    <div class="section-heading centered">
+      <span class="eyebrow static">{content.badge}</span>
+      <h2>
+        {content.title}
+        <span>{content.highlight}</span>
+      </h2>
+      <p>{content.description}</p>
+    </div>
+
+    <div class="steps-grid">
+      {
+        content.steps.map((step, index) => (
+          <article class="surface-card step-card">
+            <span class="step-marker">{index + 1}</span>
+            <span class="icon-badge large">
+              <Icon name={step.icon} class="icon" />
+            </span>
+            <strong class="step-number">{step.number}</strong>
+            <h3>{step.title}</h3>
+            <p>{step.description}</p>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>

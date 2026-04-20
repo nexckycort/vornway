@@ -1,0 +1,38 @@
+---
+import type { LandingContent } from "../content/landing";
+
+export interface Props {
+  content: LandingContent["manifesto"];
+}
+
+const { content } = Astro.props;
+---
+
+<section class="section manifesto-section">
+  <div class="shell narrow-shell">
+    <div class="manifesto-card">
+      <div class="section-heading">
+        <span class="eyebrow static">{content.badge}</span>
+        <h2>
+          {content.title}
+          <span>{content.highlight}</span>
+        </h2>
+        <p>{content.lead}</p>
+      </div>
+
+      <div class="manifesto-copy">
+        {
+          content.paragraphs.map((paragraph) => (
+            <p>{paragraph}</p>
+          ))
+        }
+      </div>
+
+      <a class="manifesto-link" href={content.figmaHref} target="_blank" rel="noreferrer">
+        {content.figmaLabel}
+      </a>
+
+      <blockquote class="manifesto-quote">{content.quote}</blockquote>
+    </div>
+  </div>
+</section>

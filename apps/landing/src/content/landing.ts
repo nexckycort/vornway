@@ -495,26 +495,29 @@ const spanishContent: LandingContent = {
     title: 'Lo que estamos evitando',
     highlight: 'desde el día uno',
     description:
-      'No queremos construir otra app aislada. Queremos evitar desde el inicio el caos de repartir el flujo entre notas, chats, calculadoras y parches.',
+      'No queremos construir otra app aislada. Queremos evitar desde el inicio el caos de repartir el flujo entre herramientas sueltas, chats, calculadoras y parches.',
     summary:
-      'La meta es una sola experiencia coherente, no otra colección de herramientas sueltas.',
+      'La meta es resolverlo todo en una sola experiencia coherente, no en una colección de herramientas separadas.',
     rows: [
-      { feature: 'Dividir gastos', splitway: true, alternatives: 'Splitwise' },
       {
-        feature: 'Metas de ahorro',
+        feature: 'Dividir gastos',
         splitway: true,
-        alternatives: 'Apps bancarias',
+        alternatives: 'División de cuentas',
       },
-      { feature: 'Multi-moneda', splitway: true, alternatives: 'Calculadoras' },
+      {
+        feature: 'Objetivos financieros',
+        splitway: true,
+        alternatives: 'Planificación financiera',
+      },
+      {
+        feature: 'Multi-moneda',
+        splitway: true,
+        alternatives: 'Conversión de divisas',
+      },
       {
         feature: 'Gestión de grupo',
         splitway: true,
-        alternatives: 'WhatsApp / Notas',
-      },
-      {
-        feature: 'Conexión con tu agente favorito',
-        splitway: true,
-        alternatives: false,
+        alternatives: 'Coordinación manual',
       },
       { feature: 'Todo en uno', splitway: true, alternatives: false },
     ],

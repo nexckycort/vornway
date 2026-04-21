@@ -31,7 +31,7 @@ jobs:
         run: bun install
 
       - name: Build
-        run: bun run --filter @splitway/landing build
+        run: bun run --filter @vornway/landing build
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:

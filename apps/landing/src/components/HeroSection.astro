@@ -23,10 +23,6 @@ const { content } = Astro.props;
       <p>{content.description}</p>
 
       <div class="hero-actions">
-        <a class="button button-primary button-large" href={content.primaryHref ?? "#cta"}>
-          {content.primaryCta}
-          <Icon name="arrow-right" class="icon" />
-        </a>
         <a class="button button-secondary button-large" href={content.secondaryHref ?? "#how-it-works"} target={content.secondaryHref ? "_blank" : undefined} rel={content.secondaryHref ? "noreferrer" : undefined}>
           <Icon name="play" class="icon" />
           {content.secondaryCta}

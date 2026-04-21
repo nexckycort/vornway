@@ -203,15 +203,15 @@ export type LandingContent = {
 };
 
 const figmaHref =
-  'https://www.figma.com/design/OCWhcikohJGEQoqBsVvEQx?node-id=31-20745';
+  '#';
 
 const spanishContent: LandingContent = {
   layout: {
-    title: 'Vornway - lista para descargar',
+    title: 'Vornway - gastos, balances y metas compartidas',
     description:
-      'Vornway ya esta disponible para descargar y te ayuda a organizar gastos, balances y metas compartidas desde una sola app.',
-    ogImageAlt: 'Vornway - lista para descargar',
-    twitterImageAlt: 'Vornway - lista para descargar',
+      'Vornway te ayuda a organizar gastos, balances y metas compartidas desde una sola app.',
+    ogImageAlt: 'Vornway - gastos, balances y metas compartidas',
+    twitterImageAlt: 'Vornway - gastos, balances y metas compartidas',
   },
   brand: {
     name: 'Vornway',
@@ -230,9 +230,9 @@ const spanishContent: LandingContent = {
   },
   hero: {
     title: 'Vornway ya esta lista para',
-    highlight: 'descargar',
+    highlight: 'tu grupo',
     description:
-      'La app ya esta disponible para que organices gastos compartidos, balances del grupo y metas de viaje desde un solo lugar. Descargala en tu tienda preferida y empieza a usarla hoy.',
+      'Vornway te ayuda a organizar gastos compartidos, balances del grupo y metas de viaje desde un solo lugar, con una experiencia mas clara y conectada.',
     primaryCta: 'Descargar app',
     primaryHref: '#cta',
     secondaryCta: 'Ver diseno en Figma',
@@ -240,7 +240,7 @@ const spanishContent: LandingContent = {
     scrollHint: 'Descubre mas',
     stats: [
       { value: 'Disponible ahora', label: 'Lanzamiento activo' },
-      { value: 'Descarga directa', label: 'Lista para empezar' },
+      { value: 'Lista para empezar', label: 'Uso inmediato' },
       { value: 'Todo en uno', label: 'Gastos, balances y metas' },
     ],
     recentLabel: 'Lo que ya puedes hacer',
@@ -256,8 +256,8 @@ const spanishContent: LandingContent = {
     welcomeName: 'Vornway disponible',
     floatingCards: [
       {
-        title: 'Descarga inmediata',
-        subtitle: 'Encuentrala en tu tienda preferida',
+        title: 'Uso inmediato',
+        subtitle: 'Empieza con tu grupo sin friccion',
         icon: '✦',
       },
       {
@@ -396,7 +396,7 @@ const spanishContent: LandingContent = {
           'Pequenos empujes para mantener el ritmo del ahorro antes de la salida.',
       },
     ],
-    cta: 'Descarga la app y empieza a usarlas',
+    cta: 'Empieza a usarlas con tu grupo',
     items: [
       { name: 'Viaje a Japon', current: 1500, target: 3000, emoji: 'JP' },
       { name: 'Eurotrip verano', current: 800, target: 1200, emoji: 'EU' },
@@ -414,9 +414,9 @@ const spanishContent: LandingContent = {
       {
         number: '01',
         icon: 'map',
-        title: 'Descarga la app',
+        title: 'Empieza en minutos',
         description:
-          'Encuentra Vornway en tu tienda preferida, instalala y entra en minutos.',
+          'Entra a Vornway y empieza a organizar todo sin procesos largos ni configuraciones innecesarias.',
       },
       {
         number: '02',
@@ -479,7 +479,7 @@ const spanishContent: LandingContent = {
   manifesto: {
     badge: 'Cómo lo construimos',
     title: 'Cómo construimos',
-    highlight: 'con intención',
+    highlight: 'Vornway',
     lead: 'En la era de la IA construir se volvió radicalmente más fácil. Podríamos vaicodear toda esta app en cuestión de días.',
     paragraphs: [
       'Pero la pregunta no es qué tan rápido se puede hacer. La pregunta es otra: ¿dejarías que alguien juegue tu videojuego favorito mientras tú solo miras? ¿Dejarías que otra persona salga de fiesta por ti y luego te lo cuente? ¿Dejarías que alguien viva tu actividad favorita mientras tú te quedas sentado observando?',
@@ -525,15 +525,15 @@ const spanishContent: LandingContent = {
   },
   cta: {
     title: 'Vornway ya esta lista para',
-    highlight: 'descargar',
+    highlight: 'acompanar a tu grupo',
     description:
-      'Instalala desde tu tienda preferida y empieza a organizar gastos compartidos, balances y metas del grupo en una sola app.',
+      'Empieza a organizar gastos compartidos, balances y metas del grupo en una sola app, con menos caos y mas claridad.',
     primaryCta: 'Descargar app',
     primaryHref: '#',
     secondaryCta: 'Ver diseno',
     secondaryHref: figmaHref,
     footnote:
-      'Disponible ahora para quienes quieren ordenar mejor sus viajes y planes compartidos.',
+      'Hecha para quienes quieren ordenar mejor sus viajes y planes compartidos.',
   },
   footer: {
     columns: [

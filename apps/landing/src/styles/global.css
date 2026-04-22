@@ -264,8 +264,11 @@ select {
 
 .desktop-nav a {
   padding: 0.65rem 0.9rem;
+  border-radius: 999px;
   color: var(--muted);
-  transition: color 160ms ease;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
 }
 
 .desktop-nav a:hover,
@@ -274,9 +277,17 @@ select {
   color: var(--text);
 }
 
+.desktop-nav a:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
 .mobile-toggle,
 .mobile-panel {
   display: none;
+}
+
+.mobile-cta {
+  width: 100%;
 }
 
 .button {
@@ -359,7 +370,7 @@ select {
 .hero-section {
   position: relative;
   min-height: calc(100vh - 5rem);
-  padding: 5rem 0 6rem;
+  padding: 5rem 0 0rem;
 }
 
 .hero-bg {
@@ -390,8 +401,8 @@ select {
 .hero-grid,
 .split-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3rem;
   align-items: center;
 }
 
@@ -400,15 +411,21 @@ select {
   z-index: 1;
   display: grid;
   gap: 1.8rem;
+  justify-items: center;
+  text-align: center;
+  max-width: 52rem;
+  margin: 0 auto;
 }
 
 .hero-actions {
+  justify-content: center;
   flex-wrap: wrap;
   gap: 1rem;
   margin-top: 0.5rem;
 }
 
 .hero-stats {
+  justify-content: center;
   flex-wrap: wrap;
   gap: 1.6rem;
   margin-top: 1rem;
@@ -453,6 +470,39 @@ select {
   position: relative;
   display: flex;
   justify-content: center;
+  width: min(100%, 72rem);
+  margin: 0 auto;
+}
+
+.hero-stage {
+  position: relative;
+  width: 100%;
+  min-height: 46rem;
+  padding-top: 2rem;
+}
+
+.hero-stage-glow {
+  position: absolute;
+  left: 50%;
+  top: 4rem;
+  width: min(40rem, 70vw);
+  height: min(40rem, 70vw);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.16) 48%, transparent 72%);
+  filter: blur(24px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.phone-crop {
+  position: absolute;
+  inset: 3rem 0 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: hidden;
+  border-radius: 3rem;
 }
 
 .phone-frame {
@@ -464,6 +514,12 @@ select {
   border-radius: 3rem;
   background: rgba(255, 255, 255, 0.9);
   box-shadow: var(--shadow);
+}
+
+.hero-phone {
+  width: min(25rem, 86vw);
+  min-height: 48rem;
+  transform: translateY(4.5rem);
 }
 
 .phone-frame.compact {
@@ -612,7 +668,9 @@ select {
   border: 1px solid rgba(75, 41, 92, 0.08);
   background: rgba(255, 255, 255, 0.82);
   box-shadow: 0 20px 45px rgba(75, 41, 92, 0.12);
-  animation: bob 5s ease-in-out infinite;
+  backdrop-filter: blur(18px);
+  animation: bob 6s ease-in-out infinite;
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .floating-card strong,
@@ -625,15 +683,39 @@ select {
   font-size: 0.9rem;
 }
 
-.floating-card-left {
-  top: 5rem;
-  left: -2rem;
+.floating-card:hover {
+  box-shadow: 0 24px 52px rgba(75, 41, 92, 0.16);
 }
 
-.floating-card-right {
-  right: -3rem;
-  bottom: 7rem;
-  animation-delay: 1.4s;
+.floating-card-feature {
+  max-width: 15rem;
+}
+
+.floating-card-top-left {
+  top: 5.5rem;
+  left: 5%;
+  rotate: -8deg;
+}
+
+.floating-card-top-right {
+  top: 8rem;
+  right: 6%;
+  rotate: 7deg;
+  animation-delay: 1.1s;
+}
+
+.floating-card-bottom-left {
+  left: 12%;
+  bottom: 10rem;
+  rotate: -5deg;
+  animation-delay: 1.9s;
+}
+
+.floating-card-bottom-right {
+  right: 10%;
+  bottom: 12rem;
+  rotate: 6deg;
+  animation-delay: 0.6s;
 }
 
 .floating-icon {
@@ -702,10 +784,39 @@ select {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.problem-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .problem-card,
 .step-card {
   position: relative;
   padding: 1.6rem;
+}
+
+.problem-card {
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+  min-height: 100%;
+  padding: 1.8rem;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.problem-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(222, 3, 77, 0.16);
+  box-shadow:
+    0 26px 48px rgba(88, 20, 63, 0.14),
+    0 0 0 1px rgba(255, 255, 255, 0.18) inset;
+}
+
+.problem-card-top {
+  margin-bottom: 0.55rem;
 }
 
 .problem-card h3,
@@ -716,12 +827,71 @@ select {
   letter-spacing: -0.025em;
 }
 
+.problem-title {
+  margin: 0;
+  font-size: clamp(1.3rem, 2vw, 1.65rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text);
+  text-wrap: balance;
+}
+
 .problem-card p,
 .step-card p,
 .point-item p,
 .assistant-chip strong {
   margin: 0;
   line-height: 1.75;
+}
+
+.problem-solution {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+.problem-highlight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 2.1rem;
+  margin-top: 0.35rem;
+  padding: 0.42rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(75, 41, 92, 0.06);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.problem-icon-badge {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1.15rem;
+}
+
+.problem-card-yellow .problem-icon-badge {
+  background: rgba(245, 188, 56, 0.18);
+  color: #b7791f;
+}
+
+.problem-card-green .problem-icon-badge {
+  background: rgba(68, 193, 131, 0.16);
+  color: #1f8f5f;
+}
+
+.problem-card-blue .problem-icon-badge {
+  background: rgba(100, 190, 255, 0.18);
+  color: #2478b8;
+}
+
+.problem-card-purple .problem-icon-badge {
+  background: rgba(151, 104, 255, 0.14);
+  color: #7b47d1;
 }
 
 .icon-badge {
@@ -1370,7 +1540,6 @@ select {
 }
 
 @media (max-width: 1080px) {
-  .hero-grid,
   .split-grid,
   .feature-panel,
   .footer-grid,
@@ -1379,7 +1548,6 @@ select {
       grid-template-columns: 1fr;
     }
 
-  .hero-copy,
   .section-heading,
   .centered-copy {
     justify-items: start;
@@ -1402,17 +1570,29 @@ select {
   }
 
   .hero-scroll {
-    justify-items: start;
+    justify-items: center;
     width: min(1180px, calc(100% - 2rem));
     margin-inline: auto;
   }
 
-  .floating-card-left {
-    left: 0;
+  .hero-stage {
+    min-height: 43rem;
   }
 
-  .floating-card-right {
-    right: 0;
+  .floating-card-top-left {
+    left: 2%;
+  }
+
+  .floating-card-top-right {
+    right: 2%;
+  }
+
+  .floating-card-bottom-left {
+    left: 6%;
+  }
+
+  .floating-card-bottom-right {
+    right: 6%;
   }
 
   .goal-card {
@@ -1454,22 +1634,58 @@ select {
     padding: 5rem 0;
   }
 
+  .hero-stage {
+    min-height: auto;
+    padding-top: 1rem;
+  }
+
+  .phone-crop {
+    position: relative;
+    inset: auto;
+    overflow: visible;
+    padding-top: 2rem;
+  }
+
   .phone-frame {
     min-height: auto;
   }
 
-  .floating-card {
-    position: static;
-    max-width: none;
-    margin-top: 1rem;
+  .hero-phone {
+    transform: translateY(0);
+    width: min(24rem, 100%);
+    min-height: 40rem;
   }
 
   .hero-visual {
-    flex-direction: column;
-    gap: 1rem;
+    width: 100%;
+  }
+
+  .floating-card {
+    max-width: 13rem;
+  }
+
+  .floating-card-top-left {
+    top: 2rem;
+    left: 0;
+  }
+
+  .floating-card-top-right {
+    top: 4rem;
+    right: 0;
+  }
+
+  .floating-card-bottom-left {
+    left: 1rem;
+    bottom: 3rem;
+  }
+
+  .floating-card-bottom-right {
+    right: 1rem;
+    bottom: 4rem;
   }
 
   .benefit-grid,
+  .problem-grid,
   .assistant-chip-grid {
     grid-template-columns: 1fr;
   }
@@ -1498,22 +1714,51 @@ select {
     align-items: stretch;
   }
 
+  .hero-copy {
+    gap: 1.4rem;
+  }
+
   .centered-copy {
     gap: 1.25rem;
   }
 
   .hero-stats {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 1rem;
+    width: 100%;
   }
 
   .hero-stat {
     padding-right: 0;
+    justify-items: center;
   }
 
   .hero-stat:not(:last-child)::after {
     display: none;
+  }
+
+  .hero-stage {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .phone-crop {
+    padding-top: 0;
+  }
+
+  .hero-phone {
+    width: min(100%, 21rem);
+    min-height: 35rem;
+  }
+
+  .floating-card {
+    position: relative;
+    inset: auto;
+    max-width: none;
+    width: 100%;
+    rotate: 0deg;
+    animation-duration: 6.5s;
   }
 
   .dashboard-stats,

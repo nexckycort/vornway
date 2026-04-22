@@ -7,27 +7,61 @@ export interface Props {
 }
 
 const { content } = Astro.props;
+
+const problemCards = [
+  {
+    icon: "help",
+    tone: "yellow",
+    problem: "Nunca sabemos quién pagó qué",
+    solution: "Crea grupos de viaje, agrega participantes y registra cada gasto fácilmente",
+    highlight: "Control total desde el primer día",
+  },
+  {
+    icon: "calculator",
+    tone: "green",
+    problem: "Las cuentas no cuadran al final del viaje",
+    solution: "Vornway calcula automáticamente quién debe y quién recibe dinero",
+    highlight: "Olvídate de hacer cuentas manuales",
+  },
+  {
+    icon: "globe",
+    tone: "blue",
+    problem: "Gastamos en diferentes monedas y todo se vuelve un caos",
+    solution: "Agrega gastos en múltiples monedas y visualiza todo de forma clara",
+    highlight: "Todo convertido y organizado automáticamente",
+  },
+  {
+    icon: "sparkles",
+    tone: "purple",
+    problem: "No logramos organizarnos ni ahorrar para el viaje",
+    solution: "Crea metas de ahorro, define aportes y haz seguimiento en tiempo real",
+    highlight: "Planifica antes de viajar, no improvises",
+  },
+];
 ---
 
 <section class="section section-muted">
   <div class="shell">
     <div class="section-heading centered">
       <h2>
-        {content.title}
-        <span>{content.highlight}</span>
+        Los viajes se complican cuando
+        <span>todo queda disperso</span>
       </h2>
-      <p>{content.description}</p>
+      <p>Vornway reúne gastos, balances, monedas y metas en una sola experiencia para que el grupo avance con claridad.</p>
     </div>
 
-    <div class="card-grid card-grid-4">
+    <div class="card-grid problem-grid">
       {
-        content.items.map((item) => (
-          <article class="surface-card problem-card">
-            <span class="icon-badge">
-              <Icon name={item.icon} class="icon" />
-            </span>
-            <h3>{item.title}</h3>
-            <p>{item.description}</p>
+        problemCards.map((item) => (
+          <article class={`surface-card problem-card problem-card-${item.tone}`}>
+            <div class="problem-card-top">
+              <span class="icon-badge problem-icon-badge">
+                <Icon name={item.icon} class="icon" />
+              </span>
+            </div>
+            <h3 class="problem-title">{item.problem}</h3>
+            <p class="problem-solution">{item.solution}</p>
+            <span class="problem-highlight">{item.highlight}</span>
           </article>
         ))
       }

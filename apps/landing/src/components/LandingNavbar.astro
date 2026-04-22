@@ -10,9 +10,9 @@ export interface Props {
 const { content } = Astro.props;
 ---
 
-<header class="site-nav">
+<header class="site-nav" id="top">
   <div class="shell nav-shell">
-    <a class="brand-link" href="/" aria-label={content.brand.name}>
+    <a class="brand-link" href="#top" aria-label={content.brand.name}>
       <span class="brand-badge">
         <BrandMark class="brand-mark" />
       </span>
@@ -30,11 +30,7 @@ const { content } = Astro.props;
     </nav>
 
     <div class="desktop-actions">
-      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Cambiar tema">
-        <span class="theme-icon theme-icon-sun"><Icon name="sun" class="icon" /></span>
-        <span class="theme-icon theme-icon-moon"><Icon name="moon" class="icon" /></span>
-      </button>
-      <a class="button button-ghost" href={content.manifesto.figmaHref} target="_blank" rel="noreferrer">{content.navbar.loginLabel}</a>
+      <a class="button button-primary" href="#features">{content.navbar.primaryCta}</a>
     </div>
 
     <button class="mobile-toggle" type="button" data-nav-toggle aria-expanded="false" aria-label={content.navbar.menuLabel}>
@@ -49,12 +45,7 @@ const { content } = Astro.props;
           <a href={link.href}>{link.label}</a>
         ))
       }
-      <button class="theme-toggle mobile-theme-toggle" type="button" data-theme-toggle aria-label="Cambiar tema">
-        <span class="theme-icon theme-icon-sun"><Icon name="sun" class="icon" /></span>
-        <span class="theme-label">Cambiar tema</span>
-        <span class="theme-icon theme-icon-moon"><Icon name="moon" class="icon" /></span>
-      </button>
-      <a class="button button-ghost" href={content.manifesto.figmaHref} target="_blank" rel="noreferrer">{content.navbar.loginLabel}</a>
+      <a class="button button-primary mobile-cta" href="#features">{content.navbar.primaryCta}</a>
     </div>
   </div>
 </header>
@@ -62,22 +53,6 @@ const { content } = Astro.props;
 <script is:inline>
   const toggle = document.querySelector("[data-nav-toggle]");
   const panel = document.querySelector("[data-nav-panel]");
-  const themeButtons = document.querySelectorAll("[data-theme-toggle]");
-  const root = document.documentElement;
-  const storageKey = "vornway-theme";
-
-  const syncTheme = (theme) => {
-    root.classList.toggle("dark", theme === "dark");
-    root.dataset.theme = theme;
-    localStorage.setItem(storageKey, theme);
-  };
-
-  themeButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const current = root.classList.contains("dark") ? "dark" : "light";
-      syncTheme(current === "dark" ? "light" : "dark");
-    });
-  });
 
   if (toggle instanceof HTMLButtonElement && panel instanceof HTMLElement) {
     const close = () => {
@@ -93,6 +68,12 @@ const { content } = Astro.props;
 
     panel.querySelectorAll("a").forEach((link) => {
       link.addEventListener("click", close);
+    });
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 820) {
+        close();
+      }
     });
   }
 </script>

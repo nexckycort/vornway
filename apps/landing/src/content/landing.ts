@@ -219,24 +219,24 @@ const spanishContent: LandingContent = {
   },
   navbar: {
     links: [
-      { label: 'Funciones', href: '#features' },
-      { label: 'Agentes', href: '#mcp' },
-      { label: 'Como funciona', href: '#how-it-works' },
-      { label: 'Metas', href: '#goals' },
+      { label: 'Inicio', href: '#top' },
+      { label: 'Funcionalidades', href: '#features' },
+      { label: 'Cómo funciona', href: '#how-it-works' },
+      { label: 'Objetivos', href: '#goals' },
     ],
-    loginLabel: 'Ver diseno',
-    primaryCta: 'Descargar app',
+    loginLabel: 'Ver funcionalidades',
+    primaryCta: 'Ver funcionalidades',
     menuLabel: 'Abrir menu',
   },
   hero: {
-    title: 'Vornway ya esta lista para',
-    highlight: 'tu grupo',
+    title: 'Todo tu viaje',
+    highlight: 'en un solo lugar',
     description:
-      'Vornway te ayuda a organizar gastos compartidos, balances del grupo y metas de viaje desde un solo lugar, con una experiencia mas clara y conectada.',
-    primaryCta: 'Descargar app',
-    primaryHref: '#cta',
-    secondaryCta: 'Ver diseno en Figma',
-    secondaryHref: figmaHref,
+      'Gestiona gastos, organiza tu viaje y alcanza tus metas sin complicaciones. La app todo-en-uno para viajeros modernos.',
+    primaryCta: 'Ver funcionalidades',
+    primaryHref: '#features',
+    secondaryCta: 'Cómo funciona',
+    secondaryHref: '#how-it-works',
     scrollHint: 'Descubre mas',
     stats: [
       { value: 'Disponible ahora', label: 'Lanzamiento activo' },
@@ -268,14 +268,14 @@ const spanishContent: LandingContent = {
     ],
   },
   problem: {
-    title: 'Viajar en grupo no deberia ser',
+    title: 'Viajar en grupo no debería ser',
     highlight: 'complicado',
     description:
-      'Coordinar pagos, balances y decisiones en varias apps crea friccion donde deberia haber claridad.',
+      'Descubre cómo Vornway simplifica los momentos más caóticos de un viaje.',
     items: [
       {
         icon: 'help',
-        title: 'Quien pago que',
+        title: 'Nunca sabemos',
         description:
           'Perder el rastro de los gastos compartidos genera discusiones y decisiones lentas.',
       },

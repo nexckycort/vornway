@@ -1,0 +1,1 @@
+export { createGroupsModule } from './module';

@@ -1,0 +1,31 @@
+{
+  "name": "@vornway/api",
+  "scripts": {
+    "postinstall": "bun db:generate",
+    "dev": "bun run --env-file=.env --hot src/index.ts",
+    "check": "biome check --write",
+    "clean": "rm -rf node_modules",
+    "db:generate": "DATABASE_URL=dummy prisma generate",
+    "db:migrate:dev": "prisma migrate dev --name init",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "typecheck": "tsgo --noEmit",
+    "test": "bun test",
+    "module:new": "bash scripts/create-module.sh"
+  },
+  "dependencies": {
+    "@hono/mcp": "^0.2.5",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "hono": "^4.12.14",
+    "resend": "^6.12.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@typescript/native-preview": "latest",
+    "prisma": "^7.7.0",
+    "typescript": "latest"
+  }
+}

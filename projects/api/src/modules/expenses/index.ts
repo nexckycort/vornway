@@ -1,0 +1,1 @@
+export { createExpensesModule } from './module';

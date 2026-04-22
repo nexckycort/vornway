@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/correctness/useHookAtTopLevel: useAppSession is a server helper */
 import { createServerFn } from '@tanstack/react-start';
-import { z } from 'zod';
+import * as z from 'zod';
 
 import { db } from '~/infrastructure/database/connection';
 import { getPopularPlacesForCity } from '~/lib/itinerary-popular-places';
@@ -33,7 +33,9 @@ const UpdateItineraryDayInputSchema = z.object({
   payload: z.any().optional(),
 });
 
-type UpdateOperation = z.infer<typeof UpdateItineraryDayInputSchema>['operation'];
+type UpdateOperation = z.infer<
+  typeof UpdateItineraryDayInputSchema
+>['operation'];
 
 interface UpdateItineraryDayResponse {
   success: boolean;
@@ -244,7 +246,9 @@ export const updateItineraryDay = createServerFn({ method: 'POST' })
               dayId: data.dayId,
               name: String(data.payload?.name ?? 'Lugar sin nombre'),
               type: String(data.payload?.type ?? 'Lugar'),
-              imageUrl: data.payload?.imageUrl ? String(data.payload.imageUrl) : null,
+              imageUrl: data.payload?.imageUrl
+                ? String(data.payload.imageUrl)
+                : null,
               description: data.payload?.description
                 ? String(data.payload.description)
                 : null,
@@ -397,7 +401,10 @@ export const updateItineraryDay = createServerFn({ method: 'POST' })
             : [];
 
           if (placeIds.length === 0) {
-            return { success: false, error: 'No se enviaron lugares para reordenar' };
+            return {
+              success: false,
+              error: 'No se enviaron lugares para reordenar',
+            };
           }
 
           await assertDayBelongs(itinerary.id, data.dayId);
@@ -424,7 +431,10 @@ export const updateItineraryDay = createServerFn({ method: 'POST' })
 
           await assertDayBelongs(itinerary.id, data.dayId);
 
-          const { places } = getPopularPlacesForCity(itinerary.city, itinerary.country);
+          const { places } = getPopularPlacesForCity(
+            itinerary.city,
+            itinerary.country,
+          );
           const sorted = optimizePlacesByDistance(places).slice(0, 6);
 
           const maxOrder = await db.itineraryPlace.aggregate({

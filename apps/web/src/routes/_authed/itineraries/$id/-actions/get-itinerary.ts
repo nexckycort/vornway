@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/correctness/useHookAtTopLevel: useAppSession is a server helper */
 import { createServerFn } from '@tanstack/react-start';
-import { z } from 'zod';
+import * as z from 'zod';
 
 import { db } from '~/infrastructure/database/connection';
 import {
@@ -149,37 +149,48 @@ export const getItinerary = createServerFn({ method: 'POST' })
             let totalDistanceKm = 0;
             let totalTravelMinutes = 0;
 
-            const places: ItineraryPlaceView[] = day.places.map((place, index) => {
-              if (index === 0) {
+            const places: ItineraryPlaceView[] = day.places.map(
+              (place, index) => {
+                if (index === 0) {
+                  return {
+                    ...place,
+                    distanceFromPreviousKm: 0,
+                    distanceFromPreviousLabel: 'Inicio',
+                    travelMinutesFromPrevious: 0,
+                    closedWarning: detectClosedWarning(
+                      place.openingHours,
+                      day.date,
+                    ),
+                  };
+                }
+
+                const previous = day.places[index - 1];
+                const distanceKm = haversineDistanceKm(
+                  previous.latitude,
+                  previous.longitude,
+                  place.latitude,
+                  place.longitude,
+                );
+                const travelMinutes = estimateTravelMinutes(
+                  distanceKm,
+                  transportMode,
+                );
+
+                totalDistanceKm += distanceKm;
+                totalTravelMinutes += travelMinutes;
+
                 return {
                   ...place,
-                  distanceFromPreviousKm: 0,
-                  distanceFromPreviousLabel: 'Inicio',
-                  travelMinutesFromPrevious: 0,
-                  closedWarning: detectClosedWarning(place.openingHours, day.date),
+                  distanceFromPreviousKm: distanceKm,
+                  distanceFromPreviousLabel: formatDistanceKm(distanceKm),
+                  travelMinutesFromPrevious: travelMinutes,
+                  closedWarning: detectClosedWarning(
+                    place.openingHours,
+                    day.date,
+                  ),
                 };
-              }
-
-              const previous = day.places[index - 1];
-              const distanceKm = haversineDistanceKm(
-                previous.latitude,
-                previous.longitude,
-                place.latitude,
-                place.longitude,
-              );
-              const travelMinutes = estimateTravelMinutes(distanceKm, transportMode);
-
-              totalDistanceKm += distanceKm;
-              totalTravelMinutes += travelMinutes;
-
-              return {
-                ...place,
-                distanceFromPreviousKm: distanceKm,
-                distanceFromPreviousLabel: formatDistanceKm(distanceKm),
-                travelMinutesFromPrevious: travelMinutes,
-                closedWarning: detectClosedWarning(place.openingHours, day.date),
-              };
-            });
+              },
+            );
 
             return {
               id: day.id,

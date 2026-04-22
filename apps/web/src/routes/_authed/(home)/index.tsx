@@ -21,7 +21,6 @@ import { Compass, Repeat2, Target, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AppDrawer } from '~/components/app-drawer';
 import { GradientLayout } from '~/components/gradient-layout';
-import { clientEnv } from '~/config/env.client';
 import { cn } from '~/lib/utils';
 import { deleteGroup } from './-actions/delete-group';
 import { findGroupByInvite } from './-actions/find-group-by-invite';
@@ -344,7 +343,7 @@ function HomePage() {
   }, []);
 
   const { data: userGroups = [], isLoading: isLoadingGroups } = useUserGroups();
-  const isDevApp = clientEnv.APP_ENV === 'dev';
+  const isDevApp = (import.meta.env.VITE_APP_ENV ?? 'prod') === 'dev';
   const { data: userItineraries = [], isLoading: isLoadingItineraries } =
     useUserItineraries({
       enabled: isDevApp,
@@ -940,7 +939,7 @@ function HomePage() {
               </div>
             </button>
 
-            {clientEnv.APP_ENV === 'dev' && (
+            {isDevApp && (
               <button
                 onClick={handleOpenCreateItinerary}
                 className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors text-left"

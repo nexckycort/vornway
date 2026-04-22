@@ -1,7 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpAuthContext } from '../../app/module-contract';
 import type { GroupsService } from './service';
 
-export function registerGroupsTools(server: McpServer, service: GroupsService): void {
+export function registerGroupsTools(
+  server: McpServer,
+  service: GroupsService,
+  auth: McpAuthContext,
+): void {
   server.registerTool(
     'groups_health',
     {
@@ -13,8 +18,16 @@ export function registerGroupsTools(server: McpServer, service: GroupsService): 
       const health = await service.getHealth();
 
       return {
-        content: [{ type: 'text', text: JSON.stringify(health) }],
-        structuredContent: health,
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ ...health, userId: auth.userId }),
+          },
+        ],
+        structuredContent: {
+          ...health,
+          userId: auth.userId,
+        },
       };
     },
   );

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { validateEmail } from './validators';
+import { validateEmail } from '../auth/validators';
 
 describe('login validators', () => {
   it('accepts allowed domains', () => {

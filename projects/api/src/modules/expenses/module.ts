@@ -11,8 +11,8 @@ export function createExpensesModule(): ApiModule {
     mountHttp: (app) => {
       app.route('/api/expenses', createExpensesRouter(service));
     },
-    mountMcp: (server) => {
-      registerExpensesTools(server, service);
+    mountMcp: (server, auth) => {
+      registerExpensesTools(server, service, auth);
     },
   };
 }

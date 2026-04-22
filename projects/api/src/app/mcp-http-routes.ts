@@ -1,0 +1,137 @@
+import { StreamableHTTPTransport } from '@hono/mcp';
+import type { Context } from 'hono';
+import { Hono } from 'hono';
+
+import { extractBearerToken, verifyMcpAccessToken } from '../modules/login/mcp/token';
+import { createMcpApp } from './create-mcp-app';
+
+const oauthScopes = ['mcp:tools'];
+
+type UserMcpSession = {
+  server: ReturnType<typeof createMcpApp>;
+  transport: StreamableHTTPTransport;
+};
+
+const userSessions = new Map<string, UserMcpSession>();
+
+function getMetadataUrls(origin: string) {
+  return {
+    issuer: `${origin}/oauth`,
+    authorizationEndpoint: `${origin}/oauth/authorize`,
+    tokenEndpoint: `${origin}/oauth/token`,
+    resourceServerUrl: `${origin}/mcp`,
+    resourceMetadataUrl: `${origin}/.well-known/oauth-protected-resource`,
+  };
+}
+
+function oauthAuthorizationServerMetadata(origin: string) {
+  const urls = getMetadataUrls(origin);
+
+  return {
+    issuer: urls.issuer,
+    authorization_endpoint: urls.authorizationEndpoint,
+    token_endpoint: urls.tokenEndpoint,
+    response_types_supported: ['code'],
+    grant_types_supported: ['authorization_code'],
+    code_challenge_methods_supported: ['S256', 'plain'],
+    token_endpoint_auth_methods_supported: ['none'],
+    scopes_supported: oauthScopes,
+  };
+}
+
+function oauthProtectedResourceMetadata(origin: string) {
+  const urls = getMetadataUrls(origin);
+
+  return {
+    resource: urls.resourceServerUrl,
+    authorization_servers: [urls.issuer],
+    bearer_methods_supported: ['header'],
+    scopes_supported: oauthScopes,
+  };
+}
+
+function unauthorizedResponse(c: Context, message: string) {
+  const origin = new URL(c.req.url).origin;
+  const urls = getMetadataUrls(origin);
+
+  c.header(
+    'WWW-Authenticate',
+    `Bearer realm="mcp", authorization_uri="${urls.authorizationEndpoint}", token_uri="${urls.tokenEndpoint}", resource_metadata="${urls.resourceMetadataUrl}"`,
+  );
+
+  return c.json(
+    {
+      error: 'UNAUTHORIZED',
+      message,
+      authorization_endpoint: urls.authorizationEndpoint,
+      token_endpoint: urls.tokenEndpoint,
+      resource_metadata: urls.resourceMetadataUrl,
+    },
+    401,
+  );
+}
+
+function getOrCreateUserSession(user: {
+  id: string;
+  email: string;
+  name: string | null;
+}): UserMcpSession {
+  const existing = userSessions.get(user.id);
+  if (existing) {
+    return existing;
+  }
+
+  const server = createMcpApp({
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+  });
+
+  const transport = new StreamableHTTPTransport();
+  const created = { server, transport };
+  userSessions.set(user.id, created);
+  return created;
+}
+
+export function createMcpHttpRouter(): Hono {
+  const app = new Hono();
+
+  app.get('/.well-known/oauth-authorization-server', (c) => {
+    const origin = new URL(c.req.url).origin;
+    return c.json(oauthAuthorizationServerMetadata(origin));
+  });
+
+  app.get('/.well-known/oauth-protected-resource', (c) => {
+    const origin = new URL(c.req.url).origin;
+    return c.json(oauthProtectedResourceMetadata(origin));
+  });
+
+  app.get('/mcp/.well-known/oauth-protected-resource', (c) => {
+    const origin = new URL(c.req.url).origin;
+    return c.json(oauthProtectedResourceMetadata(origin));
+  });
+
+  app.all('/mcp', async (c) => {
+    const token = extractBearerToken(c.req.header('authorization'));
+
+    if (!token) {
+      return unauthorizedResponse(c, 'Missing bearer token');
+    }
+
+    const user = verifyMcpAccessToken(token);
+
+    if (!user) {
+      return unauthorizedResponse(c, 'Invalid or expired bearer token');
+    }
+
+    const session = getOrCreateUserSession(user);
+
+    if (!session.server.isConnected()) {
+      await session.server.connect(session.transport);
+    }
+
+    return session.transport.handleRequest(c);
+  });
+
+  return app;
+}

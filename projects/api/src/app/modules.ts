@@ -4,6 +4,7 @@ import type { Hono } from 'hono';
 import { createExpensesModule } from '../modules/expenses';
 import { createGroupsModule } from '../modules/groups';
 import { createLoginModule } from '../modules/login';
+import type { McpAuthContext } from './module-contract';
 
 const loginModule = createLoginModule();
 const groupsModule = createGroupsModule();
@@ -15,7 +16,7 @@ export function registerHttpModules(app: Hono): void {
   expensesModule.mountHttp(app);
 }
 
-export function registerMcpModules(server: McpServer): void {
-  groupsModule.mountMcp(server);
-  expensesModule.mountMcp(server);
+export function registerMcpModules(server: McpServer, auth: McpAuthContext): void {
+  groupsModule.mountMcp(server, auth);
+  expensesModule.mountMcp(server, auth);
 }

@@ -16,3 +16,8 @@ export const syncGoogleSchema = z.object({
   previousUserId: z.string().min(1).optional(),
   wasAnonymous: z.boolean().optional(),
 });
+
+export const createMcpTokenSchema = z.object({
+  email: z.string().min(1),
+  otp: z.string().min(1),
+});

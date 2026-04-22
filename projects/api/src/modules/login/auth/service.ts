@@ -147,31 +147,41 @@ export function createLoginService(deps: LoginServiceDeps = {}): LoginService {
 
     verifyOtp: async ({ email, otp, previousUserId, wasAnonymous }) => {
       const normalizedEmail = email.toLowerCase().trim();
+      const normalizedOtp = otp.replace(/\s+/g, '').trim();
 
       try {
         const { user } = await authApi.signInEmailOTP({
           body: {
             email: normalizedEmail,
-            otp,
+            otp: normalizedOtp,
           },
         });
 
         if (wasAnonymous && previousUserId && previousUserId !== user.id) {
-          await transferAndCleanupAnonymousUser(
-            database,
-            previousUserId,
-            user.id,
-          );
+          await transferAndCleanupAnonymousUser(database, previousUserId, user.id);
         }
 
         return {
           success: true,
           user,
         };
-      } catch {
+      } catch (error) {
+        console.error('Error during OTP login:', {
+          email: normalizedEmail,
+          otpLength: normalizedOtp.length,
+          error,
+        });
+
+        const message =
+          typeof error === 'object' && error !== null && 'message' in error
+            ? String((error as { message?: unknown }).message ?? '')
+            : '';
+
         return {
           success: false,
-          error: 'Código OTP incorrecto o expirado',
+          error: message.includes('expired')
+            ? 'Código OTP expirado'
+            : 'Código OTP incorrecto o expirado',
         };
       }
     },
@@ -189,11 +199,7 @@ export function createLoginService(deps: LoginServiceDeps = {}): LoginService {
       const { user } = session;
 
       if (wasAnonymous && previousUserId && previousUserId !== user.id) {
-        await transferAndCleanupAnonymousUser(
-          database,
-          previousUserId,
-          user.id,
-        );
+        await transferAndCleanupAnonymousUser(database, previousUserId, user.id);
       }
 
       return {

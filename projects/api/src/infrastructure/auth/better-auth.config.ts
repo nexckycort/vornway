@@ -1,7 +1,6 @@
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { anonymous, emailOTP } from 'better-auth/plugins';
-import { tanstackStartCookies } from 'better-auth/tanstack-start';
 
 import { env } from '~/config/env';
 import { db } from '~/infrastructure/database/connection';
@@ -41,7 +40,6 @@ const authConfig = {
         }
       },
     }),
-    tanstackStartCookies(),
     anonymous({
       onLinkAccount: async ({ anonymousUser, newUser }) => {
         // Transferir membresías de grupo del usuario anónimo al nuevo usuario

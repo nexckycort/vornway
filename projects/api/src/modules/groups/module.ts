@@ -11,8 +11,8 @@ export function createGroupsModule(): ApiModule {
     mountHttp: (app) => {
       app.route('/api/groups', createGroupsRouter(service));
     },
-    mountMcp: (server) => {
-      registerGroupsTools(server, service);
+    mountMcp: (server, auth) => {
+      registerGroupsTools(server, service, auth);
     },
   };
 }

@@ -108,6 +108,11 @@ export function createMcpHttpRouter(): Hono {
     return c.json(oauthAuthorizationServerMetadata(origin));
   });
 
+  app.get('/.well-known/openid-configuration', (c) => {
+    const origin = new URL(c.req.url).origin;
+    return c.json(oauthAuthorizationServerMetadata(origin));
+  });
+
   app.get('/.well-known/oauth-protected-resource', (c) => {
     const origin = new URL(c.req.url).origin;
     return c.json(oauthProtectedResourceMetadata(origin));

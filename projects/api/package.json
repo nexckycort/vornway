@@ -15,9 +15,11 @@
   },
   "dependencies": {
     "@hono/mcp": "^0.2.5",
+    "@hono/zod-validator": "^0.7.6",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
+    "better-auth": "^1.6.6",
     "hono": "^4.12.14",
     "resend": "^6.12.2",
     "zod": "^4.3.6"

@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/correctness/useHookAtTopLevel: useAppSession is a server helper */
 import { createServerFn } from '@tanstack/react-start';
-import { z } from 'zod';
+import * as z from 'zod';
 
 import { db } from '~/infrastructure/database/connection';
 import { buildDateRange } from '~/lib/itinerary-utils';
@@ -37,7 +37,10 @@ export const updateItinerary = createServerFn({ method: 'POST' })
       const startDate = new Date(data.startDate);
       const endDate = new Date(data.endDate);
 
-      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      if (
+        Number.isNaN(startDate.getTime()) ||
+        Number.isNaN(endDate.getTime())
+      ) {
         return { success: false, error: 'Fechas inválidas' };
       }
 

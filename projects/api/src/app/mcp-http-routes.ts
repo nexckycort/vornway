@@ -2,7 +2,10 @@ import { StreamableHTTPTransport } from '@hono/mcp';
 import type { Context } from 'hono';
 import { Hono } from 'hono';
 
-import { extractBearerToken, verifyMcpAccessToken } from '../modules/login/mcp/token';
+import {
+  extractBearerToken,
+  verifyMcpAccessToken,
+} from '../modules/login/mcp/token';
 import { createMcpApp } from './create-mcp-app';
 
 const oauthScopes = ['mcp:tools'];
@@ -19,6 +22,7 @@ function getMetadataUrls(origin: string) {
     issuer: `${origin}/oauth`,
     authorizationEndpoint: `${origin}/oauth/authorize`,
     tokenEndpoint: `${origin}/oauth/token`,
+    registrationEndpoint: `${origin}/oauth/register`,
     resourceServerUrl: `${origin}/mcp`,
     resourceMetadataUrl: `${origin}/.well-known/oauth-protected-resource`,
   };
@@ -31,6 +35,8 @@ function oauthAuthorizationServerMetadata(origin: string) {
     issuer: urls.issuer,
     authorization_endpoint: urls.authorizationEndpoint,
     token_endpoint: urls.tokenEndpoint,
+    registration_endpoint: urls.registrationEndpoint,
+    client_registration_endpoint: urls.registrationEndpoint,
     response_types_supported: ['code'],
     grant_types_supported: ['authorization_code'],
     code_challenge_methods_supported: ['S256', 'plain'],
@@ -56,7 +62,7 @@ function unauthorizedResponse(c: Context, message: string) {
 
   c.header(
     'WWW-Authenticate',
-    `Bearer realm="mcp", authorization_uri="${urls.authorizationEndpoint}", token_uri="${urls.tokenEndpoint}", resource_metadata="${urls.resourceMetadataUrl}"`,
+    `Bearer realm="mcp", authorization_uri="${urls.authorizationEndpoint}", token_uri="${urls.tokenEndpoint}", registration_uri="${urls.registrationEndpoint}", resource_metadata="${urls.resourceMetadataUrl}"`,
   );
 
   return c.json(
@@ -65,6 +71,7 @@ function unauthorizedResponse(c: Context, message: string) {
       message,
       authorization_endpoint: urls.authorizationEndpoint,
       token_endpoint: urls.tokenEndpoint,
+      registration_endpoint: urls.registrationEndpoint,
       resource_metadata: urls.resourceMetadataUrl,
     },
     401,

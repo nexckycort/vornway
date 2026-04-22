@@ -30,3 +30,11 @@ export const tokenFormSchema = z.object({
   redirect_uri: z.url(),
   code_verifier: z.string().optional(),
 });
+
+export const clientRegistrationSchema = z.object({
+  client_name: z.string().optional(),
+  redirect_uris: z.array(z.url()).min(1),
+  grant_types: z.array(z.string()).optional(),
+  response_types: z.array(z.string()).optional(),
+  token_endpoint_auth_method: z.string().optional(),
+});

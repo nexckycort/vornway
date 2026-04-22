@@ -7,90 +7,209 @@ export interface Props {
 }
 
 const { content } = Astro.props;
+
+const featureBlocks = [
+  {
+    number: "/01",
+    title: "Crea grupos y divide gastos fácilmente",
+    description:
+      "Organiza tus viajes creando grupos donde puedes registrar cada gasto y dividirlo entre los participantes sin complicaciones.",
+    reverse: false,
+    mockup: "groups",
+  },
+  {
+    number: "/02",
+    title: "Gestiona participantes en tiempo real",
+    description:
+      "Agrega, edita o elimina participantes y visualiza quién pagó, quién debe y cómo se distribuyen los gastos dentro del grupo.",
+    reverse: true,
+    mockup: "participants",
+  },
+  {
+    number: "/03",
+    title: "Soporte en múltiples monedas",
+    description:
+      "Registra gastos en diferentes monedas y mantén el control sin importar en qué país estés viajando.",
+    reverse: false,
+    mockup: "currencies",
+  },
+  {
+    number: "/04",
+    title: "Define metas y ahorra para tu viaje",
+    description:
+      "Crea metas de ahorro, define aportes y haz seguimiento de tu progreso para llegar preparado a tu próximo destino.",
+    reverse: true,
+    mockup: "goals",
+  },
+];
 ---
 
-<section id={content.id} class="section section-muted">
+<section id={content.id} class="section section-muted features-showcase-section">
   <div class="shell">
     <div class="section-heading centered">
-      <span class="eyebrow static">{content.badge}</span>
       <h2>
-        {content.title}
-        <span>{content.highlight}</span>
+        Todo lo que necesitas para
+        <span>gestionar tu viaje</span>
       </h2>
+      <p>Organiza, controla y planifica cada parte de tu viaje desde un solo lugar.</p>
     </div>
 
-    <div class="feature-tabs" data-feature-tabs>
-      <div class="feature-tab-list" role="tablist" aria-label={content.badge}>
-        {
-          content.tabs.map((tab, index) => (
-            <button
-              type="button"
-              class:list={["feature-tab", index === 0 && "is-active"]}
-              data-feature-trigger={tab.id}
-              role="tab"
-              aria-selected={index === 0 ? "true" : "false"}
-              aria-controls={`panel-${tab.id}`}
-            >
-              <Icon name={tab.icon} class="icon" />
-              <span>{tab.label}</span>
-            </button>
-          ))
-        }
-      </div>
-
+    <div class="features-showcase-list">
       {
-        content.tabs.map((tab, index) => (
-          <div
-            id={`panel-${tab.id}`}
-            class:list={["feature-panel", index === 0 && "is-active"]}
-            data-feature-panel={tab.id}
-            hidden={index !== 0}
-            role="tabpanel"
-          >
-            <div class="feature-copy">
-              <h3>{tab.title}</h3>
-              <p>{tab.description}</p>
-
-              <div class="feature-items">
-                {
-                  tab.items.map((item) => (
-                    <article class="feature-item">
-                      <span>{item.label}</span>
-                      <strong class:list={[item.positive === true && "positive", item.positive === false && "negative"]}>
-                        {item.value}
-                      </strong>
-                    </article>
-                  ))
-                }
-              </div>
+        featureBlocks.map((feature) => (
+          <article class:list={["feature-showcase", feature.reverse && "is-reverse"]} data-reveal>
+            <div class="feature-showcase-copy">
+              <span class="feature-showcase-number">{feature.number}</span>
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
             </div>
 
-            <div class="feature-phone">
-              <div class="phone-frame compact">
-                <div class="phone-notch"></div>
-                <div class="phone-content compact">
-                  <div class="feature-phone-head">
-                    <span class="icon-badge large">
-                      <Icon name={tab.icon} class="icon" />
-                    </span>
-                    <strong>{tab.label}</strong>
+            <div class="feature-showcase-visual">
+              {
+                feature.mockup === "groups" && (
+                  <div class="feature-mockup feature-mockup-groups">
+                    <div class="feature-mockup-header">
+                      <div>
+                        <span class="feature-mockup-label">Grupo activo</span>
+                        <strong>Eurotrip verano</strong>
+                      </div>
+                      <span class="mockup-chip">4 viajeros</span>
+                    </div>
+                    <div class="feature-mockup-stack">
+                      <article class="feature-mockup-row">
+                        <div>
+                          <strong>Hotel en Roma</strong>
+                          <span>Dividido entre todos</span>
+                        </div>
+                        <b>EUR 320</b>
+                      </article>
+                      <article class="feature-mockup-row">
+                        <div>
+                          <strong>Cena en Florencia</strong>
+                          <span>Pagó Camila</span>
+                        </div>
+                        <b>EUR 86</b>
+                      </article>
+                      <article class="feature-mockup-row">
+                        <div>
+                          <strong>Transporte</strong>
+                          <span>Pagó Juan</span>
+                        </div>
+                        <b>EUR 44</b>
+                      </article>
+                    </div>
                   </div>
-                  <div class="feature-phone-items">
-                    {
-                      tab.items.map((item) => (
-                        <article class="feature-phone-item">
-                          <span>{item.label}</span>
-                          <strong class:list={[item.positive === true && "positive", item.positive === false && "negative"]}>
-                            {item.value}
-                          </strong>
-                        </article>
-                      ))
-                    }
+                )
+              }
+
+              {
+                feature.mockup === "participants" && (
+                  <div class="feature-mockup feature-mockup-participants">
+                    <div class="feature-mockup-header">
+                      <div>
+                        <span class="feature-mockup-label">Participantes</span>
+                        <strong>Balances del grupo</strong>
+                      </div>
+                      <span class="mockup-chip">En vivo</span>
+                    </div>
+                    <div class="feature-mockup-stack">
+                      <article class="feature-balance-card">
+                        <div class="feature-avatar">C</div>
+                        <div>
+                          <strong>Camila</strong>
+                          <span>Pagó alojamiento</span>
+                        </div>
+                        <b class="positive">+ EUR 85</b>
+                      </article>
+                      <article class="feature-balance-card">
+                        <div class="feature-avatar">J</div>
+                        <div>
+                          <strong>Juan</strong>
+                          <span>Debe transporte</span>
+                        </div>
+                        <b class="negative">- EUR 24</b>
+                      </article>
+                      <article class="feature-balance-card">
+                        <div class="feature-avatar">M</div>
+                        <div>
+                          <strong>María</strong>
+                          <span>Saldo equilibrado</span>
+                        </div>
+                        <b>EUR 0</b>
+                      </article>
+                    </div>
                   </div>
-                </div>
-              </div>
+                )
+              }
+
+              {
+                feature.mockup === "currencies" && (
+                  <div class="feature-mockup feature-mockup-currencies">
+                    <div class="feature-mockup-header">
+                      <div>
+                        <span class="feature-mockup-label">Multimoneda</span>
+                        <strong>Control por divisa</strong>
+                      </div>
+                      <span class="mockup-chip">Automático</span>
+                    </div>
+                    <div class="currency-grid">
+                      <article class="currency-card">
+                        <span>COP</span>
+                        <strong>$ 420.000</strong>
+                      </article>
+                      <article class="currency-card">
+                        <span>USD</span>
+                        <strong>$ 130</strong>
+                      </article>
+                      <article class="currency-card">
+                        <span>EUR</span>
+                        <strong>EUR 94</strong>
+                      </article>
+                    </div>
+                    <div class="feature-mockup-row feature-mockup-row-wide">
+                      <div>
+                        <strong>Total consolidado</strong>
+                        <span>Todo convertido dentro del viaje</span>
+                      </div>
+                      <b>EUR 612</b>
+                    </div>
+                  </div>
+                )
+              }
+
+              {
+                feature.mockup === "goals" && (
+                  <div class="feature-mockup feature-mockup-goals">
+                    <div class="feature-mockup-header">
+                      <div>
+                        <span class="feature-mockup-label">Meta activa</span>
+                        <strong>Viaje a Japón</strong>
+                      </div>
+                      <span class="mockup-chip">75%</span>
+                    </div>
+                    <div class="goal-mockup-card">
+                      <div class="goal-mockup-head">
+                        <strong>Ahorrado</strong>
+                        <span>EUR 2.250 de EUR 3.000</span>
+                      </div>
+                      <div class="progress-track">
+                        <div class="progress-bar" style="width: 75%;"></div>
+                      </div>
+                    </div>
+                    <div class="feature-mockup-stack compact-stack">
+                      <article class="feature-mockup-row">
+                        <div>
+                          <strong>Aporte mensual</strong>
+                          <span>Próximo aporte en 3 días</span>
+                        </div>
+                        <b>EUR 250</b>
+                      </article>
+                    </div>
+                  </div>
+                )
+              }
             </div>
-          </div>
+          </article>
         ))
       }
     </div>
@@ -98,26 +217,17 @@ const { content } = Astro.props;
 </section>
 
 <script is:inline>
-  document.querySelectorAll("[data-feature-tabs]").forEach((root) => {
-    const triggers = root.querySelectorAll("[data-feature-trigger]");
-    const panels = root.querySelectorAll("[data-feature-panel]");
-
-    triggers.forEach((trigger) => {
-      trigger.addEventListener("click", () => {
-        const id = trigger.getAttribute("data-feature-trigger");
-
-        triggers.forEach((button) => {
-          const active = button === trigger;
-          button.classList.toggle("is-active", active);
-          button.setAttribute("aria-selected", String(active));
-        });
-
-        panels.forEach((panel) => {
-          const active = panel.getAttribute("data-feature-panel") === id;
-          panel.classList.toggle("is-active", active);
-          panel.hidden = !active;
-        });
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        }
       });
-    });
-  });
+    },
+    { threshold: 0.2 }
+  );
+
+  document.querySelectorAll("[data-reveal]").forEach((element) => observer.observe(element));
 </script>

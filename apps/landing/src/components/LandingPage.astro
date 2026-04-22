@@ -4,14 +4,12 @@ import AssistantSection from "./AssistantSection.astro";
 import ComparisonSection from "./ComparisonSection.astro";
 import CtaSection from "./CtaSection.astro";
 import FeaturesSection from "./FeaturesSection.astro";
-import GoalsSection from "./GoalsSection.astro";
 import HeroSection from "./HeroSection.astro";
 import HowItWorksSection from "./HowItWorksSection.astro";
 import LandingFooter from "./LandingFooter.astro";
 import LandingNavbar from "./LandingNavbar.astro";
 import ManifestoSection from "./ManifestoSection.astro";
 import ProblemSection from "./ProblemSection.astro";
-import SolutionSection from "./SolutionSection.astro";
 
 export interface Props {
   content: LandingContent;
@@ -27,9 +25,7 @@ const { content } = Astro.props;
   <main>
     <HeroSection content={content.hero} />
     <ProblemSection content={content.problem} />
-    <SolutionSection content={content.solution} />
     <FeaturesSection content={content.features} />
-    <GoalsSection content={content.goals} />
     <HowItWorksSection content={content.howItWorks} />
     <AssistantSection content={content.assistant} />
     <ManifestoSection content={content.manifesto} />

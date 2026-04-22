@@ -10,109 +10,109 @@ const { content } = Astro.props;
 ---
 
 <section class="hero-section">
-  <div class="hero-bg hero-bg-left"></div>
-  <div class="hero-bg hero-bg-right"></div>
-
   <div class="shell hero-grid">
-    <div class="hero-copy">
-      <h1>
-        {content.title}
-        <span>{content.highlight}</span>
-      </h1>
+    <div class="hero-panel surface-card">
+      <div class="hero-copy">
+        <h1>
+          {content.title}
+          <span>{content.highlight}</span>
+        </h1>
 
-      <p>{content.description}</p>
+        <p>{content.description}</p>
 
-      <div class="hero-actions">
-        <a class="button button-primary button-large" href={content.primaryHref ?? "#features"}>
-          {content.primaryCta}
-        </a>
-        {
-          content.secondaryCta ? (
-            <a class="button button-secondary button-large" href={content.secondaryHref ?? "#how-it-works"}>
-              <Icon name="play" class="icon" />
-              {content.secondaryCta}
-            </a>
-          ) : null
-        }
+        <div class="hero-actions">
+          <a class="button button-primary button-large" href={content.primaryHref ?? "#features"}>
+            {content.primaryCta}
+          </a>
+          {
+            content.secondaryCta ? (
+              <a class="button button-secondary button-large" href={content.secondaryHref ?? "#how-it-works"}>
+                <Icon name="play" class="icon" />
+                {content.secondaryCta}
+              </a>
+            ) : null
+          }
+        </div>
       </div>
-    </div>
 
-    <div class="hero-visual">
-      <div class="hero-stage">
-        <div class="hero-stage-glow" aria-hidden="true"></div>
+      <div class="hero-visual">
+        <div class="hero-stage">
+          <div class="hero-stage-glow" aria-hidden="true"></div>
+          <div class="hero-stage-radial" aria-hidden="true"></div>
 
-        <div class="floating-card floating-card-feature floating-card-top-left">
-          <span class="floating-icon floating-icon-success">{content.recentExpenses[0]?.icon}</span>
-          <div>
-            <strong>{content.recentExpenses[0]?.name}</strong>
-            <span>{content.recentExpenses[0]?.amount}</span>
+          <div class="floating-card floating-card-feature floating-card-top-left">
+            <span class="floating-icon floating-icon-success">{content.recentExpenses[0]?.icon}</span>
+            <div>
+              <strong>{content.recentExpenses[0]?.name}</strong>
+              <span>{content.recentExpenses[0]?.amount}</span>
+            </div>
           </div>
-        </div>
 
-        <div class="floating-card floating-card-feature floating-card-top-right">
-          <span class="floating-icon floating-icon-accent">{content.recentExpenses[1]?.icon}</span>
-          <div>
-            <strong>{content.recentExpenses[1]?.name}</strong>
-            <span>{content.recentExpenses[1]?.amount}</span>
+          <div class="floating-card floating-card-feature floating-card-top-right">
+            <span class="floating-icon floating-icon-accent">{content.recentExpenses[1]?.icon}</span>
+            <div>
+              <strong>{content.recentExpenses[1]?.name}</strong>
+              <span>{content.recentExpenses[1]?.amount}</span>
+            </div>
           </div>
-        </div>
 
-        <div class="floating-card floating-card-feature floating-card-bottom-left">
-          <span class="floating-icon floating-icon-success">{content.recentExpenses[2]?.icon}</span>
-          <div>
-            <strong>{content.recentExpenses[2]?.name}</strong>
-            <span>{content.stats[2]?.label}</span>
+          <div class="floating-card floating-card-feature floating-card-bottom-left">
+            <span class="floating-icon floating-icon-success">{content.recentExpenses[2]?.icon}</span>
+            <div>
+              <strong>{content.recentExpenses[2]?.name}</strong>
+              <span>{content.stats[2]?.label}</span>
+            </div>
           </div>
-        </div>
 
-        <div class="floating-card floating-card-feature floating-card-bottom-right">
-          <span class="floating-icon floating-icon-accent">{content.floatingCards[0]?.icon}</span>
-          <div>
-            <strong>{content.floatingCards[0]?.title}</strong>
-            <span>{content.floatingCards[0]?.subtitle}</span>
+          <div class="floating-card floating-card-feature floating-card-bottom-right">
+            <span class="floating-icon floating-icon-accent">{content.floatingCards[0]?.icon}</span>
+            <div>
+              <strong>{content.floatingCards[0]?.title}</strong>
+              <span>{content.floatingCards[0]?.subtitle}</span>
+            </div>
           </div>
-        </div>
 
-        <div class="phone-crop">
-          <div class="phone-frame hero-phone">
-            <div class="phone-notch"></div>
+          <div class="phone-crop">
+            <div class="phone-frame hero-phone">
+              <div class="phone-notch"></div>
 
-            <div class="phone-content">
-              <div class="phone-header">
-                <div>
-                  <p>{content.welcomeLabel}</p>
-                  <strong>{content.welcomeName}</strong>
-                </div>
-                <span class="avatar">C</span>
-              </div>
-
-              <div class="balance-card">
-                <p>{content.balanceLabel}</p>
-                <strong>{content.balanceValue}</strong>
-                <div class="balance-meta">
-                  <div class="avatar-stack">
-                    <span>A</span>
-                    <span>B</span>
-                    <span>C</span>
-                    <span>D</span>
+              <div class="phone-content">
+                <div class="phone-header">
+                  <div>
+                    <p>{content.welcomeLabel}</p>
+                    <strong>{content.welcomeName}</strong>
                   </div>
-                  <span>{content.balanceMeta}</span>
+                  <span class="avatar">C</span>
                 </div>
-              </div>
 
-              <div class="expense-list">
-                <p>{content.recentLabel ?? "Gastos recientes"}</p>
-                {
-                  content.recentExpenses.map((expense) => (
-                    <article class="expense-item">
-                      <div>
-                        <span class="expense-icon">{expense.icon}</span>
-                        <strong>{expense.name}</strong>
-                      </div>
-                      <span>{expense.amount}</span>
-                    </article>
-                  ))
-                }
+                <div class="balance-card">
+                  <p>{content.balanceLabel}</p>
+                  <strong>{content.balanceValue}</strong>
+                  <div class="balance-meta">
+                    <div class="avatar-stack">
+                      <span>A</span>
+                      <span>B</span>
+                      <span>C</span>
+                      <span>D</span>
+                    </div>
+                    <span>{content.balanceMeta}</span>
+                  </div>
+                </div>
+
+                <div class="expense-list">
+                  <p>{content.recentLabel ?? "Gastos recientes"}</p>
+                  {
+                    content.recentExpenses.map((expense) => (
+                      <article class="expense-item">
+                        <div>
+                          <span class="expense-icon">{expense.icon}</span>
+                          <strong>{expense.name}</strong>
+                        </div>
+                        <span>{expense.amount}</span>
+                      </article>
+                    ))
+                  }
+                </div>
               </div>
             </div>
           </div>

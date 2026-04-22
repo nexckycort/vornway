@@ -406,31 +406,31 @@ const spanishContent: LandingContent = {
   howItWorks: {
     id: 'how-it-works',
     badge: 'Empieza en minutos',
-    title: 'Como funciona',
-    highlight: 'Vornway',
+    title: 'Empieza a organizar tu viaje',
+    highlight: 'en minutos',
     description:
-      'Tres pasos simples para empezar a usar la app con tu grupo desde hoy.',
+      'Sigue estos simples pasos y toma el control de tus gastos desde el primer día.',
     steps: [
       {
-        number: '01',
+        number: 'Paso 1',
         icon: 'map',
-        title: 'Empieza en minutos',
+        title: 'Crea tu viaje',
         description:
-          'Entra a Vornway y empieza a organizar todo sin procesos largos ni configuraciones innecesarias.',
+          'Inicia creando un grupo de viaje y define la moneda principal según tu destino.',
       },
       {
-        number: '02',
-        icon: 'receipt',
-        title: 'Crea tu grupo',
+        number: 'Paso 2',
+        icon: 'users',
+        title: 'Agrega gastos y participantes',
         description:
-          'Invita a las personas con las que compartes gastos, viajes o metas y organiza todo en un mismo lugar.',
+          'Registra cada gasto fácilmente e invita a las personas que hacen parte del viaje.',
       },
       {
-        number: '03',
+        number: 'Paso 3',
         icon: 'chart',
-        title: 'Empieza a registrar',
+        title: 'Visualiza balances y ahorra',
         description:
-          'Carga gastos, revisa balances y sigue tus metas sin depender de hojas manuales ni chats perdidos.',
+          'Consulta quién debe, quién pagó y haz seguimiento a tus metas de ahorro.',
       },
     ],
   },

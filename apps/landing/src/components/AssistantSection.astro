@@ -9,7 +9,7 @@ const { content } = Astro.props;
 ---
 
 <section class="section assistant-section">
-  <div class="shell split-grid">
+  <div class="shell assistant-layout">
     <div class="assistant-visual">
       <div class="mascot-wrap">
         <svg viewBox="0 0 200 200" class="mascot-art" aria-hidden="true">
@@ -39,24 +39,13 @@ const { content } = Astro.props;
       </div>
     </div>
 
-    <div class="section-heading">
+    <div class="section-heading assistant-copy">
       <span class="eyebrow static">{content.badge}</span>
       <h2>
         {content.title}
         <span>{content.highlight}</span>
       </h2>
       <p>{content.description}</p>
-
-      <div class="assistant-chip-grid">
-        {
-          content.chips.map((chip) => (
-            <article class="assistant-chip">
-              <span>{chip.icon}</span>
-              <strong>{chip.label}</strong>
-            </article>
-          ))
-        }
-      </div>
     </div>
   </div>
 </section>

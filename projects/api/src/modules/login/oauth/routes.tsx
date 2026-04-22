@@ -1,4 +1,5 @@
 import { zValidator } from '@hono/zod-validator';
+import type { Context } from 'hono';
 import { Hono } from 'hono';
 
 import type { LoginService } from '../auth/service';
@@ -19,14 +20,33 @@ import {
 
 const oauthScopes = ['mcp:tools'];
 
-function getMcpResourceUrl(requestUrl: string): string {
-  const url = new URL(requestUrl);
-  return `${url.origin}/mcp`;
+function firstHeaderValue(value?: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return value.split(',')[0]?.trim() || undefined;
+}
+
+function getPublicOrigin(c: Context): string {
+  const requestUrl = new URL(c.req.url);
+  const forwardedProto = firstHeaderValue(c.req.header('x-forwarded-proto'));
+  const forwardedHost = firstHeaderValue(c.req.header('x-forwarded-host'));
+
+  if (forwardedProto && forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
+  return requestUrl.origin;
+}
+
+function getMcpResourceUrlForRequest(c: Context): string {
+  return `${getPublicOrigin(c)}/mcp`;
 }
 
 function oauthMetadata(origin: string) {
   return {
-    issuer: `${origin}/oauth`,
+    issuer: origin,
     authorization_endpoint: `${origin}/oauth/authorize`,
     token_endpoint: `${origin}/oauth/token`,
     registration_endpoint: `${origin}/oauth/register`,
@@ -39,6 +59,11 @@ function oauthMetadata(origin: string) {
   };
 }
 
+function setNoStoreHeaders(c: Context) {
+  c.header('Cache-Control', 'no-store');
+  c.header('Pragma', 'no-cache');
+}
+
 export function createOAuthRouter(loginService: LoginService): Hono {
   const oauth = new Hono();
 
@@ -46,6 +71,7 @@ export function createOAuthRouter(loginService: LoginService): Hono {
     '/register',
     zValidator('json', clientRegistrationSchema),
     async (c) => {
+      setNoStoreHeaders(c);
       const body = c.req.valid('json');
       const client = await registerOAuthClient(body);
 
@@ -76,11 +102,11 @@ export function createOAuthRouter(loginService: LoginService): Hono {
       query.redirect_uri,
     );
 
-    if (!client || !client.redirect_uris.includes(query.redirect_uri)) {
+    if (!client?.redirect_uris.includes(query.redirect_uri)) {
       return c.json({ error: 'invalid_client' }, 400);
     }
 
-    const resource = query.resource || getMcpResourceUrl(c.req.url);
+    const resource = query.resource || getMcpResourceUrlForRequest(c);
     const scope = query.scope || oauthScopes.join(' ');
 
     return c.html(
@@ -122,7 +148,7 @@ export function createOAuthRouter(loginService: LoginService): Hono {
             clientId={client.client_id}
             clientName={client.client_name || client.client_id}
             redirectUri={form.redirect_uri}
-            resource={form.resource || getMcpResourceUrl(c.req.url)}
+            resource={form.resource || getMcpResourceUrlForRequest(c)}
             scope={form.scope || oauthScopes.join(' ')}
             state={form.state}
             codeChallenge={form.code_challenge}
@@ -137,7 +163,7 @@ export function createOAuthRouter(loginService: LoginService): Hono {
         clientId: client.client_id,
         redirectUri: form.redirect_uri,
         scope: form.scope || oauthScopes.join(' '),
-        resource: form.resource || getMcpResourceUrl(c.req.url),
+        resource: form.resource || getMcpResourceUrlForRequest(c),
         state: form.state,
         codeChallenge: form.code_challenge,
         codeChallengeMethod: form.code_challenge_method,
@@ -156,6 +182,7 @@ export function createOAuthRouter(loginService: LoginService): Hono {
   );
 
   oauth.post('/token', zValidator('form', tokenFormSchema), async (c) => {
+    setNoStoreHeaders(c);
     const form = c.req.valid('form');
     const record = consumeAuthorizationCode(form.code);
 
@@ -196,7 +223,13 @@ export function createOAuthRouter(loginService: LoginService): Hono {
   });
 
   oauth.get('/.well-known/oauth-authorization-server', (c) => {
-    const origin = new URL(c.req.url).origin;
+    const origin = getPublicOrigin(c);
+    setNoStoreHeaders(c);
+    return c.json(oauthMetadata(origin));
+  });
+  oauth.get('/.well-known/oauth-authorization-server/oauth', (c) => {
+    const origin = getPublicOrigin(c);
+    setNoStoreHeaders(c);
     return c.json(oauthMetadata(origin));
   });
 

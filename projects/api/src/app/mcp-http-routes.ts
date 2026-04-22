@@ -17,9 +17,34 @@ type UserMcpSession = {
 
 const userSessions = new Map<string, UserMcpSession>();
 
+function setNoStoreHeaders(c: Context) {
+  c.header('Cache-Control', 'no-store');
+  c.header('Pragma', 'no-cache');
+}
+
+function firstHeaderValue(value?: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return value.split(',')[0]?.trim() || undefined;
+}
+
+function getPublicOrigin(c: Context): string {
+  const requestUrl = new URL(c.req.url);
+  const forwardedProto = firstHeaderValue(c.req.header('x-forwarded-proto'));
+  const forwardedHost = firstHeaderValue(c.req.header('x-forwarded-host'));
+
+  if (forwardedProto && forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
+  return requestUrl.origin;
+}
+
 function getMetadataUrls(origin: string) {
   return {
-    issuer: `${origin}/oauth`,
+    issuer: origin,
     authorizationEndpoint: `${origin}/oauth/authorize`,
     tokenEndpoint: `${origin}/oauth/token`,
     registrationEndpoint: `${origin}/oauth/register`,
@@ -57,13 +82,14 @@ function oauthProtectedResourceMetadata(origin: string) {
 }
 
 function unauthorizedResponse(c: Context, message: string) {
-  const origin = new URL(c.req.url).origin;
+  const origin = getPublicOrigin(c);
   const urls = getMetadataUrls(origin);
 
   c.header(
     'WWW-Authenticate',
     `Bearer realm="mcp", authorization_uri="${urls.authorizationEndpoint}", token_uri="${urls.tokenEndpoint}", registration_uri="${urls.registrationEndpoint}", resource_metadata="${urls.resourceMetadataUrl}"`,
   );
+  setNoStoreHeaders(c);
 
   return c.json(
     {
@@ -104,22 +130,36 @@ export function createMcpHttpRouter(): Hono {
   const app = new Hono();
 
   app.get('/.well-known/oauth-authorization-server', (c) => {
-    const origin = new URL(c.req.url).origin;
+    const origin = getPublicOrigin(c);
+    setNoStoreHeaders(c);
+    return c.json(oauthAuthorizationServerMetadata(origin));
+  });
+  app.get('/.well-known/oauth-authorization-server/oauth', (c) => {
+    const origin = getPublicOrigin(c);
+    setNoStoreHeaders(c);
     return c.json(oauthAuthorizationServerMetadata(origin));
   });
 
   app.get('/.well-known/openid-configuration', (c) => {
-    const origin = new URL(c.req.url).origin;
+    const origin = getPublicOrigin(c);
+    setNoStoreHeaders(c);
+    return c.json(oauthAuthorizationServerMetadata(origin));
+  });
+  app.get('/.well-known/openid-configuration/oauth', (c) => {
+    const origin = getPublicOrigin(c);
+    setNoStoreHeaders(c);
     return c.json(oauthAuthorizationServerMetadata(origin));
   });
 
   app.get('/.well-known/oauth-protected-resource', (c) => {
-    const origin = new URL(c.req.url).origin;
+    const origin = getPublicOrigin(c);
+    setNoStoreHeaders(c);
     return c.json(oauthProtectedResourceMetadata(origin));
   });
 
   app.get('/mcp/.well-known/oauth-protected-resource', (c) => {
-    const origin = new URL(c.req.url).origin;
+    const origin = getPublicOrigin(c);
+    setNoStoreHeaders(c);
     return c.json(oauthProtectedResourceMetadata(origin));
   });
 

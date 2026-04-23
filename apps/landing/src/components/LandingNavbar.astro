@@ -30,7 +30,15 @@ const { content } = Astro.props;
     </nav>
 
     <div class="desktop-actions">
-      <a class="button button-primary" href="#features">{content.navbar.primaryCta}</a>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Cambiar tema" aria-pressed="false">
+        <span class="theme-icon theme-icon-sun">
+          <Icon name="sun" class="icon" />
+        </span>
+        <span class="theme-icon theme-icon-moon">
+          <Icon name="moon" class="icon" />
+        </span>
+      </button>
+      <a class="button button-primary" href="#manifesto">{content.navbar.primaryCta}</a>
     </div>
 
     <button class="mobile-toggle" type="button" data-nav-toggle aria-expanded="false" aria-label={content.navbar.menuLabel}>
@@ -40,12 +48,21 @@ const { content } = Astro.props;
 
   <div class="mobile-panel" data-nav-panel hidden>
     <div class="shell mobile-panel-inner">
+      <button class="button button-ghost theme-toggle mobile-theme-toggle" type="button" data-theme-toggle aria-label="Cambiar tema" aria-pressed="false">
+        <span>Cambiar tema</span>
+        <span class="theme-icon theme-icon-sun">
+          <Icon name="sun" class="icon" />
+        </span>
+        <span class="theme-icon theme-icon-moon">
+          <Icon name="moon" class="icon" />
+        </span>
+      </button>
       {
         content.navbar.links.map((link) => (
           <a href={link.href}>{link.label}</a>
         ))
       }
-      <a class="button button-primary mobile-cta" href="#features">{content.navbar.primaryCta}</a>
+      <a class="button button-primary mobile-cta" href="#manifesto">{content.navbar.primaryCta}</a>
     </div>
   </div>
 </header>
@@ -53,6 +70,33 @@ const { content } = Astro.props;
 <script is:inline>
   const toggle = document.querySelector("[data-nav-toggle]");
   const panel = document.querySelector("[data-nav-panel]");
+  const themeToggles = Array.from(document.querySelectorAll("[data-theme-toggle]"));
+
+  const syncThemeToggleState = () => {
+    const isDark = document.documentElement.dataset.theme === "dark";
+
+    themeToggles.forEach((themeToggle) => {
+      if (themeToggle instanceof HTMLButtonElement) {
+        themeToggle.setAttribute("aria-pressed", String(isDark));
+        themeToggle.setAttribute("aria-label", isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
+      }
+    });
+  };
+
+  const themeApi = window.__vornwayTheme;
+
+  if (themeApi && themeToggles.length > 0) {
+    syncThemeToggleState();
+
+    themeToggles.forEach((themeToggle) => {
+      if (themeToggle instanceof HTMLButtonElement) {
+        themeToggle.addEventListener("click", () => {
+          themeApi.toggle();
+          syncThemeToggleState();
+        });
+      }
+    });
+  }
 
   if (toggle instanceof HTMLButtonElement && panel instanceof HTMLElement) {
     const close = () => {

@@ -2,13 +2,20 @@
 import type { LandingContent } from "../content/landing";
 
 export interface Props {
-  content: LandingContent["preFooterBanner"];
+  content?: LandingContent["preFooterBanner"];
 }
 
 const { content } = Astro.props;
+
+const bannerContent = content ?? {
+  label: "Vornway",
+  title: "Todo el viaje del grupo, mas claro y mejor conectado",
+  description:
+    "Vornway reune gastos, balances y metas compartidas en una experiencia simple para viajar con menos caos y mas control.",
+};
 ---
 
-<section class="pre-footer-banner" aria-label={content.label}>
+<section class="pre-footer-banner" aria-label={bannerContent.label}>
   <div class="shell pre-footer-banner-shell">
     <div class="pre-footer-phone" aria-hidden="true">
       <div class="pre-footer-phone-frame">
@@ -31,8 +38,8 @@ const { content } = Astro.props;
     </div>
 
     <div class="pre-footer-banner-copy">
-      <h2>{content.title}</h2>
-      <p>{content.description}</p>
+      <h2>{bannerContent.title}</h2>
+      <p>{bannerContent.description}</p>
     </div>
   </div>
 </section>

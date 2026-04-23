@@ -9,8 +9,8 @@ const { content } = Astro.props;
 ---
 
 <section class="section assistant-section">
-  <div class="shell assistant-layout">
-    <div class="assistant-visual">
+  <div class="shell assistant-banner">
+    <div class="assistant-banner-visual">
       <div class="mascot-wrap">
         <svg viewBox="0 0 200 200" class="mascot-art" aria-hidden="true">
           <ellipse cx="100" cy="85" rx="55" ry="50" fill="#de034d" />
@@ -39,7 +39,7 @@ const { content } = Astro.props;
       </div>
     </div>
 
-    <div class="section-heading assistant-copy">
+    <div class="section-heading assistant-copy assistant-banner-copy">
       <span class="eyebrow static">{content.badge}</span>
       <h2>
         {content.title}

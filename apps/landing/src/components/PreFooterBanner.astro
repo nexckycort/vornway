@@ -1,0 +1,39 @@
+---
+import type { LandingContent } from "../content/landing";
+
+export interface Props {
+  content: LandingContent["preFooterBanner"];
+}
+
+const { content } = Astro.props;
+---
+
+<section class="pre-footer-banner" aria-label={content.label}>
+  <div class="shell pre-footer-banner-shell">
+    <div class="pre-footer-phone" aria-hidden="true">
+      <div class="pre-footer-phone-frame">
+        <div class="pre-footer-phone-notch"></div>
+        <div class="pre-footer-phone-screen">
+          <span class="pre-footer-phone-badge">Vornway</span>
+          <strong>Grupo listo</strong>
+          <p>Balances, gastos y metas en una sola vista.</p>
+          <div class="pre-footer-phone-card">
+            <span>Viaje activo</span>
+            <strong>EUR 612</strong>
+          </div>
+          <div class="pre-footer-phone-list">
+            <i></i>
+            <i></i>
+            <i></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pre-footer-banner-copy">
+      <span>{content.label}</span>
+      <h2>{content.title}</h2>
+      <p>{content.description}</p>
+    </div>
+  </div>
+</section>

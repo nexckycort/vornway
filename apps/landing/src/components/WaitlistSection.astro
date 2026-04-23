@@ -1,0 +1,56 @@
+---
+import type { LandingContent } from "../content/landing";
+
+export interface Props {
+  content: LandingContent["waitlist"];
+}
+
+const { content } = Astro.props;
+---
+
+<section id="waitlist" class="section waitlist-section">
+  <div class="waitlist-glow waitlist-glow-left"></div>
+  <div class="waitlist-glow waitlist-glow-right"></div>
+
+  <div class="shell waitlist-shell">
+    <div class="waitlist-copy">
+      <h2>
+        {content.title}
+        <span>{content.highlight}</span>
+      </h2>
+      <p>{content.description}</p>
+    </div>
+
+    <form class="waitlist-form" data-waitlist-form>
+      <div class="waitlist-form-head">
+        <span>Lista de espera</span>
+        <strong>Reserva tu lugar</strong>
+      </div>
+
+      <label>
+        <span>{content.nameLabel}</span>
+        <input name="name" type="text" placeholder={content.namePlaceholder} autocomplete="name" required />
+      </label>
+
+      <label>
+        <span>{content.emailLabel}</span>
+        <input name="email" type="email" placeholder={content.emailPlaceholder} autocomplete="email" required />
+      </label>
+
+      <button class="button button-primary button-large" type="submit">{content.submitLabel}</button>
+      <small>{content.footnote}</small>
+      <p class="waitlist-success" data-waitlist-success hidden>{content.successMessage}</p>
+    </form>
+  </div>
+</section>
+
+<script is:inline>
+  const waitlistForm = document.querySelector("[data-waitlist-form]");
+  const waitlistSuccess = document.querySelector("[data-waitlist-success]");
+
+  waitlistForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    waitlistSuccess?.removeAttribute("hidden");
+    waitlistForm.reset();
+  });
+</script>

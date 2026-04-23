@@ -9,30 +9,33 @@ const { content } = Astro.props;
 ---
 
 <section class="section manifesto-section">
-  <div class="shell narrow-shell">
-    <div class="manifesto-card">
-      <div class="section-heading">
-        <span class="eyebrow static">{content.badge}</span>
-        <h2>
-          {content.title}
-          <span>{content.highlight}</span>
-        </h2>
-        <p>{content.lead}</p>
+  <div class="shell manifesto-shell">
+    <article class="manifesto-card manifesto-single-card">
+      <div class="manifesto-card-copy manifesto-single-copy">
+        <div class="section-heading">
+          <span class="eyebrow static">{content.badge}</span>
+          <h2>
+            {content.title}
+            <span>{content.highlight}</span>
+          </h2>
+          <p>{content.lead}</p>
+        </div>
+
+        <div class="manifesto-copy">
+          {
+            content.paragraphs.map((paragraph) => (
+              <p>{paragraph}</p>
+            ))
+          }
+        </div>
+
+        <div class="manifesto-footer">
+          <blockquote class="manifesto-quote">{content.quote}</blockquote>
+          <a class="manifesto-link" href={content.figmaHref} target="_blank" rel="noreferrer">
+            {content.figmaLabel}
+          </a>
+        </div>
       </div>
-
-      <div class="manifesto-copy">
-        {
-          content.paragraphs.map((paragraph) => (
-            <p>{paragraph}</p>
-          ))
-        }
-      </div>
-
-      <a class="manifesto-link" href={content.figmaHref} target="_blank" rel="noreferrer">
-        {content.figmaLabel}
-      </a>
-
-      <blockquote class="manifesto-quote">{content.quote}</blockquote>
-    </div>
+    </article>
   </div>
 </section>

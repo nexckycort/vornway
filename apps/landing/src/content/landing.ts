@@ -64,6 +64,14 @@ export type ComparisonRow = {
   alternatives: string | false;
 };
 
+export type ManifestoCard = {
+  kicker: string;
+  title: string;
+  body: string;
+  visual: "ai" | "contrast" | "craft" | "figma" | "flow" | "premium" | "ritual";
+  imageSuggestion: string;
+};
+
 export type LinkGroup = {
   title: string;
   links: NavItem[];
@@ -170,6 +178,7 @@ export type LandingContent = {
     title: string;
     highlight: string;
     lead: string;
+    cards: ManifestoCard[];
     paragraphs: string[];
     quote: string;
     figmaLabel: string;
@@ -193,6 +202,25 @@ export type LandingContent = {
     secondaryCta: string;
     secondaryHref?: string;
     footnote: string;
+  };
+  waitlist: {
+    badge: string;
+    title: string;
+    highlight: string;
+    description: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    submitLabel: string;
+    footnote: string;
+    successMessage: string;
+    stats: { value: string; label: string }[];
+  };
+  preFooterBanner: {
+    label: string;
+    title: string;
+    description: string;
   };
   footer: {
     columns: LinkGroup[];
@@ -481,6 +509,71 @@ const spanishContent: LandingContent = {
     title: 'Cómo construimos',
     highlight: 'Vornway',
     lead: 'En la era de la IA construir se volvió radicalmente más fácil. Podríamos vaicodear toda esta app en cuestión de días.',
+    cards: [
+      {
+        kicker: '01 / Hook',
+        title: 'La IA hizo que construir se sintiera inevitable.',
+        body:
+          'Hoy levantar una app es mas facil que nunca. La pregunta ya no es si podemos construir Vornway rapido, sino que tipo de experiencia queremos vivir mientras lo hacemos.',
+        visual: 'ai',
+        imageSuggestion:
+          'Textura abstracta de inteligencia artificial: vidrio oscuro, particulas suaves, luz roja y azul, sensacion futurista premium.',
+      },
+      {
+        kicker: '02 / Conflicto',
+        title: 'Velocidad no siempre significa experiencia.',
+        body:
+          'Dejarias que alguien juegue tu videojuego favorito mientras solo miras? Dejarias que otra persona salga de fiesta por ti? Dejarias que alguien viva lo que mas disfrutas y luego te lo cuente?',
+        visual: 'contrast',
+        imageSuggestion:
+          'Contraste entre una silueta humana contemplativa y una interfaz automatizada precisa, sin dramatismo, minimalista.',
+      },
+      {
+        kicker: '03 / Filosofia',
+        title: 'Building is like restoring a classic car.',
+        body:
+          'No se trata solo de llegar al resultado final. Se trata de tocar cada pieza, entender por que existe, ajustarla con paciencia y dejar que el proceso tambien tenga valor.',
+        visual: 'craft',
+        imageSuggestion:
+          'Manos trabajando sobre un detalle mecanico elegante, metal pulido, luz lateral suave, atmosfera de artesania moderna.',
+      },
+      {
+        kicker: '04 / Metodo',
+        title: 'Primero Figma. Luego pantalla por pantalla.',
+        body:
+          'Vornway se disena completo antes de escribirse. Cada flujo baja desde Figma hacia producto real con una intencion clara: que nada se sienta improvisado.',
+        visual: 'figma',
+        imageSuggestion:
+          'Mockups de UI flotando y transformandose en pantallas reales, grid limpio, profundidad sutil, estilo SaaS premium.',
+      },
+      {
+        kicker: '05 / Energia',
+        title: 'Diversion, dopamina y obsesion por el detalle.',
+        body:
+          'Hay una parte irracional en construir bien: ese momento en que un microdetalle encaja, una transicion respira mejor y la pantalla empieza a sentirse viva.',
+        visual: 'flow',
+        imageSuggestion:
+          'Elementos brillantes y delicados alrededor de una interfaz en foco, sensacion de flow state, luz tenue, sin ruido visual.',
+      },
+      {
+        kicker: '06 / Oficio',
+        title: 'La IA acelera. El criterio decide.',
+        body:
+          'Usamos herramientas modernas, pero no delegamos el gusto. El producto necesita criterio humano: ritmo, silencio, jerarquia, tacto y una idea clara de lo que no debe entrar.',
+        visual: 'ritual',
+        imageSuggestion:
+          'Mesa de trabajo minimal con notas, componentes de interfaz y luces suaves, ritual creativo entre tecnologia y criterio humano.',
+      },
+      {
+        kicker: '07 / Resolucion',
+        title: 'No por velocidad. Por el placer de hacerlo bien.',
+        body:
+          'Vornway no se esta construyendo para ganar una carrera invisible. Se esta construyendo para que cada pantalla se sienta premium, intencional y digna de usarse.',
+        visual: 'premium',
+        imageSuggestion:
+          'Producto digital final pulido en modo oscuro, bordes de vidrio, glow sutil, sensacion de app terminada y cuidadosamente ejecutada.',
+      },
+    ],
     paragraphs: [
       'Pero la pregunta no es qué tan rápido se puede hacer. La pregunta es otra: ¿dejarías que alguien juegue tu videojuego favorito mientras tú solo miras? ¿Dejarías que otra persona salga de fiesta por ti y luego te lo cuente? ¿Dejarías que alguien viva tu actividad favorita mientras tú te quedas sentado observando?',
       'Programar se parece cada vez más a restaurar un auto clásico: no se trata solo de llegar al resultado final, sino de tocar cada pieza, entenderla, ajustarla y disfrutar el proceso. Así vamos a construir Vornway: escribiendo cuidadosamente cada parte, empezando por diseñarlo completo en Figma y luego llevándolo a una app real, pantalla por pantalla.',
@@ -534,6 +627,31 @@ const spanishContent: LandingContent = {
     secondaryHref: figmaHref,
     footnote:
       'Hecha para quienes quieren ordenar mejor sus viajes y planes compartidos.',
+  },
+  waitlist: {
+    badge: 'Acceso anticipado',
+    title: 'Se de los primeros en',
+    highlight: 'probar Vornway',
+    description:
+      'Estamos preparando los primeros accesos. Deja tu correo y te avisaremos antes que al resto cuando la aplicacion este lista para probarse.',
+    nameLabel: 'Nombre',
+    namePlaceholder: 'Tu nombre',
+    emailLabel: 'Correo',
+    emailPlaceholder: 'tu@email.com',
+    submitLabel: 'Unirme a la lista',
+    footnote: 'Sin spam. Solo avances importantes, acceso anticipado y lanzamiento.',
+    successMessage: 'Listo. Te guardamos en la lista de espera de Vornway.',
+    stats: [
+      { value: 'Early access', label: 'Primeros invites' },
+      { value: 'Beta privada', label: 'Prueba antes del lanzamiento' },
+      { value: 'Founder notes', label: 'Avances reales del producto' },
+    ],
+  },
+  preFooterBanner: {
+    label: 'Vornway esta tomando forma',
+    title: 'Una app para que organizar viajes en grupo se sienta simple otra vez.',
+    description:
+      'Gastos, balances y metas compartidas en una experiencia pensada para reducir ruido y devolver claridad al plan.',
   },
   footer: {
     columns: [

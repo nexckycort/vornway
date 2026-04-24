@@ -44,20 +44,29 @@ const featureBlocks = [
 ];
 ---
 
-<section id={content.id} class="section section-muted features-showcase-section">
+<section
+  id={content.id}
+  class="section section-muted features-showcase-section"
+>
   <div class="shell">
     <div class="section-heading centered">
       <h2>
         Todo lo que necesitas para
         <span>gestionar tu viaje</span>
       </h2>
-      <p>Organiza, controla y planifica cada parte de tu viaje desde un solo lugar.</p>
+      <p>
+        Organiza, controla y planifica cada parte de tu viaje desde un solo
+        lugar.
+      </p>
     </div>
 
     <div class="features-showcase-list">
       {
         featureBlocks.map((feature) => (
-          <article class:list={["feature-showcase", feature.reverse && "is-reverse"]} data-reveal>
+          <article
+            class:list={["feature-showcase", feature.reverse && "is-reverse"]}
+            data-reveal
+          >
             <div class="feature-showcase-copy">
               <span class="feature-showcase-number">{feature.number}</span>
               <h3>{feature.title}</h3>
@@ -65,149 +74,115 @@ const featureBlocks = [
             </div>
 
             <div class="feature-showcase-visual">
-              {
-                feature.mockup === "groups" && (
-                  <div class="feature-mockup feature-mockup-groups">
-                    <div class="feature-mockup-header">
-                      <div>
-                        <span class="feature-mockup-label">Grupo activo</span>
-                        <strong>Eurotrip verano</strong>
-                      </div>
-                      <span class="mockup-chip">4 viajeros</span>
+              {feature.mockup === "groups" && (
+                <div class="feature-mockup feature-mockup-groups">
+                  <div class="feature-mockup-header">
+                    <div>
+                      <span class="feature-mockup-label">Grupo activo</span>
+                      <strong>Eurotrip verano</strong>
                     </div>
-                    <div class="feature-mockup-stack">
-                      <article class="feature-mockup-row">
-                        <div>
-                          <strong>Hotel en Roma</strong>
-                          <span>Dividido entre todos</span>
-                        </div>
-                        <b>EUR 320</b>
-                      </article>
-                      <article class="feature-mockup-row">
-                        <div>
-                          <strong>Cena en Florencia</strong>
-                          <span>Pagó Camila</span>
-                        </div>
-                        <b>EUR 86</b>
-                      </article>
-                      <article class="feature-mockup-row">
-                        <div>
-                          <strong>Transporte</strong>
-                          <span>Pagó Juan</span>
-                        </div>
-                        <b>EUR 44</b>
-                      </article>
-                    </div>
+                    <span class="mockup-chip">4 viajeros</span>
                   </div>
-                )
-              }
+                  <div class="feature-mockup-stack">
+                    <article class="feature-mockup-row">
+                      <div>
+                        <strong>Hotel en Roma</strong>
+                        <span>Dividido entre todos</span>
+                      </div>
+                      <b>EUR 320</b>
+                    </article>
+                    <article class="feature-mockup-row">
+                      <div>
+                        <strong>Cena en Florencia</strong>
+                        <span>Pagó Camila</span>
+                      </div>
+                      <b>EUR 86</b>
+                    </article>
+                    <article class="feature-mockup-row">
+                      <div>
+                        <strong>Transporte</strong>
+                        <span>Pagó Juan</span>
+                      </div>
+                      <b>EUR 44</b>
+                    </article>
+                  </div>
+                </div>
+              )}
 
-              {
-                feature.mockup === "participants" && (
-                  <div class="feature-mockup feature-mockup-participants">
-                    <div class="feature-mockup-header">
-                      <div>
-                        <span class="feature-mockup-label">Participantes</span>
-                        <strong>Balances del grupo</strong>
-                      </div>
-                      <span class="mockup-chip">En vivo</span>
+              {feature.mockup === "participants" && (
+                <div class="feature-mockup feature-mockup-participants">
+                  <div class="feature-mockup-header">
+                    <div>
+                      <span class="feature-mockup-label">Participantes</span>
+                      <strong>Balances del grupo</strong>
                     </div>
-                    <div class="feature-mockup-stack">
-                      <article class="feature-balance-card">
-                        <div class="feature-avatar">C</div>
-                        <div>
-                          <strong>Camila</strong>
-                          <span>Pagó alojamiento</span>
-                        </div>
-                        <b class="positive">+ EUR 85</b>
-                      </article>
-                      <article class="feature-balance-card">
-                        <div class="feature-avatar">J</div>
-                        <div>
-                          <strong>Juan</strong>
-                          <span>Debe transporte</span>
-                        </div>
-                        <b class="negative">- EUR 24</b>
-                      </article>
-                      <article class="feature-balance-card">
-                        <div class="feature-avatar">M</div>
-                        <div>
-                          <strong>María</strong>
-                          <span>Saldo equilibrado</span>
-                        </div>
-                        <b>EUR 0</b>
-                      </article>
-                    </div>
+                    <span class="mockup-chip">En vivo</span>
                   </div>
-                )
-              }
+                  <div class="feature-mockup-stack">
+                    <article class="feature-balance-card">
+                      <div class="feature-avatar">C</div>
+                      <div>
+                        <strong>Camila</strong>
+                        <span>Pagó alojamiento</span>
+                      </div>
+                      <b class="positive">+ EUR 85</b>
+                    </article>
+                    <article class="feature-balance-card">
+                      <div class="feature-avatar">J</div>
+                      <div>
+                        <strong>Juan</strong>
+                        <span>Debe transporte</span>
+                      </div>
+                      <b class="negative">- EUR 24</b>
+                    </article>
+                    <article class="feature-balance-card">
+                      <div class="feature-avatar">M</div>
+                      <div>
+                        <strong>María</strong>
+                        <span>Saldo equilibrado</span>
+                      </div>
+                      <b>EUR 0</b>
+                    </article>
+                  </div>
+                </div>
+              )}
 
-              {
-                feature.mockup === "currencies" && (
-                  <div class="feature-mockup feature-mockup-currencies">
-                    <div class="feature-mockup-header">
-                      <div>
-                        <span class="feature-mockup-label">Multimoneda</span>
-                        <strong>Control por divisa</strong>
-                      </div>
-                      <span class="mockup-chip">Automático</span>
+              {feature.mockup === "currencies" && (
+                <div class="feature-mockup feature-mockup-currencies">
+                  <div class="feature-mockup-header">
+                    <div>
+                      <span class="feature-mockup-label">Multimoneda</span>
+                      <strong>Control por divisa</strong>
                     </div>
-                    <div class="currency-grid">
-                      <article class="currency-card">
-                        <span>COP</span>
-                        <strong>$ 420.000</strong>
-                      </article>
-                      <article class="currency-card">
-                        <span>USD</span>
-                        <strong>$ 130</strong>
-                      </article>
-                      <article class="currency-card">
-                        <span>EUR</span>
-                        <strong>EUR 94</strong>
-                      </article>
-                    </div>
-                    <div class="feature-mockup-row feature-mockup-row-wide">
-                      <div>
-                        <strong>Total consolidado</strong>
-                        <span>Todo convertido dentro del viaje</span>
-                      </div>
-                      <b>EUR 612</b>
-                    </div>
+                    <span class="mockup-chip">Automático</span>
                   </div>
-                )
-              }
+                  <div class="currency-grid">
+                    <article class="currency-card">
+                      <span>COP</span>
+                      <strong>$ 420.000</strong>
+                    </article>
+                    <article class="currency-card">
+                      <span>USD</span>
+                      <strong>$ 130</strong>
+                    </article>
+                    <article class="currency-card">
+                      <span>EUR</span>
+                      <strong>EUR 94</strong>
+                    </article>
+                  </div>
+                  <div class="feature-mockup-row feature-mockup-row-wide">
+                    <div>
+                      <strong>Total consolidado</strong>
+                      <span>Todo convertido dentro del viaje</span>
+                    </div>
+                    <b>EUR 612</b>
+                  </div>
+                </div>
+              )}
 
-              {
-                feature.mockup === "goals" && (
-                  <div class="feature-mockup feature-mockup-goals">
-                    <div class="feature-mockup-header">
-                      <div>
-                        <span class="feature-mockup-label">Meta activa</span>
-                        <strong>Viaje a Japón</strong>
-                      </div>
-                      <span class="mockup-chip">75%</span>
-                    </div>
-                    <div class="goal-mockup-card">
-                      <div class="goal-mockup-head">
-                        <strong>Ahorrado</strong>
-                        <span>EUR 2.250 de EUR 3.000</span>
-                      </div>
-                      <div class="progress-track">
-                        <div class="progress-bar" style="width: 75%;"></div>
-                      </div>
-                    </div>
-                    <div class="feature-mockup-stack compact-stack">
-                      <article class="feature-mockup-row">
-                        <div>
-                          <strong>Aporte mensual</strong>
-                          <span>Próximo aporte en 3 días</span>
-                        </div>
-                        <b>EUR 250</b>
-                      </article>
-                    </div>
-                  </div>
-                )
-              }
+              {feature.mockup === "goals" && (
+                <img src="/images/goal.webp" alt="goal" />
+              )}
             </div>
           </article>
         ))
@@ -226,8 +201,10 @@ const featureBlocks = [
         }
       });
     },
-    { threshold: 0.2 }
+    { threshold: 0.2 },
   );
 
-  document.querySelectorAll("[data-reveal]").forEach((element) => observer.observe(element));
+  document
+    .querySelectorAll("[data-reveal]")
+    .forEach((element) => observer.observe(element));
 </script>

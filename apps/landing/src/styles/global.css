@@ -1301,11 +1301,6 @@ select {
   margin-top: 0.1rem;
 }
 
-.goal-mockup-card {
-  display: grid;
-  gap: 0.9rem;
-}
-
 .compact-stack {
   gap: 0.7rem;
 }
@@ -5340,4 +5335,65 @@ body {
   width: 1.9rem;
   height: 1.9rem;
   object-fit: contain;
+}
+
+.comparison-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.comparison-brand-text {
+  display: none;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.comparison-alt-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+@media (max-width: 820px) {
+  .comparison-table {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 1rem;
+    border: 1px solid rgba(75, 41, 92, 0.1);
+    background: rgba(255, 255, 255, 0.62);
+  }
+
+  .comparison-row {
+    min-width: 34rem;
+    grid-template-columns: 1.35fr 0.65fr 1fr;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    align-items: center;
+    text-align: left;
+  }
+
+  .comparison-row + .comparison-row {
+    border-top: 1px solid rgba(75, 41, 92, 0.08);
+  }
+
+  .comparison-brand {
+    justify-content: center;
+  }
+
+  .comparison-brand-text {
+    display: none;
+  }
+
+  .comparison-summary {
+    margin-top: 1rem;
+    text-align: center;
+  }
+
+  :root.dark .comparison-row {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: transparent;
+  }
 }

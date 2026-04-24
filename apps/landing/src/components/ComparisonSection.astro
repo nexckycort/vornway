@@ -30,15 +30,21 @@ const { content } = Astro.props;
       {
         content.rows.map((row) => (
           <div class="comparison-row">
-            <span>{row.feature}</span>
-            <span class="comparison-icon positive">
-              <Icon name="check" class="icon" />
+            <span class="comparison-feature">{row.feature}</span>
+            <span class="comparison-brand">
+              <span class="comparison-icon positive">
+                <Icon name="check" class="icon" />
+              </span>
+              <span class="comparison-brand-text">Incluido</span>
             </span>
             <span class="comparison-alt">
               {
                 row.alternatives === false ? (
-                  <span class="comparison-icon negative">
-                    <Icon name="close" class="icon" />
+                  <span class="comparison-alt-status">
+                    <span class="comparison-icon negative">
+                      <Icon name="close" class="icon" />
+                    </span>
+                    <span>No incluido</span>
                   </span>
                 ) : (
                   row.alternatives

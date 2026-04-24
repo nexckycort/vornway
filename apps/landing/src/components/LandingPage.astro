@@ -10,7 +10,6 @@ import LandingFooter from "./LandingFooter.astro";
 import LandingNavbar from "./LandingNavbar.astro";
 import ManifestoSection from "./ManifestoSection.astro";
 import PreFooterBanner from "./PreFooterBanner.astro";
-import ProblemSection from "./ProblemSection.astro";
 import WaitlistSection from "./WaitlistSection.astro";
 
 export interface Props {
@@ -26,7 +25,7 @@ const { content } = Astro.props;
 
   <main>
     <HeroSection content={content.hero} />
-    <ProblemSection content={content.problem} />
+    <!-- <ProblemSection content={content.problem} /> -->
     <FeaturesSection content={content.features} />
     <HowItWorksSection content={content.howItWorks} />
     <AssistantSection content={content.assistant} />

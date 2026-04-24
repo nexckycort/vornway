@@ -245,10 +245,10 @@ const spanishContent: LandingContent = {
     menuLabel: 'Abrir menu',
   },
   hero: {
-    title: 'Todo tu viaje',
-    highlight: 'en un solo lugar',
+    title: 'Todo en uno,',
+    highlight: 'pero a tu medida',
     description:
-      'Gestiona gastos, organiza tu viaje y alcanza tus metas sin complicaciones. La app todo-en-uno para viajeros modernos.',
+      'Vornway es una app todo-en-uno con estructura modular: tiene muchos tentáculos, pero tú decides cuáles activar. Si no quieres metas o conversor, los desactivas y te quedas solo con lo que sí usas.',
     primaryCta: 'Ver funcionalidades',
     primaryHref: '#features',
     secondaryCta: 'Cómo funciona',

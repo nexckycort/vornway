@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 
 import routes from '../routes/routes';
 import { createMcpHttpRouter } from './mcp-http-routes';
@@ -9,6 +10,7 @@ export function createHttpApp(): Hono {
 
   app.get('/', (c) => c.json({ service: 'vornway-api', status: 'ok' }));
 
+  app.use('/api/*', cors());
   app.route('/api', routes);
 
   app.route('/', createMcpHttpRouter());

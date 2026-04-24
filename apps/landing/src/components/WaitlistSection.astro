@@ -6,6 +6,9 @@ export interface Props {
 }
 
 const { content } = Astro.props;
+const apiBaseUrl =
+  (import.meta.env.PUBLIC_API_BASE_URL as string | undefined) ??
+  "https://api.vornway.com";
 ---
 
 <section id="waitlist" class="section waitlist-section">
@@ -21,24 +24,42 @@ const { content } = Astro.props;
       <p>{content.description}</p>
     </div>
 
-    <form class="waitlist-form" data-waitlist-form>
+    <form class="waitlist-form" data-waitlist-form data-api-base={apiBaseUrl}>
       <div class="waitlist-form-head">
         <span>Lista de espera</span>
+        <strong data-waitlist-count>Cargando...</strong>
       </div>
 
       <label>
         <span>{content.nameLabel}</span>
-        <input name="name" type="text" placeholder={content.namePlaceholder} autocomplete="name" required />
+        <input
+          name="name"
+          type="text"
+          placeholder={content.namePlaceholder}
+          autocomplete="name"
+          required
+        />
       </label>
 
       <label>
         <span>{content.emailLabel}</span>
-        <input name="email" type="email" placeholder={content.emailPlaceholder} autocomplete="email" required />
+        <input
+          name="email"
+          type="email"
+          placeholder={content.emailPlaceholder}
+          autocomplete="email"
+          required
+        />
       </label>
 
-      <button class="button button-primary button-large" type="submit">{content.submitLabel}</button>
+      <button class="button button-primary button-large" type="submit"
+        >{content.submitLabel}</button
+      >
       <small>{content.footnote}</small>
-      <p class="waitlist-success" data-waitlist-success hidden>{content.successMessage}</p>
+      <p class="waitlist-success" data-waitlist-success hidden>
+        {content.successMessage}
+      </p>
+      <p class="waitlist-success waitlist-error" data-waitlist-error hidden></p>
     </form>
   </div>
 </section>
@@ -46,10 +67,85 @@ const { content } = Astro.props;
 <script is:inline>
   const waitlistForm = document.querySelector("[data-waitlist-form]");
   const waitlistSuccess = document.querySelector("[data-waitlist-success]");
+  const waitlistError = document.querySelector("[data-waitlist-error]");
+  const waitlistCount = document.querySelector("[data-waitlist-count]");
+  const apiBase = waitlistForm?.dataset.apiBase ?? "https://api.vornway.com";
+  const waitlistEndpoint = `${apiBase}/api/waitlists`;
 
-  waitlistForm?.addEventListener("submit", (event) => {
+  const updateWaitlistCount = async () => {
+    if (!waitlistCount) return;
+
+    try {
+      const response = await fetch(waitlistEndpoint, { method: "GET" });
+
+      if (!response.ok) {
+        throw new Error("Cannot fetch waitlist");
+      }
+
+      const items = await response.json();
+      const total = Array.isArray(items) ? items.length : 0;
+      waitlistCount.textContent = `${total} ${total === 1 ? "persona" : "personas"}`;
+    } catch {
+      waitlistCount.textContent = "Únete hoy";
+    }
+  };
+
+  updateWaitlistCount();
+
+  waitlistForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    waitlistSuccess?.removeAttribute("hidden");
-    waitlistForm.reset();
+    waitlistSuccess?.setAttribute("hidden", "");
+    waitlistError?.setAttribute("hidden", "");
+
+    const formData = new FormData(waitlistForm);
+    const name = String(formData.get("name") ?? "").trim();
+    const email = String(formData.get("email") ?? "")
+      .trim()
+      .toLowerCase();
+    const submitButton = waitlistForm.querySelector('button[type="submit"]');
+
+    if (submitButton) {
+      submitButton.setAttribute("disabled", "true");
+    }
+
+    try {
+      const response = await fetch(waitlistEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email }),
+      });
+
+      if (response.ok) {
+        waitlistSuccess?.removeAttribute("hidden");
+        waitlistForm.reset();
+        await updateWaitlistCount();
+        return;
+      }
+
+      if (response.status === 409) {
+        if (waitlistError) {
+          waitlistError.textContent =
+            "Este correo ya está registrado en la lista.";
+          waitlistError.removeAttribute("hidden");
+        }
+        return;
+      }
+
+      if (waitlistError) {
+        waitlistError.textContent =
+          "No pudimos registrarte ahora. Intenta de nuevo en unos minutos.";
+        waitlistError.removeAttribute("hidden");
+      }
+    } catch {
+      if (waitlistError) {
+        waitlistError.textContent =
+          "Error de conexión con el servidor. Revisa tu red e intenta de nuevo.";
+        waitlistError.removeAttribute("hidden");
+      }
+    } finally {
+      if (submitButton) {
+        submitButton.removeAttribute("disabled");
+      }
+    }
   });
 </script>

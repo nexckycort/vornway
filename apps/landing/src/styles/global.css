@@ -2542,6 +2542,17 @@ select {
   line-height: 1.45;
 }
 
+.waitlist-error {
+  border-color: rgba(222, 3, 77, 0.24);
+  background: rgba(222, 3, 77, 0.08);
+  color: #8b1e4c;
+}
+
+.waitlist-form button[disabled] {
+  opacity: 0.66;
+  cursor: not-allowed;
+}
+
 .pre-footer-banner {
   padding: 2rem 0 4.5rem;
   background: #f7f8fb;

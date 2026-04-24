@@ -1,6 +1,5 @@
 ---
 import type { LandingContent } from "../content/landing";
-import BrandMark from "./BrandMark.astro";
 
 export interface Props {
   content: LandingContent;
@@ -14,7 +13,7 @@ const { content } = Astro.props;
     <div class="footer-brand">
       <a class="brand-link" href="/" aria-label={content.brand.name}>
         <span class="brand-badge">
-          <BrandMark class="brand-mark" />
+          <img src="/logo.webp" alt={content.brand.name} />
         </span>
         <span class="brand-copy">
           <strong>{content.brand.name}</strong>
@@ -26,7 +25,9 @@ const { content } = Astro.props;
       <div class="social-links">
         {
           content.footer.social.map((link) => (
-            <a href={link.href} aria-label={link.label}>{link.label.slice(0, 2)}</a>
+            <a href={link.href} aria-label={link.label}>
+              {link.label.slice(0, 2)}
+            </a>
           ))
         }
       </div>
@@ -37,11 +38,9 @@ const { content } = Astro.props;
         <div class="footer-column">
           <h3>{column.title}</h3>
           <div class="footer-links">
-            {
-              column.links.map((link) => (
-                <a href={link.href}>{link.label}</a>
-              ))
-            }
+            {column.links.map((link) => (
+              <a href={link.href}>{link.label}</a>
+            ))}
           </div>
         </div>
       ))

@@ -1,6 +1,5 @@
 ---
 import type { LandingContent } from "../content/landing";
-import BrandMark from "./BrandMark.astro";
 import Icon from "./Icon.astro";
 
 export interface Props {
@@ -14,7 +13,7 @@ const { content } = Astro.props;
   <div class="shell nav-shell">
     <a class="brand-link" href="#top" aria-label={content.brand.name}>
       <span class="brand-badge">
-        <BrandMark class="brand-mark" />
+        <img src="/logo.webp" />
       </span>
       <span class="brand-copy">
         <strong>{content.brand.name}</strong>
@@ -22,15 +21,17 @@ const { content } = Astro.props;
     </a>
 
     <nav class="desktop-nav" aria-label="Principal">
-      {
-        content.navbar.links.map((link) => (
-          <a href={link.href}>{link.label}</a>
-        ))
-      }
+      {content.navbar.links.map((link) => <a href={link.href}>{link.label}</a>)}
     </nav>
 
     <div class="desktop-actions">
-      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Cambiar tema" aria-pressed="false">
+      <button
+        class="theme-toggle"
+        type="button"
+        data-theme-toggle
+        aria-label="Cambiar tema"
+        aria-pressed="false"
+      >
         <span class="theme-icon theme-icon-sun">
           <Icon name="sun" class="icon" />
         </span>
@@ -38,17 +39,31 @@ const { content } = Astro.props;
           <Icon name="moon" class="icon" />
         </span>
       </button>
-      <a class="button button-primary" href="#manifesto">{content.navbar.primaryCta}</a>
+      <a class="button button-primary" href="#manifesto"
+        >{content.navbar.primaryCta}</a
+      >
     </div>
 
-    <button class="mobile-toggle" type="button" data-nav-toggle aria-expanded="false" aria-label={content.navbar.menuLabel}>
+    <button
+      class="mobile-toggle"
+      type="button"
+      data-nav-toggle
+      aria-expanded="false"
+      aria-label={content.navbar.menuLabel}
+    >
       <Icon name="menu" class="icon" />
     </button>
   </div>
 
   <div class="mobile-panel" data-nav-panel hidden>
     <div class="shell mobile-panel-inner">
-      <button class="button button-ghost theme-toggle mobile-theme-toggle" type="button" data-theme-toggle aria-label="Cambiar tema" aria-pressed="false">
+      <button
+        class="button button-ghost theme-toggle mobile-theme-toggle"
+        type="button"
+        data-theme-toggle
+        aria-label="Cambiar tema"
+        aria-pressed="false"
+      >
         <span>Cambiar tema</span>
         <span class="theme-icon theme-icon-sun">
           <Icon name="sun" class="icon" />
@@ -57,12 +72,10 @@ const { content } = Astro.props;
           <Icon name="moon" class="icon" />
         </span>
       </button>
-      {
-        content.navbar.links.map((link) => (
-          <a href={link.href}>{link.label}</a>
-        ))
-      }
-      <a class="button button-primary mobile-cta" href="#manifesto">{content.navbar.primaryCta}</a>
+      {content.navbar.links.map((link) => <a href={link.href}>{link.label}</a>)}
+      <a class="button button-primary mobile-cta" href="#manifesto"
+        >{content.navbar.primaryCta}</a
+      >
     </div>
   </div>
 </header>
@@ -70,7 +83,9 @@ const { content } = Astro.props;
 <script is:inline>
   const toggle = document.querySelector("[data-nav-toggle]");
   const panel = document.querySelector("[data-nav-panel]");
-  const themeToggles = Array.from(document.querySelectorAll("[data-theme-toggle]"));
+  const themeToggles = Array.from(
+    document.querySelectorAll("[data-theme-toggle]"),
+  );
 
   const syncThemeToggleState = () => {
     const isDark = document.documentElement.dataset.theme === "dark";
@@ -78,7 +93,10 @@ const { content } = Astro.props;
     themeToggles.forEach((themeToggle) => {
       if (themeToggle instanceof HTMLButtonElement) {
         themeToggle.setAttribute("aria-pressed", String(isDark));
-        themeToggle.setAttribute("aria-label", isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
+        themeToggle.setAttribute(
+          "aria-label",
+          isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro",
+        );
       }
     });
   };

@@ -1,5 +1,6 @@
 ---
 import type { LandingContent } from "../content/landing";
+import AILayerSection from "./AILayerSection.astro";
 import AssistantSection from "./AssistantSection.astro";
 import ComparisonSection from "./ComparisonSection.astro";
 import FeaturesSection from "./FeaturesSection.astro";
@@ -29,6 +30,7 @@ const { content } = Astro.props;
     <FeaturesSection content={content.features} />
     <HowItWorksSection content={content.howItWorks} />
     <AssistantSection content={content.assistant} />
+    <AILayerSection content={content.aiLayer} />
     <ManifestoSection content={content.manifesto} />
     <ComparisonSection content={content.comparison} />
     <PreFooterBanner content={content.preFooterBanner} />

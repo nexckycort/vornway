@@ -219,8 +219,7 @@ export type LandingContent = {
   };
 };
 
-const figmaHref =
-  '#';
+const figmaHref = '#';
 
 const spanishContent: LandingContent = {
   layout: {
@@ -417,7 +416,12 @@ const spanishContent: LandingContent = {
     items: [
       { name: 'Viaje a Japon', current: 1500, target: 3000, emoji: 'JP' },
       { name: 'Eurotrip verano', current: 800, target: 1200, emoji: 'EU' },
-      { name: 'Escapada fin de semana', current: 280, target: 300, emoji: 'WK' },
+      {
+        name: 'Escapada fin de semana',
+        current: 280,
+        target: 300,
+        emoji: 'WK',
+      },
     ],
   },
   howItWorks: {
@@ -537,6 +541,11 @@ const spanishContent: LandingContent = {
         splitway: true,
         alternatives: 'Coordinacion manual',
       },
+      {
+        feature: 'Conexión con tu agente favorito',
+        splitway: true,
+        alternatives: false,
+      },
       { feature: 'Todo en uno', splitway: true, alternatives: false },
     ],
   },
@@ -547,17 +556,19 @@ const spanishContent: LandingContent = {
       'Vornway reune gastos, balances y metas compartidas en una experiencia simple para viajar con menos caos y mas control.',
   },
   waitlist: {
-    title: 'Se de los primeros en',
-    highlight: 'probar Vornway',
+    title: 'Estamos construyendo',
+    highlight: 'Vornway con calma',
     description:
-      'Estamos preparando los primeros accesos. Deja tu correo y te avisaremos antes que al resto cuando la aplicacion este lista para probarse.',
+      'Nos estamos tomando el tiempo necesario para crear un proyecto del que estemos orgullosos desde el día uno de lanzamiento. Seguramente vamos a demorar varios meses en terminarlo, pero si quieres que te avisemos cuando esté listo, únete a la lista de espera.',
     nameLabel: 'Nombre',
     namePlaceholder: 'Tu nombre',
     emailLabel: 'Correo',
     emailPlaceholder: 'tu@email.com',
     submitLabel: 'Unirme a la lista',
-    footnote: 'Sin spam. Solo avances importantes, acceso anticipado y lanzamiento.',
-    successMessage: 'Te sumaste a la lista. Seras de las primeras personas en enterarte.',
+    footnote:
+      'Sin spam. Solo avances importantes, acceso anticipado y lanzamiento.',
+    successMessage:
+      'Te sumaste a la lista. Seras de las primeras personas en enterarte.',
   },
   cta: {
     title: 'Vornway ya esta lista para',

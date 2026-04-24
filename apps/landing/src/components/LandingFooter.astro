@@ -9,46 +9,14 @@ const { content } = Astro.props;
 ---
 
 <footer class="site-footer">
-  <div class="shell footer-grid">
-    <div class="footer-brand">
-      <a class="brand-link" href="/" aria-label={content.brand.name}>
-        <span class="brand-badge">
-          <img src="/logo.webp" alt={content.brand.name} />
-        </span>
-        <span class="brand-copy">
-          <strong>{content.brand.name}</strong>
-        </span>
-      </a>
-
-      <p>{content.brand.tagline}</p>
-
-      <div class="social-links">
-        {
-          content.footer.social.map((link) => (
-            <a href={link.href} aria-label={link.label}>
-              {link.label.slice(0, 2)}
-            </a>
-          ))
-        }
-      </div>
-    </div>
-
-    {
-      content.footer.columns.map((column) => (
-        <div class="footer-column">
-          <h3>{column.title}</h3>
-          <div class="footer-links">
-            {column.links.map((link) => (
-              <a href={link.href}>{link.label}</a>
-            ))}
-          </div>
-        </div>
-      ))
-    }
-  </div>
-
-  <div class="shell footer-bottom">
-    <small>{content.footer.copyright}</small>
-    <small>{content.footer.signature}</small>
+  <div class="shell footer-minimal">
+    <a class="brand-link" href="/" aria-label={content.brand.name}>
+      <span class="brand-badge">
+        <img src="/logo.webp" alt={content.brand.name} />
+      </span>
+      <span class="brand-copy">
+        <strong>{content.brand.name}</strong>
+      </span>
+    </a>
   </div>
 </footer>

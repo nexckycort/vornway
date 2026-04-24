@@ -1,0 +1,54 @@
+---
+import type { LandingContent } from "../content/landing";
+
+export interface Props {
+  content: LandingContent["aiLayer"];
+}
+
+const { content } = Astro.props;
+---
+
+<section id={content.id} class="section section-muted ai-layer-section">
+  <div class="shell">
+    <div class="section-heading centered">
+      <span class="eyebrow static">{content.badge}</span>
+      <h2>
+        {content.title}
+        <span>{content.highlight}</span>
+      </h2>
+      <p>{content.description}</p>
+    </div>
+
+    <div class="ai-layer-showcase surface-card">
+      <div class="ai-layer-visual">
+        <div class="ai-layer-mascot-wrap">
+          <span class="ai-layer-halo" aria-hidden="true"></span>
+          <img
+            src="/illustrations/ai.webp"
+            alt="Mascota AI de Vornway"
+            class="ai-layer-mascot"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </div>
+
+      <div class="ai-layer-callout">
+        <span class="ai-layer-callout-label">Capa inteligente</span>
+        <strong>{content.callout}</strong>
+      </div>
+    </div>
+
+    <div class="ai-layer-grid">
+      {
+        content.points.map((point, index) => (
+          <article class="surface-card ai-layer-card">
+            <span class="ai-layer-point-index">{String(index + 1).padStart(2, "0")}</span>
+            <h3>{point.title}</h3>
+            <p>{point.description}</p>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>

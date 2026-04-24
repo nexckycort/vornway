@@ -4,12 +4,33 @@ import * as z from 'zod';
 
 import { db } from '~/infrastructure/database/connection';
 
+export const allowedLoginDomains = [
+  'gmail.com',
+  'outlook.com',
+  'outlook.es',
+  'hotmail.com',
+  'hotmail.es',
+  'yahoo.com',
+  'yahoo.es',
+  'icloud.com',
+  'live.com',
+  'msn.com',
+  'protonmail.com',
+  'proton.me',
+] as const;
+
+const allowedDomainSet = new Set<string>(allowedLoginDomains);
+
 const WaitlistCreateSchema = z.object({
   email: z
     .string()
     .trim()
     .max(255)
-    .transform((value) => value.toLowerCase()),
+    .transform((value) => value.toLowerCase())
+    .refine((email) => {
+      const domain = email.split('@')[1];
+      return typeof domain === 'string' && allowedDomainSet.has(domain);
+    }, 'Email domain not allowed'),
   name: z.string().trim().min(1).max(120).optional(),
 });
 

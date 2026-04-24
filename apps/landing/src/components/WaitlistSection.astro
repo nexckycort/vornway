@@ -82,8 +82,12 @@ const apiBaseUrl =
         throw new Error("Cannot fetch waitlist");
       }
 
-      const items = await response.json();
-      const total = Array.isArray(items) ? items.length : 0;
+      const data = await response.json();
+      const total = Array.isArray(data)
+        ? data.length
+        : typeof data?.count === "number"
+          ? data.count
+          : 0;
       waitlistCount.textContent = `${total} ${total === 1 ? "persona" : "personas"}`;
     } catch {
       waitlistCount.textContent = "Únete hoy";

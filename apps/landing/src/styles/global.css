@@ -5341,3 +5341,24 @@ body {
   height: 1.9rem;
   object-fit: contain;
 }
+
+.problem-section .problem-travel-visual {
+  margin: 0 auto 1.4rem;
+  width: min(100%, 32rem);
+  display: flex;
+  justify-content: center;
+}
+
+.problem-section .problem-travel-visual img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 22px 44px rgba(170, 45, 92, 0.2));
+}
+
+@media (max-width: 820px) {
+  .problem-section .problem-travel-visual {
+    width: min(100%, 24rem);
+    margin-bottom: 1.15rem;
+  }
+}

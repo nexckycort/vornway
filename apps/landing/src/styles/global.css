@@ -2468,16 +2468,18 @@ select {
 }
 
 .waitlist-form-head span {
-  color: var(--primary-strong);
-  font-size: 0.82rem;
+  color: var(--text);
+  font-size: 1.85rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  line-height: 1.05;
 }
 
 .waitlist-form-head strong {
-  font-size: 1.85rem;
-  letter-spacing: -0.04em;
+  color: var(--primary-strong);
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  line-height: 1.35;
+  text-transform: uppercase;
 }
 
 .waitlist-form label {
@@ -3689,10 +3691,10 @@ select {
 
 .waitlist-copy h2,
 .waitlist-contact strong,
-.waitlist-form-head strong,
+.waitlist-form-head span,
 :root.dark .waitlist-copy h2,
 :root.dark .waitlist-contact strong,
-:root.dark .waitlist-form-head strong {
+:root.dark .waitlist-form-head span {
   color: var(--text);
 }
 

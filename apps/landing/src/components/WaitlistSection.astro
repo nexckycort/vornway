@@ -26,8 +26,8 @@ const apiBaseUrl =
 
     <form class="waitlist-form" data-waitlist-form data-api-base={apiBaseUrl}>
       <div class="waitlist-form-head">
-        <span>Lista de espera</span>
         <strong data-waitlist-count>Cargando...</strong>
+        <span>Lista de espera</span>
       </div>
 
       <label>
@@ -88,7 +88,7 @@ const apiBaseUrl =
         : typeof data?.count === "number"
           ? data.count
           : 0;
-      waitlistCount.textContent = `${total} ${total === 1 ? "persona" : "personas"}`;
+      waitlistCount.textContent = `${total} ${total === 1 ? "PERSONA ESTA" : "PERSONAS ESTAN"} CONFIANDO EN NOSOTROS`;
     } catch {
       waitlistCount.textContent = "Únete hoy";
     }

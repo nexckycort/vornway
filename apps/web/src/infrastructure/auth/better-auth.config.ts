@@ -33,8 +33,7 @@ const authConfig = {
         console.log(data.email, data.otp);
         if (serverEnv.NODE_ENV === 'production') {
           await resend.emails.send({
-            // TODO: switch to new email service
-            from: 'noreply@flygens.com',
+            from: 'security@updates.vornway.com',
             to: data.email,
             subject: 'Código de verificación',
             html: `

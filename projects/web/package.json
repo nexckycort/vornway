@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "build": "rsbuild build",
+    "clean": "rm -rf node_modules && rm -rf dist",
+    "check": "biome check --write",
     "dev": "rsbuild --open",
+    "deploy": "wrangler pages deploy --branch=main",
+    "typecheck": "tsgo --noEmit",
     "preview": "rsbuild preview"
   },
   "dependencies": {
@@ -13,10 +17,13 @@
     "react-dom": "^19.2.5"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.13",
     "@rsbuild/core": "^2.0.0",
     "@rsbuild/plugin-react": "^2.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "typescript": "^6.0.3"
+    "@typescript/native-preview": "latest",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.86.0"
   }
 }

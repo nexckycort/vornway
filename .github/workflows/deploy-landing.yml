@@ -1,4 +1,4 @@
-name: Deploy App
+name: Deploy Landing
 
 on:
   workflow_dispatch: # Manual trigger
@@ -7,7 +7,7 @@ on:
       - main
     paths:
       - "apps/landing/**"
-      - ".github/workflows/deploy.yml"
+      - ".github/workflows/deploy-landing.yml"
 
 env:
   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

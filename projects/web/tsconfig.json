@@ -6,6 +6,9 @@
     "noEmit": true,
     "skipLibCheck": true,
     "useDefineForClassFields": true,
+    "paths": {
+      "#/*": ["./src/*"]
+    },
 
     /* modules */
     "moduleDetection": "force",
@@ -13,6 +16,9 @@
     "verbatimModuleSyntax": true,
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
+
+    "strict": true,
+    "strictNullChecks": true,
 
     /* type checking */
     "noUnusedLocals": true,

@@ -25,5 +25,6 @@
   },
   "[css]": {
     "editor.defaultFormatter": "biomejs.biome"
-  }
+  },
+  "git.addAICoAuthor": "off"
 }

@@ -1,9 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useEffect } from 'react';
+import { useState } from 'react';
 
 import { Button } from '#/components/ui/button';
 import { Input } from '#/components/ui/input';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '#/components/ui/input-otp';
 import { VornwayLogo } from '#/components/vornway-logo';
+import { useAuth } from '#/contexts/auth/use-auth';
 import { OnboardingCarousel } from '#/routes/_public/login/-components/onboarding-carousel';
 import { useLogin } from '#/routes/_public/login/-hooks/use-login';
 
@@ -12,6 +15,10 @@ export const Route = createFileRoute('/_public/login/')({
 });
 
 function RouteComponent() {
+  const navigate = useNavigate();
+  const auth = useAuth();
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   const {
     step,
     email,
@@ -27,7 +34,6 @@ function RouteComponent() {
     setOtp,
     submitEmail,
     submitName,
-    submitOtp,
     resendOtp,
     goBackToEmail,
   } = useLogin();
@@ -36,6 +42,38 @@ function RouteComponent() {
   const isNameStep = step === 'name';
   const isOtpStep = step === 'otp';
   const isDoneStep = step === 'done';
+
+  useEffect(() => {
+    if (!auth.isAuthenticated) return;
+    navigate({ to: '/' });
+  }, [auth.isAuthenticated, navigate]);
+
+  async function submitOtpWithAuth() {
+    const normalizedOtp = otp.replace(/\s+/g, '').trim();
+    if (!normalizedOtp) {
+      setSyncError('Ingresa el código OTP.');
+      return;
+    }
+
+    setSyncError(null);
+    setIsAuthSubmitting(true);
+
+    try {
+      await auth.login(email.trim().toLowerCase(), normalizedOtp);
+    } catch (rawError) {
+      const code =
+        rawError instanceof Error ? rawError.message : String(rawError ?? '');
+
+      if (code === 'INVALID_OTP') {
+        setOtp('');
+        setSyncError('Código inválido. Ingresa el OTP nuevamente.');
+      } else {
+        setSyncError('No se pudo iniciar sesión. Intenta de nuevo.');
+      }
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  }
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col bg-background">
@@ -120,11 +158,11 @@ function RouteComponent() {
                 </div>
 
                 <Button
-                  onClick={submitOtp}
-                  disabled={!canSubmitOtp}
+                  onClick={submitOtpWithAuth}
+                  disabled={!canSubmitOtp || isAuthSubmitting}
                   className="h-12 w-full rounded-lg bg-primary text-base font-medium text-primary-foreground hover:bg-primary/90"
                 >
-                  {isSubmitting ? 'Verificando...' : 'Verificar código'}
+                  {isAuthSubmitting ? 'Verificando...' : 'Verificar código'}
                 </Button>
 
                 <div className="flex items-center justify-between text-sm">
@@ -152,8 +190,10 @@ function RouteComponent() {
               </div>
             )}
 
-            {error && (
-              <p className="text-center text-sm font-medium text-destructive">{error}</p>
+            {(error || syncError) && (
+              <p className="text-center text-sm font-medium text-destructive">
+                {error || syncError}
+              </p>
             )}
           </div>
 

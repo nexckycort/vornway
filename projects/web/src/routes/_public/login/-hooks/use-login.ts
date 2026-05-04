@@ -153,6 +153,12 @@ export function useLogin() {
     setError(null);
   }
 
+  function goBackToOtp() {
+    setStep('otp');
+    setOtp('');
+    setError(null);
+  }
+
   return {
     step,
     email,
@@ -171,5 +177,6 @@ export function useLogin() {
     submitOtp,
     resendOtp,
     goBackToEmail,
+    goBackToOtp,
   };
 }

@@ -1,17 +1,41 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
 
 import { Button } from '#/components/ui/button';
 import { Input } from '#/components/ui/input';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '#/components/ui/input-otp';
 import { VornwayLogo } from '#/components/vornway-logo';
 import { OnboardingCarousel } from '#/routes/_public/login/-components/onboarding-carousel';
+import { useLogin } from '#/routes/_public/login/-hooks/use-login';
 
 export const Route = createFileRoute('/_public/login/')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const [name, setName] = useState('');
+  const {
+    step,
+    email,
+    name,
+    otp,
+    error,
+    isSubmitting,
+    canSubmitEmail,
+    canSubmitName,
+    canSubmitOtp,
+    setEmail,
+    setName,
+    setOtp,
+    submitEmail,
+    submitName,
+    submitOtp,
+    resendOtp,
+    goBackToEmail,
+  } = useLogin();
+
+  const isEmailStep = step === 'email';
+  const isNameStep = step === 'name';
+  const isOtpStep = step === 'otp';
+  const isDoneStep = step === 'done';
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col bg-background">
@@ -19,45 +43,132 @@ function RouteComponent() {
         <OnboardingCarousel />
       </div>
 
-      {/* Form section */}
       <div className="relative z-10 -mt-14 flex-1 rounded-t-[28px] bg-background">
         <div className="flex flex-col items-center px-6 pb-6 pt-4">
-          {/* Logo and brand */}
           <div className="flex items-center gap-2">
             <VornwayLogo className="h-7 w-7" />
-            <span className="text-lg font-semibold text-foreground">
-              Vornway
-            </span>
+            <span className="text-lg font-semibold text-foreground">Vornway</span>
           </div>
 
-          {/* Form */}
           <div className="mt-4 flex w-full flex-col gap-4">
-            <Input
-              type="text"
-              placeholder="Tu nombre"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="h-12 rounded-lg border-border bg-background px-4 text-base placeholder:text-muted-foreground"
-            />
+            {isEmailStep && (
+              <>
+                <Input
+                  type="email"
+                  placeholder="Tu correo"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-12 rounded-lg border-border bg-background px-4 text-base placeholder:text-muted-foreground"
+                />
 
-            <Button className="h-12 w-full rounded-lg bg-primary text-base font-medium text-primary-foreground hover:bg-primary/90">
-              Continuar
-            </Button>
+                <Button
+                  onClick={submitEmail}
+                  disabled={!canSubmitEmail}
+                  className="h-12 w-full rounded-lg bg-primary text-base font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  {isSubmitting ? 'Enviando...' : 'Continuar'}
+                </Button>
+              </>
+            )}
+
+            {isNameStep && (
+              <>
+                <p className="text-center text-sm text-muted-foreground">
+                  No encontramos tu cuenta. Ingresa tu nombre para crearla y enviarte el código.
+                </p>
+
+                <Input
+                  type="text"
+                  placeholder="Tu nombre"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-12 rounded-lg border-border bg-background px-4 text-base placeholder:text-muted-foreground"
+                />
+
+                <Button
+                  onClick={submitName}
+                  disabled={!canSubmitName}
+                  className="h-12 w-full rounded-lg bg-primary text-base font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  {isSubmitting ? 'Enviando...' : 'Continuar'}
+                </Button>
+              </>
+            )}
+
+            {isOtpStep && (
+              <>
+                <p className="text-center text-sm text-muted-foreground">
+                  Ingresa el código enviado a <span className="font-medium text-foreground">{email}</span>
+                </p>
+
+                <div className="mx-auto">
+                  <InputOTP
+                    maxLength={6}
+                    value={otp}
+                    onChange={setOtp}
+                    containerClassName="justify-center"
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+
+                <Button
+                  onClick={submitOtp}
+                  disabled={!canSubmitOtp}
+                  className="h-12 w-full rounded-lg bg-primary text-base font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  {isSubmitting ? 'Verificando...' : 'Verificar código'}
+                </Button>
+
+                <div className="flex items-center justify-between text-sm">
+                  <button
+                    type="button"
+                    onClick={goBackToEmail}
+                    className="font-medium text-muted-foreground hover:underline"
+                  >
+                    Cambiar correo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resendOtp}
+                    className="font-medium text-foreground hover:underline"
+                  >
+                    Reenviar código
+                  </button>
+                </div>
+              </>
+            )}
+
+            {isDoneStep && (
+              <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+                Inicio de sesión completado.
+              </div>
+            )}
+
+            {error && (
+              <p className="text-center text-sm font-medium text-destructive">{error}</p>
+            )}
           </div>
 
-          {/* Divider */}
           <div className="my-4 flex w-full items-center gap-3">
             <div className="h-px flex-1 bg-border" />
-            <span className="text-xs text-muted-foreground">
-              o continuar con
-            </span>
+            <span className="text-xs text-muted-foreground">o continuar con</span>
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Google button */}
           <Button
             variant="outline"
             className="h-12 w-full rounded-lg border-border text-base font-medium"
+            onClick={() => {
+              window.location.href = '/api/auth/sign-in/social?provider=google';
+            }}
           >
             <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
               <path
@@ -79,14 +190,6 @@ function RouteComponent() {
             </svg>
             Continuar con Google
           </Button>
-
-          {/* Sign in link */}
-          <p className="mt-5 text-sm text-muted-foreground">
-            ¿Ya tienes una cuenta?{' '}
-            <button className="font-semibold text-foreground hover:underline">
-              Iniciar Sesión
-            </button>
-          </p>
         </div>
       </div>
     </main>

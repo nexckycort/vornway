@@ -2,6 +2,7 @@
   "name": "@vornway/api",
   "scripts": {
     "postinstall": "bun db:generate",
+    "build:rpc": "tsc -p tsconfig.rpc.json",
     "dev": "bun run --env-file=.env --hot src/index.ts",
     "check": "biome check --write",
     "clean": "rm -rf node_modules",

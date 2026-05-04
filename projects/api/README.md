@@ -27,3 +27,34 @@ bun run module:new <module-name>
 ```
 
 After creating it, register it in `src/app/modules.ts`.
+
+## Public routes and RPC type generation
+
+`src/hc.ts` exports `PublicRoutes` and the generated declaration in `dist/src/hc.d.ts` is used by HTTP clients.
+
+For this to work reliably, public routers must follow this pattern:
+
+1. Use a chained `Hono` declaration:
+```ts
+const login = new Hono()
+  .post(...)
+  .post(...)
+  .get(...)
+```
+
+2. Export that chained router as default:
+```ts
+export default login
+```
+
+3. Mount it from `src/routes/public/routes.ts`:
+```ts
+const app = new Hono()
+  .basePath('/api')
+  .route('/login', loginRoutes)
+```
+
+Important:
+- Avoid creating the same public route in more than one place.
+- Keep public HTTP endpoints under `src/routes/public/*` so `PublicRoutes` stays stable.
+- If route typing is broken in clients, check that the router is declared with the chained style above.

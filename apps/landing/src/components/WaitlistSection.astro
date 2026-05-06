@@ -70,7 +70,7 @@ const apiBaseUrl =
   const waitlistError = document.querySelector("[data-waitlist-error]");
   const waitlistCount = document.querySelector("[data-waitlist-count]");
   const apiBase = waitlistForm?.dataset.apiBase ?? "https://api.vornway.com";
-  const waitlistEndpoint = `${apiBase}/api/waitlists`;
+  const waitlistEndpoint = `${apiBase}/api/waitlist`;
 
   const updateWaitlistCount = async () => {
     if (!waitlistCount) return;

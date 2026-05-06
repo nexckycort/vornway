@@ -1,11 +1,11 @@
 {
   "name": "@vornway/api",
   "scripts": {
-    "postinstall": "bun db:generate",
+    "postinstall": "bun db:generate && bun build:rpc",
     "build:rpc": "tsc -p tsconfig.rpc.json",
     "dev": "bun run --env-file=.env --hot src/index.ts",
     "check": "biome check --write",
-    "clean": "rm -rf node_modules",
+    "clean": "rm -rf node_modules && rm -rf dist",
     "db:generate": "DATABASE_URL=dummy prisma generate",
     "db:migrate:dev": "prisma migrate dev --name init",
     "db:migrate": "prisma migrate dev",
@@ -13,6 +13,14 @@
     "typecheck": "tsgo --noEmit",
     "test": "bun test",
     "module:new": "bash scripts/create-module.sh"
+  },
+  "exports": {
+    "./hc": {
+      "import": {
+        "types": "./dist/hc.d.ts",
+        "default": "./dist/hc.js"
+      }
+    }
   },
   "dependencies": {
     "@hono/mcp": "^0.2.5",

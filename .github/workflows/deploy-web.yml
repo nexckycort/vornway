@@ -28,10 +28,10 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install packages
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Build
-        run: bun run --filter @vornway/api build:rpc && bun run --filter @vornway/web build
+        run: bun run --filter @vornway/web build
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:

@@ -1,8 +1,7 @@
 import { API_URL } from '#/config/env';
+import { createPublicClient } from '@vornway/api/hc';
 
-import { createPublicClient } from '../../../api/dist/hc';
-
-export type { InferRequestType, InferResponseType } from '../../../api/dist/hc';
+export type { InferRequestType, InferResponseType } from '@vornway/api/hc';
 
 export const publicClient = createPublicClient(API_URL, {
   fetch: ((input, init) => {

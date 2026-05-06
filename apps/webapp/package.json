@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
+    "@vornway/api": "workspace:*",
     "@tanstack/react-query": "^5.100.9",
     "@tanstack/react-router": "^1.168.25",
     "better-auth": "^1.6.9",

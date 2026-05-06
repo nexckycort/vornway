@@ -26,11 +26,17 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
       - name: Install packages
         run: bun install --frozen-lockfile
 
       - name: Build
         run: bun run --filter @vornway/web build
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:

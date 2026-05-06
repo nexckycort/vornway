@@ -18,7 +18,11 @@ export function createHttpApp(): Hono {
 
   app.use(
     cors({
-      origin: [env.BETTER_AUTH_URL],
+      origin: [
+        env.BETTER_AUTH_URL,
+        'https://vornway.com',
+        'https://www.vornway.com',
+      ],
       exposeHeaders: ['Content-Length'],
       maxAge: 600,
       credentials: true,

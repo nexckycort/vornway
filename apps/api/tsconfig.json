@@ -4,6 +4,7 @@
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
     "types": ["bun"],
+    "skipLibCheck": true,
     "paths": {
       "~/*": ["./src/*"]
     }

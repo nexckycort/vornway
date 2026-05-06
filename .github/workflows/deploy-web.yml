@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - "projects/web/**"
+      - "apps/webapp/**"
       - ".github/workflows/deploy-web.yml"
 
 env:
@@ -28,14 +28,14 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install packages
-        run: cd projects/web && bun install
+        run: bun install
 
       - name: Build
-        run: cd projects/web && bun run build
+        run: bun run --filter @vornway/api build:rpc && bun run --filter @vornway/web build
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
-          workingDirectory: "projects/web"
+          workingDirectory: "apps/webapp"
           apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy

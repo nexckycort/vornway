@@ -5,31 +5,30 @@ WORKDIR /app
 # ---------------- install deps ----------------
 FROM base AS install
 
-RUN mkdir -p /temp/dev
+# Copy root workspace files + all workspace package.json
+RUN mkdir -p /temp/dev/apps/api
 COPY package.json bun.lock /temp/dev/
-COPY prisma.config.ts /temp/dev/
-COPY db /temp/dev/db
+COPY apps/api/package.json /temp/dev/apps/api/package.json
 
-
-RUN cd /temp/dev && bun install --frozen-lockfile
+RUN cd /temp/dev && bun install --ignore-scripts
 
 # ---------------- build ----------------
 FROM base AS build
 
 COPY --from=install /temp/dev/node_modules node_modules
+COPY --from=install /temp/dev/apps/api/node_modules apps/api/node_modules
 
-# Copy full source
 COPY . .
 
-# Prisma client is gitignored; generate before bundling (same as local postinstall)
+WORKDIR /app/apps/api
 RUN bun run db:generate && bun run build
 
-#
+# ---------------- runtime ----------------
 FROM gcr.io/distroless/base
 
 WORKDIR /app
 
-COPY --from=build /app/dist/api api
+COPY --from=build /app/apps/api/dist/api api
 
 CMD ["./api"]
 

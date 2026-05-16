@@ -30,6 +30,10 @@ function summarizeGroup(
       type: group.type,
       description: group.description,
       createdAt: group.createdAt,
+      members: group.GroupMember.map((member) => ({
+        id: member.id,
+        name: member.name,
+      })),
       currentUser: null,
       hasExpenses: group.Expense.length > 0,
       participantBalances: [],
@@ -96,6 +100,10 @@ function summarizeGroup(
     type: group.type,
     description: group.description,
     createdAt: group.createdAt,
+    members: group.GroupMember.map((member) => ({
+      id: member.id,
+      name: member.name,
+    })),
     currentUser: {
       memberId: currentMember.id,
       name: currentMember.name,

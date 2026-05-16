@@ -13,6 +13,10 @@ export type HomeGroupSummary = {
   type: string;
   description: string | null;
   createdAt: Date;
+  members: Array<{
+    id: string;
+    name: string;
+  }>;
   currentUser: {
     memberId: string;
     name: string;

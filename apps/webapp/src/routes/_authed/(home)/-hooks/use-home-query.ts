@@ -76,10 +76,13 @@ const homeActions: HomeAction[] = [
 
 function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
   const trips: Trip[] = apiData.groups.map((group) => {
-    const names = [
-      ...(group.currentUser ? [group.currentUser.name] : []),
-      ...group.participantBalances.map((item) => item.memberName),
-    ];
+    const names =
+      group.members.length > 0
+        ? group.members.map((member) => member.name)
+        : [
+            ...(group.currentUser ? [group.currentUser.name] : []),
+            ...group.participantBalances.map((item) => item.memberName),
+          ];
     const uniqueNames = Array.from(new Set(names));
     const avatars = uniqueNames.slice(0, 2).map(toInitials);
     const extraPeople = Math.max(0, uniqueNames.length - avatars.length);

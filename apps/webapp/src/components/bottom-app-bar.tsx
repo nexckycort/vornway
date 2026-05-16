@@ -39,8 +39,8 @@ export function BottomAppBar() {
   });
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[412px] rounded-t-[28px] border-t border-border bg-white px-5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-1px_2.3px_rgba(203,203,203,0.3)]">
-      <div className="flex items-end justify-between">
+    <nav className="pointer-events-none fixed inset-x-0 bottom-[calc(0.85rem+env(safe-area-inset-bottom))] z-50 mx-auto w-[calc(100%-1.5rem)] max-w-[388px] rounded-[24px] border border-white/60 bg-white/90 px-4 pb-3 pt-2.5 shadow-[0_18px_42px_rgba(15,23,42,0.16)] backdrop-blur-xl">
+      <div className="pointer-events-auto flex items-end justify-between">
         {items.map((item) => {
           const Icon = navIcons[item.icon];
           const active =
@@ -54,7 +54,7 @@ export function BottomAppBar() {
                 void navigate({ to: item.to });
               }}
               className={cn(
-                'flex w-[84px] flex-col items-center justify-end gap-0.5 rounded-xl px-1.5 text-xs font-medium leading-4 text-[#a7a7a7]',
+                'flex w-[78px] flex-col items-center justify-end gap-0.5 rounded-2xl px-1.5 py-1 text-[11px] font-medium leading-4 text-[#94a3b8] transition-colors',
                 active && 'text-primary',
               )}
             >
@@ -64,8 +64,8 @@ export function BottomAppBar() {
           );
         })}
       </div>
-      <div className="mt-3 flex justify-center">
-        <span className="h-[5px] w-[134px] rounded-full bg-[#a7a7a7]" />
+      <div className="mt-2.5 flex justify-center">
+        <span className="h-[4px] w-[118px] rounded-full bg-[#cbd5e1]" />
       </div>
     </nav>
   );

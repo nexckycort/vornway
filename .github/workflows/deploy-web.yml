@@ -32,7 +32,7 @@ jobs:
           node-version: 24
 
       - name: Install packages
-        run: bun install --frozen-lockfile
+        run: bun install
 
       - name: Build
         run: bun run --filter @vornway/web build

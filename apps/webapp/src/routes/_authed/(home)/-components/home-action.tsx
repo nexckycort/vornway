@@ -1,5 +1,6 @@
 import { cn } from '#/lib/utils';
 import type { HomeAction as HomeActionData } from '#/routes/_authed/(home)/-hooks/use-home-query';
+import { Link } from '@tanstack/react-router';
 import { homeIcons } from './home-icons';
 
 type HomeActionProps = {
@@ -9,17 +10,17 @@ type HomeActionProps = {
 export function HomeAction({ action }: HomeActionProps) {
   const Icon = homeIcons[action.icon];
   const isPrimary = action.variant === 'primary';
+  const to = action.id === 'create-group' ? '/groups/new' : null;
 
-  return (
-    <button
-      type="button"
-      className={cn(
-        'flex min-h-[118px] flex-col items-start justify-between rounded-[24px] p-4 text-left transition-transform active:translate-y-px',
-        isPrimary
-          ? 'bg-primary text-primary-foreground shadow-[0_8px_10px_rgba(222,3,77,0.12)]'
-          : 'border border-border bg-white text-foreground shadow-[0_10px_20px_rgba(0,0,0,0.04)]',
-      )}
-    >
+  const className = cn(
+    'flex min-h-[118px] flex-col items-start justify-between rounded-[24px] p-4 text-left transition-transform active:translate-y-px',
+    isPrimary
+      ? 'bg-primary text-primary-foreground shadow-[0_8px_10px_rgba(222,3,77,0.12)]'
+      : 'border border-border bg-white text-foreground shadow-[0_10px_20px_rgba(0,0,0,0.04)]',
+  );
+
+  const content = (
+    <>
       <span
         className={cn(
           'flex size-11 items-center justify-center rounded-2xl',
@@ -31,6 +32,20 @@ export function HomeAction({ action }: HomeActionProps) {
       <span className="max-w-[120px] text-sm font-semibold leading-5">
         {action.label}
       </span>
-    </button>
+    </>
+  );
+
+  if (!to) {
+    return (
+      <button type="button" className={className}>
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link to={to} className={className}>
+      {content}
+    </Link>
   );
 }

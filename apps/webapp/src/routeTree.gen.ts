@@ -16,6 +16,7 @@ import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile
 import { Route as AuthedGroupsIndexRouteImport } from './routes/_authed/groups/index'
 import { Route as AuthedGoalsIndexRouteImport } from './routes/_authed/goals/index'
 import { Route as AuthedhomeIndexRouteImport } from './routes/_authed/(home)/index'
+import { Route as AuthedGroupsNewRouteImport } from './routes/_authed/groups/new'
 
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
@@ -50,9 +51,15 @@ const AuthedhomeIndexRoute = AuthedhomeIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedGroupsNewRoute = AuthedGroupsNewRouteImport.update({
+  id: '/groups/new',
+  path: '/groups/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedhomeIndexRoute
+  '/groups/new': typeof AuthedGroupsNewRoute
   '/goals/': typeof AuthedGoalsIndexRoute
   '/groups/': typeof AuthedGroupsIndexRoute
   '/profile/': typeof AuthedProfileIndexRoute
@@ -60,6 +67,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AuthedhomeIndexRoute
+  '/groups/new': typeof AuthedGroupsNewRoute
   '/goals': typeof AuthedGoalsIndexRoute
   '/groups': typeof AuthedGroupsIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
+  '/_authed/groups/new': typeof AuthedGroupsNewRoute
   '/_authed/(home)/': typeof AuthedhomeIndexRoute
   '/_authed/goals/': typeof AuthedGoalsIndexRoute
   '/_authed/groups/': typeof AuthedGroupsIndexRoute
@@ -77,13 +86,20 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/goals/' | '/groups/' | '/profile/' | '/login/'
+  fullPaths:
+    | '/'
+    | '/groups/new'
+    | '/goals/'
+    | '/groups/'
+    | '/profile/'
+    | '/login/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/goals' | '/groups' | '/profile' | '/login'
+  to: '/' | '/groups/new' | '/goals' | '/groups' | '/profile' | '/login'
   id:
     | '__root__'
     | '/_authed'
     | '/_public'
+    | '/_authed/groups/new'
     | '/_authed/(home)/'
     | '/_authed/goals/'
     | '/_authed/groups/'
@@ -147,10 +163,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedhomeIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/groups/new': {
+      id: '/_authed/groups/new'
+      path: '/groups/new'
+      fullPath: '/groups/new'
+      preLoaderRoute: typeof AuthedGroupsNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
+  AuthedGroupsNewRoute: typeof AuthedGroupsNewRoute
   AuthedhomeIndexRoute: typeof AuthedhomeIndexRoute
   AuthedGoalsIndexRoute: typeof AuthedGoalsIndexRoute
   AuthedGroupsIndexRoute: typeof AuthedGroupsIndexRoute
@@ -158,6 +182,7 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedGroupsNewRoute: AuthedGroupsNewRoute,
   AuthedhomeIndexRoute: AuthedhomeIndexRoute,
   AuthedGoalsIndexRoute: AuthedGoalsIndexRoute,
   AuthedGroupsIndexRoute: AuthedGroupsIndexRoute,

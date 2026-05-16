@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { Link, createFileRoute } from '@tanstack/react-router';
 import { useEffect, useMemo, useRef } from 'react';
 import { useGroupsInfiniteQuery } from '#/routes/_authed/groups/-hooks/use-groups-infinite-query';
 
@@ -42,13 +42,19 @@ function RouteComponent() {
     <main className="min-h-screen bg-[#efefef] text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa] px-4 pb-10 pt-6">
         <header className="mb-5">
-          <h1 className="text-2xl font-semibold leading-8 text-[#0f172a]">
-            Mis grupos
-          </h1>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <h1 className="text-2xl font-semibold leading-8 text-[#0f172a]">
+              Mis grupos
+            </h1>
+            <Link
+              to="/groups/new"
+              className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            >
+              Crear grupo
+            </Link>
+          </div>
           <p className="text-sm text-[#64748b]">
-            {groupsQuery.isLoading
-              ? 'Cargando grupos...'
-              : `${total} grupos en total`}
+            {groupsQuery.isLoading ? 'Cargando grupos...' : `${total} grupos en total`}
           </p>
         </header>
 

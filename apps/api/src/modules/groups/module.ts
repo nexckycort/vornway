@@ -1,6 +1,6 @@
 import type { ApiModule } from '../../app/module-contract';
 import { registerGroupsTools } from './mcp';
-import { createGroupsRouter } from './routes';
+import groupsRoutes from '~/routes/authed/groups/routes';
 import { createGroupsService } from './service';
 
 export function createGroupsModule(): ApiModule {
@@ -9,7 +9,7 @@ export function createGroupsModule(): ApiModule {
   return {
     name: 'groups',
     mountHttp: (app) => {
-      app.route('/api/groups', createGroupsRouter(service));
+      app.route('/api/groups', groupsRoutes);
     },
     mountMcp: (server, auth) => {
       registerGroupsTools(server, service, auth);

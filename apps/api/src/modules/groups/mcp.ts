@@ -3,32 +3,9 @@ import type { McpAuthContext } from '../../app/module-contract';
 import type { GroupsService } from './service';
 
 export function registerGroupsTools(
-  server: McpServer,
-  service: GroupsService,
-  auth: McpAuthContext,
+  _server: McpServer,
+  _service: GroupsService,
+  _auth: McpAuthContext,
 ): void {
-  server.registerTool(
-    'groups_health',
-    {
-      title: 'Groups Health',
-      description: 'Healthcheck del modulo groups',
-      inputSchema: {},
-    },
-    async () => {
-      const health = await service.getHealth();
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({ ...health, userId: auth.userId }),
-          },
-        ],
-        structuredContent: {
-          ...health,
-          userId: auth.userId,
-        },
-      };
-    },
-  );
+  // Intencionalmente sin tools por ahora.
 }

@@ -110,7 +110,7 @@ function RouteComponent() {
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa] px-4 pb-28 pt-8">
+      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa] px-4 pb-0 pt-8">
         <header className="mb-6">
           <button
             type="button"
@@ -194,25 +194,27 @@ function RouteComponent() {
             </div>
           ) : null}
 
-          <div className="mt-auto grid grid-cols-2 gap-3 pt-6">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-12 rounded-2xl"
-              onClick={handleCreate}
-              disabled={isSubmitting}
-            >
-              Omitir
-            </Button>
-            <Button
-              type="button"
-              className="h-12 rounded-2xl"
-              onClick={handleCreate}
-              disabled={isSubmitting}
-            >
-              <PlusCircle data-icon="inline-start" />
-              {isSubmitting ? 'Creando...' : 'Crear grupo'}
-            </Button>
+          <div className="-mx-4 mt-auto border-t border-[#e2e8f0] bg-[#fafafa] px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-full"
+                onClick={handleCreate}
+                disabled={isSubmitting}
+              >
+                Omitir
+              </Button>
+              <Button
+                type="button"
+                className="h-11 rounded-full"
+                onClick={handleCreate}
+                disabled={isSubmitting}
+              >
+                <PlusCircle data-icon="inline-start" />
+                {isSubmitting ? 'Creando...' : 'Crear grupo'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

@@ -45,7 +45,7 @@ function RouteComponent() {
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa] px-4 pb-28 pt-8">
+      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa] px-4 pb-0 pt-8">
         <header className="mb-6">
           <button
             type="button"
@@ -104,11 +104,11 @@ function RouteComponent() {
             />
           </label>
 
-          <div className="mt-auto pt-4">
+          <div className="-mx-4 mt-auto border-t border-[#e2e8f0] bg-[#fafafa] px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
             <Button
               type="submit"
               size="lg"
-              className="h-12 w-full rounded-2xl"
+              className="h-11 w-full rounded-full"
               disabled={!isValid}
             >
               Continuar

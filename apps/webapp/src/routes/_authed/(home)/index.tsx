@@ -8,7 +8,7 @@ import { SavingGoalCard } from '#/routes/_authed/(home)/-components/saving-goal-
 import { TripCard } from '#/routes/_authed/(home)/-components/trip-card';
 import { useHomeQuery } from '#/routes/_authed/(home)/-hooks/use-home-query';
 
-export const Route = createFileRoute('/_authed/')({
+export const Route = createFileRoute('/_authed/(home)/')({
   component: RouteComponent,
 });
 
@@ -20,17 +20,8 @@ function RouteComponent() {
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
-      <div className="relative mx-auto flex min-h-screen w-full max-w-[412px] flex-col overflow-hidden rounded-[30px] bg-[#fafafa] shadow-[0_24px_80px_rgba(0,0,0,0.12)]">
-        <div className="flex h-[52px] shrink-0 items-end justify-between px-6 py-2.5 text-sm font-medium">
-          <span>9:30</span>
-          <div className="flex items-center gap-1.5" aria-hidden="true">
-            <span className="size-[17px] rounded-full bg-muted" />
-            <span className="h-[17px] w-2.5 rounded-sm bg-foreground" />
-            <span className="h-[15px] w-2 rounded-sm border border-foreground bg-foreground" />
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 pb-32 pt-2">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa]">
+        <div className="flex-1 overflow-y-auto px-4 pb-32 pt-6">
           <header className="flex items-center justify-between">
             <div>
               <h1 className="text-xl leading-7">

@@ -11,11 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AuthedRouteImport } from './routes/_authed'
-import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as PublicLoginIndexRouteImport } from './routes/_public/login/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
 import { Route as AuthedGroupsIndexRouteImport } from './routes/_authed/groups/index'
 import { Route as AuthedGoalsIndexRouteImport } from './routes/_authed/goals/index'
+import { Route as AuthedhomeIndexRouteImport } from './routes/_authed/(home)/index'
 
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
@@ -24,11 +24,6 @@ const PublicRoute = PublicRouteImport.update({
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthedIndexRoute = AuthedIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthedRoute,
 } as any)
 const PublicLoginIndexRoute = PublicLoginIndexRouteImport.update({
   id: '/login/',
@@ -50,16 +45,21 @@ const AuthedGoalsIndexRoute = AuthedGoalsIndexRouteImport.update({
   path: '/goals/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedhomeIndexRoute = AuthedhomeIndexRouteImport.update({
+  id: '/(home)/',
+  path: '/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthedIndexRoute
+  '/': typeof AuthedhomeIndexRoute
   '/goals/': typeof AuthedGoalsIndexRoute
   '/groups/': typeof AuthedGroupsIndexRoute
   '/profile/': typeof AuthedProfileIndexRoute
   '/login/': typeof PublicLoginIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof AuthedIndexRoute
+  '/': typeof AuthedhomeIndexRoute
   '/goals': typeof AuthedGoalsIndexRoute
   '/groups': typeof AuthedGroupsIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
@@ -69,7 +69,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
-  '/_authed/': typeof AuthedIndexRoute
+  '/_authed/(home)/': typeof AuthedhomeIndexRoute
   '/_authed/goals/': typeof AuthedGoalsIndexRoute
   '/_authed/groups/': typeof AuthedGroupsIndexRoute
   '/_authed/profile/': typeof AuthedProfileIndexRoute
@@ -84,7 +84,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/_public'
-    | '/_authed/'
+    | '/_authed/(home)/'
     | '/_authed/goals/'
     | '/_authed/groups/'
     | '/_authed/profile/'
@@ -111,13 +111,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authed/': {
-      id: '/_authed/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof AuthedIndexRouteImport
-      parentRoute: typeof AuthedRoute
     }
     '/_public/login/': {
       id: '/_public/login/'
@@ -147,18 +140,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedGoalsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/(home)/': {
+      id: '/_authed/(home)/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedhomeIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
-  AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedhomeIndexRoute: typeof AuthedhomeIndexRoute
   AuthedGoalsIndexRoute: typeof AuthedGoalsIndexRoute
   AuthedGroupsIndexRoute: typeof AuthedGroupsIndexRoute
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
-  AuthedIndexRoute: AuthedIndexRoute,
+  AuthedhomeIndexRoute: AuthedhomeIndexRoute,
   AuthedGoalsIndexRoute: AuthedGoalsIndexRoute,
   AuthedGroupsIndexRoute: AuthedGroupsIndexRoute,
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,

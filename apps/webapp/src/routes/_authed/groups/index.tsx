@@ -76,19 +76,21 @@ function RouteComponent() {
               key={group.id}
               className="rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm"
             >
-              <div className="mb-2 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="truncate text-base font-semibold text-[#0f172a]">
-                    {group.name}
-                  </h2>
-                  <p className="text-xs uppercase tracking-wide text-[#64748b]">
-                    {group.type}
-                  </p>
+              <Link to="/groups/$id" params={{ id: group.id }} className="block">
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-base font-semibold text-[#0f172a]">
+                      {group.name}
+                    </h2>
+                    <p className="text-xs uppercase tracking-wide text-[#64748b]">
+                      {group.type}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-[#eff6ff] px-2.5 py-1 text-xs font-medium text-[#1d4ed8]">
+                    {group.participantCount} miembros
+                  </span>
                 </div>
-                <span className="shrink-0 rounded-full bg-[#eff6ff] px-2.5 py-1 text-xs font-medium text-[#1d4ed8]">
-                  {group.participantCount} miembros
-                </span>
-              </div>
+              </Link>
 
               {group.description ? (
                 <p className="mb-3 line-clamp-2 text-sm text-[#475569]">

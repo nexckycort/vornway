@@ -3,7 +3,12 @@ import { Hono } from 'hono';
 
 import { createGroupsService } from '~/modules/groups/service';
 import type { AppContext } from '~/shared/types/app';
-import { createGroupSchema, listGroupsQuerySchema } from './groups.validators';
+import {
+  createGroupSchema,
+  groupParamsSchema,
+  listGroupExpensesQuerySchema,
+  listGroupsQuerySchema,
+} from './groups.validators';
 
 const groupsService = createGroupsService();
 
@@ -27,12 +32,52 @@ const groups = new Hono<AppContext>()
     const query = c.req.valid('query');
     const { id: userId } = c.get('user');
 
-    const groups = await groupsService.listGroups({
+    const result = await groupsService.listGroups({
       userId,
       limit: query.limit,
       cursor: query.cursor,
     });
-    return c.json(groups);
-  });
+
+    return c.json(result);
+  })
+  .get('/:id', zValidator('param', groupParamsSchema), async (c) => {
+    const { id } = c.req.valid('param');
+    const { id: userId } = c.get('user');
+
+    try {
+      const result = await groupsService.getGroupSummary({ userId, groupId: id });
+      return c.json(result);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Grupo no encontrado') {
+        return c.json({ error: error.message }, 404);
+      }
+      throw error;
+    }
+  })
+  .get(
+    '/:id/expenses',
+    zValidator('param', groupParamsSchema),
+    zValidator('query', listGroupExpensesQuerySchema),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      const query = c.req.valid('query');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.listGroupExpenses({
+          userId,
+          groupId: id,
+          limit: query.limit,
+          cursor: query.cursor,
+        });
+        return c.json(result);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Grupo no encontrado') {
+          return c.json({ error: error.message }, 404);
+        }
+        throw error;
+      }
+    },
+  );
 
 export default groups;

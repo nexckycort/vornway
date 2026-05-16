@@ -3,6 +3,9 @@ import type {
   CreateGroupInput,
   CreateGroupResult,
   GroupListItem,
+  GroupSummaryResult,
+  ListGroupExpensesInput,
+  ListGroupExpensesResult,
   ListGroupsInput,
   ListGroupsResult,
 } from './types';
@@ -10,6 +13,8 @@ import type {
 export type GroupsService = {
   listGroups: (input: ListGroupsInput) => Promise<ListGroupsResult>;
   createGroup: (input: CreateGroupInput) => Promise<CreateGroupResult>;
+  getGroupSummary: (input: { userId: string; groupId: string }) => Promise<GroupSummaryResult>;
+  listGroupExpenses: (input: ListGroupExpensesInput) => Promise<ListGroupExpensesResult>;
 };
 
 async function generateInviteCode(): Promise<string> {
@@ -29,6 +34,22 @@ async function generateInviteCode(): Promise<string> {
 }
 
 export function createGroupsService(): GroupsService {
+  const buildGroupAccessWhere = (userId: string, groupId?: string) => ({
+    ...(groupId ? { id: groupId } : {}),
+    OR: [
+      {
+        ownerId: userId,
+      },
+      {
+        GroupMember: {
+          some: {
+            userId,
+          },
+        },
+      },
+    ],
+  });
+
   return {
     createGroup: async ({
       userId,
@@ -125,20 +146,8 @@ export function createGroupsService(): GroupsService {
       };
     },
     listGroups: async ({ userId, limit, cursor }) => {
-      const where: NonNullable<Parameters<typeof db.group.findMany>[0]>['where'] = {
-        OR: [
-          {
-            ownerId: userId,
-          },
-          {
-            GroupMember: {
-              some: {
-                userId,
-              },
-            },
-          },
-        ],
-      };
+      const where: NonNullable<Parameters<typeof db.group.findMany>[0]>['where'] =
+        buildGroupAccessWhere(userId);
 
       const [total, rows] = await Promise.all([
         db.group.count({ where }),
@@ -201,6 +210,149 @@ export function createGroupsService(): GroupsService {
 
       return {
         data,
+        pagination: {
+          limit,
+          total,
+          nextCursor,
+        },
+      };
+    },
+    getGroupSummary: async ({ userId, groupId }) => {
+      const group = await db.group.findFirst({
+        where: buildGroupAccessWhere(userId, groupId),
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          description: true,
+          inviteCode: true,
+          createdAt: true,
+          updatedAt: true,
+          totals: true,
+          GroupMember: {
+            select: {
+              id: true,
+              name: true,
+              role: true,
+              userId: true,
+              user: {
+                select: {
+                  email: true,
+                },
+              },
+            },
+            orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }],
+          },
+          _count: {
+            select: {
+              GroupMember: true,
+            },
+          },
+        },
+      });
+
+      if (!group) {
+        throw new Error('Grupo no encontrado');
+      }
+
+      const myMembership =
+        group.GroupMember.find((member) => member.userId === userId) ?? null;
+
+      return {
+        id: group.id,
+        name: group.name,
+        type: group.type,
+        description: group.description,
+        inviteCode: group.inviteCode,
+        createdAt: group.createdAt,
+        updatedAt: group.updatedAt,
+        totals: (group.totals as Record<string, number>) ?? {},
+        participantCount: group._count.GroupMember,
+        members: group.GroupMember.map((member) => ({
+          id: member.id,
+          name: member.name,
+          email: member.user?.email ?? null,
+          role: member.role,
+          userId: member.userId,
+          isCurrentUser: member.userId === userId,
+        })),
+        myMembership: myMembership
+          ? {
+              id: myMembership.id,
+              name: myMembership.name,
+              role: myMembership.role,
+            }
+          : null,
+      };
+    },
+    listGroupExpenses: async ({ userId, groupId, limit, cursor }) => {
+      const group = await db.group.findFirst({
+        where: buildGroupAccessWhere(userId, groupId),
+        select: { id: true },
+      });
+
+      if (!group) {
+        throw new Error('Grupo no encontrado');
+      }
+
+      const where: NonNullable<Parameters<typeof db.expense.findMany>[0]>['where'] = {
+        groupId,
+        status: 'ACTIVE',
+      };
+
+      const [total, rows] = await Promise.all([
+        db.expense.count({ where }),
+        db.expense.findMany({
+          where,
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+          take: limit + 1,
+          orderBy: [{ date: 'desc' }, { id: 'desc' }],
+          select: {
+            id: true,
+            description: true,
+            amount: true,
+            currency: true,
+            date: true,
+            expenseType: true,
+            status: true,
+            paidBy: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            _count: {
+              select: {
+                participants: true,
+              },
+            },
+          },
+        }),
+      ]);
+
+      const hasNextPage = rows.length > limit;
+      const pageRows = hasNextPage ? rows.slice(0, limit) : rows;
+      const nextCursor = hasNextPage ? pageRows[pageRows.length - 1]?.id ?? null : null;
+
+      return {
+        data: pageRows.map((row) => ({
+          id: row.id,
+          description: row.description,
+          amount: row.amount,
+          currency: row.currency,
+          date: row.date,
+          expenseType: row.expenseType,
+          status: row.status,
+          paidBy: row.paidBy,
+          category: row.category,
+          participantCount: row._count.participants,
+        })),
         pagination: {
           limit,
           total,

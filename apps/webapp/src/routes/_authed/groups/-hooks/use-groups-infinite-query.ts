@@ -1,49 +1,23 @@
-import { API_URL } from '#/config/env';
+import { client } from '#/lib/hc';
+import type { InferResponseType } from '#/lib/hc';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const PAGE_LIMIT = 20;
 
-export type GroupListItem = {
-  id: string;
-  name: string;
-  type: string;
-  description: string | null;
-  inviteCode: string;
-  createdAt: string;
-  updatedAt: string;
-  participantCount: number;
-  totals: Record<string, number>;
-  myMembership: {
-    id: string;
-    name: string;
-    role: string;
-  } | null;
-};
-
-export type GroupsPage = {
-  data: GroupListItem[];
-  pagination: {
-    limit: number;
-    total: number;
-    nextCursor: string | null;
-  };
-};
+const listGroupsEndpoint = client.api.groups.$get;
+export type GroupsPage = InferResponseType<typeof listGroupsEndpoint>;
+export type GroupListItem = GroupsPage['data'][number];
 
 async function fetchGroupsPage({
   pageParam,
 }: {
   pageParam: string | null;
 }): Promise<GroupsPage> {
-  const params = new URLSearchParams({
-    limit: String(PAGE_LIMIT),
-  });
-
-  if (pageParam) {
-    params.set('cursor', pageParam);
-  }
-
-  const response = await fetch(`${API_URL}/api/groups?${params.toString()}`, {
-    credentials: 'include',
+  const response = await client.api.groups.$get({
+    query: {
+      limit: String(PAGE_LIMIT),
+      ...(pageParam ? { cursor: pageParam } : {}),
+    },
   });
 
   if (!response.ok) {

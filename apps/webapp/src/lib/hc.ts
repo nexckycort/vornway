@@ -1,5 +1,5 @@
 import { API_URL } from '#/config/env';
-import { createPublicClient } from '@vornway/api/hc';
+import { createAuthedClient, createPublicClient } from '@vornway/api/hc';
 
 export type { InferRequestType, InferResponseType } from '@vornway/api/hc';
 
@@ -9,6 +9,21 @@ export const publicClient = createPublicClient(API_URL, {
       ...init,
       credentials: 'include',
     });
-    // @ts-expect-error
+  }) satisfies typeof fetch,
+});
+
+export const client = createAuthedClient(API_URL, {
+  fetch: (async (input, init) => {
+    const res = await fetch(input, {
+      ...init,
+      credentials: 'include',
+    });
+
+    if (!res.ok) {
+      // TODO: errores globales
+      console.error('API request failed');
+    }
+
+    return res;
   }) satisfies typeof fetch,
 });

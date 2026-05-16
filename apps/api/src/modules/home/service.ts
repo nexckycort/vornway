@@ -159,6 +159,9 @@ export function createHomeService(): HomeService {
     getSummary: async (userId) => {
       const groups = await db.group.findMany({
         where: {
+          type: {
+            not: 'meta',
+          },
           OR: [
             {
               ownerId: userId,

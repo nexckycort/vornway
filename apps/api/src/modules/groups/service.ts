@@ -147,7 +147,12 @@ export function createGroupsService(): GroupsService {
     },
     listGroups: async ({ userId, limit, cursor }) => {
       const where: NonNullable<Parameters<typeof db.group.findMany>[0]>['where'] =
-        buildGroupAccessWhere(userId);
+        {
+          ...buildGroupAccessWhere(userId),
+          type: {
+            not: 'meta',
+          },
+        };
 
       const [total, rows] = await Promise.all([
         db.group.count({ where }),

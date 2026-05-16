@@ -1,13 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { Button } from '#/components/ui/button';
+import { useAuth } from '#/contexts/auth/use-auth';
 import { HomeAction } from '#/routes/_authed/(home)/-components/home-action';
 import { homeIcons } from '#/routes/_authed/(home)/-components/home-icons';
 import { HomeSection } from '#/routes/_authed/(home)/-components/home-section';
 import { SavingGoalCard } from '#/routes/_authed/(home)/-components/saving-goal-card';
 import { TripCard } from '#/routes/_authed/(home)/-components/trip-card';
 import {
-  defaultHomeData,
+  emptyHomeData,
   useHomeQuery,
 } from '#/routes/_authed/(home)/-hooks/use-home-query';
 
@@ -16,8 +17,10 @@ export const Route = createFileRoute('/_authed/(home)/')({
 });
 
 function RouteComponent() {
+  const { user } = useAuth();
   const homeQuery = useHomeQuery();
-  const data = homeQuery.data ?? defaultHomeData;
+  const data = homeQuery.data ?? emptyHomeData;
+  const userName = user?.name?.trim() || 'Viajero';
   const BellIcon = homeIcons.bell;
   const PlusIcon = homeIcons.plus;
 
@@ -29,9 +32,7 @@ function RouteComponent() {
             <div>
               <h1 className="text-xl leading-7">
                 Hola,
-                <span className="font-semibold text-primary">
-                  {data.userName}
-                </span>
+                <span className="font-semibold text-primary">{userName}</span>
               </h1>
               <p className="text-xs leading-4 text-[#626262]">
                 {data.welcomeText}
@@ -85,7 +86,6 @@ function RouteComponent() {
             </div>
           </HomeSection>
         </div>
-
       </div>
     </main>
   );

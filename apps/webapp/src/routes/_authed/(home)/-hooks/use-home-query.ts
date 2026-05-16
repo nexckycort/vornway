@@ -49,79 +49,30 @@ export type SavingGoal = {
   tone: 'pink' | 'yellow';
 };
 
-export type NavItem = {
-  id: string;
-  label: string;
-  icon: 'compass' | 'home' | 'piggy-bank' | 'user';
-  active: boolean;
-};
-
 export type HomeQueryData = {
-  userName: string;
   welcomeText: string;
   actions: HomeAction[];
   trips: Trip[];
   savingGoals: SavingGoal[];
-  navItems: NavItem[];
 };
 
 const homeEndpoint = client.api.home.$get;
 type HomeApiResponse = InferResponseType<typeof homeEndpoint>;
 
-export const defaultHomeData: HomeQueryData = {
-  userName: 'Viajero',
-  welcomeText: 'Bienvenido a Vornway',
-  actions: [
-    {
-      id: 'currency-converter',
-      icon: 'repeat',
-      label: 'Convertidor de moneda',
-      variant: 'neutral',
-    },
-    {
-      id: 'create-group',
-      icon: 'compass',
-      label: 'Crear Nuevo grupo',
-      variant: 'primary',
-    },
-  ],
-  trips: [],
-  savingGoals: [],
-  navItems: [
-    { id: 'home', label: 'Inicio', icon: 'home', active: true },
-    { id: 'trips', label: 'Viajes', icon: 'compass', active: false },
-    { id: 'goals', label: 'Metas', icon: 'piggy-bank', active: false },
-    { id: 'account', label: 'Cuenta', icon: 'user', active: false },
-  ],
-};
-
-function formatAmount(currency: string, amount: number): string {
-  try {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${amount.toLocaleString()} ${currency}`;
-  }
-}
-
-function formatShortDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('es-CO', {
-    day: 'numeric',
-    month: 'short',
-  }).format(date);
-}
-
-function toInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '??';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
-}
+const homeActions: HomeAction[] = [
+  {
+    id: 'currency-converter',
+    icon: 'repeat',
+    label: 'Convertidor de moneda',
+    variant: 'neutral',
+  },
+  {
+    id: 'create-group',
+    icon: 'compass',
+    label: 'Crear nuevo grupo',
+    variant: 'primary',
+  },
+];
 
 function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
   const trips: Trip[] = apiData.groups.map((group) => {
@@ -185,10 +136,46 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
   }));
 
   return {
-    ...defaultHomeData,
+    welcomeText: 'Bienvenido a Vornway',
+    actions: homeActions,
     trips,
     savingGoals,
   };
+}
+
+const emptyHomeData: HomeQueryData = {
+  welcomeText: 'Bienvenido a Vornway',
+  actions: homeActions,
+  trips: [],
+  savingGoals: [],
+};
+
+function formatAmount(currency: string, amount: number): string {
+  try {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${amount.toLocaleString()} ${currency}`;
+  }
+}
+
+function formatShortDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('es-CO', {
+    day: 'numeric',
+    month: 'short',
+  }).format(date);
+}
+
+function toInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '??';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
 }
 
 export function useHomeQuery() {
@@ -202,6 +189,7 @@ export function useHomeQuery() {
       const payload = (await response.json()) as HomeApiResponse;
       return mapHomeData(payload);
     },
-    placeholderData: defaultHomeData,
   });
 }
+
+export { emptyHomeData };

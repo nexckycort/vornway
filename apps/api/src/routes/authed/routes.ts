@@ -6,7 +6,7 @@ import homeRoutes from './home/routes';
 
 const app = new Hono()
   .basePath('/api')
-  .use('*', authMiddleware)
+  .use(authMiddleware)
   .route('/home', homeRoutes)
   .route('/groups', groupsRoutes);
 

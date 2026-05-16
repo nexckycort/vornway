@@ -64,9 +64,6 @@ export function BottomAppBar() {
           );
         })}
       </div>
-      <div className="mt-2.5 flex justify-center">
-        <span className="h-[4px] w-[118px] rounded-full bg-[#cbd5e1]" />
-      </div>
     </nav>
   );
 }

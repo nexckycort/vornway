@@ -91,7 +91,16 @@ function RouteComponent() {
                 value={expense.category?.name ?? 'Sin categoría'}
               />
               <Row label="Tipo" value={expense.expenseType} />
-              <Row label="Estado" value={expense.status} />
+              <Row
+                label="Estado"
+                value={expense.isDeleted ? 'Eliminado' : 'Activo'}
+              />
+              {expense.isSettlement ? (
+                <Row
+                  label="Liquidación"
+                  value={`Pagó a ${expense.settlementToName ?? 'otro miembro'}`}
+                />
+              ) : null}
             </div>
           </section>
         ) : null}

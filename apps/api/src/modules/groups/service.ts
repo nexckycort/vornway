@@ -33,6 +33,10 @@ async function generateInviteCode(): Promise<string> {
   throw new Error('No se pudo generar un código de invitación único');
 }
 
+function normalizeAmount(value: number): number {
+  return Number(value.toFixed(2));
+}
+
 export function createGroupsService(): GroupsService {
   const buildGroupAccessWhere = (userId: string, groupId?: string) => ({
     ...(groupId ? { id: groupId } : {}),
@@ -224,13 +228,19 @@ export function createGroupsService(): GroupsService {
     },
     getGroupSummary: async ({ userId, groupId }) => {
       const group = await db.group.findFirst({
-        where: buildGroupAccessWhere(userId, groupId),
+        where: {
+          ...buildGroupAccessWhere(userId, groupId),
+          type: {
+            not: 'meta',
+          },
+        },
         select: {
           id: true,
           name: true,
           type: true,
           description: true,
           inviteCode: true,
+          ownerId: true,
           createdAt: true,
           updatedAt: true,
           totals: true,
@@ -248,6 +258,31 @@ export function createGroupsService(): GroupsService {
             },
             orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }],
           },
+          Expense: {
+            where: {
+              OR: [
+                { notes: null },
+                {
+                  notes: {
+                    not: {
+                      contains: '[DELETED]',
+                    },
+                  },
+                },
+              ],
+            },
+            select: {
+              amount: true,
+              currency: true,
+              paidById: true,
+              participants: {
+                select: {
+                  memberId: true,
+                  share: true,
+                },
+              },
+            },
+          },
           _count: {
             select: {
               GroupMember: true,
@@ -262,6 +297,92 @@ export function createGroupsService(): GroupsService {
 
       const myMembership =
         group.GroupMember.find((member) => member.userId === userId) ?? null;
+      const memberNameById = new Map(
+        group.GroupMember.map((member) => [member.id, member.name]),
+      );
+      const balanceByMember = new Map<string, Record<string, number>>();
+      const directDebtByPair = new Map<string, number>();
+
+      for (const member of group.GroupMember) {
+        balanceByMember.set(member.id, {});
+      }
+
+      for (const expense of group.Expense) {
+        if (expense.participants.length === 0) continue;
+
+        const payerBalances = balanceByMember.get(expense.paidById);
+        if (payerBalances) {
+          payerBalances[expense.currency] = normalizeAmount(
+            (payerBalances[expense.currency] ?? 0) + expense.amount,
+          );
+        }
+
+        for (const participant of expense.participants) {
+          const participantBalances = balanceByMember.get(participant.memberId);
+          if (participantBalances) {
+            participantBalances[expense.currency] = normalizeAmount(
+              (participantBalances[expense.currency] ?? 0) - participant.share,
+            );
+          }
+        }
+
+        if (!myMembership) continue;
+
+        if (expense.paidById === myMembership.id) {
+          for (const participant of expense.participants) {
+            if (participant.memberId === myMembership.id) continue;
+            const key = `${participant.memberId}:${expense.currency}`;
+            directDebtByPair.set(
+              key,
+              normalizeAmount((directDebtByPair.get(key) ?? 0) - participant.share),
+            );
+          }
+          continue;
+        }
+
+        const currentParticipation = expense.participants.find(
+          (participant) => participant.memberId === myMembership.id,
+        );
+        if (!currentParticipation) continue;
+
+        const key = `${expense.paidById}:${expense.currency}`;
+        directDebtByPair.set(
+          key,
+          normalizeAmount(
+            (directDebtByPair.get(key) ?? 0) + currentParticipation.share,
+          ),
+        );
+      }
+
+      const directDebts = Array.from(directDebtByPair.entries())
+        .map(([pairKey, amount]) => {
+          const [toMemberId, currency] = pairKey.split(':');
+          return {
+            toMemberId,
+            toName: memberNameById.get(toMemberId) ?? 'Miembro',
+            currency,
+            amount: normalizeAmount(amount),
+          };
+        })
+        .filter((entry) => entry.amount > 0)
+        .sort((a, b) => b.amount - a.amount);
+
+      const directCredits = Array.from(directDebtByPair.entries())
+        .map(([pairKey, amount]) => {
+          const [fromMemberId, currency] = pairKey.split(':');
+          return {
+            fromMemberId,
+            fromName: memberNameById.get(fromMemberId) ?? 'Miembro',
+            currency,
+            amount: normalizeAmount(Math.abs(amount)),
+          };
+        })
+        .filter((entry) => entry.amount > 0)
+        .filter((entry) => {
+          const key = `${entry.fromMemberId}:${entry.currency}`;
+          return (directDebtByPair.get(key) ?? 0) < 0;
+        })
+        .sort((a, b) => b.amount - a.amount);
 
       return {
         id: group.id,
@@ -281,6 +402,14 @@ export function createGroupsService(): GroupsService {
           userId: member.userId,
           isCurrentUser: member.userId === userId,
         })),
+        memberBalances: group.GroupMember.map((member) => ({
+          memberId: member.id,
+          name: member.name,
+          isCurrentUser: member.userId === userId,
+          balances: balanceByMember.get(member.id) ?? {},
+        })),
+        directDebts,
+        directCredits,
         myMembership: myMembership
           ? {
               id: myMembership.id,
@@ -288,21 +417,48 @@ export function createGroupsService(): GroupsService {
               role: myMembership.role,
             }
           : null,
+        isOwner: group.ownerId === userId,
       };
     },
     listGroupExpenses: async ({ userId, groupId, limit, cursor }) => {
       const group = await db.group.findFirst({
-        where: buildGroupAccessWhere(userId, groupId),
-        select: { id: true },
+        where: {
+          ...buildGroupAccessWhere(userId, groupId),
+          type: {
+            not: 'meta',
+          },
+        },
+        select: {
+          id: true,
+          GroupMember: {
+            select: {
+              id: true,
+              userId: true,
+            },
+          },
+        },
       });
 
       if (!group) {
         throw new Error('Grupo no encontrado');
       }
 
+      const currentMember = group.GroupMember.find(
+        (member) => member.userId === userId,
+      );
+
       const where: NonNullable<Parameters<typeof db.expense.findMany>[0]>['where'] = {
         groupId,
-        status: 'ACTIVE',
+        OR: [
+          { notes: null },
+          {
+            notes: {
+              not: {
+                contains: '[DELETED]',
+              },
+            },
+          },
+        ],
       };
 
       const [total, rows] = await Promise.all([
@@ -318,18 +474,22 @@ export function createGroupsService(): GroupsService {
             amount: true,
             currency: true,
             date: true,
-            expenseType: true,
-            status: true,
+            notes: true,
             paidBy: {
               select: {
                 id: true,
                 name: true,
               },
             },
-            category: {
+            participants: {
               select: {
-                id: true,
-                name: true,
+                memberId: true,
+                share: true,
+                member: {
+                  select: {
+                    name: true,
+                  },
+                },
               },
             },
             _count: {
@@ -347,16 +507,47 @@ export function createGroupsService(): GroupsService {
 
       return {
         data: pageRows.map((row) => ({
-          id: row.id,
-          description: row.description,
-          amount: row.amount,
-          currency: row.currency,
-          date: row.date,
-          expenseType: row.expenseType,
-          status: row.status,
-          paidBy: row.paidBy,
-          category: row.category,
-          participantCount: row._count.participants,
+          ...(() => {
+            const isSettlement = false;
+            const isPersonal = !isSettlement && row.participants.length === 0;
+            const currentParticipation = currentMember
+              ? row.participants.find(
+                  (participant) => participant.memberId === currentMember.id,
+                )
+              : null;
+            let currentUserBalance: number | null = null;
+
+            if (!isPersonal && currentMember && (row.paidBy.id === currentMember.id || currentParticipation)) {
+              currentUserBalance = 0;
+              if (row.paidBy.id === currentMember.id) {
+                currentUserBalance += row.amount;
+              }
+              if (currentParticipation) {
+                currentUserBalance -= currentParticipation.share;
+              }
+              currentUserBalance = normalizeAmount(currentUserBalance);
+            }
+
+            return {
+              id: row.id,
+              description: row.description,
+              amount: row.amount,
+              currency: row.currency,
+              date: row.date,
+              isDeleted: Boolean(row.notes?.includes('[DELETED]')),
+              isSettlement,
+              isPersonal,
+              isPinned: false,
+              pinnedAt: null,
+              expenseType: 'standard' as const,
+              subExpenseCount: 0,
+              settlementToName: null,
+              paidBy: row.paidBy,
+              category: null,
+              participantCount: row._count.participants,
+              currentUserBalance,
+            };
+          })(),
         })),
         pagination: {
           limit,

@@ -1,4 +1,5 @@
 import type { Trip } from '#/routes/_authed/(home)/-hooks/use-home-query';
+import { Link } from '@tanstack/react-router';
 
 type TripCardProps = {
   trip: Trip;
@@ -6,7 +7,11 @@ type TripCardProps = {
 
 export function TripCard({ trip }: TripCardProps) {
   return (
-    <article className="rounded-[24px] bg-white px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+    <Link
+      to="/groups/$id"
+      params={{ id: trip.id }}
+      className="block rounded-[24px] bg-white px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-transform active:translate-y-px"
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-xl font-semibold leading-7">{trip.name}</h3>
@@ -50,6 +55,6 @@ export function TripCard({ trip }: TripCardProps) {
           {trip.emptyLabel}
         </p>
       )}
-    </article>
+    </Link>
   );
 }

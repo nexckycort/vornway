@@ -78,11 +78,30 @@ export type GroupSummaryResult = {
   totals: Record<string, number>;
   participantCount: number;
   members: GroupSummaryMember[];
+  memberBalances: Array<{
+    memberId: string;
+    name: string;
+    isCurrentUser: boolean;
+    balances: Record<string, number>;
+  }>;
+  directDebts: Array<{
+    toMemberId: string;
+    toName: string;
+    currency: string;
+    amount: number;
+  }>;
+  directCredits: Array<{
+    fromMemberId: string;
+    fromName: string;
+    currency: string;
+    amount: number;
+  }>;
   myMembership: {
     id: string;
     name: string;
     role: string;
   } | null;
+  isOwner: boolean;
 };
 
 export type GroupExpenseListItem = {
@@ -91,8 +110,14 @@ export type GroupExpenseListItem = {
   amount: number;
   currency: string;
   date: Date;
-  expenseType: 'STANDARD' | 'COMPOSITE' | 'SETTLEMENT';
-  status: 'ACTIVE' | 'DELETED';
+  isDeleted: boolean;
+  isSettlement: boolean;
+  isPersonal: boolean;
+  isPinned: boolean;
+  pinnedAt: Date | null;
+  expenseType: 'standard' | 'composite';
+  subExpenseCount: number;
+  settlementToName: string | null;
   paidBy: {
     id: string;
     name: string;
@@ -102,6 +127,7 @@ export type GroupExpenseListItem = {
     name: string;
   } | null;
   participantCount: number;
+  currentUserBalance: number | null;
 };
 
 export type ListGroupExpensesResult = {

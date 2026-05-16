@@ -1,5 +1,6 @@
 import { cn } from '#/lib/utils';
 import type { SavingGoal } from '#/routes/_authed/(home)/-hooks/use-home-query';
+import { Link } from '@tanstack/react-router';
 import { homeIcons } from './home-icons';
 
 type SavingGoalCardProps = {
@@ -10,7 +11,10 @@ export function SavingGoalCard({ goal }: SavingGoalCardProps) {
   const Icon = homeIcons[goal.icon];
 
   return (
-    <article className="rounded-[24px] border border-[#f4f4f4] bg-white px-5 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.04)]">
+    <Link
+      to="/goals"
+      className="block rounded-[24px] border border-[#f4f4f4] bg-white px-5 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.04)] transition-transform active:translate-y-px"
+    >
       <div className="flex items-center gap-3">
         <span
           className={cn(
@@ -42,6 +46,6 @@ export function SavingGoalCard({ goal }: SavingGoalCardProps) {
           <span className="text-[#797979]">/ {goal.target}</span>
         </p>
       </div>
-    </article>
+    </Link>
   );
 }

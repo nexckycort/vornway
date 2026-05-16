@@ -10,6 +10,10 @@ export type CreateGroupInput = {
   name: string;
   type: string;
   description?: string;
+  participants?: Array<{
+    name: string;
+    userId?: string;
+  }>;
 };
 
 export type CreateGroupResult = {

@@ -11,6 +11,10 @@ export type CreateGroupFormValues = {
   name: string;
   type: string;
   description: string;
+  participants?: Array<{
+    name: string;
+    userId?: string;
+  }>;
 };
 
 async function createGroup(values: CreateGroupFormValues): Promise<CreateGroupResponse> {
@@ -20,6 +24,9 @@ async function createGroup(values: CreateGroupFormValues): Promise<CreateGroupRe
       type: values.type.trim(),
       ...(values.description.trim()
         ? { description: values.description.trim() }
+        : {}),
+      ...(values.participants && values.participants.length > 0
+        ? { participants: values.participants }
         : {}),
     },
   };

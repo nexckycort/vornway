@@ -30,7 +30,14 @@ async function generateInviteCode(): Promise<string> {
 
 export function createGroupsService(): GroupsService {
   return {
-    createGroup: async ({ userId, ownerName, name, type, description }) => {
+    createGroup: async ({
+      userId,
+      ownerName,
+      name,
+      type,
+      description,
+      participants,
+    }) => {
       const now = new Date();
       const inviteCode = await generateInviteCode();
       const groupId = crypto.randomUUID();
@@ -62,6 +69,36 @@ export function createGroupsService(): GroupsService {
           },
         });
 
+        const normalizedParticipants = (participants ?? [])
+          .map((participant) => ({
+            name: participant.name.trim(),
+            userId: participant.userId?.trim() || null,
+          }))
+          .filter((participant) => participant.name.length > 0)
+          .filter((participant) => participant.userId !== userId)
+          .filter(
+            (participant, index, array) =>
+              array.findIndex(
+                (item) =>
+                  (item.userId && item.userId === participant.userId) ||
+                  (!item.userId &&
+                    item.name.toLocaleLowerCase('es-CO') ===
+                      participant.name.toLocaleLowerCase('es-CO')),
+              ) === index,
+          );
+
+        if (normalizedParticipants.length > 0) {
+          await tx.groupMember.createMany({
+            data: normalizedParticipants.map((participant) => ({
+              groupId,
+              userId: participant.userId,
+              name: participant.name,
+              role: 'member',
+              joinedAt: now,
+            })),
+          });
+        }
+
         await tx.activityLog.create({
           data: {
             groupId,
@@ -71,6 +108,7 @@ export function createGroupsService(): GroupsService {
             targetName: normalizedName,
             details: {
               type: normalizedType,
+              participantsCount: (participants ?? []).length,
             },
             createdAt: now,
           },

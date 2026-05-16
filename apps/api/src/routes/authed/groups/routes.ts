@@ -18,6 +18,7 @@ const groups = new Hono<AppContext>()
       name: data.name,
       type: data.type,
       description: data.description,
+      participants: data.participants,
     });
 
     return c.json(group, 201);

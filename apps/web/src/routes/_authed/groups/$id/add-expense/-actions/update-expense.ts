@@ -4,10 +4,9 @@ import * as z from 'zod';
 import { Prisma } from '~/generated/prisma/client';
 import { db } from '~/infrastructure/database/connection';
 import {
-  buildExpenseMetadata,
-  parseExpenseMetadata,
   sumCompositeExpenseItems,
 } from '~/lib/expense-metadata';
+import { isExpenseDeleted, isExpenseSettlement } from '~/lib/expense-state';
 import { useAppSession } from '~/utils/session';
 
 const CompositeExpenseItemSchema = z.object({
@@ -138,7 +137,8 @@ export const updateExpense = createServerFn({ method: 'POST' })
             amount: true,
             currency: true,
             notes: true,
-            metadata: true,
+            status: true,
+            expenseType: true,
           },
         });
 
@@ -146,12 +146,10 @@ export const updateExpense = createServerFn({ method: 'POST' })
           throw new Error('Gasto no encontrado');
         }
 
-        if (existingExpense.notes?.includes('[DELETED]')) {
+        if (isExpenseDeleted(existingExpense.status)) {
           throw new Error('No puedes editar un gasto eliminado');
         }
-        const isSettlement =
-          existingExpense.notes?.includes('[SETTLEMENT') ?? false;
-        const existingMetadata = parseExpenseMetadata(existingExpense.metadata);
+        const isSettlement = isExpenseSettlement(existingExpense.expenseType);
 
         await tx.expense.update({
           where: {
@@ -163,10 +161,18 @@ export const updateExpense = createServerFn({ method: 'POST' })
             currency: data.currency,
             paidById: data.paidById,
             categoryId: data.categoryId ?? null,
-            metadata: (buildExpenseMetadata({
-              items: isComposite ? compositeItems : [],
-              pinnedAt: existingMetadata.pinnedAt,
-            }) ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+            expenseType: isComposite ? 'COMPOSITE' : 'STANDARD',
+            metadata: Prisma.JsonNull,
+            compositeItems: {
+              deleteMany: {},
+              ...(isComposite && {
+                create: compositeItems.map((item) => ({
+                  description: item.description,
+                  amount: item.amount,
+                  createdAt: new Date(item.createdAt),
+                })),
+              }),
+            },
           },
         });
 

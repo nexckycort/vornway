@@ -2,10 +2,13 @@ import { createServerFn } from '@tanstack/react-start';
 import * as z from 'zod';
 
 import { db } from '~/infrastructure/database/connection';
+import { type CompositeExpenseItem } from '~/lib/expense-metadata';
 import {
-  type CompositeExpenseItem,
-  parseExpenseMetadata,
-} from '~/lib/expense-metadata';
+  isExpenseDeleted,
+  isExpenseSettlement,
+  readPinnedAt,
+  toClientExpenseType,
+} from '~/lib/expense-state';
 import { useAppSession } from '~/utils/session';
 
 const GetExpenseInputSchema = z.object({
@@ -79,8 +82,20 @@ export const getExpense = createServerFn({ method: 'POST' })
         amount: true,
         currency: true,
         date: true,
-        notes: true,
-        metadata: true,
+        expenseType: true,
+        status: true,
+        pinnedAt: true,
+        compositeItems: {
+          select: {
+            id: true,
+            description: true,
+            amount: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
         group: {
           select: {
             name: true,
@@ -121,7 +136,15 @@ export const getExpense = createServerFn({ method: 'POST' })
       throw new Error('Gasto no encontrado');
     }
 
-    const metadata = parseExpenseMetadata(expenseRecord.metadata);
+    const expenseType = toClientExpenseType(expenseRecord.expenseType);
+    const compositeItems: CompositeExpenseItem[] = expenseRecord.compositeItems.map(
+      (item) => ({
+        id: item.id,
+        description: item.description,
+        amount: item.amount,
+        createdAt: item.createdAt.toISOString(),
+      }),
+    );
 
     return {
       id: expenseRecord.id,
@@ -131,11 +154,11 @@ export const getExpense = createServerFn({ method: 'POST' })
       amount: expenseRecord.amount,
       currency: expenseRecord.currency,
       date: expenseRecord.date,
-      isDeleted: expenseRecord.notes?.includes('[DELETED]') ?? false,
-      isSettlement: expenseRecord.notes?.includes('[SETTLEMENT') ?? false,
-      isPinned: Boolean(metadata.pinnedAt),
-      expenseType: metadata.expenseType,
-      compositeItems: metadata.items,
+      isDeleted: isExpenseDeleted(expenseRecord.status),
+      isSettlement: isExpenseSettlement(expenseRecord.expenseType),
+      isPinned: Boolean(readPinnedAt(expenseRecord.pinnedAt)),
+      expenseType,
+      compositeItems,
       paidBy: {
         memberId: expenseRecord.paidBy.id,
         name: expenseRecord.paidBy.name,

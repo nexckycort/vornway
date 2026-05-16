@@ -1,3 +1,19 @@
+enum ExpenseType {
+  STANDARD
+  COMPOSITE
+  SETTLEMENT
+}
+
+enum ExpenseStatus {
+  ACTIVE
+  DELETED
+}
+
+enum SettlementMethod {
+  CARDS
+  FLEX
+}
+
 model Expense {
   id          String   @id @default(cuid())
   groupId     String
@@ -6,7 +22,13 @@ model Expense {
   description String
   amount      Float
   currency    String // Código de moneda: "COP", "USD", "EUR", etc.
-  date        DateTime @default(now())
+  date        DateTime      @default(now())
+  expenseType ExpenseType   @default(STANDARD)
+  status      ExpenseStatus @default(ACTIVE)
+  pinnedAt    DateTime?
+  deletedAt   DateTime?
+  deletedById String?
+  settlementMethod SettlementMethod?
   notes       String?
   attachment  String? // URL de foto del recibo
   metadata    Json?
@@ -14,8 +36,12 @@ model Expense {
   group        Group                @relation(fields: [groupId], references: [id])
   category     ExpenseCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   paidBy       GroupMember          @relation("MemberPaidExpenses", fields: [paidById], references: [id])
+  compositeItems CompositeExpenseItem[]
   participants ExpenseParticipant[]
 
+  @@index([groupId, date(sort: Desc)])
+  @@index([groupId, expenseType, status])
+  @@index([groupId, pinnedAt(sort: Desc)])
   @@map("expense")
 }
 
@@ -30,4 +56,17 @@ model ExpenseParticipant {
 
   @@unique([expenseId, memberId])
   @@map("expense_participant")
+}
+
+model CompositeExpenseItem {
+  id          String   @id @default(cuid())
+  expenseId   String
+  description String
+  amount      Float
+  createdAt   DateTime @default(now())
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@index([expenseId, createdAt(sort: Asc)])
+  @@map("composite_expense_item")
 }

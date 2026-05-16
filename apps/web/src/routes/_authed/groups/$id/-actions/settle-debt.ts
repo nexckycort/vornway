@@ -93,13 +93,18 @@ export const settleDebt = createServerFn({ method: 'POST' })
       await db.$transaction(async (tx) => {
         await tx.expense.create({
           data: {
-            groupId: data.groupId,
-            paidById: data.fromMemberId,
-            description: `Liquidación: ${fromMember.name} → ${toMember.name}`,
-            amount: data.amount,
-            currency: data.currency,
-            notes: `[SETTLEMENT:${(data.method ?? 'cards').toUpperCase()}] ${new Date().toISOString()} by ${currentMembership.id}`,
-            participants: {
+                groupId: data.groupId,
+                paidById: data.fromMemberId,
+                description: `Liquidación: ${fromMember.name} → ${toMember.name}`,
+                amount: data.amount,
+                currency: data.currency,
+                expenseType: 'SETTLEMENT',
+                settlementMethod:
+                  (data.method ?? 'cards').toUpperCase() === 'FLEX'
+                    ? 'FLEX'
+                    : 'CARDS',
+                notes: `[SETTLEMENT:${(data.method ?? 'cards').toUpperCase()}] ${new Date().toISOString()} by ${currentMembership.id}`,
+                participants: {
               create: [
                 {
                   memberId: data.toMemberId,

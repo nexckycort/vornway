@@ -3,7 +3,12 @@ import { createServerFn } from '@tanstack/react-start';
 import * as z from 'zod';
 
 import { db } from '~/infrastructure/database/connection';
-import { parseExpenseMetadata } from '~/lib/expense-metadata';
+import {
+  isExpenseDeleted,
+  isExpenseSettlement,
+  readPinnedAt,
+  toClientExpenseType,
+} from '~/lib/expense-state';
 import { useAppSession } from '~/utils/session';
 
 const GetGroupInputSchema = z.object({
@@ -133,8 +138,12 @@ export const getGroup = createServerFn({ method: 'POST' })
               amount: true,
               currency: true,
               date: true,
-              notes: true,
-              metadata: true,
+              expenseType: true,
+              status: true,
+              pinnedAt: true,
+              compositeItems: {
+                select: { id: true },
+              },
               paidBy: {
                 select: {
                   id: true,
@@ -184,11 +193,11 @@ export const getGroup = createServerFn({ method: 'POST' })
       const currentMemberId = currentMember?.id;
 
       const expenses: Expense[] = groupRecord.Expense.map((expense) => {
-        const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
-        const isSettlement = expense.notes?.includes('[SETTLEMENT') ?? false;
+        const isDeleted = isExpenseDeleted(expense.status);
+        const isSettlement = isExpenseSettlement(expense.expenseType);
         const isPersonal = !isSettlement && expense.participants.length === 0;
-        const metadata = parseExpenseMetadata(expense.metadata);
-        const expenseType: Expense['expenseType'] = metadata.expenseType;
+        const pinnedAt = readPinnedAt(expense.pinnedAt);
+        const expenseType: Expense['expenseType'] = toClientExpenseType(expense.expenseType);
         const settlementToName = isSettlement
           ? (expense.participants[0]?.member.name ?? null)
           : null;
@@ -221,10 +230,10 @@ export const getGroup = createServerFn({ method: 'POST' })
           isDeleted,
           isSettlement,
           isPersonal,
-          isPinned: Boolean(metadata.pinnedAt),
-          pinnedAt: metadata.pinnedAt,
+          isPinned: Boolean(pinnedAt),
+          pinnedAt,
           expenseType,
-          subExpenseCount: metadata.items.length,
+          subExpenseCount: expense.compositeItems.length,
           settlementToName,
           paidBy: {
             id: expense.paidBy.id,
@@ -269,7 +278,7 @@ export const getGroup = createServerFn({ method: 'POST' })
       }
 
       for (const expense of groupRecord.Expense) {
-        const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
+        const isDeleted = isExpenseDeleted(expense.status);
         if (isDeleted) continue;
         if (expense.participants.length === 0) continue;
 
@@ -306,7 +315,7 @@ export const getGroup = createServerFn({ method: 'POST' })
       const allDebtByPair = new Map<string, number>();
       if (currentMemberId) {
         for (const expense of groupRecord.Expense) {
-          const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
+          const isDeleted = isExpenseDeleted(expense.status);
           if (isDeleted) continue;
           if (expense.participants.length === 0) continue;
 
@@ -336,7 +345,7 @@ export const getGroup = createServerFn({ method: 'POST' })
       }
 
       for (const expense of groupRecord.Expense) {
-        const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
+        const isDeleted = isExpenseDeleted(expense.status);
         if (isDeleted) continue;
         if (expense.participants.length === 0) continue;
 

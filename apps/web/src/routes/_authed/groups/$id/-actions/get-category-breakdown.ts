@@ -2,7 +2,12 @@ import { createServerFn } from '@tanstack/react-start';
 import * as z from 'zod';
 
 import { db } from '~/infrastructure/database/connection';
-import { parseExpenseMetadata } from '~/lib/expense-metadata';
+import {
+  isExpenseDeleted,
+  isExpenseSettlement,
+  readPinnedAt,
+  toClientExpenseType,
+} from '~/lib/expense-state';
 import { useAppSession } from '~/utils/session';
 
 const GetCategoryBreakdownInputSchema = z.object({
@@ -81,8 +86,12 @@ export const getCategoryBreakdown = createServerFn({ method: 'POST' })
             amount: true,
             currency: true,
             date: true,
-            notes: true,
-            metadata: true,
+            expenseType: true,
+            status: true,
+            pinnedAt: true,
+            compositeItems: {
+              select: { id: true },
+            },
             paidBy: {
               select: {
                 name: true,
@@ -127,11 +136,9 @@ export const getCategoryBreakdown = createServerFn({ method: 'POST' })
     });
 
     for (const expense of group.Expense) {
-      const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
-      const isSettlement = expense.notes?.includes('[SETTLEMENT') ?? false;
+      const isDeleted = isExpenseDeleted(expense.status);
+      const isSettlement = isExpenseSettlement(expense.expenseType);
       if (isDeleted) continue;
-
-      const metadata = parseExpenseMetadata(expense.metadata);
       const section = expense.category
         ? sections.get(expense.category.id)
         : sections.get('uncategorized');
@@ -148,9 +155,9 @@ export const getCategoryBreakdown = createServerFn({ method: 'POST' })
         currency: expense.currency,
         date: expense.date,
         isSettlement,
-        isPinned: Boolean(metadata.pinnedAt),
-        expenseType: metadata.expenseType,
-        subExpenseCount: metadata.items.length,
+        isPinned: Boolean(readPinnedAt(expense.pinnedAt)),
+        expenseType: toClientExpenseType(expense.expenseType),
+        subExpenseCount: expense.compositeItems.length,
         paidByName: expense.paidBy.name,
       });
     }

@@ -2,7 +2,12 @@ import { createServerFn } from '@tanstack/react-start';
 import * as z from 'zod';
 
 import { db } from '~/infrastructure/database/connection';
-import { parseExpenseMetadata } from '~/lib/expense-metadata';
+import {
+  isExpenseDeleted,
+  isExpenseSettlement,
+  readPinnedAt,
+  toClientExpenseType,
+} from '~/lib/expense-state';
 import { useAppSession } from '~/utils/session';
 
 const GetMemberExpensesInputSchema = z.object({
@@ -91,8 +96,12 @@ export const getMemberExpenses = createServerFn({ method: 'POST' })
             amount: true,
             currency: true,
             date: true,
-            notes: true,
-            metadata: true,
+            expenseType: true,
+            status: true,
+            pinnedAt: true,
+            compositeItems: {
+              select: { id: true },
+            },
             category: {
               select: {
                 id: true,
@@ -140,10 +149,10 @@ export const getMemberExpenses = createServerFn({ method: 'POST' })
     const expenses: MemberExpenseItem[] = [];
 
     for (const expense of groupRecord.Expense) {
-      const isDeleted = expense.notes?.includes('[DELETED]') ?? false;
+      const isDeleted = isExpenseDeleted(expense.status);
       if (isDeleted) continue;
 
-      const isSettlement = expense.notes?.includes('[SETTLEMENT') ?? false;
+      const isSettlement = isExpenseSettlement(expense.expenseType);
       const targetParticipation = expense.participants.find(
         (participant) => participant.memberId === data.memberId,
       );
@@ -166,7 +175,7 @@ export const getMemberExpenses = createServerFn({ method: 'POST' })
         }
       }
 
-      const metadata = parseExpenseMetadata(expense.metadata);
+      const pinnedAt = readPinnedAt(expense.pinnedAt);
 
       expenses.push({
         id: expense.id,
@@ -176,9 +185,9 @@ export const getMemberExpenses = createServerFn({ method: 'POST' })
         currency: expense.currency,
         date: expense.date,
         isSettlement,
-        isPinned: Boolean(metadata.pinnedAt),
-        expenseType: metadata.expenseType,
-        subExpenseCount: metadata.items.length,
+        isPinned: Boolean(pinnedAt),
+        expenseType: toClientExpenseType(expense.expenseType),
+        subExpenseCount: expense.compositeItems.length,
         participantCount: expense._count.participants,
         paidBy: expense.paidBy,
         targetShare: targetParticipation?.share ?? null,

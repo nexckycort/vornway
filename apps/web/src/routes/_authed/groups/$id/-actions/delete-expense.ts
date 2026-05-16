@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start';
 import * as z from 'zod';
 
 import { db } from '~/infrastructure/database/connection';
+import { isExpenseDeleted, isExpenseSettlement } from '~/lib/expense-state';
 import { useAppSession } from '~/utils/session';
 
 const DeleteExpenseInputSchema = z.object({
@@ -55,6 +56,8 @@ export const deleteExpense = createServerFn({ method: 'POST' })
             amount: true,
             currency: true,
             notes: true,
+            status: true,
+            expenseType: true,
           },
         });
 
@@ -62,11 +65,11 @@ export const deleteExpense = createServerFn({ method: 'POST' })
           throw new Error('Gasto no encontrado');
         }
 
-        if (expense.notes?.includes('[DELETED]')) {
+        if (isExpenseDeleted(expense.status)) {
           throw new Error('Este gasto ya fue eliminado');
         }
 
-        const isSettlement = expense.notes?.includes('[SETTLEMENT') ?? false;
+        const isSettlement = isExpenseSettlement(expense.expenseType);
         let nextTotals: Record<string, number> | null = null;
 
         if (!isSettlement) {
@@ -111,6 +114,13 @@ export const deleteExpense = createServerFn({ method: 'POST' })
             amount: 0,
             description: `${expense.description} (eliminado)`,
             notes: nextNotes,
+            status: 'DELETED',
+            deletedAt: new Date(),
+            deletedById: membership.id,
+            pinnedAt: null,
+            compositeItems: {
+              deleteMany: {},
+            },
           },
         });
 

@@ -4,7 +4,6 @@ import * as z from 'zod';
 import { Prisma } from '~/generated/prisma/client';
 import { db } from '~/infrastructure/database/connection';
 import {
-  buildExpenseMetadata,
   sumCompositeExpenseItems,
 } from '~/lib/expense-metadata';
 import { useAppSession } from '~/utils/session';
@@ -134,11 +133,17 @@ export const createExpense = createServerFn({ method: 'POST' })
           description: data.description,
           amount: computedAmount,
           currency: data.currency,
-          metadata: isComposite
-            ? (buildExpenseMetadata({
-                items: compositeItems,
-              }) as unknown as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
+          expenseType: isComposite ? 'COMPOSITE' : 'STANDARD',
+          metadata: Prisma.JsonNull,
+          ...(isComposite && {
+            compositeItems: {
+              create: compositeItems.map((item) => ({
+                description: item.description,
+                amount: item.amount,
+                createdAt: new Date(item.createdAt),
+              })),
+            },
+          }),
           // Solo crear participantes si hay seleccionados (no es gasto personal)
           ...(data.participantIds.length > 0 && {
             participants: {

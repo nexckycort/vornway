@@ -72,20 +72,10 @@ export const setCategoryExpenses = createServerFn({ method: 'POST' })
               { categoryId: null },
               { categoryId: data.categoryId },
             ],
-            AND: [
-              {
-                OR: [
-                  { notes: null },
-                  {
-                    notes: {
-                      not: {
-                        contains: '[SETTLEMENT',
-                      },
-                    },
-                  },
-                ],
-              },
-            ],
+            expenseType: {
+              not: 'SETTLEMENT',
+            },
+            status: 'ACTIVE',
           },
           select: {
             id: true,
@@ -106,16 +96,10 @@ export const setCategoryExpenses = createServerFn({ method: 'POST' })
           where: {
             groupId: data.groupId,
             categoryId: data.categoryId,
-            OR: [
-              { notes: null },
-              {
-                notes: {
-                  not: {
-                    contains: '[SETTLEMENT',
-                  },
-                },
-              },
-            ],
+            expenseType: {
+              not: 'SETTLEMENT',
+            },
+            status: 'ACTIVE',
             ...(data.expenseIds.length > 0 && {
               id: {
                 notIn: data.expenseIds,
@@ -135,16 +119,10 @@ export const setCategoryExpenses = createServerFn({ method: 'POST' })
                   id: {
                     in: data.expenseIds,
                   },
-                  OR: [
-                    { notes: null },
-                    {
-                      notes: {
-                        not: {
-                          contains: '[SETTLEMENT',
-                        },
-                      },
-                    },
-                  ],
+                  expenseType: {
+                    not: 'SETTLEMENT',
+                  },
+                  status: 'ACTIVE',
                 },
                 data: {
                   categoryId: data.categoryId,

@@ -1,6 +1,13 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { BottomAppBar } from '#/components/bottom-app-bar';
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useRouterState,
+} from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_authed')({
+  component: AuthedLayout,
   beforeLoad: async ({ location, context }) => {
     if (!context.auth.isAuthenticated) {
       throw redirect({
@@ -15,3 +22,27 @@ export const Route = createFileRoute('/_authed')({
     }
   },
 });
+
+const MAIN_VIEWS = new Set([
+  '/',
+  '/groups',
+  '/groups/',
+  '/goals',
+  '/goals/',
+  '/profile',
+  '/profile/',
+]);
+
+function AuthedLayout() {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  const showBottomBar = MAIN_VIEWS.has(pathname);
+
+  return (
+    <>
+      <Outlet />
+      {showBottomBar ? <BottomAppBar /> : null}
+    </>
+  );
+}

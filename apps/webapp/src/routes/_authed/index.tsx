@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { BottomAppBar } from '#/components/bottom-app-bar';
 import { Button } from '#/components/ui/button';
 import { HomeAction } from '#/routes/_authed/(home)/-components/home-action';
 import { homeIcons } from '#/routes/_authed/(home)/-components/home-icons';
@@ -93,7 +92,6 @@ function RouteComponent() {
           </HomeSection>
         </div>
 
-        <BottomAppBar items={data.navItems} />
       </div>
     </main>
   );

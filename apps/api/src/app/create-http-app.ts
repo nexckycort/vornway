@@ -4,6 +4,7 @@ import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 
 import { env } from '~/config/env';
+import authedRoutes from '../routes/authed/routes';
 import publicRoutes from '../routes/public/routes';
 import { createMcpHttpRouter } from './mcp-http-routes';
 import { registerHttpModules } from './modules';
@@ -30,6 +31,7 @@ export function createHttpApp(): Hono {
   );
 
   app.route('/', publicRoutes);
+  app.route('/', authedRoutes);
 
   app.route('/', createMcpHttpRouter());
   registerHttpModules(app);

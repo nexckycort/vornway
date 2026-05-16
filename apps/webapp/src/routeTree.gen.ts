@@ -13,7 +13,9 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as PublicLoginIndexRouteImport } from './routes/_public/login/index'
+import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
 import { Route as AuthedGroupsIndexRouteImport } from './routes/_authed/groups/index'
+import { Route as AuthedGoalsIndexRouteImport } from './routes/_authed/goals/index'
 
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
@@ -33,20 +35,34 @@ const PublicLoginIndexRoute = PublicLoginIndexRouteImport.update({
   path: '/login/',
   getParentRoute: () => PublicRoute,
 } as any)
+const AuthedProfileIndexRoute = AuthedProfileIndexRouteImport.update({
+  id: '/profile/',
+  path: '/profile/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedGroupsIndexRoute = AuthedGroupsIndexRouteImport.update({
   id: '/groups/',
   path: '/groups/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedGoalsIndexRoute = AuthedGoalsIndexRouteImport.update({
+  id: '/goals/',
+  path: '/goals/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
+  '/goals/': typeof AuthedGoalsIndexRoute
   '/groups/': typeof AuthedGroupsIndexRoute
+  '/profile/': typeof AuthedProfileIndexRoute
   '/login/': typeof PublicLoginIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthedIndexRoute
+  '/goals': typeof AuthedGoalsIndexRoute
   '/groups': typeof AuthedGroupsIndexRoute
+  '/profile': typeof AuthedProfileIndexRoute
   '/login': typeof PublicLoginIndexRoute
 }
 export interface FileRoutesById {
@@ -54,20 +70,24 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_authed/': typeof AuthedIndexRoute
+  '/_authed/goals/': typeof AuthedGoalsIndexRoute
   '/_authed/groups/': typeof AuthedGroupsIndexRoute
+  '/_authed/profile/': typeof AuthedProfileIndexRoute
   '/_public/login/': typeof PublicLoginIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/groups/' | '/login/'
+  fullPaths: '/' | '/goals/' | '/groups/' | '/profile/' | '/login/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/groups' | '/login'
+  to: '/' | '/goals' | '/groups' | '/profile' | '/login'
   id:
     | '__root__'
     | '/_authed'
     | '/_public'
     | '/_authed/'
+    | '/_authed/goals/'
     | '/_authed/groups/'
+    | '/_authed/profile/'
     | '/_public/login/'
   fileRoutesById: FileRoutesById
 }
@@ -106,6 +126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicLoginIndexRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_authed/profile/': {
+      id: '/_authed/profile/'
+      path: '/profile'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof AuthedProfileIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/groups/': {
       id: '/_authed/groups/'
       path: '/groups'
@@ -113,17 +140,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedGroupsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/goals/': {
+      id: '/_authed/goals/'
+      path: '/goals'
+      fullPath: '/goals/'
+      preLoaderRoute: typeof AuthedGoalsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
   AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedGoalsIndexRoute: typeof AuthedGoalsIndexRoute
   AuthedGroupsIndexRoute: typeof AuthedGroupsIndexRoute
+  AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedGoalsIndexRoute: AuthedGoalsIndexRoute,
   AuthedGroupsIndexRoute: AuthedGroupsIndexRoute,
+  AuthedProfileIndexRoute: AuthedProfileIndexRoute,
 }
 
 const AuthedRouteWithChildren =

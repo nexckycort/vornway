@@ -1,3 +1,4 @@
+import { useNavigate, useRouterState } from '@tanstack/react-router';
 import {
   Compass,
   Home,
@@ -10,11 +11,11 @@ import { cn } from '#/lib/utils';
 
 export type BottomAppBarIconName = 'compass' | 'home' | 'piggy-bank' | 'user';
 
-export type BottomAppBarItem = {
+type BottomAppBarItem = {
   id: string;
   label: string;
   icon: BottomAppBarIconName;
-  active: boolean;
+  to: '/' | '/groups' | '/goals' | '/profile';
 };
 
 const navIcons: Record<BottomAppBarIconName, LucideIcon> = {
@@ -24,24 +25,37 @@ const navIcons: Record<BottomAppBarIconName, LucideIcon> = {
   user: UserRound,
 };
 
-type BottomAppBarProps = {
-  items: BottomAppBarItem[];
-};
+const items: BottomAppBarItem[] = [
+  { id: 'home', label: 'Inicio', icon: 'home', to: '/' },
+  { id: 'groups', label: 'Grupos', icon: 'compass', to: '/groups' },
+  { id: 'goals', label: 'Metas', icon: 'piggy-bank', to: '/goals' },
+  { id: 'profile', label: 'Perfil', icon: 'user', to: '/profile' },
+];
 
-export function BottomAppBar({ items }: BottomAppBarProps) {
+export function BottomAppBar() {
+  const navigate = useNavigate();
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[412px] rounded-t-[28px] border-t border-border bg-white px-5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-1px_2.3px_rgba(203,203,203,0.3)]">
       <div className="flex items-end justify-between">
         {items.map((item) => {
           const Icon = navIcons[item.icon];
+          const active =
+            item.to === '/' ? pathname === '/' : pathname.startsWith(item.to);
 
           return (
             <button
               key={item.id}
               type="button"
+              onClick={() => {
+                void navigate({ to: item.to });
+              }}
               className={cn(
                 'flex w-[84px] flex-col items-center justify-end gap-0.5 rounded-xl px-1.5 text-xs font-medium leading-4 text-[#a7a7a7]',
-                item.active && 'text-primary',
+                active && 'text-primary',
               )}
             >
               <Icon className="size-5" aria-hidden="true" />

@@ -6,7 +6,10 @@ import { homeIcons } from '#/routes/_authed/(home)/-components/home-icons';
 import { HomeSection } from '#/routes/_authed/(home)/-components/home-section';
 import { SavingGoalCard } from '#/routes/_authed/(home)/-components/saving-goal-card';
 import { TripCard } from '#/routes/_authed/(home)/-components/trip-card';
-import { useHomeQuery } from '#/routes/_authed/(home)/-hooks/use-home-query';
+import {
+  defaultHomeData,
+  useHomeQuery,
+} from '#/routes/_authed/(home)/-hooks/use-home-query';
 
 export const Route = createFileRoute('/_authed/(home)/')({
   component: RouteComponent,
@@ -14,7 +17,7 @@ export const Route = createFileRoute('/_authed/(home)/')({
 
 function RouteComponent() {
   const homeQuery = useHomeQuery();
-  const { data } = homeQuery;
+  const data = homeQuery.data ?? defaultHomeData;
   const BellIcon = homeIcons.bell;
   const PlusIcon = homeIcons.plus;
 

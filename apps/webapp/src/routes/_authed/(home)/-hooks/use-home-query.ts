@@ -1,3 +1,7 @@
+import type { InferResponseType } from '#/lib/hc';
+import { client } from '#/lib/hc';
+import { useQuery } from '@tanstack/react-query';
+
 export type HomeIconName =
   | 'bell'
   | 'compass'
@@ -61,9 +65,12 @@ export type HomeQueryData = {
   navItems: NavItem[];
 };
 
-const homeMock: HomeQueryData = {
-  userName: 'Vanessa',
-  welcomeText: 'Bienvenida a Vornway',
+const homeEndpoint = client.api.home.$get;
+type HomeApiResponse = InferResponseType<typeof homeEndpoint>;
+
+export const defaultHomeData: HomeQueryData = {
+  userName: 'Viajero',
+  welcomeText: 'Bienvenido a Vornway',
   actions: [
     {
       id: 'currency-converter',
@@ -72,56 +79,14 @@ const homeMock: HomeQueryData = {
       variant: 'neutral',
     },
     {
-      id: 'create-trip',
+      id: 'create-group',
       icon: 'compass',
-      label: 'Crear Nuevo viaje',
+      label: 'Crear Nuevo grupo',
       variant: 'primary',
     },
   ],
-  trips: [
-    {
-      id: 'europa-balance',
-      name: 'Europa trip',
-      dates: '4 mar - 8 mar',
-      avatars: ['VF', 'NC'],
-      extraPeople: 2,
-      balanceLabel: 'Te deben $1,000.000',
-      balanceItems: [
-        { person: 'Nestor', amount: 'Te debe $100.000' },
-        { person: 'Nestor', amount: 'Te debe €500' },
-      ],
-    },
-    {
-      id: 'europa-empty',
-      name: 'Europa trip',
-      dates: '4 mar - 8 mar',
-      avatars: ['VF', 'NC'],
-      extraPeople: 2,
-      emptyLabel: 'Sin gastos',
-    },
-  ],
-  savingGoals: [
-    {
-      id: 'brasil-2026',
-      name: 'Brasil 2026',
-      category: 'Viaje',
-      saved: '$1.000.000',
-      target: '$3.000.00',
-      progress: 25,
-      icon: 'compass',
-      tone: 'pink',
-    },
-    {
-      id: 'travel-accessories',
-      name: 'Accesorios de viaje',
-      category: 'Insumos',
-      saved: '$10.000',
-      target: '$30.000',
-      progress: 25,
-      icon: 'shirt',
-      tone: 'yellow',
-    },
-  ],
+  trips: [],
+  savingGoals: [],
   navItems: [
     { id: 'home', label: 'Inicio', icon: 'home', active: true },
     { id: 'trips', label: 'Viajes', icon: 'compass', active: false },
@@ -130,12 +95,113 @@ const homeMock: HomeQueryData = {
   ],
 };
 
-export function useHomeQuery() {
+function formatAmount(currency: string, amount: number): string {
+  try {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${amount.toLocaleString()} ${currency}`;
+  }
+}
+
+function formatShortDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('es-CO', {
+    day: 'numeric',
+    month: 'short',
+  }).format(date);
+}
+
+function toInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '??';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
+}
+
+function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
+  const trips: Trip[] = apiData.groups.map((group) => {
+    const names = [
+      ...(group.currentUser ? [group.currentUser.name] : []),
+      ...group.participantBalances.map((item) => item.memberName),
+    ];
+    const uniqueNames = Array.from(new Set(names));
+    const avatars = uniqueNames.slice(0, 2).map(toInitials);
+    const extraPeople = Math.max(0, uniqueNames.length - avatars.length);
+
+    const balances = group.participantBalances.map((item) => ({
+      person: item.memberName,
+      amount:
+        item.direction === 'theyOweYou'
+          ? `Te debe ${formatAmount(item.currency, item.amount)}`
+          : `Debes ${formatAmount(item.currency, item.amount)}`,
+    }));
+
+    const totals = Object.entries(group.totalsByCurrency).filter(
+      ([, value]) => Math.abs(value) >= 0.01,
+    );
+    const firstTotal = totals[0];
+    const balanceLabel = firstTotal
+      ? firstTotal[1] > 0
+        ? `Te deben ${formatAmount(firstTotal[0], Math.abs(firstTotal[1]))}`
+        : `Debes ${formatAmount(firstTotal[0], Math.abs(firstTotal[1]))}`
+      : 'Sin saldos pendientes';
+
+    if (balances.length === 0) {
+      return {
+        id: group.id,
+        name: group.name,
+        dates: `Creado ${formatShortDate(group.createdAt)}`,
+        avatars,
+        extraPeople,
+        emptyLabel: group.hasExpenses ? 'Sin saldos pendientes' : 'Sin gastos',
+      };
+    }
+
+    return {
+      id: group.id,
+      name: group.name,
+      dates: `Creado ${formatShortDate(group.createdAt)}`,
+      avatars,
+      extraPeople,
+      balanceLabel,
+      balanceItems: balances,
+    };
+  });
+
+  const savingGoals: SavingGoal[] = apiData.goals.map((goal, index) => ({
+    id: goal.id,
+    name: goal.title,
+    category: goal.group.name,
+    saved: formatAmount(goal.currency, goal.savedAmount),
+    target: formatAmount(goal.currency, goal.targetAmount),
+    progress: goal.progress,
+    icon: index % 2 === 0 ? 'compass' : 'shirt',
+    tone: index % 2 === 0 ? 'pink' : 'yellow',
+  }));
+
   return {
-    data: homeMock,
-    error: null,
-    isError: false,
-    isLoading: false,
-    refetch: () => homeMock,
-  } as const;
+    ...defaultHomeData,
+    trips,
+    savingGoals,
+  };
+}
+
+export function useHomeQuery() {
+  return useQuery({
+    queryKey: ['home-summary'],
+    queryFn: async () => {
+      const response = await homeEndpoint();
+      if (!response.ok) {
+        throw new Error('No se pudo cargar el home');
+      }
+      const payload = (await response.json()) as HomeApiResponse;
+      return mapHomeData(payload);
+    },
+    placeholderData: defaultHomeData,
+  });
 }

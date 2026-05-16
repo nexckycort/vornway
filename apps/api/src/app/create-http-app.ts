@@ -4,10 +4,10 @@ import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 
 import { env } from '~/config/env';
+import { auth } from '~/infrastructure/auth/better-auth.config';
 import authedRoutes from '../routes/authed/routes';
 import publicRoutes from '../routes/public/routes';
 import { createMcpHttpRouter } from './mcp-http-routes';
-import { registerHttpModules } from './modules';
 
 export function createHttpApp(): Hono {
   const app = new Hono();
@@ -23,6 +23,7 @@ export function createHttpApp(): Hono {
         env.BETTER_AUTH_URL,
         'https://vornway.com',
         'https://www.vornway.com',
+        'https://app.vornway.com',
       ],
       exposeHeaders: ['Content-Length'],
       maxAge: 600,
@@ -30,11 +31,14 @@ export function createHttpApp(): Hono {
     }),
   );
 
-  app.route('/', publicRoutes);
-  app.route('/', authedRoutes);
+  app.on(['POST', 'GET'], '/api/auth/*', (c) => {
+    return auth.handler(c.req.raw);
+  });
+
+  app.route('/', publicRoutes).route('/', authedRoutes);
 
   app.route('/', createMcpHttpRouter());
-  registerHttpModules(app);
+  // registerHttpModules(app);
 
   return app;
 }

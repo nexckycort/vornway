@@ -1,10 +1,11 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
+
+import { createGroupsService } from '~/modules/groups/service';
 import type { AppContext } from '~/shared/types/app';
-import { GroupsService } from './groups.service';
 import { listGroupsQuerySchema } from './groups.validators';
 
-const groupsService = new GroupsService();
+const groupsService = createGroupsService();
 
 const groups = new Hono<AppContext>().get(
   '/',
@@ -13,7 +14,11 @@ const groups = new Hono<AppContext>().get(
     const query = c.req.valid('query');
     const { id: userId } = c.get('user');
 
-    const groups = await groupsService.findAll(userId, query);
+    const groups = await groupsService.listGroups({
+      userId,
+      limit: query.limit,
+      cursor: query.cursor,
+    });
     return c.json(groups);
   },
 );

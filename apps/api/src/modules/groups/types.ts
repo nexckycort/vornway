@@ -4,6 +4,23 @@ export type ListGroupsInput = {
   cursor?: string;
 };
 
+export type CreateGroupInput = {
+  userId: string;
+  ownerName: string;
+  name: string;
+  type: string;
+  description?: string;
+};
+
+export type CreateGroupResult = {
+  id: string;
+  name: string;
+  type: string;
+  description: string | null;
+  inviteCode: string;
+  createdAt: Date;
+};
+
 export type GroupListItem = {
   id: string;
   name: string;

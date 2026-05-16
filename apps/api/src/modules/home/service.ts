@@ -159,11 +159,18 @@ export function createHomeService(): HomeService {
     getSummary: async (userId) => {
       const groups = await db.group.findMany({
         where: {
-          GroupMember: {
-            some: {
-              userId,
+          OR: [
+            {
+              ownerId: userId,
             },
-          },
+            {
+              GroupMember: {
+                some: {
+                  userId,
+                },
+              },
+            },
+          ],
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: 2,
@@ -214,11 +221,18 @@ export function createHomeService(): HomeService {
         where: {
           deletedAt: null,
           group: {
-            GroupMember: {
-              some: {
-                userId,
+            OR: [
+              {
+                ownerId: userId,
               },
-            },
+              {
+                GroupMember: {
+                  some: {
+                    userId,
+                  },
+                },
+              },
+            ],
           },
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],

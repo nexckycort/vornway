@@ -58,3 +58,10 @@ Important:
 - Avoid creating the same public route in more than one place.
 - Keep public HTTP endpoints under `src/routes/public/*` so `PublicRoutes` stays stable.
 - If route typing is broken in clients, check that the router is declared with the chained style above.
+
+## Environment variables
+
+Push notifications require:
+- `VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_SUBJECT`

@@ -5,6 +5,7 @@ import converterRoutes from './converter/routes';
 import goalsRoutes from './goals/routes';
 import groupsRoutes from './groups/routes';
 import homeRoutes from './home/routes';
+import pushRoutes from './push/routes';
 
 const app = new Hono()
   .basePath('/api')
@@ -12,6 +13,7 @@ const app = new Hono()
   .route('/converter', converterRoutes)
   .route('/goals', goalsRoutes)
   .route('/home', homeRoutes)
+  .route('/push', pushRoutes)
   .route('/groups', groupsRoutes);
 
 export default app;

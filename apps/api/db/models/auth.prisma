@@ -12,6 +12,7 @@ model User {
   groups        Group[]
   groupMembers  GroupMember[]
   itineraries   Itinerary[]
+  pushSubscriptions PushSubscription[]
 
   @@unique([email])
   @@map("user")

@@ -1,4 +1,6 @@
 import { db } from '~/infrastructure/database/connection';
+import { buildExpensePushPayload, getExpensePushRecipientUserIds } from './push-notifications';
+import { pushNotificationService } from '~/modules/push';
 import type {
   AddGroupMemberInput,
   CreateGroupInput,
@@ -808,7 +810,7 @@ export function createGroupsService(): GroupsService {
             in: [paidById, ...participantIds],
           },
         },
-        select: { id: true },
+        select: { id: true, name: true, userId: true },
       });
       const validMemberIds = new Set(members.map((member) => member.id));
 
@@ -888,6 +890,59 @@ export function createGroupsService(): GroupsService {
 
         return created;
       });
+
+      try {
+        const [group, pushMembers] = await Promise.all([
+          db.group.findUnique({
+            where: { id: groupId },
+            select: { name: true },
+          }),
+          db.groupMember.findMany({
+            where: {
+              groupId,
+              id: {
+                in: [paidById, ...validParticipantIds],
+              },
+            },
+            select: { id: true, name: true, userId: true },
+          }),
+        ]);
+
+        const recipientUserIds = getExpensePushRecipientUserIds({
+          members: pushMembers,
+          paidById,
+          participantIds: validParticipantIds,
+          creatorUserId: userId,
+        });
+
+        if (group && recipientUserIds.length > 0) {
+          void pushNotificationService
+            .sendToUsers(
+              recipientUserIds,
+              buildExpensePushPayload({
+                groupId,
+                groupName: group.name,
+                expenseId: expense.id,
+                expenseTitle: description,
+                amount,
+                currency,
+                createdByName: membership.name,
+              }),
+            )
+            .catch((error) => {
+              console.warn('Failed to send expense push notification', {
+                groupId,
+                expenseId: expense.id,
+                error,
+              });
+            });
+        }
+      } catch (error) {
+        console.warn('Failed to enqueue expense push notification', {
+          groupId,
+          error,
+        });
+      }
 
       return expense;
     },

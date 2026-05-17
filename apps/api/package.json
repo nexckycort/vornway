@@ -31,10 +31,12 @@
     "better-auth": "catalog:",
     "hono": "^4.12.14",
     "resend": "catalog:",
+    "web-push": "^3.6.7",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
+    "@types/web-push": "^3.6.4",
     "@typescript/native-preview": "catalog:",
     "prisma": "catalog:",
     "typescript": "catalog:"

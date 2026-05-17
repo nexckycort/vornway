@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ChevronLeft } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import { useCreateGoalMutation } from '../-hooks/use-create-goal';
 
@@ -70,27 +70,19 @@ function RouteComponent() {
   };
 
   return (
-    <main className="min-h-screen bg-[#efefef] text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa] px-4 pb-0 pt-8">
-        <header className="mb-6 flex items-start justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => navigate({ to: '/goals', replace: true })}
-            className="inline-flex size-10 items-center justify-center rounded-full bg-white shadow-[0_8px_18px_rgba(15,23,42,0.06)]"
-            aria-label="Atrás"
-          >
-            <ChevronLeft className="size-5 text-primary" />
-          </button>
-          <div className="min-w-0 flex-1 text-center">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[#64748b]">
-              Metas de ahorro
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold leading-8 text-[#0f172a]">
-              Crear meta
-            </h1>
-          </div>
-          <div className="size-10" />
-        </header>
+    <MobilePageLayout
+      title="Crear meta"
+      onBack={() => navigate({ to: '/goals', replace: true })}
+    >
+      <div className="mx-auto flex w-full max-w-[412px] flex-1 flex-col bg-[#fafafa] px-4 pb-0">
+        <div className="mb-6">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#64748b]">
+            Metas de ahorro
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold leading-8 text-[#0f172a]">
+            Crear meta
+          </h1>
+        </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto pb-32">
           <input
@@ -177,6 +169,6 @@ function RouteComponent() {
           </div>
         </div>
       </div>
-    </main>
+    </MobilePageLayout>
   );
 }

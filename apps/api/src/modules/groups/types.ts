@@ -11,6 +11,31 @@ export type ListGroupExpensesInput = {
   cursor?: string;
 };
 
+export type CreateGroupExpenseInput = {
+  userId: string;
+  groupId: string;
+  description: string;
+  amount: number;
+  currency: string;
+  paidById: string;
+  participantIds: string[];
+};
+
+export type SettleGroupDebtInput = {
+  userId: string;
+  groupId: string;
+  fromMemberId: string;
+  toMemberId: string;
+  amount: number;
+  currency: string;
+};
+
+export type AddGroupMemberInput = {
+  userId: string;
+  groupId: string;
+  name: string;
+};
+
 export type CreateGroupInput = {
   userId: string;
   ownerName: string;
@@ -93,6 +118,14 @@ export type GroupSummaryResult = {
   directCredits: Array<{
     fromMemberId: string;
     fromName: string;
+    currency: string;
+    amount: number;
+  }>;
+  settlementDebts: Array<{
+    fromMemberId: string;
+    fromName: string;
+    toMemberId: string;
+    toName: string;
     currency: string;
     amount: number;
   }>;

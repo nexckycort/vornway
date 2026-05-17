@@ -4,10 +4,13 @@ import { Hono } from 'hono';
 import { createGroupsService } from '~/modules/groups/service';
 import type { AppContext } from '~/shared/types/app';
 import {
+  addGroupMemberSchema,
   createGroupSchema,
+  createGroupExpenseSchema,
   groupParamsSchema,
   listGroupExpensesQuerySchema,
   listGroupsQuerySchema,
+  settleGroupDebtSchema,
 } from './groups.validators';
 
 const groupsService = createGroupsService();
@@ -74,6 +77,85 @@ const groups = new Hono<AppContext>()
       } catch (error) {
         if (error instanceof Error && error.message === 'Grupo no encontrado') {
           return c.json({ error: error.message }, 404);
+        }
+        throw error;
+      }
+    },
+  )
+  .post(
+    '/:id/expenses',
+    zValidator('param', groupParamsSchema),
+    zValidator('json', createGroupExpenseSchema),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      const data = c.req.valid('json');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.createExpense({
+          userId,
+          groupId: id,
+          description: data.description,
+          amount: data.amount,
+          currency: data.currency,
+          paidById: data.paidById,
+          participantIds: data.participantIds,
+        });
+        return c.json(result, 201);
+      } catch (error) {
+        if (error instanceof Error) {
+          return c.json({ error: error.message }, 400);
+        }
+        throw error;
+      }
+    },
+  )
+  .post(
+    '/:id/settlements',
+    zValidator('param', groupParamsSchema),
+    zValidator('json', settleGroupDebtSchema),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      const data = c.req.valid('json');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.settleDebt({
+          userId,
+          groupId: id,
+          fromMemberId: data.fromMemberId,
+          toMemberId: data.toMemberId,
+          amount: data.amount,
+          currency: data.currency,
+        });
+        return c.json(result, 201);
+      } catch (error) {
+        if (error instanceof Error) {
+          return c.json({ error: error.message }, 400);
+        }
+        throw error;
+      }
+    },
+  )
+  .post(
+    '/:id/members',
+    zValidator('param', groupParamsSchema),
+    zValidator('json', addGroupMemberSchema),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      const data = c.req.valid('json');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.addMember({
+          userId,
+          groupId: id,
+          name: data.name,
+        });
+        return c.json(result, 201);
+      } catch (error) {
+        if (error instanceof Error) {
+          return c.json({ error: error.message }, 400);
         }
         throw error;
       }

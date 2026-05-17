@@ -1,6 +1,8 @@
 import { db } from '~/infrastructure/database/connection';
 import type {
+  AddGroupMemberInput,
   CreateGroupInput,
+  CreateGroupExpenseInput,
   CreateGroupResult,
   GroupListItem,
   GroupSummaryResult,
@@ -8,6 +10,7 @@ import type {
   ListGroupExpensesResult,
   ListGroupsInput,
   ListGroupsResult,
+  SettleGroupDebtInput,
 } from './types';
 
 export type GroupsService = {
@@ -15,6 +18,9 @@ export type GroupsService = {
   createGroup: (input: CreateGroupInput) => Promise<CreateGroupResult>;
   getGroupSummary: (input: { userId: string; groupId: string }) => Promise<GroupSummaryResult>;
   listGroupExpenses: (input: ListGroupExpensesInput) => Promise<ListGroupExpensesResult>;
+  createExpense: (input: CreateGroupExpenseInput) => Promise<{ id: string }>;
+  settleDebt: (input: SettleGroupDebtInput) => Promise<{ id: string }>;
+  addMember: (input: AddGroupMemberInput) => Promise<{ id: string; name: string }>;
 };
 
 async function generateInviteCode(): Promise<string> {
@@ -302,6 +308,7 @@ export function createGroupsService(): GroupsService {
       );
       const balanceByMember = new Map<string, Record<string, number>>();
       const directDebtByPair = new Map<string, number>();
+      const allDebtByPair = new Map<string, number>();
 
       for (const member of group.GroupMember) {
         balanceByMember.set(member.id, {});
@@ -322,6 +329,14 @@ export function createGroupsService(): GroupsService {
           if (participantBalances) {
             participantBalances[expense.currency] = normalizeAmount(
               (participantBalances[expense.currency] ?? 0) - participant.share,
+            );
+          }
+
+          if (participant.memberId !== expense.paidById) {
+            const key = `${participant.memberId}:${expense.paidById}:${expense.currency}`;
+            allDebtByPair.set(
+              key,
+              normalizeAmount((allDebtByPair.get(key) ?? 0) + participant.share),
             );
           }
         }
@@ -384,6 +399,23 @@ export function createGroupsService(): GroupsService {
         })
         .sort((a, b) => b.amount - a.amount);
 
+      const settlementDebts = Array.from(allDebtByPair.entries())
+        .map(([pairKey, amount]) => {
+          const [fromMemberId, toMemberId, currency] = pairKey.split(':');
+          const reverseAmount =
+            allDebtByPair.get(`${toMemberId}:${fromMemberId}:${currency}`) ?? 0;
+          return {
+            fromMemberId,
+            fromName: memberNameById.get(fromMemberId) ?? 'Miembro',
+            toMemberId,
+            toName: memberNameById.get(toMemberId) ?? 'Miembro',
+            currency,
+            amount: normalizeAmount(amount - reverseAmount),
+          };
+        })
+        .filter((entry) => entry.amount > 0)
+        .sort((a, b) => b.amount - a.amount);
+
       return {
         id: group.id,
         name: group.name,
@@ -410,6 +442,7 @@ export function createGroupsService(): GroupsService {
         })),
         directDebts,
         directCredits,
+        settlementDebts,
         myMembership: myMembership
           ? {
               id: myMembership.id,
@@ -508,7 +541,7 @@ export function createGroupsService(): GroupsService {
       return {
         data: pageRows.map((row) => ({
           ...(() => {
-            const isSettlement = false;
+            const isSettlement = Boolean(row.notes?.includes('[SETTLEMENT:'));
             const isPersonal = !isSettlement && row.participants.length === 0;
             const currentParticipation = currentMember
               ? row.participants.find(
@@ -541,7 +574,9 @@ export function createGroupsService(): GroupsService {
               pinnedAt: null,
               expenseType: 'standard' as const,
               subExpenseCount: 0,
-              settlementToName: null,
+              settlementToName: isSettlement
+                ? (row.participants[0]?.member.name ?? null)
+                : null,
               paidBy: row.paidBy,
               category: null,
               participantCount: row._count.participants,
@@ -555,6 +590,205 @@ export function createGroupsService(): GroupsService {
           nextCursor,
         },
       };
+    },
+    createExpense: async ({
+      userId,
+      groupId,
+      description,
+      amount,
+      currency,
+      paidById,
+      participantIds,
+    }) => {
+      const membership = await db.groupMember.findFirst({
+        where: { groupId, userId },
+        select: { id: true, name: true },
+      });
+
+      if (!membership) {
+        throw new Error('No tienes acceso a este grupo');
+      }
+
+      const members = await db.groupMember.findMany({
+        where: {
+          groupId,
+          id: {
+            in: [paidById, ...participantIds],
+          },
+        },
+        select: { id: true },
+      });
+      const validMemberIds = new Set(members.map((member) => member.id));
+
+      if (!validMemberIds.has(paidById)) {
+        throw new Error('El pagador no pertenece al grupo');
+      }
+
+      const validParticipantIds = Array.from(new Set(participantIds)).filter(
+        (memberId) => validMemberIds.has(memberId),
+      );
+      const share =
+        validParticipantIds.length > 0 ? amount / validParticipantIds.length : 0;
+
+      const expense = await db.$transaction(async (tx) => {
+        const created = await tx.expense.create({
+          data: {
+            groupId,
+            paidById,
+            description,
+            amount,
+            currency,
+            ...(validParticipantIds.length > 0
+              ? {
+                  participants: {
+                    create: validParticipantIds.map((memberId) => ({
+                      memberId,
+                      share,
+                    })),
+                  },
+                }
+              : {}),
+          },
+          select: { id: true },
+        });
+
+        const group = await tx.group.findUnique({
+          where: { id: groupId },
+          select: { totals: true },
+        });
+        const totals = (group?.totals as Record<string, number>) ?? {};
+
+        await tx.group.update({
+          where: { id: groupId },
+          data: {
+            totals: {
+              ...totals,
+              [currency]: normalizeAmount((totals[currency] ?? 0) + amount),
+            },
+          },
+        });
+
+        await tx.activityLog.create({
+          data: {
+            groupId,
+            actorUserId: userId,
+            actorName: membership.name,
+            action: 'expense.created',
+            targetName: description,
+            details: {
+              expenseId: created.id,
+              amount,
+              currency,
+              paidById,
+              participants: validParticipantIds.length,
+            },
+          },
+        });
+
+        return created;
+      });
+
+      return expense;
+    },
+    settleDebt: async ({
+      userId,
+      groupId,
+      fromMemberId,
+      toMemberId,
+      amount,
+      currency,
+    }) => {
+      const membership = await db.groupMember.findFirst({
+        where: { groupId, userId },
+        select: { id: true, name: true },
+      });
+
+      if (!membership) {
+        throw new Error('No tienes acceso a este grupo');
+      }
+
+      const members = await db.groupMember.findMany({
+        where: {
+          groupId,
+          id: {
+            in: [fromMemberId, toMemberId],
+          },
+        },
+        select: { id: true, name: true },
+      });
+      const fromMember = members.find((member) => member.id === fromMemberId);
+      const toMember = members.find((member) => member.id === toMemberId);
+
+      if (!fromMember || !toMember || fromMember.id === toMember.id) {
+        throw new Error('Participantes de liquidación inválidos');
+      }
+
+      const expense = await db.$transaction(async (tx) => {
+        const created = await tx.expense.create({
+          data: {
+            groupId,
+            paidById: fromMemberId,
+            description: `Liquidación: ${fromMember.name} -> ${toMember.name}`,
+            amount,
+            currency,
+            notes: `[SETTLEMENT:FLEX] ${new Date().toISOString()} by ${membership.id}`,
+            participants: {
+              create: [
+                {
+                  memberId: toMemberId,
+                  share: amount,
+                },
+              ],
+            },
+          },
+          select: { id: true },
+        });
+
+        await tx.activityLog.create({
+          data: {
+            groupId,
+            actorUserId: userId,
+            actorName: membership.name,
+            action: 'debt.settled',
+            targetName: `${fromMember.name} -> ${toMember.name}`,
+            details: {
+              expenseId: created.id,
+              fromMemberId,
+              toMemberId,
+              amount,
+              currency,
+            },
+          },
+        });
+
+        return created;
+      });
+
+      return expense;
+    },
+    addMember: async ({ userId, groupId, name }) => {
+      const membership = await db.groupMember.findFirst({
+        where: { groupId, userId },
+        select: { id: true },
+      });
+
+      if (!membership) {
+        throw new Error('No tienes acceso a este grupo');
+      }
+
+      const member = await db.groupMember.create({
+        data: {
+          groupId,
+          name,
+          role: 'member',
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+      });
+
+      return member;
     },
   };
 }

@@ -1,11 +1,70 @@
-import * as React from 'react';
-import { Drawer as DrawerPrimitive } from 'vaul';
+'use client';
 
 import { cn } from '#/lib/utils';
+import type * as React from 'react';
+import { useEffect, useRef } from 'react';
+import { Drawer as DrawerPrimitive } from 'vaul';
 
 function Drawer({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
+  const lastOpen = useRef(props.open);
+  const openedAtLocationKey = useRef<string | null>(null);
+  const closeBackTimeout = useRef<number | null>(null);
+
+  const getLocationKey = () =>
+    `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    if (!lastOpen.current && props.open) {
+      if (closeBackTimeout.current !== null) {
+        window.clearTimeout(closeBackTimeout.current);
+        closeBackTimeout.current = null;
+      }
+      window.history.pushState({ drawer: true }, '');
+      openedAtLocationKey.current = getLocationKey();
+    }
+
+    if (lastOpen.current && !props.open) {
+      if (window.history.state?.drawer) {
+        closeBackTimeout.current = window.setTimeout(() => {
+          const sameLocation = openedAtLocationKey.current === getLocationKey();
+
+          if (!props.open && sameLocation && window.history.state?.drawer) {
+            window.history.back();
+          }
+
+          closeBackTimeout.current = null;
+        }, 0);
+      }
+      openedAtLocationKey.current = null;
+    }
+
+    lastOpen.current = props.open;
+  }, [props.open]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (props.open) {
+        props.onOpenChange?.(false);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [props.open, props.onOpenChange]);
+
+  useEffect(() => {
+    return () => {
+      if (closeBackTimeout.current !== null) {
+        window.clearTimeout(closeBackTimeout.current);
+      }
+    };
+  }, []);
+
   return <DrawerPrimitive.Root data-slot="drawer" {...props} />;
 }
 
@@ -35,7 +94,7 @@ function DrawerOverlay({
     <DrawerPrimitive.Overlay
       data-slot="drawer-overlay"
       className={cn(
-        'fixed inset-0 z-50 bg-black/80 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0',
+        'data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/15 supports-backdrop-filter:backdrop-blur-sm fixed inset-0 z-50',
         className,
       )}
       {...props}
@@ -54,12 +113,12 @@ function DrawerContent({
       <DrawerPrimitive.Content
         data-slot="drawer-content"
         className={cn(
-          'group/drawer-content fixed z-50 flex h-auto flex-col bg-transparent p-4 text-sm text-popover-foreground before:absolute before:inset-2 before:-z-10 before:rounded-4xl before:border before:border-border before:bg-popover data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:max-h-[80vh] data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh] data-[vaul-drawer-direction=left]:sm:max-w-sm data-[vaul-drawer-direction=right]:sm:max-w-sm',
+          'bg-background/97 flex h-auto flex-col text-sm data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:max-h-[84vh] data-[vaul-drawer-direction=bottom]:rounded-t-[1.75rem] data-[vaul-drawer-direction=bottom]:border-t data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=left]:rounded-r-[1.75rem] data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:rounded-l-[1.75rem] data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[84vh] data-[vaul-drawer-direction=top]:rounded-b-[1.75rem] data-[vaul-drawer-direction=top]:border-b data-[vaul-drawer-direction=left]:sm:max-w-sm data-[vaul-drawer-direction=right]:sm:max-w-sm group/drawer-content fixed z-50 shadow-[0_28px_55px_-35px_color-mix(in_oklch,var(--foreground)_40%,transparent)] backdrop-blur-xl',
           className,
         )}
         {...props}
       >
-        <div className="mx-auto mt-4 hidden h-1.5 w-[100px] shrink-0 rounded-full bg-muted group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
+        <div className="bg-muted mt-4 h-1.5 w-[88px] rounded-full mx-auto hidden shrink-0 group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>
@@ -71,7 +130,7 @@ function DrawerHeader({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="drawer-header"
       className={cn(
-        'flex flex-col gap-0.5 p-4 group-data-[vaul-drawer-direction=bottom]/drawer-content:text-center group-data-[vaul-drawer-direction=top]/drawer-content:text-center md:gap-1.5 md:text-left',
+        'gap-1 p-5 group-data-[vaul-drawer-direction=bottom]/drawer-content:text-center group-data-[vaul-drawer-direction=top]/drawer-content:text-center md:gap-1 md:text-left flex flex-col',
         className,
       )}
       {...props}
@@ -83,7 +142,7 @@ function DrawerFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="drawer-footer"
-      className={cn('mt-auto flex flex-col gap-2 p-4', className)}
+      className={cn('gap-2 p-5 mt-auto flex flex-col', className)}
       {...props}
     />
   );
@@ -96,7 +155,10 @@ function DrawerTitle({
   return (
     <DrawerPrimitive.Title
       data-slot="drawer-title"
-      className={cn('text-base font-medium text-foreground', className)}
+      className={cn(
+        'text-foreground text-base font-semibold tracking-tight',
+        className,
+      )}
       {...props}
     />
   );
@@ -109,7 +171,7 @@ function DrawerDescription({
   return (
     <DrawerPrimitive.Description
       data-slot="drawer-description"
-      className={cn('text-sm text-muted-foreground', className)}
+      className={cn('text-muted-foreground text-sm', className)}
       {...props}
     />
   );

@@ -1,0 +1,92 @@
+import { client } from '#/lib/hc';
+import type { InferRequestType, InferResponseType } from '#/lib/hc';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
+const settleDebtEndpoint = client.api.groups[':id'].settlements.$post;
+const addMemberEndpoint = client.api.groups[':id'].members.$post;
+
+type CreateExpenseRequest = InferRequestType<typeof createExpenseEndpoint>;
+type CreateExpenseResponse = InferResponseType<typeof createExpenseEndpoint>;
+type SettleDebtRequest = InferRequestType<typeof settleDebtEndpoint>;
+type SettleDebtResponse = InferResponseType<typeof settleDebtEndpoint>;
+type AddMemberRequest = InferRequestType<typeof addMemberEndpoint>;
+type AddMemberResponse = InferResponseType<typeof addMemberEndpoint>;
+
+function invalidateGroup(queryClient: ReturnType<typeof useQueryClient>, groupId: string) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+    queryClient.invalidateQueries({ queryKey: ['group-expenses', groupId] }),
+    queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+    queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+  ]);
+}
+
+export function useCreateExpenseMutation(groupId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (json: CreateExpenseRequest['json']) => {
+      const response = await createExpenseEndpoint({
+        param: { id: groupId },
+        json,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudo crear el gasto');
+      }
+
+      return (await response.json()) as CreateExpenseResponse;
+    },
+    onSuccess: async () => {
+      await invalidateGroup(queryClient, groupId);
+    },
+  });
+}
+
+export function useSettleDebtMutation(groupId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (json: SettleDebtRequest['json']) => {
+      const response = await settleDebtEndpoint({
+        param: { id: groupId },
+        json,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudo liquidar la deuda');
+      }
+
+      return (await response.json()) as SettleDebtResponse;
+    },
+    onSuccess: async () => {
+      await invalidateGroup(queryClient, groupId);
+    },
+  });
+}
+
+export function useAddMemberMutation(groupId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (json: AddMemberRequest['json']) => {
+      const response = await addMemberEndpoint({
+        param: { id: groupId },
+        json,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudo agregar el participante');
+      }
+
+      return (await response.json()) as AddMemberResponse;
+    },
+    onSuccess: async () => {
+      await invalidateGroup(queryClient, groupId);
+    },
+  });
+}

@@ -2,10 +2,19 @@ import {
   useGroupExpensesInfiniteQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { Button } from '#/components/ui/button';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import {
   ArrowLeft,
   BarChart3,
+  Copy,
   HandCoins,
   MoreHorizontal,
   Pin,
@@ -214,6 +223,8 @@ function RouteComponent() {
   const { id } = Route.useParams();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = useState<'gastos' | 'cuentas'>('gastos');
+  const [showMoreDrawer, setShowMoreDrawer] = useState(false);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   const groupQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
@@ -276,6 +287,32 @@ function RouteComponent() {
   }
 
   const group = groupQuery.data;
+  const inviteLink =
+    group.inviteCode && typeof window !== 'undefined'
+      ? `${window.location.origin}/join/${group.inviteCode}`
+      : '';
+
+  const copyText = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setShareMessage(`${label} copiado`);
+    } catch {
+      setShareMessage('No se pudo copiar');
+    }
+  };
+
+  const shareInvite = async () => {
+    if (!inviteLink) return;
+    try {
+      if (navigator.share) {
+        await navigator.share({ url: inviteLink });
+        return;
+      }
+      await copyText(inviteLink, 'Enlace');
+    } catch {
+      setShareMessage('No se pudo compartir');
+    }
+  };
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
@@ -320,16 +357,51 @@ function RouteComponent() {
 
           <div className="mt-4 grid grid-cols-4 gap-2">
             {[
-              { label: 'Crear', icon: Plus, primary: true },
-              { label: 'Liquidar', icon: HandCoins },
-              { label: 'Personas', icon: UserPlus },
-              { label: 'Mas', icon: MoreHorizontal },
+              {
+                label: 'Crear',
+                icon: Plus,
+                primary: true,
+                to: '/groups/$id/add-expense' as const,
+              },
+              {
+                label: 'Liquidar',
+                icon: HandCoins,
+                to: '/groups/$id/settle' as const,
+              },
+              {
+                label: 'Personas',
+                icon: UserPlus,
+                to: '/groups/$id/participants' as const,
+              },
+              {
+                label: 'Mas',
+                icon: MoreHorizontal,
+                action: 'drawer' as const,
+              },
             ].map((action) => {
               const Icon = action.icon;
+              if ('action' in action) {
+                return (
+                  <button
+                    key={action.label}
+                    type="button"
+                    onClick={() => setShowMoreDrawer(true)}
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <span className="flex size-14 items-center justify-center rounded-2xl bg-white text-[#132238]">
+                      <Icon className="size-6" />
+                    </span>
+                    <span className="text-center text-xs text-[#132238]">
+                      {action.label}
+                    </span>
+                  </button>
+                );
+              }
               return (
-                <button
+                <Link
                   key={action.label}
-                  type="button"
+                  to={action.to}
+                  params={{ id }}
                   className="flex flex-col items-center gap-2"
                 >
                   <span
@@ -344,7 +416,7 @@ function RouteComponent() {
                   <span className="text-center text-xs text-[#132238]">
                     {action.label}
                   </span>
-                </button>
+                </Link>
               );
             })}
           </div>
@@ -507,6 +579,75 @@ function RouteComponent() {
           </Link>
         </div>
       </div>
+
+      <Drawer open={showMoreDrawer} onOpenChange={setShowMoreDrawer}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Más opciones</DrawerTitle>
+            <DrawerDescription>{group.name}</DrawerDescription>
+          </DrawerHeader>
+
+          <div className="space-y-2 px-5 pb-5">
+            <button
+              type="button"
+              onClick={shareInvite}
+              className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left"
+            >
+              <Share2 className="size-5 text-primary" />
+              <span className="font-medium text-[#132238]">Compartir grupo</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => copyText(group.inviteCode, 'Código')}
+              className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left"
+            >
+              <Copy className="size-5 text-primary" />
+              <span className="font-medium text-[#132238]">Copiar código</span>
+            </button>
+
+            <Link
+              to="/groups/$id/participants"
+              params={{ id }}
+              onClick={() => setShowMoreDrawer(false)}
+              className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left"
+            >
+              <UserPlus className="size-5 text-primary" />
+              <span className="font-medium text-[#132238]">Participantes</span>
+            </Link>
+
+            <div className="rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4">
+              <p className="mb-2 text-sm font-medium text-[#132238]">Totales</p>
+              {Object.entries(group.totals).length === 0 ? (
+                <p className="text-sm text-[#64748b]">Sin gastos</p>
+              ) : (
+                <div className="space-y-1">
+                  {Object.entries(group.totals).map(([currency, total]) => (
+                    <p key={currency} className="text-sm text-[#64748b]">
+                      {formatMoney(currency, total)}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {shareMessage ? (
+              <p className="rounded-2xl bg-[#f8fafc] px-4 py-3 text-sm text-[#64748b]">
+                {shareMessage}
+              </p>
+            ) : null}
+
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full rounded-full"
+              onClick={() => setShowMoreDrawer(false)}
+            >
+              Cerrar
+            </Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </main>
   );
 }

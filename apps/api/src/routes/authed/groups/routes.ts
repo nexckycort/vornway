@@ -83,6 +83,33 @@ const groups = new Hono<AppContext>()
       }
     },
   )
+  .get(
+    '/:id/expenses/:expenseId',
+    zValidator('param', groupExpenseParamsSchema),
+    async (c) => {
+      const { id, expenseId } = c.req.valid('param');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.getGroupExpense({
+          userId,
+          groupId: id,
+          expenseId,
+        });
+        return c.json(result);
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message === 'Grupo no encontrado') {
+            return c.json({ error: error.message }, 404);
+          }
+          if (error.message === 'Gasto no encontrado') {
+            return c.json({ error: error.message }, 404);
+          }
+        }
+        throw error;
+      }
+    },
+  )
   .post(
     '/:id/expenses',
     zValidator('param', groupParamsSchema),
@@ -101,8 +128,41 @@ const groups = new Hono<AppContext>()
           currency: data.currency,
           paidById: data.paidById,
           participantIds: data.participantIds,
+          splitMethod: data.splitMethod,
+          exactShares: data.exactShares,
         });
         return c.json(result, 201);
+      } catch (error) {
+        if (error instanceof Error) {
+          return c.json({ error: error.message }, 400);
+        }
+        throw error;
+      }
+    },
+  )
+  .put(
+    '/:id/expenses/:expenseId',
+    zValidator('param', groupExpenseParamsSchema),
+    zValidator('json', createGroupExpenseSchema),
+    async (c) => {
+      const { id, expenseId } = c.req.valid('param');
+      const data = c.req.valid('json');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.updateExpense({
+          userId,
+          groupId: id,
+          expenseId,
+          description: data.description,
+          amount: data.amount,
+          currency: data.currency,
+          paidById: data.paidById,
+          participantIds: data.participantIds,
+          splitMethod: data.splitMethod,
+          exactShares: data.exactShares,
+        });
+        return c.json(result);
       } catch (error) {
         if (error instanceof Error) {
           return c.json({ error: error.message }, 400);

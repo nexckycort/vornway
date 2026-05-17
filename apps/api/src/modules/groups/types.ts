@@ -19,6 +19,18 @@ export type CreateGroupExpenseInput = {
   currency: string;
   paidById: string;
   participantIds: string[];
+  splitMethod: 'equal' | 'percentage' | 'exact';
+  exactShares?: Record<string, number>;
+};
+
+export type UpdateGroupExpenseInput = CreateGroupExpenseInput & {
+  expenseId: string;
+};
+
+export type GetGroupExpenseInput = {
+  userId: string;
+  groupId: string;
+  expenseId: string;
 };
 
 export type DeleteGroupExpenseInput = {
@@ -165,6 +177,32 @@ export type GroupExpenseListItem = {
   } | null;
   participantCount: number;
   currentUserBalance: number | null;
+};
+
+export type GroupExpenseParticipant = {
+  memberId: string;
+  name: string;
+  share: number;
+};
+
+export type GroupExpenseDetailResult = {
+  id: string;
+  description: string;
+  amount: number;
+  currency: string;
+  date: Date;
+  isDeleted: boolean;
+  isSettlement: boolean;
+  splitMethod: 'equal' | 'percentage' | 'exact';
+  category: {
+    id: string;
+    name: string;
+  } | null;
+  paidBy: {
+    id: string;
+    name: string;
+  };
+  participants: GroupExpenseParticipant[];
 };
 
 export type ListGroupExpensesResult = {

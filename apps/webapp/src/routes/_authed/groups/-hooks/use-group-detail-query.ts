@@ -16,7 +16,9 @@ type GroupExpensesPageSuccess = Extract<
   GroupExpensesPageResponse,
   { data: unknown[]; pagination: { nextCursor: string | null } }
 >;
-type GroupExpenseSuccess = Extract<GroupExpenseResponse, { id: string }>;
+type GroupExpenseSuccess = Extract<GroupExpenseResponse, { id: string }> & {
+  category: { id: string; name: string } | null;
+};
 
 export function useGroupSummaryQuery(groupId: string) {
   return useQuery({

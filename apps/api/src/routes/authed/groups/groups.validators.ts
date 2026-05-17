@@ -25,6 +25,8 @@ export const createGroupExpenseSchema = z.object({
   currency: z.string().min(1).max(8),
   paidById: z.string().min(1),
   participantIds: z.array(z.string().min(1)).default([]),
+  splitMethod: z.enum(['equal', 'percentage', 'exact']).default('equal'),
+  exactShares: z.record(z.string(), z.number().nonnegative()).optional(),
 });
 
 export const settleGroupDebtSchema = z.object({

@@ -5,13 +5,16 @@ import type {
   CreateGroupExpenseInput,
   CreateGroupResult,
   DeleteGroupExpenseInput,
+  GetGroupExpenseInput,
   GroupListItem,
+  GroupExpenseDetailResult,
   GroupSummaryResult,
   ListGroupExpensesInput,
   ListGroupExpensesResult,
   ListGroupsInput,
   ListGroupsResult,
   SettleGroupDebtInput,
+  UpdateGroupExpenseInput,
 } from './types';
 
 export type GroupsService = {
@@ -19,7 +22,9 @@ export type GroupsService = {
   createGroup: (input: CreateGroupInput) => Promise<CreateGroupResult>;
   getGroupSummary: (input: { userId: string; groupId: string }) => Promise<GroupSummaryResult>;
   listGroupExpenses: (input: ListGroupExpensesInput) => Promise<ListGroupExpensesResult>;
+  getGroupExpense: (input: GetGroupExpenseInput) => Promise<GroupExpenseDetailResult>;
   createExpense: (input: CreateGroupExpenseInput) => Promise<{ id: string }>;
+  updateExpense: (input: UpdateGroupExpenseInput) => Promise<{ id: string }>;
   deleteExpense: (input: DeleteGroupExpenseInput) => Promise<{ id: string }>;
   settleDebt: (input: SettleGroupDebtInput) => Promise<{ id: string }>;
   addMember: (input: AddGroupMemberInput) => Promise<{ id: string; name: string }>;
@@ -43,6 +48,109 @@ async function generateInviteCode(): Promise<string> {
 
 function normalizeAmount(value: number): number {
   return Number(value.toFixed(2));
+}
+
+function createSplitShares(input: {
+  amount: number;
+  participantIds: string[];
+  splitMethod: 'equal' | 'percentage' | 'exact';
+  exactShares?: Record<string, number>;
+}) {
+  const { amount, participantIds, splitMethod, exactShares } = input;
+
+  if (participantIds.length === 0) {
+    return {
+      shares: {} as Record<string, number>,
+      normalizedMethod: 'equal' as const,
+    };
+  }
+
+  if (splitMethod === 'equal') {
+    const share = normalizeAmount(amount / participantIds.length);
+    return {
+      shares: Object.fromEntries(
+        participantIds.map((memberId) => [memberId, share]),
+      ) as Record<string, number>,
+      normalizedMethod: splitMethod,
+    };
+  }
+
+  const values = exactShares ?? {};
+  const baseShares = Object.fromEntries(
+    participantIds.map((memberId) => [
+      memberId,
+      Number(values[memberId] ?? 0),
+    ]),
+  ) as Record<string, number>;
+
+  const total = Object.values(baseShares).reduce((sum, value) => sum + value, 0);
+
+  if (
+    participantIds.some((memberId) => {
+      const value = baseShares[memberId];
+      return !Number.isFinite(value) || value < 0;
+    })
+  ) {
+    throw new Error('Las participaciones son inválidas');
+  }
+
+  if (splitMethod === 'percentage') {
+    if (Math.abs(total - 100) >= 0.01) {
+      throw new Error('La suma de porcentajes debe ser 100');
+    }
+
+    return {
+      shares: Object.fromEntries(
+        participantIds.map((memberId) => [
+          memberId,
+          normalizeAmount((amount * baseShares[memberId]) / 100),
+        ]),
+      ) as Record<string, number>,
+      normalizedMethod: splitMethod,
+    };
+  }
+
+  if (Math.abs(total - amount) >= 0.01) {
+    throw new Error('La suma de montos debe ser igual al total');
+  }
+
+  return {
+    shares: Object.fromEntries(
+      participantIds.map((memberId) => [memberId, normalizeAmount(baseShares[memberId])]),
+    ) as Record<string, number>,
+    normalizedMethod: splitMethod,
+  };
+}
+
+function readSplitMethod(
+  metadata: unknown,
+  participants: Array<{ share: number }>,
+): 'equal' | 'percentage' | 'exact' {
+  if (
+    metadata &&
+    typeof metadata === 'object' &&
+    'splitMethod' in metadata &&
+    (metadata as { splitMethod?: unknown }).splitMethod &&
+    ['equal', 'percentage', 'exact'].includes(
+      String((metadata as { splitMethod?: unknown }).splitMethod),
+    )
+  ) {
+    return String((metadata as { splitMethod?: unknown }).splitMethod) as
+      | 'equal'
+      | 'percentage'
+      | 'exact';
+  }
+
+  if (participants.length === 0) {
+    return 'equal';
+  }
+
+  const firstShare = participants[0]?.share ?? 0;
+  const allEqual = participants.every(
+    (participant) => Math.abs(participant.share - firstShare) < 0.01,
+  );
+
+  return allEqual ? 'equal' : 'exact';
 }
 
 export function createGroupsService(): GroupsService {
@@ -591,6 +699,88 @@ export function createGroupsService(): GroupsService {
         },
       };
     },
+    getGroupExpense: async ({ userId, groupId, expenseId }) => {
+      const group = await db.group.findFirst({
+        where: {
+          ...buildGroupAccessWhere(userId, groupId),
+          type: {
+            not: 'meta',
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!group) {
+        throw new Error('Grupo no encontrado');
+      }
+
+      const expense = await db.expense.findFirst({
+        where: {
+          id: expenseId,
+          groupId: group.id,
+        },
+        select: {
+          id: true,
+          description: true,
+          amount: true,
+          currency: true,
+          date: true,
+          notes: true,
+          metadata: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          paidBy: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          participants: {
+            select: {
+              memberId: true,
+              share: true,
+              member: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+            orderBy: [{ memberId: 'asc' }],
+          },
+        },
+      });
+
+      if (!expense) {
+        throw new Error('Gasto no encontrado');
+      }
+
+      return {
+        id: expense.id,
+        description: expense.description,
+        amount: expense.amount,
+        currency: expense.currency,
+        date: expense.date,
+        isDeleted: Boolean(expense.notes?.includes('[DELETED]')),
+        isSettlement: Boolean(expense.notes?.includes('[SETTLEMENT:')),
+        splitMethod: readSplitMethod(
+          expense.metadata,
+          expense.participants,
+        ),
+        category: expense.category,
+        paidBy: expense.paidBy,
+        participants: expense.participants.map((participant) => ({
+          memberId: participant.memberId,
+          name: participant.member.name,
+          share: participant.share,
+        })),
+      };
+    },
     createExpense: async ({
       userId,
       groupId,
@@ -599,6 +789,8 @@ export function createGroupsService(): GroupsService {
       currency,
       paidById,
       participantIds,
+      splitMethod,
+      exactShares,
     }) => {
       const membership = await db.groupMember.findFirst({
         where: { groupId, userId },
@@ -627,8 +819,12 @@ export function createGroupsService(): GroupsService {
       const validParticipantIds = Array.from(new Set(participantIds)).filter(
         (memberId) => validMemberIds.has(memberId),
       );
-      const share =
-        validParticipantIds.length > 0 ? amount / validParticipantIds.length : 0;
+      const { shares: participantShares, normalizedMethod } = createSplitShares({
+        amount,
+        participantIds: validParticipantIds,
+        splitMethod,
+        exactShares,
+      });
 
       const expense = await db.$transaction(async (tx) => {
         const created = await tx.expense.create({
@@ -638,12 +834,16 @@ export function createGroupsService(): GroupsService {
             description,
             amount,
             currency,
+            metadata: {
+              splitMethod: normalizedMethod,
+              splitValues: exactShares ?? null,
+            },
             ...(validParticipantIds.length > 0
               ? {
                   participants: {
                     create: validParticipantIds.map((memberId) => ({
                       memberId,
-                      share,
+                      share: participantShares[memberId] ?? 0,
                     })),
                   },
                 }
@@ -681,11 +881,160 @@ export function createGroupsService(): GroupsService {
               currency,
               paidById,
               participants: validParticipantIds.length,
+              splitMethod: normalizedMethod,
             },
           },
         });
 
         return created;
+      });
+
+      return expense;
+    },
+    updateExpense: async ({
+      userId,
+      groupId,
+      expenseId,
+      description,
+      amount,
+      currency,
+      paidById,
+      participantIds,
+      splitMethod,
+      exactShares,
+    }) => {
+      const membership = await db.groupMember.findFirst({
+        where: { groupId, userId },
+        select: { id: true, name: true },
+      });
+
+      if (!membership) {
+        throw new Error('No tienes acceso a este grupo');
+      }
+
+      const members = await db.groupMember.findMany({
+        where: {
+          groupId,
+          id: {
+            in: [paidById, ...participantIds],
+          },
+        },
+        select: { id: true },
+      });
+      const validMemberIds = new Set(members.map((member) => member.id));
+
+      if (!validMemberIds.has(paidById)) {
+        throw new Error('El pagador no pertenece al grupo');
+      }
+
+      const validParticipantIds = Array.from(new Set(participantIds)).filter(
+        (memberId) => validMemberIds.has(memberId),
+      );
+      const { shares: participantShares, normalizedMethod } = createSplitShares({
+        amount,
+        participantIds: validParticipantIds,
+        splitMethod,
+        exactShares,
+      });
+
+      const expense = await db.$transaction(async (tx) => {
+        const existingExpense = await tx.expense.findFirst({
+          where: {
+            id: expenseId,
+            groupId,
+          },
+          select: {
+            id: true,
+            amount: true,
+            currency: true,
+            description: true,
+            notes: true,
+          },
+        });
+
+        if (!existingExpense) {
+          throw new Error('Gasto no encontrado');
+        }
+
+        if (existingExpense.notes?.includes('[DELETED]')) {
+          throw new Error('No puedes editar un gasto eliminado');
+        }
+
+        await tx.expense.update({
+          where: { id: existingExpense.id },
+          data: {
+            description,
+            amount,
+            currency,
+            paidById,
+            metadata: {
+              splitMethod: normalizedMethod,
+              splitValues: exactShares ?? null,
+            },
+          },
+        });
+
+        await tx.expenseParticipant.deleteMany({
+          where: {
+            expenseId: existingExpense.id,
+          },
+        });
+
+        if (validParticipantIds.length > 0) {
+          await tx.expenseParticipant.createMany({
+            data: validParticipantIds.map((memberId) => ({
+              expenseId: existingExpense.id,
+              memberId,
+              share: participantShares[memberId] ?? 0,
+            })),
+          });
+        }
+
+        const group = await tx.group.findUnique({
+          where: { id: groupId },
+          select: { totals: true },
+        });
+        const totals = (group?.totals as Record<string, number>) ?? {};
+        const nextTotals: Record<string, number> = { ...totals };
+
+        nextTotals[existingExpense.currency] = normalizeAmount(
+          Math.max(0, (nextTotals[existingExpense.currency] ?? 0) - existingExpense.amount),
+        );
+
+        if (nextTotals[existingExpense.currency] === 0) {
+          delete nextTotals[existingExpense.currency];
+        }
+
+        nextTotals[currency] = normalizeAmount(
+          (nextTotals[currency] ?? 0) + amount,
+        );
+
+        await tx.group.update({
+          where: { id: groupId },
+          data: {
+            totals: nextTotals,
+          },
+        });
+
+        await tx.activityLog.create({
+          data: {
+            groupId,
+            actorUserId: userId,
+            actorName: membership.name,
+            action: 'expense.updated',
+            targetName: description,
+            details: {
+              expenseId: existingExpense.id,
+              amount,
+              currency,
+              paidById,
+              participants: validParticipantIds.length,
+              splitMethod: normalizedMethod,
+            },
+          },
+        });
+
+        return { id: existingExpense.id };
       });
 
       return expense;

@@ -7,9 +7,35 @@ import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { formatMoney, getInitials } from '../-components/group-detail.utils';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Check, Users } from 'lucide-react';
+import {
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  Minus,
+  Pencil,
+  Plus,
+  RefreshCw,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+
+type SplitMethod = 'equal' | 'percentage' | 'exact';
+
+const splitMethods: Array<{ value: SplitMethod; label: string }> = [
+  { value: 'equal', label: 'Partes iguales' },
+  { value: 'percentage', label: 'Porcentaje' },
+  { value: 'exact', label: 'Partes desiguales' },
+];
+
+const currencyMeta: Record<
+  string,
+  { label: string; flag: string; name: string }
+> = {
+  COP: { label: 'COP', flag: '🇨🇴', name: 'Pesos Colombianos' },
+  USD: { label: 'USD', flag: '🇺🇸', name: 'Dólares Estadounidenses' },
+  EUR: { label: 'EUR', flag: '🇪🇺', name: 'Euros' },
+};
 
 export const Route = createFileRoute('/_authed/groups/$id/add-expense/')({
   validateSearch: (
@@ -23,7 +49,9 @@ export const Route = createFileRoute('/_authed/groups/$id/add-expense/')({
   component: RouteComponent,
 });
 
-const currencies = ['COP', 'USD', 'EUR'];
+function formatEditableNumber(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
 
 function RouteComponent() {
   const { id } = Route.useParams();
@@ -40,11 +68,16 @@ function RouteComponent() {
   const [currency, setCurrency] = useState('COP');
   const [paidById, setPaidById] = useState('');
   const [participantIds, setParticipantIds] = useState<string[]>([]);
+  const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
+  const [participantValues, setParticipantValues] = useState<
+    Record<string, string>
+  >({});
   const [error, setError] = useState<string | null>(null);
   const [hasInitializedForm, setHasInitializedForm] = useState(false);
 
   const members = groupQuery.data?.members ?? [];
   const expense = expenseQuery.data;
+  const currentCurrency = currencyMeta[currency] ?? currencyMeta.COP;
 
   useEffect(() => {
     if (isEditMode) {
@@ -55,6 +88,17 @@ function RouteComponent() {
       setCurrency(expense.currency);
       setPaidById(expense.paidBy.id);
       setParticipantIds(expense.participants.map((participant) => participant.memberId));
+      setSplitMethod(expense.splitMethod);
+      setParticipantValues(
+        Object.fromEntries(
+          expense.participants.map((participant) => [
+            participant.memberId,
+            expense.splitMethod === 'percentage'
+              ? formatEditableNumber((participant.share / expense.amount) * 100)
+              : formatEditableNumber(participant.share),
+          ]),
+        ),
+      );
       setHasInitializedForm(true);
       return;
     }
@@ -63,25 +107,95 @@ function RouteComponent() {
 
     setPaidById(groupQuery.data.myMembership?.id ?? members[0]?.id ?? '');
     setParticipantIds(members.map((member) => member.id));
-  }, [expense, groupQuery.data, hasInitializedForm, isEditMode, members, paidById]);
+  }, [
+    expense,
+    groupQuery.data,
+    hasInitializedForm,
+    isEditMode,
+    members,
+    paidById,
+  ]);
+
+  useEffect(() => {
+    if (splitMethod === 'equal') return;
+
+    setParticipantValues((current) => {
+      const next: Record<string, string> = {};
+      const selectedCount = participantIds.length;
+      const defaultValue =
+        splitMethod === 'percentage'
+          ? selectedCount > 0
+            ? 100 / selectedCount
+            : 0
+          : selectedCount > 0
+            ? Number(amount || 0) / selectedCount
+            : 0;
+
+      for (const participantId of participantIds) {
+        next[participantId] =
+          current[participantId] ??
+          (defaultValue > 0 ? formatEditableNumber(defaultValue) : '');
+      }
+
+      return next;
+    });
+  }, [amount, participantIds, splitMethod]);
 
   const parsedAmount = Number(amount);
+  const normalizedAmount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
+  const selectedCount = participantIds.length;
+  const equalShare = selectedCount > 0 ? normalizedAmount / selectedCount : 0;
+
+  const participantComputedAmounts = useMemo(() => {
+    const result: Record<string, number> = {};
+
+    for (const memberId of participantIds) {
+      const rawValue = Number(participantValues[memberId] ?? '0');
+      if (splitMethod === 'percentage') {
+        result[memberId] = normalizedAmount * (rawValue / 100);
+        continue;
+      }
+
+      if (splitMethod === 'exact') {
+        result[memberId] = rawValue;
+        continue;
+      }
+
+      result[memberId] =
+        equalShare;
+    }
+
+    return result;
+  }, [equalShare, normalizedAmount, participantIds, participantValues, splitMethod]);
+
+  const splitSum = useMemo(() => {
+    return participantIds.reduce((sum, memberId) => {
+      const value = Number(participantValues[memberId] ?? '0');
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+  }, [participantIds, participantValues]);
+
+  const splitIsValid =
+    selectedCount === 0 ||
+    (splitMethod === 'equal'
+      ? true
+      : splitMethod === 'percentage'
+        ? Math.abs(splitSum - 100) < 0.01 &&
+          participantIds.every((memberId) => Number(participantValues[memberId] ?? 0) > 0)
+        : Math.abs(splitSum - normalizedAmount) < 0.01 &&
+          participantIds.every((memberId) => Number(participantValues[memberId] ?? 0) > 0));
+
   const canSubmit =
     description.trim().length > 0 &&
-    Number.isFinite(parsedAmount) &&
-    parsedAmount > 0 &&
-    paidById.length > 0;
-
-  const amountPerPerson = useMemo(() => {
-    if (participantIds.length === 0 || !Number.isFinite(parsedAmount)) return 0;
-    return parsedAmount / participantIds.length;
-  }, [parsedAmount, participantIds.length]);
+    normalizedAmount > 0 &&
+    paidById.length > 0 &&
+    splitIsValid;
 
   const isPending = isEditMode
     ? updateExpenseMutation.isPending
     : createExpenseMutation.isPending;
-
-  const isLoading = groupQuery.isLoading || (isEditMode && expenseQuery.isLoading);
+  const isLoading =
+    groupQuery.isLoading || (isEditMode && expenseQuery.isLoading);
   const isLoadingError =
     groupQuery.isError || (isEditMode && expenseQuery.isError);
 
@@ -93,19 +207,44 @@ function RouteComponent() {
     );
   };
 
+  const toggleAllParticipants = () => {
+    setParticipantIds((current) =>
+      current.length === members.length ? [] : members.map((member) => member.id),
+    );
+  };
+
+  const setMethod = (nextMethod: SplitMethod) => {
+    setSplitMethod(nextMethod);
+    if (nextMethod === 'equal') {
+      setParticipantValues({});
+    }
+  };
+
   const handleSubmit = async () => {
     if (!canSubmit || isPending) return;
     setError(null);
 
-    try {
-      const payload = {
-        description: description.trim(),
-        amount: parsedAmount,
-        currency,
-        paidById,
-        participantIds,
-      };
+    const exactShares =
+      splitMethod === 'equal'
+        ? undefined
+        : Object.fromEntries(
+            participantIds.map((memberId) => [
+              memberId,
+              Number(participantValues[memberId] ?? '0'),
+            ]),
+          );
 
+    const payload = {
+      description: description.trim(),
+      amount: normalizedAmount,
+      currency,
+      paidById,
+      participantIds,
+      splitMethod,
+      exactShares,
+    };
+
+    try {
       if (isEditMode && expenseId) {
         await updateExpenseMutation.mutateAsync(payload);
       } else {
@@ -126,9 +265,9 @@ function RouteComponent() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-[#efefef] text-foreground">
-        <div className="mx-auto flex min-h-screen w-full max-w-[412px] items-center justify-center bg-[#fafafa] px-4">
-          <p className="text-sm text-[#64748b]">
+      <main className="min-h-screen bg-white">
+        <div className="flex min-h-screen w-full items-center justify-center bg-white">
+          <p className="text-sm text-gray-500">
             {isEditMode ? 'Cargando gasto...' : 'Cargando grupo...'}
           </p>
         </div>
@@ -145,8 +284,8 @@ function RouteComponent() {
           : 'No se pudo cargar el grupo';
 
     return (
-      <main className="min-h-screen bg-[#efefef] text-foreground">
-        <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col justify-center bg-[#fafafa] px-4">
+      <main className="min-h-screen bg-white">
+        <div className="flex min-h-screen w-full flex-col justify-center bg-white px-4">
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {message}
           </div>
@@ -163,135 +302,266 @@ function RouteComponent() {
   }
 
   return (
-    <main className="min-h-screen bg-[#efefef] text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa] px-4 pb-0 pt-8">
-        <header className="mb-6">
+    <main className="min-h-screen bg-white">
+      <div className="flex min-h-screen w-full flex-col bg-white">
+        <div className="flex items-center justify-between px-5 pt-6 pb-4">
           <Link
             to="/groups/$id"
             params={{ id }}
-            className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#334155]"
+            className="flex size-8 items-center justify-center"
+            aria-label="Atrás"
           >
-            <ArrowLeft className="size-4" />
-            Atrás
+            <ChevronLeft className="size-6 text-gray-800" />
           </Link>
-          <h1 className="text-2xl font-semibold leading-8 text-[#132238]">
-            {isEditMode ? 'Editar gasto' : 'Añadir gasto'}
+          <h1 className="text-base font-medium text-gray-900">
+            {isEditMode ? 'Editar gasto' : 'Nuevo gasto'}
           </h1>
-          <p className="mt-1 text-sm text-[#64748b]">
-            {groupQuery.data.name}
-          </p>
-        </header>
+          <div className="size-8" />
+        </div>
 
-        <div className="flex flex-1 flex-col gap-5">
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-[#334155]">
-              Descripción
-            </span>
-            <input
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="Ej: Almuerzo"
-              className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none focus:border-primary"
-            />
-          </label>
-
-          <div className="grid grid-cols-[112px_1fr] gap-3">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-[#334155]">
-                Moneda
+        <div className="px-6 pb-6">
+          <div className="flex items-baseline justify-between gap-4">
+            <button
+              type="button"
+              className="flex items-center gap-1 text-left"
+            >
+              <span className="text-4xl font-light text-gray-900">
+                {currentCurrency.label}
               </span>
-              <select
-                value={currency}
-                onChange={(event) => setCurrency(event.target.value)}
-                className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none focus:border-primary"
-              >
-                {currencies.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-[#334155]">Monto</span>
+              <ChevronDown className="size-5 text-gray-600" />
+            </button>
+
+            <label className="min-w-0 flex-1 text-right">
+              <span className="sr-only">Monto</span>
               <input
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
-                type="number"
                 inputMode="decimal"
-                min="0"
                 placeholder="0"
-                className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none focus:border-primary"
+                className="w-full bg-transparent text-right text-4xl font-light text-gray-900 outline-none placeholder:text-gray-300"
               />
             </label>
           </div>
 
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-[#334155]">
-              Pagado por
-            </span>
-            <select
-              value={paidById}
-              onChange={(event) => setPaidById(event.target.value)}
-              className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none focus:border-primary"
-            >
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name}
-                </option>
-              ))}
-            </select>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="text-base">{currentCurrency.flag}</span>
+            <span className="text-sm text-gray-500">{currentCurrency.name}</span>
+          </div>
+        </div>
+
+        <div className="space-y-5 px-6 pb-6">
+          <label className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3.5">
+            <Pencil className="size-5 text-gray-400" />
+            <input
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Cena con amigos"
+              className="w-full bg-transparent text-gray-700 outline-none placeholder:text-gray-400"
+            />
           </label>
 
-          <section className="rounded-2xl border border-[#e2e8f0] bg-white p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-semibold text-[#132238]">
-                  Participantes
-                </h2>
-                <p className="text-xs text-[#64748b]">
-                  {participantIds.length === 0
-                    ? 'Gasto personal'
-                    : `${participantIds.length} personas · ${currency} ${amountPerPerson.toLocaleString('es-CO')}`}
+          <button
+            type="button"
+            className="flex w-full items-center justify-between rounded-xl border border-gray-200 px-4 py-3"
+            disabled
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-green-400">
+                <span className="text-lg text-white">⚡</span>
+              </div>
+              <div className="text-left">
+                <p className="text-xs text-gray-500">Categoría</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {expense?.category?.name ?? 'Sin categoría'}
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-full"
-                onClick={() =>
-                  setParticipantIds(
-                    participantIds.length === members.length
-                      ? []
-                      : members.map((member) => member.id),
-                  )
-                }
-              >
-                <Users className="size-4" />
-                Todos
-              </Button>
             </div>
+            <RefreshCw className="size-5 text-gray-400" />
+          </button>
 
-            <div className="flex flex-col gap-2">
+          <section>
+            <p className="mb-3 text-sm text-gray-600">Pagado por</p>
+            <div className="flex gap-3 overflow-x-auto pb-1">
               {members.map((member) => {
-                const selected = participantIds.includes(member.id);
+                const selected = paidById === member.id;
+                const initials = getInitials(member.name);
+
                 return (
                   <button
                     key={member.id}
                     type="button"
-                    onClick={() => toggleParticipant(member.id)}
-                    className="flex items-center justify-between rounded-2xl bg-[#f8fafc] px-3 py-3 text-left"
+                    onClick={() => setPaidById(member.id)}
+                    className="flex min-w-[72px] flex-col items-center"
                   >
-                    <span className="truncate text-sm font-medium text-[#132238]">
-                      {member.name}
+                    <div
+                      className={`flex size-11 items-center justify-center overflow-hidden rounded-full border-2 ${
+                        selected ? 'border-rose-500' : 'border-transparent'
+                      }`}
+                    >
+                      <div className="flex size-full items-center justify-center bg-gray-200 text-sm font-medium text-gray-600">
+                        {initials}
+                      </div>
+                    </div>
+                    <span className="mt-1.5 max-w-[60px] truncate text-xs text-gray-600">
+                      {member.isCurrentUser ? 'Tú' : member.name}
                     </span>
-                    {selected ? <Check className="size-4 text-primary" /> : null}
                   </button>
                 );
               })}
             </div>
           </section>
+
+          <section>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-sm text-gray-600">Se divide con</p>
+              <span className="inline-flex items-center gap-1 text-rose-500">
+                <span className="text-sm font-medium">
+                  {splitMethods.find((item) => item.value === splitMethod)?.label}
+                </span>
+                <ChevronDown className="size-4" />
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 rounded-2xl bg-gray-100 p-1">
+              {splitMethods.map((method) => {
+                const active = splitMethod === method.value;
+                return (
+                  <button
+                    key={method.value}
+                    type="button"
+                    onClick={() => setMethod(method.value)}
+                    className={`rounded-2xl px-3 py-2 text-xs font-medium transition ${
+                      active
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    {method.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={toggleAllParticipants}
+              className="mt-4 flex w-full items-center gap-3"
+            >
+              <div className="flex size-6 items-center justify-center rounded bg-rose-500">
+                {selectedCount === members.length && members.length > 0 ? (
+                  <Minus className="size-4 text-white" />
+                ) : (
+                  <Plus className="size-4 text-white" />
+                )}
+              </div>
+              <span className="text-sm font-medium text-gray-900">Todos</span>
+              <span className="ml-auto text-sm text-gray-500">
+                {splitMethod === 'equal'
+                  ? formatMoney(currency, equalShare || 0)
+                  : splitMethod === 'percentage'
+                    ? `${splitSum.toFixed(2)}%`
+                    : formatMoney(currency, splitSum || 0)}
+              </span>
+            </button>
+
+            <div className="mt-4 space-y-3">
+              {members.map((member) => {
+                const selected = participantIds.includes(member.id);
+                const initials = getInitials(member.name);
+                const computedAmount = participantComputedAmounts[member.id] ?? 0;
+
+                return (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between gap-4"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleParticipant(member.id)}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    >
+                      <div
+                        className={`flex size-6 items-center justify-center rounded-full ${
+                          selected ? 'bg-rose-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        {selected ? (
+                          <Check className="size-4 text-white" />
+                        ) : (
+                          <Plus className="size-4 text-white" />
+                        )}
+                      </div>
+                      <div className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-sm font-medium text-gray-600">
+                        {initials}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="block truncate text-sm text-gray-900">
+                          {member.name}
+                          {member.isCurrentUser ? (
+                            <span className="text-gray-500"> (Tú)</span>
+                          ) : null}
+                        </span>
+                        {splitMethod !== 'equal' && selected ? (
+                          <span className="block text-xs text-gray-500">
+                            {formatMoney(currency, computedAmount)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </button>
+
+                    {selected ? (
+                      splitMethod === 'equal' ? (
+                        <span className="shrink-0 text-sm font-medium text-gray-900">
+                          {formatMoney(currency, equalShare || 0)}
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={participantValues[member.id] ?? ''}
+                            onChange={(event) =>
+                              setParticipantValues((current) => ({
+                                ...current,
+                                [member.id]: event.target.value,
+                              }))
+                            }
+                            inputMode="decimal"
+                            placeholder={splitMethod === 'percentage' ? '0' : '0.00'}
+                            className="h-10 w-20 rounded-full border border-gray-200 px-3 text-right text-sm text-gray-900 outline-none"
+                          />
+                          <span className="text-xs text-gray-400">
+                            {splitMethod === 'percentage' ? '%' : currency}
+                          </span>
+                        </div>
+                      )
+                    ) : (
+                      <span className="shrink-0 text-sm text-gray-400">0</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={toggleAllParticipants}
+              className="mt-4 flex w-full items-center justify-center gap-2 py-3 text-gray-600"
+            >
+              <Plus className="size-4" />
+              <span className="text-sm">
+                {selectedCount === members.length && members.length > 0
+                  ? 'Quitar participantes'
+                  : 'Agregar participantes'}
+              </span>
+            </button>
+          </section>
+
+          {!splitIsValid && selectedCount > 0 ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              {splitMethod === 'percentage'
+                ? 'La suma de porcentajes debe ser 100.'
+                : 'La suma de montos debe coincidir con el total.'}
+            </div>
+          ) : null}
 
           {error ? (
             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -299,22 +569,30 @@ function RouteComponent() {
             </div>
           ) : null}
 
-          <div className="-mx-4 mt-auto border-t border-[#e2e8f0] bg-[#fafafa] px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
-            <Button
-              type="button"
-              className="h-11 w-full rounded-full"
-              disabled={!canSubmit || isPending}
-              onClick={handleSubmit}
-            >
-              {isPending
-                ? isEditMode
-                  ? 'Guardando...'
-                  : 'Creando...'
-                : isEditMode
-                  ? 'Guardar cambios'
-                  : 'Crear gasto'}
-            </Button>
-          </div>
+          <p className="text-xs text-gray-500">
+            {selectedCount === 0
+              ? 'Gasto personal'
+              : splitMethod === 'percentage'
+                ? `${selectedCount} participantes · ${splitSum.toFixed(2)}%`
+                : `${selectedCount} participantes · ${formatMoney(currency, splitMethod === 'equal' ? equalShare || 0 : splitSum || 0)} por persona`}
+          </p>
+        </div>
+
+        <div className="px-6 pb-8">
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!canSubmit || isPending}
+            className="h-14 w-full rounded-full bg-rose-500 text-base font-medium text-white hover:bg-rose-500/90"
+          >
+            {isPending
+              ? isEditMode
+                ? 'Guardando...'
+                : 'Agregando...'
+              : isEditMode
+                ? 'Guardar cambios'
+                : 'Agregar gasto'}
+          </Button>
         </div>
       </div>
     </main>

@@ -11,7 +11,8 @@ const app = new Hono<AppContext>().get(
   zValidator('query', searchUsersQuerySchema),
   async (c) => {
     const { query } = c.req.valid('query');
-    const result = await usersService.searchUsers({ query });
+    const { id: userId } = c.get('user');
+    const result = await usersService.searchUsers({ userId, query });
     return c.json(result);
   },
 );

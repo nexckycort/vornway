@@ -2,12 +2,15 @@ import { db } from '~/infrastructure/database/connection';
 import type { SearchUsersResult } from './types';
 
 export type UsersService = {
-  searchUsers: (input: { query: string }) => Promise<SearchUsersResult>;
+  searchUsers: (input: {
+    userId: string;
+    query: string;
+  }) => Promise<SearchUsersResult>;
 };
 
 export function createUsersService(): UsersService {
   return {
-    searchUsers: async ({ query }) => {
+    searchUsers: async ({ userId, query }) => {
       const trimmedQuery = query.trim();
 
       if (!trimmedQuery) {
@@ -45,6 +48,7 @@ export function createUsersService(): UsersService {
           id: user.id,
           name: user.name,
           email: user.email,
+          isCurrentUser: user.id === userId,
         })),
       };
     },

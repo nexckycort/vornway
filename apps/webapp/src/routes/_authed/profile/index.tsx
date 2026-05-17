@@ -65,7 +65,11 @@ function RouteComponent() {
 
     try {
       await auth.logout();
-      await navigate({ to: '/login', replace: true });
+      await navigate({
+        to: '/login',
+        search: { redirect: '/login' },
+        replace: true,
+      });
     } finally {
       setIsLoggingOut(false);
     }

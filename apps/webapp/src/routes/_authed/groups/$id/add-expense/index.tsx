@@ -1,5 +1,12 @@
 import { Button } from '#/components/ui/button';
 import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
+import {
   useCreateExpenseMutation,
   useUpdateExpenseMutation,
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
@@ -7,18 +14,17 @@ import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { formatMoney, getInitials } from '../-components/group-detail.utils';
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import {
   Check,
   ChevronDown,
   ChevronLeft,
   Minus,
-  Pencil,
   Plus,
   RefreshCw,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { formatMoney, getInitials } from '../-components/group-detail.utils';
 
 type SplitMethod = 'equal' | 'percentage' | 'exact';
 
@@ -69,15 +75,29 @@ function RouteComponent() {
   const [paidById, setPaidById] = useState('');
   const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
+  const [showSplitDrawer, setShowSplitDrawer] = useState(false);
   const [participantValues, setParticipantValues] = useState<
     Record<string, string>
   >({});
   const [error, setError] = useState<string | null>(null);
   const [hasInitializedForm, setHasInitializedForm] = useState(false);
+  const amountInputRef = useRef<HTMLInputElement | null>(null);
 
   const members = groupQuery.data?.members ?? [];
   const expense = expenseQuery.data;
   const currentCurrency = currencyMeta[currency] ?? currencyMeta.COP;
+
+  useEffect(() => {
+    const node = amountInputRef.current;
+    if (!node) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      node.focus();
+      node.select();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     if (isEditMode) {
@@ -87,7 +107,9 @@ function RouteComponent() {
       setAmount(expense.amount.toString());
       setCurrency(expense.currency);
       setPaidById(expense.paidBy.id);
-      setParticipantIds(expense.participants.map((participant) => participant.memberId));
+      setParticipantIds(
+        expense.participants.map((participant) => participant.memberId),
+      );
       setSplitMethod(expense.splitMethod);
       setParticipantValues(
         Object.fromEntries(
@@ -161,12 +183,17 @@ function RouteComponent() {
         continue;
       }
 
-      result[memberId] =
-        equalShare;
+      result[memberId] = equalShare;
     }
 
     return result;
-  }, [equalShare, normalizedAmount, participantIds, participantValues, splitMethod]);
+  }, [
+    equalShare,
+    normalizedAmount,
+    participantIds,
+    participantValues,
+    splitMethod,
+  ]);
 
   const splitSum = useMemo(() => {
     return participantIds.reduce((sum, memberId) => {
@@ -181,9 +208,13 @@ function RouteComponent() {
       ? true
       : splitMethod === 'percentage'
         ? Math.abs(splitSum - 100) < 0.01 &&
-          participantIds.every((memberId) => Number(participantValues[memberId] ?? 0) > 0)
+          participantIds.every(
+            (memberId) => Number(participantValues[memberId] ?? 0) > 0,
+          )
         : Math.abs(splitSum - normalizedAmount) < 0.01 &&
-          participantIds.every((memberId) => Number(participantValues[memberId] ?? 0) > 0));
+          participantIds.every(
+            (memberId) => Number(participantValues[memberId] ?? 0) > 0,
+          ));
 
   const canSubmit =
     description.trim().length > 0 &&
@@ -209,7 +240,9 @@ function RouteComponent() {
 
   const toggleAllParticipants = () => {
     setParticipantIds((current) =>
-      current.length === members.length ? [] : members.map((member) => member.id),
+      current.length === members.length
+        ? []
+        : members.map((member) => member.id),
     );
   };
 
@@ -218,6 +251,7 @@ function RouteComponent() {
     if (nextMethod === 'equal') {
       setParticipantValues({});
     }
+    setShowSplitDrawer(false);
   };
 
   const handleSubmit = async () => {
@@ -321,10 +355,7 @@ function RouteComponent() {
 
         <div className="px-6 pb-6">
           <div className="flex items-baseline justify-between gap-4">
-            <button
-              type="button"
-              className="flex items-center gap-1 text-left"
-            >
+            <button type="button" className="flex items-center gap-1 text-left">
               <span className="text-4xl font-light text-gray-900">
                 {currentCurrency.label}
               </span>
@@ -334,9 +365,11 @@ function RouteComponent() {
             <label className="min-w-0 flex-1 text-right">
               <span className="sr-only">Monto</span>
               <input
+                ref={amountInputRef}
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
-                inputMode="decimal"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="0"
                 className="w-full bg-transparent text-right text-4xl font-light text-gray-900 outline-none placeholder:text-gray-300"
               />
@@ -345,13 +378,14 @@ function RouteComponent() {
 
           <div className="mt-1 flex items-center gap-1.5">
             <span className="text-base">{currentCurrency.flag}</span>
-            <span className="text-sm text-gray-500">{currentCurrency.name}</span>
+            <span className="text-sm text-gray-500">
+              {currentCurrency.name}
+            </span>
           </div>
         </div>
 
         <div className="space-y-5 px-6 pb-6">
           <label className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3.5">
-            <Pencil className="size-5 text-gray-400" />
             <input
               value={description}
               onChange={(event) => setDescription(event.target.value)}
@@ -414,32 +448,19 @@ function RouteComponent() {
           <section>
             <div className="mb-3 flex items-center justify-between gap-3">
               <p className="text-sm text-gray-600">Se divide con</p>
-              <span className="inline-flex items-center gap-1 text-rose-500">
+              <button
+                type="button"
+                onClick={() => setShowSplitDrawer(true)}
+                className="inline-flex items-center gap-1 text-rose-500"
+              >
                 <span className="text-sm font-medium">
-                  {splitMethods.find((item) => item.value === splitMethod)?.label}
+                  {
+                    splitMethods.find((item) => item.value === splitMethod)
+                      ?.label
+                  }
                 </span>
                 <ChevronDown className="size-4" />
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 rounded-2xl bg-gray-100 p-1">
-              {splitMethods.map((method) => {
-                const active = splitMethod === method.value;
-                return (
-                  <button
-                    key={method.value}
-                    type="button"
-                    onClick={() => setMethod(method.value)}
-                    className={`rounded-2xl px-3 py-2 text-xs font-medium transition ${
-                      active
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500'
-                    }`}
-                  >
-                    {method.label}
-                  </button>
-                );
-              })}
+              </button>
             </div>
 
             <button
@@ -468,7 +489,8 @@ function RouteComponent() {
               {members.map((member) => {
                 const selected = participantIds.includes(member.id);
                 const initials = getInitials(member.name);
-                const computedAmount = participantComputedAmounts[member.id] ?? 0;
+                const computedAmount =
+                  participantComputedAmounts[member.id] ?? 0;
 
                 return (
                   <div
@@ -525,7 +547,9 @@ function RouteComponent() {
                               }))
                             }
                             inputMode="decimal"
-                            placeholder={splitMethod === 'percentage' ? '0' : '0.00'}
+                            placeholder={
+                              splitMethod === 'percentage' ? '0' : '0.00'
+                            }
                             className="h-10 w-20 rounded-full border border-gray-200 px-3 text-right text-sm text-gray-900 outline-none"
                           />
                           <span className="text-xs text-gray-400">
@@ -594,6 +618,47 @@ function RouteComponent() {
                 : 'Agregar gasto'}
           </Button>
         </div>
+
+        <Drawer open={showSplitDrawer} onOpenChange={setShowSplitDrawer}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Método de división</DrawerTitle>
+              <DrawerDescription>
+                Elige cómo se repartirá este gasto.
+              </DrawerDescription>
+            </DrawerHeader>
+
+            <div className="space-y-2 px-5 pb-5">
+              {splitMethods.map((method) => {
+                const active = splitMethod === method.value;
+                return (
+                  <button
+                    key={method.value}
+                    type="button"
+                    onClick={() => setMethod(method.value)}
+                    className={`flex w-full items-center justify-between rounded-2xl px-4 py-4 text-left transition ${
+                      active ? 'bg-rose-50' : 'bg-white'
+                    }`}
+                  >
+                    <div>
+                      <p className="text-base font-semibold text-[#132238]">
+                        {method.label}
+                      </p>
+                      <p className="text-sm text-[#64748b]">
+                        {method.value === 'equal'
+                          ? 'Todos pagan lo mismo de este gasto.'
+                          : method.value === 'percentage'
+                            ? 'Cada persona paga un porcentaje del total.'
+                            : 'Cada persona paga un monto distinto.'}
+                      </p>
+                    </div>
+                    {active ? <Check className="size-5 text-rose-500" /> : null}
+                  </button>
+                );
+              })}
+            </div>
+          </DrawerContent>
+        </Drawer>
       </div>
     </main>
   );

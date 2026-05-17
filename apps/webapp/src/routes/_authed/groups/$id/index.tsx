@@ -19,7 +19,8 @@ import {
   ArrowLeft,
   BarChart3,
   Copy,
-  HandCoins,
+  ChevronRight,
+  ArrowUpRight,
   MoreHorizontal,
   Pin,
   Plus,
@@ -65,86 +66,130 @@ function formatDate(value: string): string {
   }).format(date);
 }
 
-function TotalsDisplay({ totals }: { totals: Record<string, number> }) {
-  const entries = Object.entries(totals).filter(([, amount]) => amount > 0);
-
-  if (entries.length === 0) {
-    return (
-      <div className="mx-auto mb-3 max-w-xs rounded-2xl bg-[#f6f7ff] px-4 py-3 text-center">
-        <p className="text-2xl font-semibold leading-tight text-[#132238]">
-          {formatMoney('COP', 0)}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mx-auto mb-3 max-w-xs rounded-2xl bg-[#f6f7ff] px-4 py-3 text-center">
-      {entries.map(([currency, amount], index) => (
-        <p
-          key={currency}
-          className={
-            index === 0
-              ? 'text-2xl font-semibold leading-tight text-[#132238]'
-              : 'mt-1 text-base font-medium text-[#64748b]'
-          }
-        >
-          {formatMoney(currency, amount)}
-        </p>
-      ))}
-    </div>
-  );
-}
-
-function UserBalanceSummary({
-  directDebts,
-  directCredits,
-}: {
-  directDebts: Array<{ currency: string; amount: number }>;
-  directCredits: Array<{ currency: string; amount: number }>;
-}) {
-  const debtByCurrency = sumByCurrency(directDebts);
-  const creditByCurrency = sumByCurrency(directCredits);
-  const debtEntries = Object.entries(debtByCurrency).filter(
-    ([, amount]) => amount >= 1,
-  );
-  const creditEntries = Object.entries(creditByCurrency).filter(
-    ([, amount]) => amount >= 1,
-  );
-
-  if (debtEntries.length === 0 && creditEntries.length === 0) {
-    return (
-      <p className="mb-5 text-center text-sm text-[#64748b]">Sin deudas</p>
-    );
-  }
-
-  return (
-    <div className="mb-5 space-y-1 text-center">
-      {debtEntries.map(([currency, amount]) => (
-        <p
-          key={`debt-${currency}`}
-          className="text-sm font-semibold text-red-500"
-        >
-          Debes {formatMoney(currency, amount)}
-        </p>
-      ))}
-      {creditEntries.map(([currency, amount]) => (
-        <p
-          key={`credit-${currency}`}
-          className="text-sm font-semibold text-emerald-600"
-        >
-          Te deben {formatMoney(currency, amount)}
-        </p>
-      ))}
-    </div>
-  );
-}
-
 function sumByCurrency(items: Array<{ currency: string; amount: number }>) {
   return items.reduce<Record<string, number>>((acc, item) => {
     acc[item.currency] = (acc[item.currency] ?? 0) + item.amount;
     return acc;
   }, {});
+}
+
+type ExpenseDateGroup = {
+  label: string;
+  items: ExpenseItem[];
+};
+
+function formatTimelineDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('es-CO', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+}
+
+function getExpenseDateGroupLabel(value: string): string {
+  const expenseDate = new Date(value);
+  if (Number.isNaN(expenseDate.getTime())) return '';
+
+  const now = new Date();
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+  const expenseDay = new Date(
+    expenseDate.getFullYear(),
+    expenseDate.getMonth(),
+    expenseDate.getDate(),
+  ).getTime();
+  const diffDays = Math.round((today - expenseDay) / 86_400_000);
+
+  if (diffDays === 0) return 'Hoy';
+  if (diffDays === 1) return 'Ayer';
+  return formatTimelineDate(value);
+}
+
+function groupExpensesByDate(expenses: ExpenseItem[]): ExpenseDateGroup[] {
+  const groups: ExpenseDateGroup[] = [];
+
+  for (const expense of expenses) {
+    const label = getExpenseDateGroupLabel(expense.date);
+    const lastGroup = groups[groups.length - 1];
+
+    if (lastGroup?.label === label) {
+      lastGroup.items.push(expense);
+      continue;
+    }
+
+    groups.push({ label, items: [expense] });
+  }
+
+  return groups;
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '??';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
+}
+
+type ExpenseRowTag = {
+  label: string;
+  tone: 'emerald' | 'rose' | 'blue' | 'amber' | 'slate';
+};
+
+function getExpenseEmoji(expense: ExpenseItem): string {
+  if (expense.isSettlement) return '🤝';
+  if (expense.expenseType === 'composite') return '🧾';
+
+  const text = `${expense.description} ${expense.category?.name ?? ''}`.toLowerCase();
+
+  if (/(hotel|hostal|airbnb|estadia|estadía|lodg|aloj)/.test(text)) return '🏨';
+  if (/(comida|cena|almuerzo|desayuno|rest|restaurant|caf[eé]|bar|snack)/.test(text)) {
+    return '🍽️';
+  }
+  if (/(bus|vuelo|flight|taxi|uber|transporte|metro|tren|ticket|tickets)/.test(text)) {
+    return '🎫';
+  }
+
+  return '💸';
+}
+
+function getExpenseRowTag(expense: ExpenseItem, isPinned: boolean): ExpenseRowTag | null {
+  if (expense.isSettlement) {
+    return { label: 'Liquidación', tone: 'emerald' };
+  }
+
+  if (expense.currentUserBalance !== null && expense.participantCount > 0) {
+    if (expense.currentUserBalance > 0) {
+      return {
+        label: `Te deben ${formatMoney(expense.currency, expense.currentUserBalance)}`,
+        tone: 'emerald',
+      };
+    }
+
+    if (expense.currentUserBalance < 0) {
+      return {
+        label: `Debes ${formatMoney(expense.currency, Math.abs(expense.currentUserBalance))}`,
+        tone: 'rose',
+      };
+    }
+  }
+
+  if (expense.expenseType === 'composite') {
+    return {
+      label: `${expense.subExpenseCount} subgasto${expense.subExpenseCount === 1 ? '' : 's'}`,
+      tone: 'blue',
+    };
+  }
+
+  if (isPinned) {
+    return { label: 'Fijado', tone: 'amber' };
+  }
+
+  return null;
 }
 
 function ExpenseRow({
@@ -292,12 +337,10 @@ function ExpenseRow({
 
   return (
     <div
-      className={`relative mb-2 overflow-hidden rounded-2xl border px-3 last:mb-0 ${
-        expense.isSettlement ? 'border-emerald-200' : 'border-gray-200'
-      }`}
+      className="relative mb-3 overflow-hidden rounded-3xl border border-[#e5e7eb] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.05)] last:mb-0"
     >
       {showDeleteAction && (
-        <div className="absolute inset-y-0 right-0 z-0 flex w-[88px] items-center justify-center bg-red-500">
+        <div className="absolute inset-y-0 right-0 z-0 flex w-[88px] items-center justify-center bg-[#ff4d6a]">
           <button
             type="button"
             onClick={handleDelete}
@@ -323,92 +366,71 @@ function ExpenseRow({
           event.preventDefault();
           onOpenOptions(expense);
         }}
-        className={`native-tap relative z-10 flex w-full items-center gap-4 py-2 text-left transition-transform duration-200 ${
-          expense.isSettlement ? 'bg-emerald-50' : 'bg-white'
-        }`}
+        className="native-tap relative z-10 flex w-full items-start gap-3 bg-white px-4 py-4 text-left transition-transform duration-200"
         style={{ transform: `translateX(${translateX}px)` }}
       >
         <div
-          className={`flex size-12 shrink-0 items-center justify-center rounded-xl ${
+          className={`flex size-11 shrink-0 items-center justify-center rounded-full ${
             expense.isSettlement
               ? 'bg-emerald-100'
               : expense.expenseType === 'composite'
                 ? 'bg-blue-100'
-                : 'bg-[#f0f0ff]'
+                : 'bg-[#f3f4f6]'
           }`}
         >
-          <span className="text-lg">
-            {expense.isSettlement
-              ? '🤝'
-              : expense.expenseType === 'composite'
-                ? '🧾'
-                : '💰'}
+          <span className="text-base">
+            {getExpenseEmoji(expense)}
           </span>
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {isPinned ? (
-              <Pin className="size-3.5 fill-current text-amber-500" />
+              <Pin className="size-3.5 shrink-0 fill-current text-amber-500" />
             ) : null}
-            <p className="min-w-0 truncate font-medium text-[#1a1a3e]">
+            <p className="min-w-0 truncate text-sm font-semibold text-[#132238]">
               {expense.description}
             </p>
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            {expense.isSettlement ? (
-              <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                Liquidación
+          <p className="mt-1 text-xs text-[#64748b]">
+            {expense.isSettlement
+              ? `Pagado por ${expense.paidBy.name} · ${expense.settlementToName ?? 'otro miembro'}`
+              : `Pagado por ${expense.paidBy.name}`}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="inline-flex rounded-full bg-[#f8fafc] px-3 py-1 text-[11px] font-medium text-[#64748b]">
+              {formatDate(expense.date)}
+            </span>
+            {expense.category ? (
+              <span className="inline-flex rounded-full bg-[#f8fafc] px-3 py-1 text-[11px] font-medium text-[#64748b]">
+                {expense.category.name}
               </span>
-            ) : expense.expenseType === 'composite' ? (
-              <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
-                {expense.subExpenseCount} subgasto
-                {expense.subExpenseCount === 1 ? '' : 's'}
+            ) : null}
+            {getExpenseRowTag(expense, isPinned) ? (
+              <span
+                className={
+                  getExpenseRowTag(expense, isPinned)?.tone === 'emerald'
+                    ? 'inline-flex rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700'
+                    : getExpenseRowTag(expense, isPinned)?.tone === 'rose'
+                      ? 'inline-flex rounded-full bg-rose-100 px-3 py-1 text-[11px] font-semibold text-rose-600'
+                      : getExpenseRowTag(expense, isPinned)?.tone === 'blue'
+                        ? 'inline-flex rounded-full bg-blue-100 px-3 py-1 text-[11px] font-semibold text-blue-700'
+                        : getExpenseRowTag(expense, isPinned)?.tone === 'amber'
+                          ? 'inline-flex rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold text-amber-700'
+                          : 'inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700'
+                }
+              >
+                {getExpenseRowTag(expense, isPinned)?.label}
               </span>
             ) : null}
           </div>
-          <p className="text-sm text-gray-500">
-            {formatDate(expense.date)}
-            {expense.category ? ` · ${expense.category.name}` : ''}
-            {expense.participantCount > 0 &&
-              ` · ${expense.participantCount} participantes`}
-          </p>
-          <p
-            className={`text-sm ${
-              expense.isSettlement ? 'text-emerald-700' : 'text-gray-500'
-            }`}
-          >
-            {expense.isSettlement
-              ? `${expense.paidBy.name} pago a ${expense.settlementToName ?? 'otro miembro'}`
-              : `Pago: ${expense.paidBy.name}`}
-          </p>
         </div>
-        <div className="max-w-[116px] shrink-0 text-right">
-          <p className="truncate text-sm font-semibold text-[#132238]">
+        <div className="ml-1 shrink-0 text-right">
+          <p className="truncate text-base font-bold text-[#132238]">
             {formatMoney(expense.currency, expense.amount)}
           </p>
-          {!expense.isSettlement &&
-          expense.participantCount > 0 &&
-          expense.currentUserBalance !== null ? (
-            <p
-              className={
-                expense.currentUserBalance > 0
-                  ? 'truncate text-xs font-medium text-emerald-600'
-                  : expense.currentUserBalance < 0
-                    ? 'truncate text-xs font-medium text-red-500'
-                    : 'truncate text-xs font-medium text-[#64748b]'
-              }
-            >
-              {expense.currentUserBalance > 0
-                ? `Te deben ${formatMoney(expense.currency, expense.currentUserBalance)}`
-                : expense.currentUserBalance < 0
-                  ? `Debes ${formatMoney(expense.currency, Math.abs(expense.currentUserBalance))}`
-                  : 'Al día'}
-            </p>
-          ) : (
-            <p className="truncate text-xs text-[#64748b]">
-              {expense.isSettlement ? 'Liquidación' : expense.currency}
-            </p>
-          )}
+          <p className="truncate text-xs text-[#94a3b8]">
+            {expense.isSettlement ? 'Liquidación' : expense.currency}
+          </p>
         </div>
       </button>
     </div>
@@ -419,7 +441,7 @@ function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const [activeTab, setActiveTab] = useState<'gastos' | 'cuentas'>('gastos');
+  const balanceRef = useRef<HTMLElement | null>(null);
   const [showMoreDrawer, setShowMoreDrawer] = useState(false);
   const [showExpenseOptionsDrawer, setShowExpenseOptionsDrawer] = useState(false);
   const [showDeleteExpenseDrawer, setShowDeleteExpenseDrawer] = useState(false);
@@ -436,6 +458,10 @@ function RouteComponent() {
   const expenses = useMemo(
     () => expensesQuery.data?.pages.flatMap((page) => page.data) ?? [],
     [expensesQuery.data],
+  );
+  const groupedExpenses = useMemo(
+    () => groupExpensesByDate(expenses),
+    [expenses],
   );
 
   useEffect(() => {
@@ -491,6 +517,26 @@ function RouteComponent() {
   }
 
   const group = groupQuery.data;
+  const totalsEntries = Object.entries(group.totals).filter(
+    ([, amount]) => Math.abs(amount) >= 0.01,
+  );
+  const primaryTotal = totalsEntries[0];
+  const debtEntries = Object.entries(sumByCurrency(group.directDebts)).filter(
+    ([, amount]) => amount > 0,
+  );
+  const creditEntries = Object.entries(sumByCurrency(group.directCredits)).filter(
+    ([, amount]) => amount > 0,
+  );
+  const balanceLabel = creditEntries[0]
+    ? `Te deben ${formatMoney(creditEntries[0][0], creditEntries[0][1])}`
+    : debtEntries[0]
+      ? `Debes ${formatMoney(debtEntries[0][0], debtEntries[0][1])}`
+      : 'Sin saldos pendientes';
+  const balanceTone = creditEntries[0]
+    ? 'text-emerald-300'
+    : debtEntries[0]
+      ? 'text-rose-300'
+      : 'text-white/70';
   const inviteLink =
     group.inviteCode && typeof window !== 'undefined'
       ? `${window.location.origin}/join/${group.inviteCode}`
@@ -569,143 +615,191 @@ function RouteComponent() {
     }
   };
 
-  return (
-    <main className="min-h-screen bg-[#efefef] text-foreground">
-      <div className="mx-auto min-h-screen w-full max-w-[412px] bg-[#fafafa] pb-10">
-        <header className="bg-[#f2f4ff] px-4 pb-4 pt-8">
-          <Link
-            to="/groups"
-            className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#334155]"
-          >
-            <ArrowLeft className="size-4" />
-            Atrás
-          </Link>
+  const handleScrollToBalances = () => {
+    balanceRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  };
 
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold leading-8 text-[#132238]">
+  return (
+    <main className="min-h-screen bg-[#111111] text-foreground">
+      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#111111]">
+        <header className="px-4 pb-6 pt-6 text-white">
+          <div className="mb-5 flex items-start gap-3">
+            <Link
+              to="/groups"
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
+            >
+              <ArrowLeft className="size-4" />
+            </Link>
+
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/45">
+                Grupo
+              </p>
+              <h1 className="truncate text-xl font-semibold leading-7">
                 {group.name}
               </h1>
-              <p className="text-sm text-[#64748b]">
+              <p className="truncate text-sm text-white/55">
                 {group.participantCount} participantes
+                {group.description ? ` · ${group.description}` : ''}
               </p>
             </div>
+
             <button
               type="button"
-              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-[#132238] shadow-sm"
-              aria-label="Compartir grupo"
+              onClick={() => setShowMoreDrawer(true)}
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
+              aria-label="Más opciones"
             >
-              <Share2 className="size-5" />
+              <MoreHorizontal className="size-4" />
             </button>
           </div>
 
-          <section className="mt-5 rounded-3xl bg-white p-4 shadow-sm">
-            <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-[#64748b]">
-              Total gastado
+          <section className="rounded-[28px] bg-[#1f1f1f] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.25)]">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/75">
+                {primaryTotal ? primaryTotal[0] : 'COP'}
+              </span>
+              <span className="text-xs text-white/45">Total del grupo</span>
+            </div>
+
+            <h2 className="mt-2 text-4xl font-bold tracking-tight text-white">
+              {primaryTotal
+                ? formatMoney(primaryTotal[0], Math.abs(primaryTotal[1]))
+                : formatMoney('COP', 0)}
+            </h2>
+
+            <p className={`mt-2 text-sm font-medium ${balanceTone}`}>
+              {balanceLabel}
             </p>
-            <TotalsDisplay totals={group.totals} />
-            <UserBalanceSummary
-              directDebts={group.directDebts}
-              directCredits={group.directCredits}
-            />
+
+            {totalsEntries.length > 1 ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {totalsEntries.map(([currency, amount]) => (
+                  <span
+                    key={currency}
+                    className="inline-flex rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-white/70"
+                  >
+                    {formatMoney(currency, Math.abs(amount))}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </section>
 
           <div className="mt-4 grid grid-cols-4 gap-2">
-            {[
-              {
-                label: 'Crear',
-                icon: Plus,
-                primary: true,
-                to: '/groups/$id/add-expense' as const,
-              },
-              {
-                label: 'Liquidar',
-                icon: HandCoins,
-                to: '/groups/$id/settle' as const,
-              },
-              {
-                label: 'Personas',
-                icon: UserPlus,
-                to: '/groups/$id/participants' as const,
-              },
-              {
-                label: 'Mas',
-                icon: MoreHorizontal,
-                action: 'drawer' as const,
-              },
-            ].map((action) => {
-              const Icon = action.icon;
-              if ('action' in action) {
-                return (
-                  <button
-                    key={action.label}
-                    type="button"
-                    onClick={() => setShowMoreDrawer(true)}
-                    className="flex flex-col items-center gap-2"
-                  >
-                    <span className="flex size-14 items-center justify-center rounded-2xl bg-white text-[#132238]">
-                      <Icon className="size-6" />
-                    </span>
-                    <span className="text-center text-xs text-[#132238]">
-                      {action.label}
-                    </span>
-                  </button>
-                );
-              }
-              return (
-                <Link
-                  key={action.label}
-                  to={action.to}
-                  params={{ id }}
-                  className="flex flex-col items-center gap-2"
-                >
-                  <span
-                    className={
-                      action.primary
-                        ? 'flex size-14 items-center justify-center rounded-2xl bg-primary text-white'
-                        : 'flex size-14 items-center justify-center rounded-2xl bg-white text-[#132238]'
-                    }
-                  >
-                    <Icon className="size-6" />
-                  </span>
-                  <span className="text-center text-xs text-[#132238]">
-                    {action.label}
-                  </span>
-                </Link>
-              );
-            })}
+            <Link
+              to="/groups/$id/add-expense"
+              params={{ id }}
+              className="flex flex-col items-center gap-2"
+            >
+              <span className="flex size-14 items-center justify-center rounded-2xl bg-[#ff4d6a] text-white shadow-[0_8px_18px_rgba(255,77,106,0.35)]">
+                <Plus className="size-6" />
+              </span>
+              <span className="text-center text-[11px] font-medium text-white/85">
+                Crear gasto
+              </span>
+            </Link>
+
+            <Link
+              to="/groups/$id/settle"
+              params={{ id }}
+              className="flex flex-col items-center gap-2"
+            >
+              <span className="flex size-14 items-center justify-center rounded-2xl bg-white/10 text-white">
+                <ArrowUpRight className="size-6" />
+              </span>
+              <span className="text-center text-[11px] font-medium text-white/85">
+                Liquidar
+              </span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={handleScrollToBalances}
+              className="flex flex-col items-center gap-2"
+            >
+              <span className="flex size-14 items-center justify-center rounded-2xl bg-white/10 text-white">
+                <BarChart3 className="size-6" />
+              </span>
+              <span className="text-center text-[11px] font-medium text-white/85">
+                Balance
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowMoreDrawer(true)}
+              className="flex flex-col items-center gap-2"
+            >
+              <span className="flex size-14 items-center justify-center rounded-2xl bg-white/10 text-white">
+                <MoreHorizontal className="size-6" />
+              </span>
+              <span className="text-center text-[11px] font-medium text-white/85">
+                Ajustes
+              </span>
+            </button>
           </div>
         </header>
 
-        <section className="bg-white px-4 py-3">
-          <div className="grid grid-cols-2 rounded-2xl bg-[#f8fafc] p-1">
-            <button
-              type="button"
-              onClick={() => setActiveTab('gastos')}
-              className={
-                activeTab === 'gastos'
-                  ? 'rounded-xl bg-[#ecefff] py-3 text-sm font-bold text-primary shadow-sm'
-                  : 'rounded-xl py-3 text-sm text-[#64748b]'
-              }
-            >
-              Gastos
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('cuentas')}
-              className={
-                activeTab === 'cuentas'
-                  ? 'rounded-xl bg-[#ecefff] py-3 text-sm font-bold text-primary shadow-sm'
-                  : 'rounded-xl py-3 text-sm text-[#64748b]'
-              }
-            >
-              Cuentas
-            </button>
-          </div>
-        </section>
+        <div className="flex-1 rounded-t-[32px] bg-white px-4 pb-8 pt-6 shadow-[0_-16px_40px_rgba(0,0,0,0.12)]">
+          <section className="mb-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <Link
+                to="/groups/$id/participants"
+                params={{ id }}
+                className="inline-flex items-center gap-1 text-sm font-semibold text-[#132238]"
+              >
+                Participantes
+                <ChevronRight className="size-4 text-[#94a3b8]" />
+              </Link>
+              <span className="text-xs text-[#94a3b8]">
+                {group.members.length} miembros
+              </span>
+            </div>
 
-        {activeTab === 'gastos' ? (
-          <section className="px-4 py-3">
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              <Link
+                to="/groups/$id/participants"
+                params={{ id }}
+                className="flex min-w-[62px] flex-col items-center gap-1"
+              >
+                <span className="flex size-12 items-center justify-center rounded-full border-2 border-dashed border-[#d1d5db] bg-white text-[#94a3b8]">
+                  <Plus className="size-4" />
+                </span>
+                <span className="max-w-[62px] truncate text-[11px] text-[#64748b]">
+                  Agregar
+                </span>
+              </Link>
+
+              {group.members.slice(0, 6).map((member) => (
+                <div
+                  key={member.id}
+                  className="flex min-w-[62px] flex-col items-center gap-1"
+                >
+                  <span className="flex size-12 items-center justify-center rounded-full border border-[#e5e7eb] bg-[#f8fafc] text-sm font-semibold text-[#132238]">
+                    {getInitials(member.name)}
+                  </span>
+                  <span className="max-w-[62px] truncate text-[11px] text-[#64748b]">
+                    {member.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="mb-7">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#132238]">
+                Historial
+              </h2>
+              <span className="text-xs text-[#94a3b8]">
+                {expenses.length} gastos
+              </span>
+            </div>
+
             {expensesQuery.isError ? (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {expensesQuery.error instanceof Error
@@ -714,30 +808,39 @@ function RouteComponent() {
               </div>
             ) : null}
 
-            {!expensesQuery.isLoading && expenses.length === 0 ? (
-              <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-                <div className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-primary text-white">
-                  <Plus className="size-8" />
+            {!expensesQuery.isLoading && groupedExpenses.length === 0 ? (
+              <div className="rounded-[28px] border border-dashed border-[#e5e7eb] bg-[#fafafa] px-6 py-14 text-center">
+                <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-[#f3f4f6] text-2xl">
+                  💸
                 </div>
-                <h2 className="text-lg font-semibold text-[#132238]">
+                <h3 className="text-base font-semibold text-[#132238]">
                   No tienes gastos aún
-                </h2>
+                </h3>
                 <p className="mt-2 text-sm text-[#64748b]">
-                  Ingresa tus primeros gastos y comienza a dividirlos.
+                  Crea tu primer gasto y empieza a organizar este grupo.
                 </p>
               </div>
             ) : null}
 
-            <div className="flex flex-col gap-2">
-              {expenses.map((expense) => (
-                <ExpenseRow
-                  key={expense.id}
-                  expense={expense}
-                  isPinned={pinnedExpenseIds.includes(expense.id)}
-                  onOpenExpense={handleOpenExpense}
-                  onOpenOptions={handleOpenExpenseOptions}
-                  onDeleteExpense={handleDeleteExpense}
-                />
+            <div className="space-y-5">
+              {groupedExpenses.map((dayGroup) => (
+                <div key={dayGroup.label}>
+                  <p className="mb-3 text-sm font-medium text-[#64748b]">
+                    {dayGroup.label}
+                  </p>
+                  <div className="flex flex-col">
+                    {dayGroup.items.map((expense) => (
+                      <ExpenseRow
+                        key={expense.id}
+                        expense={expense}
+                        isPinned={pinnedExpenseIds.includes(expense.id)}
+                        onOpenExpense={handleOpenExpense}
+                        onOpenOptions={handleOpenExpenseOptions}
+                        onDeleteExpense={handleDeleteExpense}
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
 
@@ -749,13 +852,22 @@ function RouteComponent() {
               </p>
             ) : null}
           </section>
-        ) : (
-          <section className="px-4 py-3">
+
+          <section ref={balanceRef} className="scroll-mt-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#132238]">
+                Saldos
+              </h2>
+              <span className="text-xs text-[#94a3b8]">
+                {group.memberBalances.length} personas
+              </span>
+            </div>
+
             {group.memberBalances.length === 0 ? (
-              <div className="px-6 py-20 text-center">
-                <h2 className="text-lg font-semibold text-[#132238]">
+              <div className="rounded-[28px] border border-dashed border-[#e5e7eb] bg-[#fafafa] px-6 py-14 text-center">
+                <h3 className="text-base font-semibold text-[#132238]">
                   Sin cuentas aún
-                </h2>
+                </h3>
                 <p className="mt-2 text-sm text-[#64748b]">
                   Agrega gastos para ver el balance de cada participante.
                 </p>
@@ -773,10 +885,10 @@ function RouteComponent() {
                   return (
                     <article
                       key={member.memberId}
-                      className="flex items-center gap-4 rounded-2xl border border-[#e2e8f0] bg-white px-3 py-3"
+                      className="flex items-center gap-4 rounded-3xl border border-[#e5e7eb] bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.05)]"
                     >
-                      <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#f0f0ff] text-lg font-semibold text-primary">
-                        {member.name.charAt(0).toUpperCase()}
+                      <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#f3f4f6] text-base font-semibold text-[#132238]">
+                        {getInitials(member.name)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-[#132238]">
@@ -801,7 +913,7 @@ function RouteComponent() {
                               className={
                                 amount > 0
                                   ? 'mt-1 text-xs font-medium text-emerald-600'
-                                  : 'mt-1 text-xs font-medium text-red-500'
+                                  : 'mt-1 text-xs font-medium text-rose-600'
                               }
                             >
                               {amount > 0
@@ -818,7 +930,7 @@ function RouteComponent() {
                             className={
                               amount > 0
                                 ? 'truncate text-sm font-semibold text-emerald-600'
-                                : 'truncate text-sm font-semibold text-red-500'
+                                : 'truncate text-sm font-semibold text-rose-600'
                             }
                           >
                             {amount > 0 ? '+' : ''}
@@ -832,17 +944,6 @@ function RouteComponent() {
               </div>
             )}
           </section>
-        )}
-
-        <div className="px-4 pt-3">
-          <Link
-            to="/groups/$id"
-            params={{ id }}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[#e2e8f0] bg-white text-sm font-semibold text-[#132238]"
-          >
-            <BarChart3 className="size-4" />
-            Ver resumen
-          </Link>
         </div>
       </div>
 

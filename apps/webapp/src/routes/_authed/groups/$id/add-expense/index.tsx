@@ -48,6 +48,19 @@ const currencyMeta: Record<
 
 const currencyOptions = ['COP', 'EUR', 'USD', 'GBP', 'MXN', 'BRL'] as const;
 
+function getCurrencySymbol(currency: string) {
+  switch (currency) {
+    case 'EUR':
+      return '€';
+    case 'GBP':
+      return '£';
+    case 'BRL':
+      return 'R$';
+    default:
+      return '$';
+  }
+}
+
 export const Route = createFileRoute('/_authed/groups/$id/add-expense/')({
   validateSearch: (
     search: Record<string, unknown>,
@@ -379,15 +392,21 @@ function RouteComponent() {
 
             <label className="min-w-0 flex-1 text-right">
               <span className="sr-only">Monto</span>
-              <input
-                ref={amountInputRef}
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-                inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder="0"
-                className="w-full bg-transparent text-right text-4xl font-light text-gray-900 outline-none placeholder:text-gray-300"
-              />
+              <div className="inline-flex items-baseline justify-end gap-1">
+                <span className="shrink-0 text-4xl font-light text-gray-900">
+                  {getCurrencySymbol(currency)}
+                </span>
+                <input
+                  ref={amountInputRef}
+                  value={amount}
+                  onChange={(event) => setAmount(event.target.value)}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="0"
+                  style={{ width: `${Math.max(amount.length, 1)}ch` }}
+                  className="bg-transparent text-left text-4xl font-light tabular-nums text-gray-900 outline-none placeholder:text-gray-300"
+                />
+              </div>
             </label>
           </div>
 

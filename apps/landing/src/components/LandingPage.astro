@@ -13,13 +13,42 @@ const apiBaseUrl =
         Shared expenses, balances, routes, and coordination in one calm product.
       </p>
 
+      <div class="vw-visual">
+        <div class="vw-visual-frame">
+          <img
+            src="/illustrations/trips.webp"
+            alt="Travel companion mascot"
+            loading="eager"
+          />
+        </div>
+      </div>
+
       <button class="vw-button" type="button" data-waitlist-toggle>
         Join waitlist
       </button>
 
-      <form class="vw-waitlist-form" data-waitlist-form hidden data-api-base={apiBaseUrl}>
-        <input name="name" type="text" placeholder="Name" aria-label="Name" autocomplete="name" required />
-        <input name="email" type="email" placeholder="Email" aria-label="Email" autocomplete="email" required />
+      <form
+        class="vw-waitlist-form"
+        data-waitlist-form
+        hidden
+        data-api-base={apiBaseUrl}
+      >
+        <input
+          name="name"
+          type="text"
+          placeholder="Name"
+          aria-label="Name"
+          autocomplete="name"
+          required
+        />
+        <input
+          name="email"
+          type="email"
+          placeholder="Email"
+          aria-label="Email"
+          autocomplete="email"
+          required
+        />
         <button class="vw-submit" type="submit">Join waitlist</button>
       </form>
 
@@ -51,7 +80,9 @@ const apiBaseUrl =
 
     const formData = new FormData(form);
     const name = String(formData.get("name") ?? "").trim();
-    const email = String(formData.get("email") ?? "").trim().toLowerCase();
+    const email = String(formData.get("email") ?? "")
+      .trim()
+      .toLowerCase();
     const submitButton = form.querySelector('button[type="submit"]');
 
     if (submitButton) submitButton.setAttribute("disabled", "true");
@@ -144,6 +175,25 @@ const apiBaseUrl =
     text-wrap: pretty;
   }
 
+  .vw-visual {
+    width: min(100%, 38rem);
+    display: grid;
+    justify-items: center;
+    gap: 0.85rem;
+    margin: 0.75rem 0 0.25rem;
+  }
+
+  .vw-visual-frame {
+    width: min(100%, 26rem);
+  }
+
+  .vw-visual-frame img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
   .vw-button,
   .vw-submit {
     display: inline-flex;
@@ -154,7 +204,10 @@ const apiBaseUrl =
     border-radius: 999px;
     border: 1px solid transparent;
     font-weight: 700;
-    transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      background-color 160ms ease;
   }
 
   .vw-button {
@@ -210,4 +263,3 @@ const apiBaseUrl =
     color: #f5c2ce;
   }
 </style>
-

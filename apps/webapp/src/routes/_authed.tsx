@@ -40,9 +40,9 @@ function AuthedLayout() {
   const showBottomBar = MAIN_VIEWS.has(pathname);
 
   return (
-    <>
+    <div className="mobile-shell">
       <Outlet />
       {showBottomBar ? <BottomAppBar /> : null}
-    </>
+    </div>
   );
 }

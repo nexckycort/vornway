@@ -49,6 +49,11 @@ export function TripCard({ trip }: TripCardProps) {
               </p>
             ))}
           </div>
+          {trip.balanceOverflowLabel ? (
+            <p className="text-xs leading-4 text-[#64748b]">
+              {trip.balanceOverflowLabel}
+            </p>
+          ) : null}
         </div>
       ) : (
         <p className="mt-4 text-base font-medium leading-6">

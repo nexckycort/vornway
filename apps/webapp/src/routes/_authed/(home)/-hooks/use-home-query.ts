@@ -29,6 +29,7 @@ export type Trip = {
   | {
       balanceLabel: string;
       balanceItems: { person: string; amount: string }[];
+      balanceOverflowLabel?: string;
       emptyLabel?: never;
     }
   | {
@@ -94,6 +95,8 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
           ? `Te debe ${formatAmount(item.currency, item.amount)}`
           : `Debes ${formatAmount(item.currency, item.amount)}`,
     }));
+    const visibleBalances = balances.slice(0, 2);
+    const overflowCount = Math.max(0, balances.length - visibleBalances.length);
 
     const totals = Object.entries(group.totalsByCurrency).filter(
       ([, value]) => Math.abs(value) >= 0.01,
@@ -123,7 +126,10 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
       avatars,
       extraPeople,
       balanceLabel,
-      balanceItems: balances,
+      balanceItems: visibleBalances,
+      ...(overflowCount > 0
+        ? { balanceOverflowLabel: `y ${overflowCount} otros saldos` }
+        : {}),
     };
   });
 

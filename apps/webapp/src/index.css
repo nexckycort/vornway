@@ -133,4 +133,21 @@
   a {
     touch-action: manipulation;
   }
+
+  .mobile-shell {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .mobile-shell input,
+  .mobile-shell textarea,
+  .mobile-shell select,
+  .mobile-shell option,
+  .mobile-shell [contenteditable='true'],
+  .mobile-shell [data-allow-select='true'] {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
 }

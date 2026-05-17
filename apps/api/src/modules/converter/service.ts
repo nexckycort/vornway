@@ -36,20 +36,6 @@ export type CurrencyConverterResponse = {
   disclaimer: string;
 };
 
-type CurrencyRateRow = {
-  id: string;
-  baseCurrency: string;
-  quoteCurrency: string;
-  rate: number;
-  effectiveDate: Date;
-  metadata: Prisma.JsonValue | null;
-  createdAt: Date;
-};
-
-type LatestCurrencyRateRow = {
-  createdAt: Date;
-};
-
 async function fetchFrankfurterRate(
   quoteCurrency: 'USD' | 'COP',
 ): Promise<FrankfurterLatestResponse> {
@@ -90,12 +76,14 @@ function readProviderRate(
 }
 
 export async function ensureCurrencyRatesFresh() {
-  const [latestStoredRate] = await db.$queryRaw<LatestCurrencyRateRow[]>`
-    SELECT "createdAt"
-    FROM "currency_rate"
-    ORDER BY "createdAt" DESC
-    LIMIT 1
-  `;
+  const latestStoredRate = await db.currencyRate.findFirst({
+    orderBy: {
+      createdAt: 'desc',
+    },
+    select: {
+      createdAt: true,
+    },
+  });
 
   if (
     latestStoredRate &&
@@ -164,50 +152,27 @@ export async function ensureCurrencyRatesFresh() {
     { baseCurrency: 'COP', quoteCurrency: 'USD', rate: copToUsd },
   ] as const;
 
-  await db.$transaction(
-    rates.map((rate) =>
-      db.$executeRaw`
-        INSERT INTO "currency_rate" (
-          "id",
-          "baseCurrency",
-          "quoteCurrency",
-          "rate",
-          "effectiveDate",
-          "metadata",
-          "createdAt",
-          "updatedAt"
-        ) VALUES (
-          ${crypto.randomUUID()},
-          ${rate.baseCurrency},
-          ${rate.quoteCurrency},
-          ${rate.rate},
-          ${effectiveDate},
-          ${metadataPayload},
-          ${new Date()},
-          ${new Date()}
-        )
-      `,
-    ),
-  );
+  await db.currencyRate.createMany({
+    data: rates.map((rate) => ({
+      baseCurrency: rate.baseCurrency,
+      quoteCurrency: rate.quoteCurrency,
+      rate: rate.rate,
+      effectiveDate,
+      metadata: metadataPayload,
+    })),
+  });
 }
 
 export async function getCurrencyConverter(): Promise<CurrencyConverterResponse> {
   await ensureCurrencyRatesFresh();
 
-  const rateRecords = await db.$queryRaw<CurrencyRateRow[]>`
-    SELECT
-      "id",
-      "baseCurrency",
-      "quoteCurrency",
-      "rate",
-      "effectiveDate",
-      "metadata",
-      "createdAt"
-    FROM "currency_rate"
-    WHERE "baseCurrency" IN ('EUR', 'USD', 'COP')
-      AND "quoteCurrency" IN ('EUR', 'USD', 'COP')
-    ORDER BY "createdAt" DESC, "effectiveDate" DESC
-  `;
+  const rateRecords = await db.currencyRate.findMany({
+    where: {
+      baseCurrency: { in: [...SUPPORTED_CURRENCIES] },
+      quoteCurrency: { in: [...SUPPORTED_CURRENCIES] },
+    },
+    orderBy: [{ createdAt: 'desc' }, { effectiveDate: 'desc' }],
+  });
 
   const latestByPair = new Map<string, CurrencyRateItem>();
 

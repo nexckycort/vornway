@@ -55,7 +55,7 @@ type DbLike = {
       };
     }) => Promise<PushSubscriptionRecord[]>;
     updateMany: (args: {
-      where: { id: { in: string[] } };
+      where: { id?: { in: string[] }; endpoint?: string; userId?: string };
       data: { revokedAt: Date };
     }) => Promise<{ count: number }>;
   };
@@ -154,6 +154,17 @@ export function createPushNotificationService(
           id: true,
           endpoint: true,
           revokedAt: true,
+        },
+      });
+    },
+    revokeSubscription: async ({ userId, endpoint }) => {
+      await database.pushSubscription.updateMany({
+        where: {
+          endpoint,
+          userId,
+        },
+        data: {
+          revokedAt: new Date(),
         },
       });
     },

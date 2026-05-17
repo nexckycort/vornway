@@ -7,3 +7,7 @@ export const pushSubscriptionSchema = z.object({
     auth: z.string().min(1),
   }),
 });
+
+export const revokePushSubscriptionSchema = z.object({
+  endpoint: z.string().url(),
+});

@@ -24,6 +24,10 @@ export type PushNotificationService = {
   storeSubscription: (
     input: PushSubscriptionInput,
   ) => Promise<StoredPushSubscription>;
+  revokeSubscription: (input: {
+    userId: string;
+    endpoint: string;
+  }) => Promise<void>;
   sendToUsers: (
     userIds: string[],
     payload: PushNotificationPayload,

@@ -10,6 +10,7 @@ import {
   useGroupExpensesInfiniteQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { usePinnedExpenseIds } from '#/lib/expense-pins';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   ArrowLeft,
@@ -137,9 +138,11 @@ function sumByCurrency(items: Array<{ currency: string; amount: number }>) {
 
 function ExpenseRow({
   expense,
+  isPinned,
   groupId,
 }: {
   expense: ExpenseItem;
+  isPinned: boolean;
   groupId: string;
 }) {
   return (
@@ -168,7 +171,7 @@ function ExpenseRow({
 
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
-          {expense.isPinned ? (
+          {isPinned ? (
             <Pin className="size-3.5 shrink-0 fill-current text-amber-500" />
           ) : null}
           <p className="truncate text-sm font-semibold text-[#132238]">
@@ -245,6 +248,7 @@ function RouteComponent() {
 
   const groupQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
+  const pinnedExpenseIds = usePinnedExpenseIds(id);
 
   const expenses = useMemo(
     () => expensesQuery.data?.pages.flatMap((page) => page.data) ?? [],
@@ -492,7 +496,12 @@ function RouteComponent() {
 
             <div className="flex flex-col gap-2">
               {expenses.map((expense) => (
-                <ExpenseRow key={expense.id} expense={expense} groupId={id} />
+                <ExpenseRow
+                  key={expense.id}
+                  expense={expense}
+                  isPinned={pinnedExpenseIds.includes(expense.id)}
+                  groupId={id}
+                />
               ))}
             </div>
 

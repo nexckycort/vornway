@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-
 import { FullscreenLoader } from './components/fullscreen-loader';
 import { Toaster } from './components/ui/sonner';
 import { ThemeProvider } from './components/ui/theme-provider';
@@ -58,3 +57,21 @@ if (rootEl) {
     </React.StrictMode>,
   );
 }
+
+// Desactivar menú contextual del click derecho para comportamiento móvil
+document.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  return false;
+});
+
+// Desactivar arrastrar y soltar para comportamiento móvil
+document.addEventListener('dragstart', (e) => {
+  e.preventDefault();
+  return false;
+});
+
+// Desactivar selección con doble click
+document.addEventListener('selectstart', (e) => {
+  e.preventDefault();
+  return false;
+});

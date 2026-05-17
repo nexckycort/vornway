@@ -8,12 +8,14 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer';
 import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-delete-expense';
+import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
 import {
   useGroupExpensesInfiniteQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { usePinnedExpenseIds } from '#/lib/expense-pins';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Pin, Trash2 } from 'lucide-react';
 import { type PointerEvent, useMemo, useRef, useState } from 'react';
 
 export const Route = createFileRoute('/_authed/groups/$id/expense/$expenseId')({
@@ -48,7 +50,10 @@ function RouteComponent() {
   const groupSummaryQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
   const deleteExpenseMutation = useDeleteExpenseMutation(id);
+  const toggleExpensePinMutation = useToggleExpensePinMutation();
+  const pinnedExpenseIds = usePinnedExpenseIds(id);
 
+  const [optionsDrawerOpen, setOptionsDrawerOpen] = useState(false);
   const [deleteDrawerOpen, setDeleteDrawerOpen] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [swipeError, setSwipeError] = useState<string | null>(null);
@@ -58,12 +63,15 @@ function RouteComponent() {
     pointerId: -1,
     startX: 0,
     latestOffset: 0,
+    hasMoved: false,
   });
 
   const expense = useMemo(() => {
     const items = expensesQuery.data?.pages.flatMap((page) => page.data) ?? [];
     return items.find((item) => item.id === expenseId) ?? null;
   }, [expenseId, expensesQuery.data]);
+
+  const isPinned = expense ? pinnedExpenseIds.includes(expense.id) : false;
 
   const resetSwipe = () => {
     dragStateRef.current.active = false;
@@ -81,6 +89,7 @@ function RouteComponent() {
     dragStateRef.current.pointerId = event.pointerId;
     dragStateRef.current.startX = event.clientX;
     dragStateRef.current.latestOffset = 0;
+    dragStateRef.current.hasMoved = false;
     setSwipeOffset(0);
     event.currentTarget.setPointerCapture(event.pointerId);
   };
@@ -98,6 +107,7 @@ function RouteComponent() {
     const clamped = Math.max(Math.min(delta, 24), -132);
 
     dragStateRef.current.latestOffset = clamped;
+    dragStateRef.current.hasMoved = Math.abs(clamped) > 8;
     setSwipeOffset(clamped);
   };
 
@@ -108,7 +118,33 @@ function RouteComponent() {
     resetSwipe();
 
     if (shouldOpenDrawer) {
+      setOptionsDrawerOpen(false);
       setDeleteDrawerOpen(true);
+    }
+  };
+
+  const handleExpenseTap = () => {
+    if (dragStateRef.current.hasMoved) {
+      dragStateRef.current.hasMoved = false;
+      return;
+    }
+    if (deleteDrawerOpen) return;
+    setOptionsDrawerOpen(true);
+  };
+
+  const handleTogglePin = async () => {
+    if (!expense) return;
+
+    try {
+      await toggleExpensePinMutation.mutateAsync({
+        groupId: id,
+        expenseId: expense.id,
+      });
+      setOptionsDrawerOpen(false);
+    } catch (error) {
+      setSwipeError(
+        error instanceof Error ? error.message : 'No se pudo actualizar el pin',
+      );
     }
   };
 
@@ -193,6 +229,7 @@ function RouteComponent() {
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerEnd}
                 onPointerCancel={handlePointerEnd}
+                onClick={handleExpenseTap}
               >
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-4">
@@ -237,6 +274,68 @@ function RouteComponent() {
           </section>
         ) : null}
       </div>
+
+      <Drawer open={optionsDrawerOpen} onOpenChange={setOptionsDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Opciones del gasto</DrawerTitle>
+            <DrawerDescription>{expense?.description}</DrawerDescription>
+          </DrawerHeader>
+
+          <div className="space-y-2 px-5 pb-5">
+            <button
+              type="button"
+              onClick={() => setOptionsDrawerOpen(false)}
+              className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left"
+            >
+              <ArrowLeft className="size-5 text-[#132238]" />
+              <span className="font-medium text-[#132238]">Abrir</span>
+            </button>
+
+            {expense && !expense.isSettlement ? (
+              <button
+                type="button"
+                onClick={handleTogglePin}
+                disabled={
+                    expense.isDeleted || toggleExpensePinMutation.isPending
+                }
+                className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left disabled:opacity-60"
+              >
+                <Pin
+                  className={`size-5 ${
+                    isPinned
+                      ? 'fill-current text-amber-500'
+                      : 'text-[#132238]'
+                  }`}
+                />
+                <span className="font-medium text-[#132238]">
+                  {isPinned ? 'Desfijar' : 'Fijar'}
+                </span>
+              </button>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => {
+                setOptionsDrawerOpen(false);
+                setDeleteDrawerOpen(true);
+              }}
+              className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left"
+            >
+              <Trash2 className="size-5 text-red-500" />
+              <span className="font-medium text-red-500">Eliminar</span>
+            </button>
+
+            {toggleExpensePinMutation.error ? (
+              <p className="text-sm text-red-500">
+                {toggleExpensePinMutation.error instanceof Error
+                  ? toggleExpensePinMutation.error.message
+                  : 'No se pudo actualizar el pin'}
+              </p>
+            ) : null}
+          </div>
+        </DrawerContent>
+      </Drawer>
 
       <Drawer open={deleteDrawerOpen} onOpenChange={setDeleteDrawerOpen}>
         <DrawerContent>

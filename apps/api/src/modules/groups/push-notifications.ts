@@ -57,7 +57,7 @@ export function buildExpensePushPayload(input: {
   return {
     title: `Nuevo gasto en ${input.groupName}`,
     body: `${input.createdByName} agregó ${formattedAmount} por ${input.expenseTitle}`,
-    url: `/groups/${input.groupId}/expenses/${input.expenseId}`,
+    url: `/groups/${input.groupId}/expense/${input.expenseId}`,
     groupId: input.groupId,
     expenseId: input.expenseId,
   };

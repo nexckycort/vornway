@@ -5,12 +5,13 @@ import { createGroupsService } from '~/modules/groups/service';
 import type { AppContext } from '~/shared/types/app';
 import {
   addGroupMemberSchema,
-  createGroupSchema,
   createGroupExpenseSchema,
+  createGroupSchema,
   groupExpenseParamsSchema,
   groupParamsSchema,
   listGroupExpensesQuerySchema,
   listGroupsQuerySchema,
+  searchGroupMembersQuerySchema,
   settleGroupDebtSchema,
 } from './groups.validators';
 
@@ -49,7 +50,10 @@ const groups = new Hono<AppContext>()
     const { id: userId } = c.get('user');
 
     try {
-      const result = await groupsService.getGroupSummary({ userId, groupId: id });
+      const result = await groupsService.getGroupSummary({
+        userId,
+        groupId: id,
+      });
       return c.json(result);
     } catch (error) {
       if (error instanceof Error && error.message === 'Grupo no encontrado') {
@@ -220,6 +224,35 @@ const groups = new Hono<AppContext>()
       }
     },
   )
+  .get(
+    '/:id/members/search',
+    zValidator('param', groupParamsSchema),
+    zValidator('query', searchGroupMembersQuerySchema),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      const { query } = c.req.valid('query');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.searchMembers({
+          userId,
+          groupId: id,
+          query,
+        });
+
+        return c.json(result);
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message === 'No tienes acceso a este grupo'
+        ) {
+          return c.json({ error: error.message }, 400);
+        }
+
+        throw error;
+      }
+    },
+  )
   .post(
     '/:id/members',
     zValidator('param', groupParamsSchema),
@@ -234,6 +267,7 @@ const groups = new Hono<AppContext>()
           userId,
           groupId: id,
           name: data.name,
+          linkedUserId: data.linkedUserId,
         });
         return c.json(result, 201);
       } catch (error) {

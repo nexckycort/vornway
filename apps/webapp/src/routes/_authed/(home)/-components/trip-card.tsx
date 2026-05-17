@@ -14,7 +14,7 @@ export function TripCard({ trip }: TripCardProps) {
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-xl font-semibold leading-7">{trip.name}</h3>
+          <h3 className="text-lg font-semibold leading-7">{trip.name}</h3>
           <p className="text-xs leading-4">{trip.dates}</p>
         </div>
 

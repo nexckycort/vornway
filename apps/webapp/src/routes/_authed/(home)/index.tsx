@@ -30,7 +30,7 @@ function RouteComponent() {
         <div className="flex-1 overflow-y-auto px-4 pb-32 pt-6">
           <header className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl leading-7">
+              <h1 className="text-lg leading-7">
                 Hola,
                 <span className="font-semibold text-primary">{userName}</span>
               </h1>
@@ -59,7 +59,11 @@ function RouteComponent() {
             ))}
           </section>
 
-          <HomeSection title="Grupos recientes" className="mt-7" viewAllTo="/groups">
+          <HomeSection
+            title="Grupos recientes"
+            className="mt-7"
+            viewAllTo="/groups"
+          >
             <div className="flex flex-col gap-4">
               {data.trips.map((trip) => (
                 <TripCard key={trip.id} trip={trip} />
@@ -67,7 +71,11 @@ function RouteComponent() {
             </div>
           </HomeSection>
 
-          <HomeSection title="Metas de ahorro" className="mt-8" viewAllTo="/goals">
+          <HomeSection
+            title="Metas de ahorro"
+            className="mt-8"
+            viewAllTo="/goals"
+          >
             <div className="flex flex-col gap-5">
               <Button
                 type="button"

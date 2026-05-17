@@ -2,7 +2,7 @@ import {
   useGroupExpensesInfiniteQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { Link, createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeft } from 'lucide-react';
 import { useMemo } from 'react';
 
@@ -75,7 +75,7 @@ function RouteComponent() {
 
         {expense ? (
           <section className="rounded-3xl border border-[#e2e8f0] bg-white p-5 shadow-sm">
-            <h2 className="text-xl font-semibold text-[#0f172a]">
+            <h2 className="text-lg font-semibold text-[#0f172a]">
               {expense.description}
             </h2>
             <p className="mt-2 text-3xl font-bold text-primary">
@@ -85,7 +85,10 @@ function RouteComponent() {
             <div className="mt-6 grid gap-4">
               <Row label="Fecha" value={formatDate(expense.date)} />
               <Row label="Pagado por" value={expense.paidBy.name} />
-              <Row label="Participantes" value={String(expense.participantCount)} />
+              <Row
+                label="Participantes"
+                value={String(expense.participantCount)}
+              />
               <Row
                 label="Categoría"
                 value={expense.category?.name ?? 'Sin categoría'}
@@ -113,7 +116,9 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-[#f1f5f9] pb-3">
       <span className="text-sm text-[#64748b]">{label}</span>
-      <span className="truncate text-sm font-semibold text-[#0f172a]">{value}</span>
+      <span className="truncate text-sm font-semibold text-[#0f172a]">
+        {value}
+      </span>
     </div>
   );
 }

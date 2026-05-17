@@ -1,7 +1,3 @@
-import {
-  useGroupExpensesInfiniteQuery,
-  useGroupSummaryQuery,
-} from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { Button } from '#/components/ui/button';
 import {
   Drawer,
@@ -10,7 +6,11 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
-import { Link, createFileRoute } from '@tanstack/react-router';
+import {
+  useGroupExpensesInfiniteQuery,
+  useGroupSummaryQuery,
+} from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   ArrowLeft,
   BarChart3,
@@ -93,19 +93,26 @@ function UserBalanceSummary({
 }) {
   const debtByCurrency = sumByCurrency(directDebts);
   const creditByCurrency = sumByCurrency(directCredits);
-  const debtEntries = Object.entries(debtByCurrency).filter(([, amount]) => amount >= 1);
+  const debtEntries = Object.entries(debtByCurrency).filter(
+    ([, amount]) => amount >= 1,
+  );
   const creditEntries = Object.entries(creditByCurrency).filter(
     ([, amount]) => amount >= 1,
   );
 
   if (debtEntries.length === 0 && creditEntries.length === 0) {
-    return <p className="mb-5 text-center text-sm text-[#64748b]">Sin deudas</p>;
+    return (
+      <p className="mb-5 text-center text-sm text-[#64748b]">Sin deudas</p>
+    );
   }
 
   return (
     <div className="mb-5 space-y-1 text-center">
       {debtEntries.map(([currency, amount]) => (
-        <p key={`debt-${currency}`} className="text-sm font-semibold text-red-500">
+        <p
+          key={`debt-${currency}`}
+          className="text-sm font-semibold text-red-500"
+        >
           Debes {formatMoney(currency, amount)}
         </p>
       ))}
@@ -128,7 +135,13 @@ function sumByCurrency(items: Array<{ currency: string; amount: number }>) {
   }, {});
 }
 
-function ExpenseRow({ expense, groupId }: { expense: ExpenseItem; groupId: string }) {
+function ExpenseRow({
+  expense,
+  groupId,
+}: {
+  expense: ExpenseItem;
+  groupId: string;
+}) {
   return (
     <Link
       to="/groups/$id/expense/$expenseId"
@@ -145,7 +158,11 @@ function ExpenseRow({ expense, groupId }: { expense: ExpenseItem; groupId: strin
         }
       >
         <span className="text-lg font-semibold">
-          {expense.isSettlement ? 'L' : expense.expenseType === 'composite' ? 'C' : '$'}
+          {expense.isSettlement
+            ? 'L'
+            : expense.expenseType === 'composite'
+              ? 'C'
+              : '$'}
         </span>
       </div>
 
@@ -464,7 +481,7 @@ function RouteComponent() {
                 <div className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-primary text-white">
                   <Plus className="size-8" />
                 </div>
-                <h2 className="text-xl font-semibold text-[#132238]">
+                <h2 className="text-lg font-semibold text-[#132238]">
                   No tienes gastos aún
                 </h2>
                 <p className="mt-2 text-sm text-[#64748b]">
@@ -482,14 +499,16 @@ function RouteComponent() {
             <div ref={loadMoreRef} className="h-8" />
 
             {expensesQuery.isFetchingNextPage ? (
-              <p className="text-center text-sm text-[#64748b]">Cargando más...</p>
+              <p className="text-center text-sm text-[#64748b]">
+                Cargando más...
+              </p>
             ) : null}
           </section>
         ) : (
           <section className="px-4 py-3">
             {group.memberBalances.length === 0 ? (
               <div className="px-6 py-20 text-center">
-                <h2 className="text-xl font-semibold text-[#132238]">
+                <h2 className="text-lg font-semibold text-[#132238]">
                   Sin cuentas aún
                 </h2>
                 <p className="mt-2 text-sm text-[#64748b]">
@@ -518,7 +537,9 @@ function RouteComponent() {
                         <p className="truncate text-sm font-semibold text-[#132238]">
                           {member.name}
                           {member.isCurrentUser ? (
-                            <span className="ml-1 text-xs text-[#94a3b8]">(tú)</span>
+                            <span className="ml-1 text-xs text-[#94a3b8]">
+                              (tú)
+                            </span>
                           ) : null}
                         </p>
                         <p className="truncate text-xs text-[#94a3b8]">
@@ -594,7 +615,9 @@ function RouteComponent() {
               className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left"
             >
               <Share2 className="size-5 text-primary" />
-              <span className="font-medium text-[#132238]">Compartir grupo</span>
+              <span className="font-medium text-[#132238]">
+                Compartir grupo
+              </span>
             </button>
 
             <button

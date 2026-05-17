@@ -1,39 +1,265 @@
 ---
-import type { LandingContent } from "../content/landing";
-import AILayerSection from "./AILayerSection.astro";
-import AssistantSection from "./AssistantSection.astro";
-import ComparisonSection from "./ComparisonSection.astro";
-import FeaturesSection from "./FeaturesSection.astro";
-import HeroSection from "./HeroSection.astro";
-import HowItWorksSection from "./HowItWorksSection.astro";
-import LandingFooter from "./LandingFooter.astro";
-import LandingNavbar from "./LandingNavbar.astro";
-import PreFooterBanner from "./PreFooterBanner.astro";
-import WaitlistSection from "./WaitlistSection.astro";
-
-export interface Props {
-  content: LandingContent;
-}
-
-const { content } = Astro.props;
+const apiBaseUrl =
+  (import.meta.env.PUBLIC_API_BASE_URL as string | undefined) ??
+  "https://api.vornway.com";
 ---
 
-<div class="page-shell">
-  <div class="noise-overlay" aria-hidden="true"></div>
-  <LandingNavbar content={content} />
+<main class="vw-page">
+  <section class="vw-hero">
+    <div class="shell vw-shell">
+      <p class="vw-badge">Built for travelers</p>
+      <h1>Group travel, done right.</h1>
+      <p class="vw-lead">
+        Shared expenses, balances, routes, and coordination in one calm product.
+      </p>
 
-  <main>
-    <HeroSection content={content.hero} />
-    <!-- <ProblemSection content={content.problem} /> -->
-    <FeaturesSection content={content.features} />
-    <HowItWorksSection content={content.howItWorks} />
-    <AssistantSection content={content.assistant} />
-    <AILayerSection content={content.aiLayer} />
-    <!-- <ManifestoSection content={content.manifesto} /> -->
-    <ComparisonSection content={content.comparison} />
-    <PreFooterBanner content={content.preFooterBanner} />
-    <WaitlistSection content={content.waitlist} />
-  </main>
+      <div class="vw-visual">
+        <div class="vw-visual-frame">
+          <img
+            src="/illustrations/trips.webp"
+            alt="Travel companion mascot"
+            loading="eager"
+          />
+        </div>
+      </div>
 
-  <LandingFooter content={content} />
-</div>
+      <button class="vw-button" type="button" data-waitlist-toggle>
+        Join waitlist
+      </button>
+
+      <form
+        class="vw-waitlist-form"
+        data-waitlist-form
+        hidden
+        data-api-base={apiBaseUrl}
+      >
+        <input
+          name="name"
+          type="text"
+          placeholder="Name"
+          aria-label="Name"
+          autocomplete="name"
+          required
+        />
+        <input
+          name="email"
+          type="email"
+          placeholder="Email"
+          aria-label="Email"
+          autocomplete="email"
+          required
+        />
+        <button class="vw-submit" type="submit">Join waitlist</button>
+      </form>
+
+      <p class="vw-status" data-waitlist-success hidden>You are in.</p>
+      <p class="vw-status is-error" data-waitlist-error hidden></p>
+    </div>
+  </section>
+</main>
+
+<script is:inline>
+  const toggle = document.querySelector("[data-waitlist-toggle]");
+  const form = document.querySelector("[data-waitlist-form]");
+  const success = document.querySelector("[data-waitlist-success]");
+  const error = document.querySelector("[data-waitlist-error]");
+  const apiBase = form?.dataset.apiBase ?? "https://api.vornway.com";
+  const endpoint = `${apiBase}/api/waitlist`;
+
+  toggle?.addEventListener("click", () => {
+    form?.removeAttribute("hidden");
+    if (form instanceof HTMLElement) {
+      form.querySelector("input")?.focus();
+    }
+  });
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    success?.setAttribute("hidden", "");
+    error?.setAttribute("hidden", "");
+
+    const formData = new FormData(form);
+    const name = String(formData.get("name") ?? "").trim();
+    const email = String(formData.get("email") ?? "")
+      .trim()
+      .toLowerCase();
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    if (submitButton) submitButton.setAttribute("disabled", "true");
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email }),
+      });
+
+      if (response.ok) {
+        success?.removeAttribute("hidden");
+        form.reset();
+        return;
+      }
+
+      if (response.status === 409) {
+        if (error) {
+          error.textContent = "This email is already on the waitlist.";
+          error.removeAttribute("hidden");
+        }
+        return;
+      }
+
+      if (error) {
+        error.textContent = "We could not register you right now.";
+        error.removeAttribute("hidden");
+      }
+    } catch {
+      if (error) {
+        error.textContent = "Connection error. Try again.";
+        error.removeAttribute("hidden");
+      }
+    } finally {
+      if (submitButton) submitButton.removeAttribute("disabled");
+    }
+  });
+</script>
+
+<style>
+  .vw-page {
+    min-height: 100vh;
+    background: #0f0f10;
+    color: #f5f5f5;
+  }
+
+  .vw-hero {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 2rem 0;
+  }
+
+  .vw-shell {
+    width: min(760px, calc(100% - 2rem));
+    display: grid;
+    justify-items: center;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .vw-badge {
+    margin: 0;
+    width: fit-content;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid rgba(245, 245, 245, 0.08);
+    border-radius: 999px;
+    color: rgba(245, 245, 245, 0.68);
+    font-size: 0.76rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .vw-shell h1 {
+    margin: 0;
+    max-width: 10ch;
+    font-size: clamp(3.8rem, 10vw, 7rem);
+    line-height: 0.92;
+    letter-spacing: -0.085em;
+    text-wrap: balance;
+  }
+
+  .vw-lead {
+    max-width: 34rem;
+    margin: 0;
+    color: rgba(245, 245, 245, 0.68);
+    font-size: clamp(1.02rem, 1.6vw, 1.15rem);
+    line-height: 1.8;
+    text-wrap: pretty;
+  }
+
+  .vw-visual {
+    width: min(100%, 38rem);
+    display: grid;
+    justify-items: center;
+    gap: 0.85rem;
+    margin: 0.75rem 0 0.25rem;
+  }
+
+  .vw-visual-frame {
+    width: min(100%, 26rem);
+  }
+
+  .vw-visual-frame img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
+  .vw-button,
+  .vw-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.2rem;
+    padding: 0.82rem 1.15rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      background-color 160ms ease;
+  }
+
+  .vw-button {
+    background: #de034d;
+    color: #fff;
+  }
+
+  .vw-button:hover,
+  .vw-submit:hover {
+    transform: translateY(-1px);
+  }
+
+  .vw-waitlist-form {
+    width: min(100%, 28rem);
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .vw-waitlist-form input {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0 0.95rem;
+    border: 1px solid rgba(245, 245, 245, 0.08);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.02);
+    color: #f5f5f5;
+    outline: none;
+  }
+
+  .vw-waitlist-form input::placeholder {
+    color: rgba(245, 245, 245, 0.34);
+  }
+
+  .vw-submit {
+    background: #de034d;
+    color: #fff;
+  }
+
+  .vw-submit:disabled {
+    opacity: 0.75;
+    cursor: wait;
+  }
+
+  .vw-status {
+    margin: 0;
+    color: rgba(245, 245, 245, 0.68);
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+
+  .vw-status.is-error {
+    color: #f5c2ce;
+  }
+</style>

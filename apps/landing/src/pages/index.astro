@@ -1,18 +1,14 @@
 ---
 import LandingPage from "../components/LandingPage.astro";
-import { landingContent } from "../content/landing";
 import Layout from "../layouts/Layout.astro";
-
-const lang = "es";
-const copy = landingContent[lang];
 ---
 
 <Layout
-  title={copy.layout.title}
-  description={copy.layout.description}
-  lang={lang}
-  ogImageAlt={copy.layout.ogImageAlt}
-  twitterImageAlt={copy.layout.twitterImageAlt}
+  title="Vornway - Travel together without the chaos"
+  description="Vornway is the operating system for group travel. Plan trips, split expenses, track balances, manage participants, support multiple currencies, and organize routes in one calm companion."
+  lang="en"
+  ogImageAlt="Vornway - the operating system for group travel"
+  twitterImageAlt="Vornway - the operating system for group travel"
 >
-  <LandingPage content={copy} />
+  <LandingPage />
 </Layout>

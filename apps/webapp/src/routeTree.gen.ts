@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as AuthedConverterRouteImport } from './routes/_authed/converter'
 import { Route as PublicLoginIndexRouteImport } from './routes/_public/login/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
 import { Route as AuthedGroupsIndexRouteImport } from './routes/_authed/groups/index'
@@ -32,6 +33,11 @@ const PublicRoute = PublicRouteImport.update({
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedConverterRoute = AuthedConverterRouteImport.update({
+  id: '/converter',
+  path: '/converter',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const PublicLoginIndexRoute = PublicLoginIndexRouteImport.update({
   id: '/login/',
@@ -105,6 +111,7 @@ const AuthedGroupsIdExpenseExpenseIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedhomeIndexRoute
+  '/converter': typeof AuthedConverterRoute
   '/groups/new': typeof AuthedGroupsNewRouteWithChildren
   '/goals/': typeof AuthedGoalsIndexRoute
   '/groups/': typeof AuthedGroupsIndexRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AuthedhomeIndexRoute
+  '/converter': typeof AuthedConverterRoute
   '/goals': typeof AuthedGoalsIndexRoute
   '/groups': typeof AuthedGroupsIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
+  '/_authed/converter': typeof AuthedConverterRoute
   '/_authed/groups/new': typeof AuthedGroupsNewRouteWithChildren
   '/_authed/(home)/': typeof AuthedhomeIndexRoute
   '/_authed/goals/': typeof AuthedGoalsIndexRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/converter'
     | '/groups/new'
     | '/goals/'
     | '/groups/'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/converter'
     | '/goals'
     | '/groups'
     | '/profile'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/_public'
+    | '/_authed/converter'
     | '/_authed/groups/new'
     | '/_authed/(home)/'
     | '/_authed/goals/'
@@ -219,6 +231,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/converter': {
+      id: '/_authed/converter'
+      path: '/converter'
+      fullPath: '/converter'
+      preLoaderRoute: typeof AuthedConverterRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_public/login/': {
       id: '/_public/login/'
@@ -329,6 +348,7 @@ const AuthedGroupsNewRouteWithChildren = AuthedGroupsNewRoute._addFileChildren(
 )
 
 interface AuthedRouteChildren {
+  AuthedConverterRoute: typeof AuthedConverterRoute
   AuthedGroupsNewRoute: typeof AuthedGroupsNewRouteWithChildren
   AuthedhomeIndexRoute: typeof AuthedhomeIndexRoute
   AuthedGoalsIndexRoute: typeof AuthedGoalsIndexRoute
@@ -342,6 +362,7 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedConverterRoute: AuthedConverterRoute,
   AuthedGroupsNewRoute: AuthedGroupsNewRouteWithChildren,
   AuthedhomeIndexRoute: AuthedhomeIndexRoute,
   AuthedGoalsIndexRoute: AuthedGoalsIndexRoute,

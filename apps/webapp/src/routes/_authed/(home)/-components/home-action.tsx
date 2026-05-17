@@ -10,7 +10,12 @@ type HomeActionProps = {
 export function HomeAction({ action }: HomeActionProps) {
   const Icon = homeIcons[action.icon];
   const isPrimary = action.variant === 'primary';
-  const to = action.id === 'create-group' ? '/groups/new' : null;
+  const to =
+    action.id === 'create-group'
+      ? '/groups/new'
+      : action.id === 'currency-converter'
+        ? '/converter'
+        : null;
 
   const className = cn(
     'flex min-h-[118px] flex-col items-start justify-between rounded-[24px] p-4 text-left transition-transform active:translate-y-px',

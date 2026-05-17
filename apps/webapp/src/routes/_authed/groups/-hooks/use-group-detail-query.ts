@@ -6,14 +6,17 @@ const PAGE_LIMIT = 20;
 
 const groupSummaryEndpoint = client.api.groups[':id'].$get;
 const groupExpensesEndpoint = client.api.groups[':id'].expenses.$get;
+const groupExpenseEndpoint = client.api.groups[':id'].expenses[':expenseId'].$get;
 
 type GroupSummaryResponse = InferResponseType<typeof groupSummaryEndpoint>;
 type GroupExpensesPageResponse = InferResponseType<typeof groupExpensesEndpoint>;
+type GroupExpenseResponse = InferResponseType<typeof groupExpenseEndpoint>;
 type GroupSummarySuccess = Extract<GroupSummaryResponse, { id: string }>;
 type GroupExpensesPageSuccess = Extract<
   GroupExpensesPageResponse,
   { data: unknown[]; pagination: { nextCursor: string | null } }
 >;
+type GroupExpenseSuccess = Extract<GroupExpenseResponse, { id: string }>;
 
 export function useGroupSummaryQuery(groupId: string) {
   return useQuery({
@@ -52,5 +55,28 @@ export function useGroupExpensesInfiniteQuery(groupId: string) {
       return (await response.json()) as GroupExpensesPageSuccess;
     },
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor,
+  });
+}
+
+export function useGroupExpenseQuery(groupId: string, expenseId: string | undefined) {
+  return useQuery({
+    queryKey: ['group-expense', groupId, expenseId],
+    enabled: Boolean(expenseId),
+    queryFn: async () => {
+      if (!expenseId) {
+        throw new Error('Gasto no encontrado');
+      }
+
+      const response = await groupExpenseEndpoint({
+        param: { id: groupId, expenseId },
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudo cargar el gasto');
+      }
+
+      return (await response.json()) as GroupExpenseSuccess;
+    },
   });
 }

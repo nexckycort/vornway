@@ -15,7 +15,7 @@ import {
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { usePinnedExpenseIds } from '#/lib/expense-pins';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Copy, Share2, Trash2, UserPlus } from 'lucide-react';
+import { Copy, Pencil, Share2, Trash2, UserPlus } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { GroupBalancesSection } from './-components/group-balances-section';
@@ -166,6 +166,14 @@ function RouteComponent() {
   const handleOpenExpenseOptions = (expense: ExpenseItem) => {
     setExpenseForOptions(expense);
     setShowExpenseOptionsDrawer(true);
+  };
+
+  const handleEditExpense = (expense: ExpenseItem) => {
+    void navigate({
+      to: '/groups/$id/add-expense',
+      params: { id },
+      search: { expenseId: expense.id },
+    });
   };
 
   const handleTogglePinnedExpense = async () => {
@@ -357,6 +365,25 @@ function RouteComponent() {
                 >
                   <span className="font-medium text-[#132238]">Abrir</span>
                 </button>
+
+                {!expenseForOptions.isDeleted ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExpenseOptionsDrawer(false);
+                      setExpenseForOptions(null);
+                      handleEditExpense(expenseForOptions);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left"
+                  >
+                    <Pencil className="size-5 text-primary" />
+                    <span className="font-medium text-[#132238]">
+                      {expenseForOptions.isSettlement
+                        ? 'Editar liquidación'
+                        : 'Editar gasto'}
+                    </span>
+                  </button>
+                ) : null}
 
                 {!expenseForOptions.isSettlement ? (
                   <button

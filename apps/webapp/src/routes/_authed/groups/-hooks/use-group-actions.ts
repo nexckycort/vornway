@@ -3,11 +3,14 @@ import type { InferRequestType, InferResponseType } from '#/lib/hc';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
+const updateExpenseEndpoint = client.api.groups[':id'].expenses[':expenseId'].$put;
 const settleDebtEndpoint = client.api.groups[':id'].settlements.$post;
 const addMemberEndpoint = client.api.groups[':id'].members.$post;
 
 type CreateExpenseRequest = InferRequestType<typeof createExpenseEndpoint>;
 type CreateExpenseResponse = InferResponseType<typeof createExpenseEndpoint>;
+type UpdateExpenseRequest = InferRequestType<typeof updateExpenseEndpoint>;
+type UpdateExpenseResponse = InferResponseType<typeof updateExpenseEndpoint>;
 type SettleDebtRequest = InferRequestType<typeof settleDebtEndpoint>;
 type SettleDebtResponse = InferResponseType<typeof settleDebtEndpoint>;
 type AddMemberRequest = InferRequestType<typeof addMemberEndpoint>;
@@ -38,6 +41,29 @@ export function useCreateExpenseMutation(groupId: string) {
       }
 
       return (await response.json()) as CreateExpenseResponse;
+    },
+    onSuccess: async () => {
+      await invalidateGroup(queryClient, groupId);
+    },
+  });
+}
+
+export function useUpdateExpenseMutation(groupId: string, expenseId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (json: UpdateExpenseRequest['json']) => {
+      const response = await updateExpenseEndpoint({
+        param: { id: groupId, expenseId },
+        json,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudo actualizar el gasto');
+      }
+
+      return (await response.json()) as UpdateExpenseResponse;
     },
     onSuccess: async () => {
       await invalidateGroup(queryClient, groupId);

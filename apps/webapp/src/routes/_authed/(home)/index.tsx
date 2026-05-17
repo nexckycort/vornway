@@ -5,6 +5,7 @@ import { useAuth } from '#/contexts/auth/use-auth';
 import { HomeAction } from '#/routes/_authed/(home)/-components/home-action';
 import { homeIcons } from '#/routes/_authed/(home)/-components/home-icons';
 import { HomeSection } from '#/routes/_authed/(home)/-components/home-section';
+import { HomeSkeleton } from '#/routes/_authed/(home)/-components/home-skeleton';
 import { SavingGoalCard } from '#/routes/_authed/(home)/-components/saving-goal-card';
 import { TripCard } from '#/routes/_authed/(home)/-components/trip-card';
 import {
@@ -28,71 +29,79 @@ function RouteComponent() {
     <main className="min-h-screen bg-[#efefef] text-foreground">
       <div className="relative mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa]">
         <div className="flex-1 overflow-y-auto px-4 pb-32 pt-6">
-          <header className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg leading-7">
-                Hola,
-                <span className="font-semibold text-primary">{userName}</span>
-              </h1>
-              <p className="text-xs leading-4 text-[#626262]">
-                {data.welcomeText}
-              </p>
-            </div>
+          {homeQuery.isLoading ? (
+            <HomeSkeleton />
+          ) : (
+            <>
+              <header className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-lg leading-7">
+                    Hola,
+                    <span className="font-semibold text-primary">
+                      {userName}
+                    </span>
+                  </h1>
+                  <p className="text-xs leading-4 text-[#626262]">
+                    {data.welcomeText}
+                  </p>
+                </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              className="rounded-full bg-white shadow-sm"
-              aria-label="Notificaciones"
-            >
-              <BellIcon />
-            </Button>
-          </header>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  className="rounded-full bg-white shadow-sm"
+                  aria-label="Notificaciones"
+                >
+                  <BellIcon />
+                </Button>
+              </header>
 
-          <section
-            className="mt-8 grid grid-cols-2 gap-4"
-            aria-label="Acciones rapidas"
-          >
-            {data.actions.map((action) => (
-              <HomeAction key={action.id} action={action} />
-            ))}
-          </section>
-
-          <HomeSection
-            title="Grupos recientes"
-            className="mt-7"
-            viewAllTo="/groups"
-          >
-            <div className="flex flex-col gap-4">
-              {data.trips.map((trip) => (
-                <TripCard key={trip.id} trip={trip} />
-              ))}
-            </div>
-          </HomeSection>
-
-          <HomeSection
-            title="Metas de ahorro"
-            className="mt-8"
-            viewAllTo="/goals"
-          >
-            <div className="flex flex-col gap-5">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 rounded-full bg-white text-base shadow-sm"
+              <section
+                className="mt-8 grid grid-cols-2 gap-4"
+                aria-label="Acciones rapidas"
               >
-                <PlusIcon data-icon="inline-start" />
-                Crear meta
-              </Button>
-
-              <div className="flex flex-col gap-4">
-                {data.savingGoals.map((goal) => (
-                  <SavingGoalCard key={goal.id} goal={goal} />
+                {data.actions.map((action) => (
+                  <HomeAction key={action.id} action={action} />
                 ))}
-              </div>
-            </div>
-          </HomeSection>
+              </section>
+
+              <HomeSection
+                title="Grupos recientes"
+                className="mt-7"
+                viewAllTo="/groups"
+              >
+                <div className="flex flex-col gap-4">
+                  {data.trips.map((trip) => (
+                    <TripCard key={trip.id} trip={trip} />
+                  ))}
+                </div>
+              </HomeSection>
+
+              <HomeSection
+                title="Metas de ahorro"
+                className="mt-8"
+                viewAllTo="/goals"
+              >
+                <div className="flex flex-col gap-5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 rounded-full bg-white text-base shadow-sm"
+                  >
+                    <PlusIcon data-icon="inline-start" />
+                    Crear meta
+                  </Button>
+
+                  <div className="flex flex-col gap-4">
+                    {data.savingGoals.map((goal) => (
+                      <SavingGoalCard key={goal.id} goal={goal} />
+                    ))}
+                  </div>
+                </div>
+              </HomeSection>
+            </>
+          )}
         </div>
       </div>
     </main>

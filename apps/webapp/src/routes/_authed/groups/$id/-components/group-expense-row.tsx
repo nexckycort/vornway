@@ -1,0 +1,245 @@
+import { useRef, useState, type MouseEvent, type TouchEvent } from 'react';
+import { Pin, Trash2 } from 'lucide-react';
+
+import type { ExpenseItem } from '../-types/group-detail.types';
+import { formatMoney, getExpenseEmoji, getExpenseRowTag } from './group-detail.utils';
+
+type GroupExpenseRowProps = {
+  expense: ExpenseItem;
+  isPinned: boolean;
+  onOpenExpense: (expenseId: string) => void;
+  onOpenOptions: (expense: ExpenseItem) => void;
+  onDeleteExpense: (expense: ExpenseItem) => void;
+};
+
+export function GroupExpenseRow({
+  expense,
+  isPinned,
+  onOpenExpense,
+  onOpenOptions,
+  onDeleteExpense,
+}: GroupExpenseRowProps) {
+  const SWIPE_WIDTH = 88;
+  const SWIPE_THRESHOLD = 44;
+  const FULL_SWIPE_THRESHOLD = 78;
+  const LONG_PRESS_MS = 450;
+  const [translateX, setTranslateX] = useState(0);
+  const [startX, setStartX] = useState<number | null>(null);
+  const [startY, setStartY] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [didSwipe, setDidSwipe] = useState(false);
+  const [didLongPress, setDidLongPress] = useState(false);
+  const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showDeleteAction = !expense.isDeleted && translateX < -2;
+
+  const clearLongPressTimeout = () => {
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+  };
+
+  const startLongPressTimeout = () => {
+    clearLongPressTimeout();
+    longPressTimeoutRef.current = setTimeout(() => {
+      setDidLongPress(true);
+      setDidSwipe(true);
+      setTranslateX(0);
+      onOpenOptions(expense);
+    }, LONG_PRESS_MS);
+  };
+
+  const handleTouchStart = (event: TouchEvent<HTMLButtonElement>) => {
+    if (expense.isDeleted) return;
+    const touch = event.touches[0];
+    setStartX(touch.clientX);
+    setStartY(touch.clientY);
+    setIsDragging(true);
+    setDidSwipe(false);
+    setDidLongPress(false);
+    startLongPressTimeout();
+  };
+
+  const handleTouchMove = (event: TouchEvent<HTMLButtonElement>) => {
+    if (!isDragging || startX === null || startY === null || expense.isDeleted) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - startY;
+
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      clearLongPressTimeout();
+      return;
+    }
+
+    const nextTranslateX = Math.max(-SWIPE_WIDTH, Math.min(0, deltaX));
+    if (Math.abs(nextTranslateX) > 6) {
+      setDidSwipe(true);
+      clearLongPressTimeout();
+    }
+    setTranslateX(nextTranslateX);
+  };
+
+  const handleTouchEnd = () => {
+    clearLongPressTimeout();
+    if (!isDragging || expense.isDeleted) return;
+
+    if (didLongPress) {
+      setIsDragging(false);
+      setStartX(null);
+      setStartY(null);
+      setDidLongPress(false);
+      return;
+    }
+
+    const shouldTriggerDelete = translateX <= -FULL_SWIPE_THRESHOLD;
+    const shouldOpenActions = translateX <= -SWIPE_THRESHOLD;
+
+    if (shouldTriggerDelete) {
+      setTranslateX(0);
+      onDeleteExpense(expense);
+    } else if (shouldOpenActions) {
+      setTranslateX(-SWIPE_WIDTH);
+    } else {
+      setTranslateX(0);
+    }
+
+    setIsDragging(false);
+    setStartX(null);
+    setStartY(null);
+  };
+
+  const handleMouseDown = () => {
+    if (expense.isDeleted) return;
+    setDidLongPress(false);
+    startLongPressTimeout();
+  };
+
+  const handleMouseUp = () => {
+    clearLongPressTimeout();
+  };
+
+  const handleOpenExpense = () => {
+    if (didSwipe) {
+      setDidSwipe(false);
+      return;
+    }
+
+    if (didLongPress) {
+      setDidLongPress(false);
+      return;
+    }
+
+    if (translateX <= -SWIPE_THRESHOLD) {
+      setTranslateX(0);
+      return;
+    }
+
+    onOpenExpense(expense.id);
+  };
+
+  const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    onDeleteExpense(expense);
+    setTranslateX(0);
+  };
+
+  const tag = getExpenseRowTag(expense, isPinned);
+
+  return (
+    <div className="relative mb-3 overflow-hidden rounded-3xl border border-[#e5e7eb] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.05)] last:mb-0">
+      {showDeleteAction ? (
+        <div className="absolute inset-y-0 right-0 z-0 flex w-[88px] items-center justify-center bg-[#ff4d6a]">
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="flex h-full w-full flex-col items-center justify-center text-white"
+          >
+            <Trash2 className="mb-1 size-5" />
+            <span className="text-xs font-medium">Borrar</span>
+          </button>
+        </div>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={handleOpenExpense}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          onOpenOptions(expense);
+        }}
+        className="native-tap relative z-10 flex w-full items-start gap-3 bg-white px-4 py-4 text-left transition-transform duration-200"
+        style={{ transform: `translateX(${translateX}px)` }}
+      >
+        <div
+          className={`flex size-11 shrink-0 items-center justify-center rounded-full ${
+            expense.isSettlement
+              ? 'bg-emerald-100'
+              : expense.expenseType === 'composite'
+                ? 'bg-blue-100'
+                : 'bg-[#f3f4f6]'
+          }`}
+        >
+          <span className="text-base">{getExpenseEmoji(expense)}</span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            {isPinned ? (
+              <Pin className="size-3.5 shrink-0 fill-current text-amber-500" />
+            ) : null}
+            <p className="min-w-0 truncate text-sm font-semibold text-[#132238]">
+              {expense.description}
+            </p>
+          </div>
+          <p className="mt-1 text-xs text-[#64748b]">
+            {expense.isSettlement
+              ? `Pagado por ${expense.paidBy.name} · ${expense.settlementToName ?? 'otro miembro'}`
+              : `Pagado por ${expense.paidBy.name}`}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {expense.category ? (
+              <span className="inline-flex rounded-full bg-[#f8fafc] px-3 py-1 text-[11px] font-medium text-[#64748b]">
+                {expense.category.name}
+              </span>
+            ) : null}
+            {tag ? (
+              <span
+                className={
+                  tag.tone === 'emerald'
+                    ? 'inline-flex rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700'
+                    : tag.tone === 'rose'
+                      ? 'inline-flex rounded-full bg-rose-100 px-3 py-1 text-[11px] font-semibold text-rose-600'
+                      : tag.tone === 'blue'
+                        ? 'inline-flex rounded-full bg-blue-100 px-3 py-1 text-[11px] font-semibold text-blue-700'
+                        : tag.tone === 'amber'
+                          ? 'inline-flex rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold text-amber-700'
+                          : 'inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700'
+                }
+              >
+                {tag.label}
+              </span>
+            ) : null}
+          </div>
+        </div>
+        <div className="ml-1 shrink-0 text-right">
+          <p className="truncate text-base font-bold text-[#132238]">
+            {formatMoney(expense.currency, expense.amount)}
+          </p>
+          <p className="truncate text-xs text-[#94a3b8]">
+            {expense.isSettlement ? 'Liquidación' : expense.currency}
+          </p>
+        </div>
+      </button>
+    </div>
+  );
+}

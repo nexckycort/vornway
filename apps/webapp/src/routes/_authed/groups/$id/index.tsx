@@ -3,15 +3,18 @@ import {
   Drawer,
   DrawerContent,
   DrawerDescription,
+  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
+import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-delete-expense';
+import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
 import {
   useGroupExpensesInfiniteQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { usePinnedExpenseIds } from '#/lib/expense-pins';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import {
   ArrowLeft,
   BarChart3,
@@ -21,9 +24,17 @@ import {
   Pin,
   Plus,
   Share2,
+  Trash2,
   UserPlus,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type MouseEvent,
+  type TouchEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 export const Route = createFileRoute('/_authed/groups/$id/')({
   component: RouteComponent,
@@ -139,115 +150,287 @@ function sumByCurrency(items: Array<{ currency: string; amount: number }>) {
 function ExpenseRow({
   expense,
   isPinned,
-  groupId,
+  onOpenExpense,
+  onOpenOptions,
+  onDeleteExpense,
 }: {
   expense: ExpenseItem;
   isPinned: boolean;
-  groupId: string;
+  onOpenExpense: (expenseId: string) => void;
+  onOpenOptions: (expense: ExpenseItem) => void;
+  onDeleteExpense: (expense: ExpenseItem) => void;
 }) {
+  const SWIPE_WIDTH = 88;
+  const SWIPE_THRESHOLD = 44;
+  const FULL_SWIPE_THRESHOLD = 78;
+  const LONG_PRESS_MS = 450;
+  const [translateX, setTranslateX] = useState(0);
+  const [startX, setStartX] = useState<number | null>(null);
+  const [startY, setStartY] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [didSwipe, setDidSwipe] = useState(false);
+  const [didLongPress, setDidLongPress] = useState(false);
+  const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  const showDeleteAction = !expense.isDeleted && translateX < -2;
+
+  const clearLongPressTimeout = () => {
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+  };
+
+  const startLongPressTimeout = () => {
+    clearLongPressTimeout();
+    longPressTimeoutRef.current = setTimeout(() => {
+      setDidLongPress(true);
+      setDidSwipe(true);
+      setTranslateX(0);
+      onOpenOptions(expense);
+    }, LONG_PRESS_MS);
+  };
+
+  const handleTouchStart = (event: TouchEvent<HTMLButtonElement>) => {
+    if (expense.isDeleted) return;
+    const touch = event.touches[0];
+    setStartX(touch.clientX);
+    setStartY(touch.clientY);
+    setIsDragging(true);
+    setDidSwipe(false);
+    setDidLongPress(false);
+    startLongPressTimeout();
+  };
+
+  const handleTouchMove = (event: TouchEvent<HTMLButtonElement>) => {
+    if (!isDragging || startX === null || startY === null || expense.isDeleted) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - startY;
+
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      clearLongPressTimeout();
+      return;
+    }
+
+    const nextTranslateX = Math.max(-SWIPE_WIDTH, Math.min(0, deltaX));
+    if (Math.abs(nextTranslateX) > 6) {
+      setDidSwipe(true);
+      clearLongPressTimeout();
+    }
+    setTranslateX(nextTranslateX);
+  };
+
+  const handleTouchEnd = () => {
+    clearLongPressTimeout();
+    if (!isDragging || expense.isDeleted) return;
+
+    if (didLongPress) {
+      setIsDragging(false);
+      setStartX(null);
+      setStartY(null);
+      setDidLongPress(false);
+      return;
+    }
+
+    const shouldTriggerDelete = translateX <= -FULL_SWIPE_THRESHOLD;
+    const shouldOpenActions = translateX <= -SWIPE_THRESHOLD;
+
+    if (shouldTriggerDelete) {
+      setTranslateX(0);
+      onDeleteExpense(expense);
+    } else if (shouldOpenActions) {
+      setTranslateX(-SWIPE_WIDTH);
+    } else {
+      setTranslateX(0);
+    }
+
+    setIsDragging(false);
+    setStartX(null);
+    setStartY(null);
+  };
+
+  const handleMouseDown = () => {
+    if (expense.isDeleted) return;
+    setDidLongPress(false);
+    startLongPressTimeout();
+  };
+
+  const handleMouseUp = () => {
+    clearLongPressTimeout();
+  };
+
+  const handleOpenExpense = () => {
+    if (didSwipe) {
+      setDidSwipe(false);
+      return;
+    }
+
+    if (didLongPress) {
+      setDidLongPress(false);
+      return;
+    }
+
+    if (translateX <= -SWIPE_THRESHOLD) {
+      setTranslateX(0);
+      return;
+    }
+
+    onOpenExpense(expense.id);
+  };
+
+  const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    onDeleteExpense(expense);
+    setTranslateX(0);
+  };
+
   return (
-    <Link
-      to="/groups/$id/expense/$expenseId"
-      params={{ id: groupId, expenseId: expense.id }}
-      className="flex items-center gap-4 rounded-2xl border border-[#e2e8f0] bg-white px-3 py-3 text-left"
+    <div
+      className={`relative mb-2 overflow-hidden rounded-2xl border px-3 last:mb-0 ${
+        expense.isSettlement ? 'border-emerald-200' : 'border-gray-200'
+      }`}
     >
-      <div
-        className={
-          expense.isSettlement
-            ? 'flex size-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700'
-            : expense.expenseType === 'composite'
-              ? 'flex size-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700'
-              : 'flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#f0f0ff] text-primary'
-        }
-      >
-        <span className="text-lg font-semibold">
-          {expense.isSettlement
-            ? 'L'
-            : expense.expenseType === 'composite'
-              ? 'C'
-              : '$'}
-        </span>
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-2">
-          {isPinned ? (
-            <Pin className="size-3.5 shrink-0 fill-current text-amber-500" />
-          ) : null}
-          <p className="truncate text-sm font-semibold text-[#132238]">
-            {expense.description}
-          </p>
-        </div>
-
-        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-          {expense.isSettlement ? (
-            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-              Liquidacion
-            </span>
-          ) : null}
-          {expense.expenseType === 'composite' ? (
-            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
-              {expense.subExpenseCount} subgasto
-              {expense.subExpenseCount === 1 ? '' : 's'}
-            </span>
-          ) : null}
-        </div>
-
-        <p className="mt-1 truncate text-xs text-[#64748b]">
-          {formatDate(expense.date)}
-          {expense.category ? ` · ${expense.category.name}` : ''}
-          {expense.participantCount > 0
-            ? ` · ${expense.participantCount} participantes`
-            : ''}
-        </p>
-        <p className="truncate text-xs text-[#64748b]">
-          {expense.isSettlement
-            ? `${expense.paidBy.name} pago a ${expense.settlementToName ?? 'otro miembro'}`
-            : `Pago: ${expense.paidBy.name}`}
-        </p>
-      </div>
-
-      <div className="max-w-[116px] shrink-0 text-right">
-        <p className="truncate text-sm font-semibold text-[#132238]">
-          {formatMoney(expense.currency, expense.amount)}
-        </p>
-        {!expense.isSettlement &&
-        expense.participantCount > 0 &&
-        expense.currentUserBalance !== null ? (
-          <p
-            className={
-              expense.currentUserBalance > 0
-                ? 'truncate text-xs font-medium text-emerald-600'
-                : expense.currentUserBalance < 0
-                  ? 'truncate text-xs font-medium text-red-500'
-                  : 'truncate text-xs font-medium text-[#64748b]'
-            }
+      {showDeleteAction && (
+        <div className="absolute inset-y-0 right-0 z-0 flex w-[88px] items-center justify-center bg-red-500">
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="flex h-full w-full flex-col items-center justify-center text-white"
           >
-            {expense.currentUserBalance > 0
-              ? `Te deben ${formatMoney(expense.currency, expense.currentUserBalance)}`
-              : expense.currentUserBalance < 0
-                ? `Debes ${formatMoney(expense.currency, Math.abs(expense.currentUserBalance))}`
-                : 'Al dia'}
+            <Trash2 className="mb-1 size-5" />
+            <span className="text-xs font-medium">Borrar</span>
+          </button>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={handleOpenExpense}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          onOpenOptions(expense);
+        }}
+        className={`native-tap relative z-10 flex w-full items-center gap-4 py-2 text-left transition-transform duration-200 ${
+          expense.isSettlement ? 'bg-emerald-50' : 'bg-white'
+        }`}
+        style={{ transform: `translateX(${translateX}px)` }}
+      >
+        <div
+          className={`flex size-12 shrink-0 items-center justify-center rounded-xl ${
+            expense.isSettlement
+              ? 'bg-emerald-100'
+              : expense.expenseType === 'composite'
+                ? 'bg-blue-100'
+                : 'bg-[#f0f0ff]'
+          }`}
+        >
+          <span className="text-lg">
+            {expense.isSettlement
+              ? '🤝'
+              : expense.expenseType === 'composite'
+                ? '🧾'
+                : '💰'}
+          </span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            {isPinned ? (
+              <Pin className="size-3.5 fill-current text-amber-500" />
+            ) : null}
+            <p className="min-w-0 truncate font-medium text-[#1a1a3e]">
+              {expense.description}
+            </p>
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            {expense.isSettlement ? (
+              <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                Liquidación
+              </span>
+            ) : expense.expenseType === 'composite' ? (
+              <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                {expense.subExpenseCount} subgasto
+                {expense.subExpenseCount === 1 ? '' : 's'}
+              </span>
+            ) : null}
+          </div>
+          <p className="text-sm text-gray-500">
+            {formatDate(expense.date)}
+            {expense.category ? ` · ${expense.category.name}` : ''}
+            {expense.participantCount > 0 &&
+              ` · ${expense.participantCount} participantes`}
           </p>
-        ) : (
-          <p className="truncate text-xs text-[#64748b]">
-            {expense.isSettlement ? 'Liquidacion' : expense.currency}
+          <p
+            className={`text-sm ${
+              expense.isSettlement ? 'text-emerald-700' : 'text-gray-500'
+            }`}
+          >
+            {expense.isSettlement
+              ? `${expense.paidBy.name} pago a ${expense.settlementToName ?? 'otro miembro'}`
+              : `Pago: ${expense.paidBy.name}`}
           </p>
-        )}
-      </div>
-    </Link>
+        </div>
+        <div className="max-w-[116px] shrink-0 text-right">
+          <p className="truncate text-sm font-semibold text-[#132238]">
+            {formatMoney(expense.currency, expense.amount)}
+          </p>
+          {!expense.isSettlement &&
+          expense.participantCount > 0 &&
+          expense.currentUserBalance !== null ? (
+            <p
+              className={
+                expense.currentUserBalance > 0
+                  ? 'truncate text-xs font-medium text-emerald-600'
+                  : expense.currentUserBalance < 0
+                    ? 'truncate text-xs font-medium text-red-500'
+                    : 'truncate text-xs font-medium text-[#64748b]'
+              }
+            >
+              {expense.currentUserBalance > 0
+                ? `Te deben ${formatMoney(expense.currency, expense.currentUserBalance)}`
+                : expense.currentUserBalance < 0
+                  ? `Debes ${formatMoney(expense.currency, Math.abs(expense.currentUserBalance))}`
+                  : 'Al día'}
+            </p>
+          ) : (
+            <p className="truncate text-xs text-[#64748b]">
+              {expense.isSettlement ? 'Liquidación' : expense.currency}
+            </p>
+          )}
+        </div>
+      </button>
+    </div>
   );
 }
 
 function RouteComponent() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = useState<'gastos' | 'cuentas'>('gastos');
   const [showMoreDrawer, setShowMoreDrawer] = useState(false);
+  const [showExpenseOptionsDrawer, setShowExpenseOptionsDrawer] = useState(false);
+  const [showDeleteExpenseDrawer, setShowDeleteExpenseDrawer] = useState(false);
+  const [expenseForOptions, setExpenseForOptions] = useState<ExpenseItem | null>(null);
+  const [expenseToDelete, setExpenseToDelete] = useState<ExpenseItem | null>(null);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   const groupQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
+  const deleteExpenseMutation = useDeleteExpenseMutation(id);
+  const toggleExpensePinMutation = useToggleExpensePinMutation();
   const pinnedExpenseIds = usePinnedExpenseIds(id);
 
   const expenses = useMemo(
@@ -332,6 +515,57 @@ function RouteComponent() {
       await copyText(inviteLink, 'Enlace');
     } catch {
       setShareMessage('No se pudo compartir');
+    }
+  };
+
+  const handleOpenExpense = (expenseId: string) => {
+    void navigate({
+      to: '/groups/$id/expense/$expenseId',
+      params: { id, expenseId },
+    });
+  };
+
+  const handleOpenExpenseOptions = (expense: ExpenseItem) => {
+    setExpenseForOptions(expense);
+    setShowExpenseOptionsDrawer(true);
+  };
+
+  const handleTogglePinnedExpense = async () => {
+    if (!expenseForOptions) return;
+
+    try {
+      await toggleExpensePinMutation.mutateAsync({
+        groupId: id,
+        expenseId: expenseForOptions.id,
+      });
+      setShowExpenseOptionsDrawer(false);
+      setExpenseForOptions(null);
+    } catch (error) {
+      setShareMessage(
+        error instanceof Error ? error.message : 'No se pudo actualizar el pin',
+      );
+    }
+  };
+
+  const handleDeleteExpense = (expense: ExpenseItem) => {
+    setExpenseToDelete(expense);
+    setShowDeleteExpenseDrawer(true);
+  };
+
+  const handleConfirmDeleteExpense = async () => {
+    if (!expenseToDelete) return;
+
+    try {
+      await deleteExpenseMutation.mutateAsync({
+        groupId: id,
+        expenseId: expenseToDelete.id,
+      });
+      setShowDeleteExpenseDrawer(false);
+      setExpenseToDelete(null);
+    } catch (error) {
+      setShareMessage(
+        error instanceof Error ? error.message : 'No se pudo eliminar el gasto',
+      );
     }
   };
 
@@ -500,7 +734,9 @@ function RouteComponent() {
                   key={expense.id}
                   expense={expense}
                   isPinned={pinnedExpenseIds.includes(expense.id)}
-                  groupId={id}
+                  onOpenExpense={handleOpenExpense}
+                  onOpenOptions={handleOpenExpenseOptions}
+                  onDeleteExpense={handleDeleteExpense}
                 />
               ))}
             </div>
@@ -678,6 +914,151 @@ function RouteComponent() {
               Cerrar
             </Button>
           </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer
+        open={showExpenseOptionsDrawer && Boolean(expenseForOptions)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowExpenseOptionsDrawer(false);
+            setExpenseForOptions(null);
+          } else {
+            setShowExpenseOptionsDrawer(true);
+          }
+        }}
+      >
+        <DrawerContent>
+          {expenseForOptions ? (
+            <>
+              <DrawerHeader>
+                <DrawerTitle>Opciones del gasto</DrawerTitle>
+                <DrawerDescription>
+                  {expenseForOptions.description}
+                </DrawerDescription>
+              </DrawerHeader>
+
+              <div className="space-y-2 px-5 pb-5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowExpenseOptionsDrawer(false);
+                    setExpenseForOptions(null);
+                    handleOpenExpense(expenseForOptions.id);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left"
+                >
+                  <ArrowLeft className="size-5 text-[#132238]" />
+                  <span className="font-medium text-[#132238]">Abrir</span>
+                </button>
+
+                {!expenseForOptions.isSettlement ? (
+                  <button
+                    type="button"
+                    onClick={handleTogglePinnedExpense}
+                    disabled={
+                      expenseForOptions.isDeleted ||
+                      toggleExpensePinMutation.isPending
+                    }
+                    className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left disabled:opacity-60"
+                  >
+                    <Pin
+                      className={`size-5 ${
+                        pinnedExpenseIds.includes(expenseForOptions.id)
+                          ? 'fill-current text-amber-500'
+                          : 'text-[#132238]'
+                      }`}
+                    />
+                    <span className="font-medium text-[#132238]">
+                      {pinnedExpenseIds.includes(expenseForOptions.id)
+                        ? 'Desfijar'
+                        : 'Fijar'}
+                    </span>
+                  </button>
+                ) : null}
+
+                {!expenseForOptions.isDeleted ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExpenseOptionsDrawer(false);
+                      setExpenseForOptions(null);
+                      handleDeleteExpense(expenseForOptions);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left"
+                  >
+                    <Trash2 className="size-5 text-red-500" />
+                    <span className="font-medium text-red-500">Eliminar</span>
+                  </button>
+                ) : null}
+
+                {toggleExpensePinMutation.error ? (
+                  <p className="text-sm text-red-500">
+                    {toggleExpensePinMutation.error instanceof Error
+                      ? toggleExpensePinMutation.error.message
+                      : 'No se pudo actualizar el pin'}
+                  </p>
+                ) : null}
+              </div>
+            </>
+          ) : null}
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer
+        open={showDeleteExpenseDrawer && Boolean(expenseToDelete)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowDeleteExpenseDrawer(false);
+            setExpenseToDelete(null);
+          } else {
+            setShowDeleteExpenseDrawer(true);
+          }
+        }}
+      >
+        <DrawerContent>
+          {expenseToDelete ? (
+            <>
+              <DrawerHeader>
+                <DrawerTitle>Eliminar gasto</DrawerTitle>
+                <DrawerDescription>
+                  Se eliminará este gasto del grupo.
+                </DrawerDescription>
+              </DrawerHeader>
+
+              <div className="px-5 pb-2">
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  Vas a eliminar <strong>{expenseToDelete.description}</strong>{' '}
+                  por <strong>{formatMoney(expenseToDelete.currency, expenseToDelete.amount)}</strong>.
+                </div>
+              </div>
+
+              <DrawerFooter>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="h-11 rounded-full"
+                  onClick={handleConfirmDeleteExpense}
+                  disabled={deleteExpenseMutation.isPending}
+                >
+                  {deleteExpenseMutation.isPending
+                    ? 'Eliminando...'
+                    : 'Sí, eliminar gasto'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-full"
+                  onClick={() => {
+                    setShowDeleteExpenseDrawer(false);
+                    setExpenseToDelete(null);
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </DrawerFooter>
+            </>
+          ) : null}
         </DrawerContent>
       </Drawer>
     </main>

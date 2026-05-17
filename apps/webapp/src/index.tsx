@@ -69,9 +69,3 @@ document.addEventListener('dragstart', (e) => {
   e.preventDefault();
   return false;
 });
-
-// Desactivar selección con doble click
-document.addEventListener('selectstart', (e) => {
-  e.preventDefault();
-  return false;
-});

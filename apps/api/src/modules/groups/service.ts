@@ -15,6 +15,7 @@ import type {
   ListGroupExpensesResult,
   ListGroupsInput,
   ListGroupsResult,
+  SearchGroupMembersResult,
   SettleGroupDebtInput,
   UpdateGroupExpenseInput,
 } from './types';
@@ -30,6 +31,11 @@ export type GroupsService = {
   deleteExpense: (input: DeleteGroupExpenseInput) => Promise<{ id: string }>;
   settleDebt: (input: SettleGroupDebtInput) => Promise<{ id: string }>;
   addMember: (input: AddGroupMemberInput) => Promise<{ id: string; name: string }>;
+  searchMembers: (input: {
+    userId: string;
+    groupId: string;
+    query: string;
+  }) => Promise<SearchGroupMembersResult>;
 };
 
 async function generateInviteCode(): Promise<string> {
@@ -1248,7 +1254,7 @@ export function createGroupsService(): GroupsService {
 
       return expense;
     },
-    addMember: async ({ userId, groupId, name }) => {
+    addMember: async ({ userId, groupId, name, linkedUserId }) => {
       const membership = await db.groupMember.findFirst({
         where: { groupId, userId },
         select: { id: true },
@@ -1258,10 +1264,28 @@ export function createGroupsService(): GroupsService {
         throw new Error('No tienes acceso a este grupo');
       }
 
+      if (linkedUserId) {
+        const existingLinkedMember = await db.groupMember.findFirst({
+          where: {
+            groupId,
+            userId: linkedUserId,
+          },
+          select: {
+            id: true,
+            name: true,
+          },
+        });
+
+        if (existingLinkedMember) {
+          return existingLinkedMember;
+        }
+      }
+
       const member = await db.groupMember.create({
         data: {
           groupId,
           name,
+          ...(linkedUserId ? { userId: linkedUserId } : {}),
           role: 'member',
         },
         select: {
@@ -1271,6 +1295,73 @@ export function createGroupsService(): GroupsService {
       });
 
       return member;
+    },
+    searchMembers: async ({ userId, groupId, query }) => {
+      const membership = await db.groupMember.findFirst({
+        where: { groupId, userId },
+        select: { id: true },
+      });
+
+      if (!membership) {
+        throw new Error('No tienes acceso a este grupo');
+      }
+
+      const trimmedQuery = query.trim();
+      if (!trimmedQuery) {
+        return { data: [] };
+      }
+
+      const users = await db.user.findMany({
+        where: {
+          OR: [
+            {
+              name: {
+                contains: trimmedQuery,
+                mode: 'insensitive',
+              },
+            },
+            {
+              email: {
+                contains: trimmedQuery,
+                mode: 'insensitive',
+              },
+            },
+          ],
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+        orderBy: [{ name: 'asc' }, { email: 'asc' }],
+        take: 8,
+      });
+
+      const memberUserIds = new Set(
+        (
+          await db.groupMember.findMany({
+            where: {
+              groupId,
+              userId: {
+                in: users.map((candidate) => candidate.id),
+              },
+            },
+            select: { userId: true },
+          })
+        )
+          .map((member) => member.userId)
+          .filter((value): value is string => Boolean(value)),
+      );
+
+      return {
+        data: users.map((candidate) => ({
+          id: candidate.id,
+          name: candidate.name,
+          email: candidate.email,
+          isCurrentUser: candidate.id === userId,
+          isAlreadyMember: memberUserIds.has(candidate.id),
+        })),
+      };
     },
   };
 }

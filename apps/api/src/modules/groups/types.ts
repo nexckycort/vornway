@@ -52,6 +52,7 @@ export type AddGroupMemberInput = {
   userId: string;
   groupId: string;
   name: string;
+  linkedUserId?: string | null;
 };
 
 export type CreateGroupInput = {
@@ -153,6 +154,18 @@ export type GroupSummaryResult = {
     role: string;
   } | null;
   isOwner: boolean;
+};
+
+export type GroupMemberSearchResult = {
+  id: string;
+  name: string;
+  email: string;
+  isCurrentUser: boolean;
+  isAlreadyMember: boolean;
+};
+
+export type SearchGroupMembersResult = {
+  data: GroupMemberSearchResult[];
 };
 
 export type GroupExpenseListItem = {

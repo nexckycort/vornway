@@ -2,9 +2,10 @@ import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import { useAddMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { useGroupMemberSearchQuery } from '#/routes/_authed/groups/-hooks/use-group-member-search-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Share2, UserPlus } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export const Route = createFileRoute('/_authed/groups/$id/participants')({
   component: RouteComponent,
@@ -16,13 +17,26 @@ function RouteComponent() {
   const groupQuery = useGroupSummaryQuery(id);
   const addMemberMutation = useAddMemberMutation(id);
   const [name, setName] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const group = groupQuery.data;
+  const searchQuery = useGroupMemberSearchQuery(id, debouncedSearch);
+  const searchResults = searchQuery.data?.data ?? [];
   const inviteLink =
     group?.inviteCode && typeof window !== 'undefined'
       ? `${window.location.origin}/join/${group.inviteCode}`
       : '';
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [searchInput]);
 
   const addMember = async () => {
     const trimmed = name.trim();
@@ -30,8 +44,13 @@ function RouteComponent() {
     setMessage(null);
 
     try {
-      await addMemberMutation.mutateAsync({ name: trimmed });
+      await addMemberMutation.mutateAsync({
+        name: trimmed,
+        ...(selectedUserId ? { linkedUserId: selectedUserId } : {}),
+      });
       setName('');
+      setSearchInput('');
+      setSelectedUserId(null);
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -92,7 +111,12 @@ function RouteComponent() {
           <input
             id="member-name"
             value={name}
-            onChange={(event) => setName(event.target.value)}
+            onChange={(event) => {
+              const value = event.target.value;
+              setName(value);
+              setSearchInput(value);
+              setSelectedUserId(null);
+            }}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
                 void addMember();
@@ -111,6 +135,70 @@ function RouteComponent() {
             <UserPlus className="size-5" />
           </Button>
         </div>
+
+        <p className="mt-2 text-xs text-[#64748b]">
+          Si encontramos un usuario registrado con ese nombre o correo, lo
+          mostraremos debajo. Si no, puedes crear el participante manualmente.
+        </p>
+
+        {searchQuery.isFetching ? (
+          <p className="mt-3 text-sm text-[#64748b]">Buscando coincidencias...</p>
+        ) : null}
+
+        {debouncedSearch && !searchQuery.isFetching && searchResults.length === 0 ? (
+          <p className="mt-3 text-sm text-[#64748b]">
+            No encontramos coincidencias. Puedes crearlo solo con el nombre.
+          </p>
+        ) : null}
+
+        {searchResults.length > 0 ? (
+          <div className="mt-3 flex flex-col gap-2">
+            {searchResults.map((candidate) => (
+              <button
+                key={candidate.id}
+                type="button"
+                onClick={() => {
+                  setName(candidate.name);
+                  setSearchInput(candidate.name);
+                  setSelectedUserId(candidate.id);
+                  setMessage(
+                    candidate.isAlreadyMember
+                      ? 'Este usuario ya está agregado en el grupo'
+                      : `Usuario seleccionado: ${candidate.name}`,
+                  );
+                }}
+                className={`rounded-2xl border px-4 py-3 text-left ${
+                  selectedUserId === candidate.id
+                    ? 'border-primary bg-primary/5'
+                    : 'border-[#e2e8f0] bg-white'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-[#132238]">
+                      {candidate.name}
+                    </p>
+                    <p className="truncate text-xs text-[#64748b]">
+                      {candidate.email}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 text-[11px] text-[#64748b]">
+                    {candidate.isAlreadyMember ? (
+                      <span className="rounded-full bg-[#f8fafc] px-2 py-1">
+                        Ya está en el grupo
+                      </span>
+                    ) : null}
+                    {candidate.isCurrentUser ? (
+                      <span className="rounded-full bg-[#f8fafc] px-2 py-1">
+                        Tú
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       {message ? (

@@ -38,6 +38,11 @@ export const settleGroupDebtSchema = z.object({
 
 export const addGroupMemberSchema = z.object({
   name: z.string().min(1).max(120),
+  linkedUserId: z.string().min(1).optional(),
+});
+
+export const searchGroupMembersQuerySchema = z.object({
+  query: z.string().trim().min(1).max(120),
 });
 
 export const createGroupSchema = z.object({

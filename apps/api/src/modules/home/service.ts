@@ -31,6 +31,12 @@ function summarizeGroup(
   } | null,
 ) {
   const currentMember = group.GroupMember.find((member) => member.userId === userId);
+  const orderedMembers = currentMember
+    ? [
+        ...group.GroupMember.filter((member) => member.id !== currentMember.id),
+        currentMember,
+      ]
+    : group.GroupMember;
 
   if (!currentMember) {
     return {
@@ -39,7 +45,7 @@ function summarizeGroup(
       type: group.type,
       description: group.description,
       createdAt: group.createdAt,
-      members: group.GroupMember.map((member) => ({
+      members: orderedMembers.map((member) => ({
         id: member.id,
         name: member.name,
         image: member.user?.image ?? null,
@@ -116,7 +122,7 @@ function summarizeGroup(
     type: group.type,
     description: group.description,
     createdAt: group.createdAt,
-    members: group.GroupMember.map((member) => ({
+    members: orderedMembers.map((member) => ({
       id: member.id,
       name: member.name,
       image: member.user?.image ?? null,

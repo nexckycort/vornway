@@ -377,6 +377,7 @@ export function createGroupsService(): GroupsService {
               user: {
                 select: {
                   email: true,
+                  image: true,
                 },
               },
             },
@@ -548,6 +549,7 @@ export function createGroupsService(): GroupsService {
           id: member.id,
           name: member.name,
           email: member.user?.email ?? null,
+          image: member.user?.image ?? null,
           role: member.role,
           userId: member.userId,
           isCurrentUser: member.userId === userId,

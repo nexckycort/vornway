@@ -213,9 +213,18 @@ function RouteComponent() {
             key={member.id}
             className="flex items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white p-4"
           >
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#f0f0ff] font-semibold text-primary">
-              {member.name.charAt(0).toUpperCase()}
-            </div>
+            {member.image ? (
+              <img
+                src={member.image}
+                alt={member.name}
+                className="size-10 shrink-0 rounded-full border border-[#e2e8f0] object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#f0f0ff] font-semibold text-primary">
+                {member.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-[#132238]">
                 {member.name}

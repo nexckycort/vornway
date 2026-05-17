@@ -26,6 +26,7 @@ export type GroupMemberIdentity = {
   id: string;
   name: string;
   email: string | null;
+  image: string | null;
   role: string;
   userId: string | null;
   isCurrentUser: boolean;
@@ -41,8 +42,11 @@ export type GroupMemberBalance = {
 export type GroupSummary = {
   id: string;
   name: string;
+  type: string;
   description: string | null;
   inviteCode: string;
+  createdAt: string;
+  updatedAt: string;
   participantCount: number;
   totals: Record<string, number>;
   members: GroupMemberIdentity[];
@@ -55,4 +59,18 @@ export type GroupSummary = {
     amount: number;
   }>;
   memberBalances: GroupMemberBalance[];
+  settlementDebts: Array<{
+    fromMemberId: string;
+    fromName: string;
+    toMemberId: string;
+    toName: string;
+    currency: string;
+    amount: number;
+  }>;
+  myMembership: {
+    id: string;
+    name: string;
+    role: string;
+  } | null;
+  isOwner: boolean;
 };

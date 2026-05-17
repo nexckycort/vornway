@@ -22,7 +22,7 @@ import { GroupBalancesSection } from './-components/group-balances-section';
 import { GroupDetailHeader } from './-components/group-detail-header';
 import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
 import { GroupParticipantsStrip } from './-components/group-participants-strip';
-import type { ExpenseItem, GroupSummary } from './-types/group-detail.types';
+import type { ExpenseItem } from './-types/group-detail.types';
 import { formatMoney, sumByCurrency } from './-components/group-detail.utils';
 
 export const Route = createFileRoute('/_authed/groups/$id/')({
@@ -108,7 +108,7 @@ function RouteComponent() {
     );
   }
 
-  const group = groupQuery.data as GroupSummary;
+  const group = groupQuery.data;
   const totalsEntries = Object.entries(group.totals).filter(
     ([, amount]) => Math.abs(amount) >= 0.01,
   );

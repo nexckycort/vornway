@@ -50,9 +50,18 @@ export function GroupParticipantsStrip({
             key={member.id}
             className="flex min-w-[62px] flex-col items-center gap-1"
           >
-            <span className="flex size-12 items-center justify-center rounded-full border border-[#e5e7eb] bg-[#f8fafc] text-sm font-semibold text-[#132238]">
-              {getInitials(member.name)}
-            </span>
+            {member.image ? (
+              <img
+                src={member.image}
+                alt={member.name}
+                className="size-12 rounded-full border border-[#e5e7eb] object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span className="flex size-12 items-center justify-center rounded-full border border-[#e5e7eb] bg-[#f8fafc] text-sm font-semibold text-[#132238]">
+                {getInitials(member.name)}
+              </span>
+            )}
             <span className="max-w-[62px] truncate text-[11px] text-[#64748b]">
               {member.name}
             </span>

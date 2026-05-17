@@ -1,6 +1,7 @@
 import { client } from '#/lib/hc';
 import type { InferResponseType } from '#/lib/hc';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import type { GroupSummary } from '../$id/-types/group-detail.types';
 
 const PAGE_LIMIT = 20;
 
@@ -8,10 +9,8 @@ const groupSummaryEndpoint = client.api.groups[':id'].$get;
 const groupExpensesEndpoint = client.api.groups[':id'].expenses.$get;
 const groupExpenseEndpoint = client.api.groups[':id'].expenses[':expenseId'].$get;
 
-type GroupSummaryResponse = InferResponseType<typeof groupSummaryEndpoint>;
 type GroupExpensesPageResponse = InferResponseType<typeof groupExpensesEndpoint>;
 type GroupExpenseResponse = InferResponseType<typeof groupExpenseEndpoint>;
-type GroupSummarySuccess = Extract<GroupSummaryResponse, { id: string }>;
 type GroupExpensesPageSuccess = Extract<
   GroupExpensesPageResponse,
   { data: unknown[]; pagination: { nextCursor: string | null } }
@@ -32,7 +31,7 @@ export function useGroupSummaryQuery(groupId: string) {
         throw new Error('No se pudo cargar el grupo');
       }
 
-      return (await response.json()) as GroupSummarySuccess;
+      return (await response.json()) as unknown as GroupSummary;
     },
   });
 }

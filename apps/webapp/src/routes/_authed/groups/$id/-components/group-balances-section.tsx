@@ -47,9 +47,18 @@ export function GroupBalancesSection({
                 key={member.memberId}
                 className="flex items-center gap-4 rounded-3xl border border-[#e5e7eb] bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.05)]"
               >
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#f3f4f6] text-base font-semibold text-[#132238]">
-                  {getInitials(member.name)}
-                </div>
+                {memberIdentity?.image ? (
+                  <img
+                    src={memberIdentity.image}
+                    alt={member.name}
+                    className="size-12 shrink-0 rounded-full border border-[#e5e7eb] object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#f3f4f6] text-base font-semibold text-[#132238]">
+                    {getInitials(member.name)}
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-[#132238]">
                     {member.name}

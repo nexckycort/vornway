@@ -572,8 +572,6 @@ export function createGroupsService(): GroupsService {
               isDeleted: Boolean(row.notes?.includes('[DELETED]')),
               isSettlement,
               isPersonal,
-              isPinned: false,
-              pinnedAt: null,
               expenseType: 'standard' as const,
               subExpenseCount: 0,
               settlementToName: isSettlement

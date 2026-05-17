@@ -152,8 +152,6 @@ export type GroupExpenseListItem = {
   isDeleted: boolean;
   isSettlement: boolean;
   isPersonal: boolean;
-  isPinned: boolean;
-  pinnedAt: Date | null;
   expenseType: 'standard' | 'composite';
   subExpenseCount: number;
   settlementToName: string | null;

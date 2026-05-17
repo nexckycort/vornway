@@ -3,7 +3,7 @@ import {
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { usePinnedExpenseIds } from '#/lib/expense-pins';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { ArrowLeft } from 'lucide-react';
 import { useMemo } from 'react';
 
@@ -35,6 +35,7 @@ function formatDate(value: string): string {
 
 function RouteComponent() {
   const { id, expenseId } = Route.useParams();
+  const navigate = useNavigate();
   const groupSummaryQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
   const pinnedExpenseIds = usePinnedExpenseIds(id);
@@ -50,14 +51,16 @@ function RouteComponent() {
     <main className="min-h-screen bg-[#efefef] text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa] px-4 pb-10 pt-8">
         <header className="mb-5">
-          <Link
-            to="/groups/$id"
-            params={{ id }}
+          <button
+            type="button"
+            onClick={() =>
+              navigate({ to: '/groups/$id', params: { id }, replace: true })
+            }
             className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#334155]"
           >
             <ArrowLeft className="size-4" />
             Atrás
-          </Link>
+          </button>
           <h1 className="text-2xl font-semibold leading-8 text-[#0f172a]">
             Detalle de gasto
           </h1>

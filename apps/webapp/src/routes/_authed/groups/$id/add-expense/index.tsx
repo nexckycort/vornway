@@ -1,3 +1,4 @@
+import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import {
   Drawer,
@@ -14,14 +15,8 @@ import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import {
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  Minus,
-  Plus,
-} from 'lucide-react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Check, ChevronDown, Minus, Plus } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatMoney, getInitials } from '../-components/group-detail.utils';
 
@@ -81,6 +76,7 @@ function RouteComponent() {
   const { expenseId } = Route.useSearch();
   const isEditMode = Boolean(expenseId);
   const navigate = useNavigate();
+
   const groupQuery = useGroupSummaryQuery(id);
   const expenseQuery = useGroupExpenseQuery(id, expenseId);
   const createExpenseMutation = useCreateExpenseMutation(id);
@@ -191,6 +187,7 @@ function RouteComponent() {
 
     for (const memberId of participantIds) {
       const rawValue = Number(participantValues[memberId] ?? '0');
+
       if (splitMethod === 'percentage') {
         result[memberId] = normalizedAmount * (rawValue / 100);
         continue;
@@ -272,6 +269,11 @@ function RouteComponent() {
     setShowSplitDrawer(false);
   };
 
+  const setCurrencyAndClose = (nextCurrency: string) => {
+    setCurrency(nextCurrency);
+    setShowCurrencyDrawer(false);
+  };
+
   const handleSubmit = async () => {
     if (!canSubmit || isPending) return;
     setError(null);
@@ -303,7 +305,7 @@ function RouteComponent() {
         await createExpenseMutation.mutateAsync(payload);
       }
 
-      await navigate({ to: '/groups/$id', params: { id } });
+      await navigate({ to: '/groups/$id', params: { id }, replace: true });
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -315,20 +317,20 @@ function RouteComponent() {
     }
   };
 
-  const setCurrencyAndClose = (nextCurrency: string) => {
-    setCurrency(nextCurrency);
-    setShowCurrencyDrawer(false);
-  };
-
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-white">
-        <div className="flex min-h-screen w-full items-center justify-center bg-white">
+      <MobilePageLayout
+        title={isEditMode ? 'Editar gasto' : 'Nuevo gasto'}
+        onBack={() =>
+          navigate({ to: '/groups/$id', params: { id }, replace: true })
+        }
+      >
+        <div className="flex flex-1 items-center justify-center">
           <p className="text-sm text-gray-500">
             {isEditMode ? 'Cargando gasto...' : 'Cargando grupo...'}
           </p>
         </div>
-      </main>
+      </MobilePageLayout>
     );
   }
 
@@ -341,405 +343,373 @@ function RouteComponent() {
           : 'No se pudo cargar el grupo';
 
     return (
-      <main className="min-h-screen bg-white">
-        <div className="flex min-h-screen w-full flex-col justify-center bg-white px-4">
+      <MobilePageLayout
+        title={isEditMode ? 'Editar gasto' : 'Nuevo gasto'}
+        onBack={() =>
+          navigate({ to: '/groups/$id', params: { id }, replace: true })
+        }
+      >
+        <div className="flex flex-1 flex-col justify-center bg-white px-4">
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {message}
           </div>
-          <Link
-            to="/groups/$id"
-            params={{ id }}
+          <button
+            type="button"
+            onClick={() =>
+              navigate({ to: '/groups/$id', params: { id }, replace: true })
+            }
             className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"
           >
             Volver al grupo
-          </Link>
+          </button>
         </div>
-      </main>
+      </MobilePageLayout>
     );
   }
 
   return (
-    <main className="min-h-screen bg-white">
-      <div className="flex min-h-screen w-full flex-col bg-white">
-        <div className="flex items-center justify-between px-5 pt-6 pb-4">
-          <Link
-            to="/groups/$id"
-            params={{ id }}
-            className="flex size-8 items-center justify-center"
-            aria-label="Atrás"
-          >
-            <ChevronLeft className="size-6 text-gray-800" />
-          </Link>
-          <h1 className="text-base font-medium text-gray-900">
-            {isEditMode ? 'Editar gasto' : 'Nuevo gasto'}
-          </h1>
-          <div className="size-8" />
-        </div>
-
-        <div className="px-6 pb-6">
-          <div className="flex items-baseline justify-between gap-4">
-            <button
-              type="button"
-              onClick={() => setShowCurrencyDrawer(true)}
-              className="flex items-center gap-1 text-left"
-            >
-              <span className="text-4xl font-light text-gray-900">
-                {currentCurrency.label}
-              </span>
-              <ChevronDown className="size-5 text-gray-600" />
-            </button>
-
-            <label className="min-w-0 flex-1 text-right">
-              <span className="sr-only">Monto</span>
-              <div className="inline-flex items-baseline justify-end gap-1">
-                <span className="shrink-0 text-4xl font-light text-gray-900">
-                  {getCurrencySymbol(currency)}
-                </span>
-                <input
-                  ref={amountInputRef}
-                  value={amount}
-                  onChange={(event) => setAmount(event.target.value)}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="0"
-                  style={{ width: `${Math.max(amount.length, 1)}ch` }}
-                  className="bg-transparent text-left text-4xl font-light tabular-nums text-gray-900 outline-none placeholder:text-gray-300"
-                />
-              </div>
-            </label>
-          </div>
-
-          <div className="mt-1 flex items-center gap-1.5">
-            <span className="text-base">{currentCurrency.flag}</span>
-            <span className="text-sm text-gray-500">
-              {currentCurrency.name}
-            </span>
-          </div>
-        </div>
-
-        <div className="space-y-5 px-6 pb-6">
-          <label className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3.5">
-            <input
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="Cena con amigos"
-              className="w-full bg-transparent text-gray-700 outline-none placeholder:text-gray-400"
-            />
-          </label>
-
-          {/*
+    <MobilePageLayout
+      title={isEditMode ? 'Editar gasto' : 'Nuevo gasto'}
+      onBack={() =>
+        navigate({ to: '/groups/$id', params: { id }, replace: true })
+      }
+    >
+      <div className="px-6 pb-6">
+        <div className="flex items-baseline justify-between gap-4">
           <button
             type="button"
-            className="flex w-full items-center justify-between rounded-xl border border-gray-200 px-4 py-3"
-            disabled
+            onClick={() => setShowCurrencyDrawer(true)}
+            className="flex items-center gap-1 text-left"
           >
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-green-400">
-                <span className="text-lg text-white">⚡</span>
-              </div>
-              <div className="text-left">
-                <p className="text-xs text-gray-500">Categoría</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {expense?.category?.name ?? 'Sin categoría'}
-                </p>
-              </div>
-            </div>
-            <RefreshCw className="size-5 text-gray-400" />
+            <span className="text-4xl font-light text-gray-900">
+              {currentCurrency.label}
+            </span>
+            <ChevronDown className="size-5 text-gray-600" />
           </button>
-          */}
 
-          <section>
-            <p className="mb-3 text-sm text-gray-600">Pagado por</p>
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {members.map((member) => {
-                const selected = paidById === member.id;
-                const initials = getInitials(member.name);
-
-                return (
-                  <button
-                    key={member.id}
-                    type="button"
-                    onClick={() => setPaidById(member.id)}
-                    className="flex min-w-[72px] flex-col items-center"
-                  >
-                    <div
-                      className={`flex size-11 items-center justify-center overflow-hidden rounded-full border-2 ${
-                        selected ? 'border-rose-500' : 'border-transparent'
-                      }`}
-                    >
-                      <div className="flex size-full items-center justify-center bg-gray-200 text-sm font-medium text-gray-600">
-                        {initials}
-                      </div>
-                    </div>
-                    <span className="mt-1.5 max-w-[60px] truncate text-xs text-gray-600">
-                      {member.isCurrentUser ? 'Tú' : member.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <section>
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="text-sm text-gray-600">Se divide con</p>
-              <button
-                type="button"
-                onClick={() => setShowSplitDrawer(true)}
-                className="inline-flex items-center gap-1 text-rose-500"
-              >
-                <span className="text-sm font-medium">
-                  {
-                    splitMethods.find((item) => item.value === splitMethod)
-                      ?.label
-                  }
-                </span>
-                <ChevronDown className="size-4" />
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={toggleAllParticipants}
-              className="mt-4 flex w-full items-center gap-3"
-            >
-              <div className="flex size-6 items-center justify-center rounded bg-rose-500">
-                {selectedCount === members.length && members.length > 0 ? (
-                  <Minus className="size-4 text-white" />
-                ) : (
-                  <Plus className="size-4 text-white" />
-                )}
-              </div>
-              <span className="text-sm font-medium text-gray-900">Todos</span>
-              <span className="ml-auto text-sm text-gray-500">
-                {splitMethod === 'equal'
-                  ? formatMoney(currency, equalShare || 0)
-                  : splitMethod === 'percentage'
-                    ? `${splitSum.toFixed(2)}%`
-                    : formatMoney(currency, splitSum || 0)}
+          <label className="min-w-0 flex-1 text-right">
+            <span className="sr-only">Monto</span>
+            <div className="inline-flex items-baseline justify-end gap-1">
+              <span className="shrink-0 text-4xl font-light text-gray-900">
+                {getCurrencySymbol(currency)}
               </span>
-            </button>
+              <input
+                ref={amountInputRef}
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="0"
+                style={{ width: `${Math.max(amount.length, 1)}ch` }}
+                className="bg-transparent text-left text-4xl font-light tabular-nums text-gray-900 outline-none placeholder:text-gray-300"
+              />
+            </div>
+          </label>
+        </div>
 
-            <div className="mt-4 space-y-3">
-              {members.map((member) => {
-                const selected = participantIds.includes(member.id);
-                const initials = getInitials(member.name);
-                const computedAmount =
-                  participantComputedAmounts[member.id] ?? 0;
+        <div className="mt-1 flex items-center gap-1.5">
+          <span className="text-base">{currentCurrency.flag}</span>
+          <span className="text-sm text-gray-500">{currentCurrency.name}</span>
+        </div>
+      </div>
 
-                return (
+      <div className="space-y-5 px-6 pb-6">
+        <label className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3.5">
+          <input
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="Cena con amigos"
+            className="w-full bg-transparent text-gray-700 outline-none placeholder:text-gray-400"
+          />
+        </label>
+
+        <section>
+          <p className="mb-3 text-sm text-gray-600">Pagado por</p>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {members.map((member) => {
+              const selected = paidById === member.id;
+              const initials = getInitials(member.name);
+
+              return (
+                <button
+                  key={member.id}
+                  type="button"
+                  onClick={() => setPaidById(member.id)}
+                  className="flex min-w-[72px] flex-col items-center"
+                >
                   <div
-                    key={member.id}
-                    className="flex items-center justify-between gap-4"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => toggleParticipant(member.id)}
-                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                    >
-                      <div
-                        className={`flex size-6 items-center justify-center rounded-full ${
-                          selected ? 'bg-rose-500' : 'bg-gray-300'
-                        }`}
-                      >
-                        {selected ? (
-                          <Check className="size-4 text-white" />
-                        ) : (
-                          <Plus className="size-4 text-white" />
-                        )}
-                      </div>
-                      <div className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-sm font-medium text-gray-600">
-                        {initials}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="block truncate text-sm text-gray-900">
-                          {member.name}
-                          {member.isCurrentUser ? (
-                            <span className="text-gray-500"> (Tú)</span>
-                          ) : null}
-                        </span>
-                        {splitMethod !== 'equal' && selected ? (
-                          <span className="block text-xs text-gray-500">
-                            {formatMoney(currency, computedAmount)}
-                          </span>
-                        ) : null}
-                      </div>
-                    </button>
-
-                    {selected ? (
-                      splitMethod === 'equal' ? (
-                        <span className="shrink-0 text-sm font-medium text-gray-900">
-                          {formatMoney(currency, equalShare || 0)}
-                        </span>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <input
-                            value={participantValues[member.id] ?? ''}
-                            onChange={(event) =>
-                              setParticipantValues((current) => ({
-                                ...current,
-                                [member.id]: event.target.value,
-                              }))
-                            }
-                            inputMode="decimal"
-                            placeholder={
-                              splitMethod === 'percentage' ? '0' : '0.00'
-                            }
-                            className="h-10 w-20 rounded-full border border-gray-200 px-3 text-right text-sm text-gray-900 outline-none"
-                          />
-                          <span className="text-xs text-gray-400">
-                            {splitMethod === 'percentage' ? '%' : currency}
-                          </span>
-                        </div>
-                      )
-                    ) : (
-                      <span className="shrink-0 text-sm text-gray-400">0</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <button
-              type="button"
-              onClick={toggleAllParticipants}
-              className="mt-4 flex w-full items-center justify-center gap-2 py-3 text-gray-600"
-            >
-              <Plus className="size-4" />
-              <span className="text-sm">
-                {selectedCount === members.length && members.length > 0
-                  ? 'Quitar participantes'
-                  : 'Agregar participantes'}
-              </span>
-            </button>
-          </section>
-
-          {!splitIsValid && selectedCount > 0 ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              {splitMethod === 'percentage'
-                ? 'La suma de porcentajes debe ser 100.'
-                : 'La suma de montos debe coincidir con el total.'}
-            </div>
-          ) : null}
-
-          {error ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          ) : null}
-
-          <p className="text-xs text-gray-500">
-            {selectedCount === 0
-              ? 'Gasto personal'
-              : splitMethod === 'percentage'
-                ? `${selectedCount} participantes · ${splitSum.toFixed(2)}%`
-                : `${selectedCount} participantes · ${formatMoney(currency, splitMethod === 'equal' ? equalShare || 0 : splitSum || 0)} por persona`}
-          </p>
-        </div>
-
-        <div className="px-6 pb-8">
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={!canSubmit || isPending}
-            className="h-14 w-full rounded-full bg-rose-500 text-base font-medium text-white hover:bg-rose-500/90"
-          >
-            {isPending
-              ? isEditMode
-                ? 'Guardando...'
-                : 'Agregando...'
-              : isEditMode
-                ? 'Guardar cambios'
-                : 'Agregar gasto'}
-          </Button>
-        </div>
-
-        <Drawer open={showSplitDrawer} onOpenChange={setShowSplitDrawer}>
-          <DrawerContent>
-            <DrawerHeader>
-              <DrawerTitle>Método de división</DrawerTitle>
-              <DrawerDescription>
-                Elige cómo se repartirá este gasto.
-              </DrawerDescription>
-            </DrawerHeader>
-
-            <div className="space-y-2 px-5 pb-5">
-              {splitMethods.map((method) => {
-                const active = splitMethod === method.value;
-                return (
-                  <button
-                    key={method.value}
-                    type="button"
-                    onClick={() => setMethod(method.value)}
-                    className={`flex w-full items-center justify-between rounded-2xl px-4 py-4 text-left transition ${
-                      active ? 'bg-rose-50' : 'bg-white'
+                    className={`flex size-11 items-center justify-center overflow-hidden rounded-full border-2 ${
+                      selected ? 'border-rose-500' : 'border-transparent'
                     }`}
                   >
-                    <div>
-                      <p className="text-base font-semibold text-[#132238]">
-                        {method.label}
-                      </p>
-                      <p className="text-sm text-[#64748b]">
-                        {method.value === 'equal'
-                          ? 'Todos pagan lo mismo de este gasto.'
-                          : method.value === 'percentage'
-                            ? 'Cada persona paga un porcentaje del total.'
-                            : 'Cada persona paga un monto distinto.'}
-                      </p>
+                    <div className="flex size-full items-center justify-center bg-gray-200 text-sm font-medium text-gray-600">
+                      {initials}
                     </div>
-                    {active ? <Check className="size-5 text-rose-500" /> : null}
-                  </button>
-                );
-              })}
+                  </div>
+                  <span className="mt-1.5 max-w-[60px] truncate text-xs text-gray-600">
+                    {member.isCurrentUser ? 'Tú' : member.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-sm text-gray-600">Se divide con</p>
+            <button
+              type="button"
+              onClick={() => setShowSplitDrawer(true)}
+              className="inline-flex items-center gap-1 text-rose-500"
+            >
+              <span className="text-sm font-medium">
+                {splitMethods.find((item) => item.value === splitMethod)?.label}
+              </span>
+              <ChevronDown className="size-4" />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={toggleAllParticipants}
+            className="mt-4 flex w-full items-center gap-3"
+          >
+            <div className="flex size-6 items-center justify-center rounded bg-rose-500">
+              {selectedCount === members.length && members.length > 0 ? (
+                <Minus className="size-4 text-white" />
+              ) : (
+                <Plus className="size-4 text-white" />
+              )}
             </div>
-          </DrawerContent>
-        </Drawer>
+            <span className="text-sm font-medium text-gray-900">Todos</span>
+            <span className="ml-auto text-sm text-gray-500">
+              {splitMethod === 'equal'
+                ? formatMoney(currency, equalShare || 0)
+                : splitMethod === 'percentage'
+                  ? `${splitSum.toFixed(2)}%`
+                  : formatMoney(currency, splitSum || 0)}
+            </span>
+          </button>
 
-        <Drawer open={showCurrencyDrawer} onOpenChange={setShowCurrencyDrawer}>
-          <DrawerContent>
-            <DrawerHeader>
-              <DrawerTitle>Moneda</DrawerTitle>
-              <DrawerDescription>
-                Elige la moneda de este gasto.
-              </DrawerDescription>
-            </DrawerHeader>
+          <div className="mt-4 space-y-3">
+            {members.map((member) => {
+              const selected = participantIds.includes(member.id);
+              const initials = getInitials(member.name);
+              const computedAmount = participantComputedAmounts[member.id] ?? 0;
 
-            <div className="space-y-1 px-5 pb-5">
-              {currencyOptions.map((option) => {
-                const meta = currencyMeta[option];
-                const active = currency === option;
-
-                return (
+              return (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between gap-4"
+                >
                   <button
-                    key={option}
                     type="button"
-                    onClick={() => setCurrencyAndClose(option)}
-                    className="flex w-full items-center justify-between rounded-2xl px-1 py-3 text-left"
+                    onClick={() => toggleParticipant(member.id)}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
                   >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="text-2xl">{meta.flag}</span>
-                      <div className="min-w-0">
-                        <p className="truncate text-base font-medium text-gray-900">
-                          {meta.label} - {meta.name}
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={`flex size-6 items-center justify-center rounded-full border ${
-                        active
-                          ? 'border-rose-500 bg-rose-500'
-                          : 'border-gray-300 bg-white'
+                    <div
+                      className={`flex size-6 items-center justify-center rounded-full ${
+                        selected ? 'bg-rose-500' : 'bg-gray-300'
                       }`}
                     >
-                      {active ? <Check className="size-4 text-white" /> : null}
-                    </span>
+                      {selected ? (
+                        <Check className="size-4 text-white" />
+                      ) : (
+                        <Plus className="size-4 text-white" />
+                      )}
+                    </div>
+                    <div className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-sm font-medium text-gray-600">
+                      {initials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="block truncate text-sm text-gray-900">
+                        {member.name}
+                        {member.isCurrentUser ? (
+                          <span className="text-gray-500"> (Tú)</span>
+                        ) : null}
+                      </span>
+                      {splitMethod !== 'equal' && selected ? (
+                        <span className="block text-xs text-gray-500">
+                          {formatMoney(currency, computedAmount)}
+                        </span>
+                      ) : null}
+                    </div>
                   </button>
-                );
-              })}
-            </div>
-          </DrawerContent>
-        </Drawer>
+
+                  {selected ? (
+                    splitMethod === 'equal' ? (
+                      <span className="shrink-0 text-sm font-medium text-gray-900">
+                        {formatMoney(currency, equalShare || 0)}
+                      </span>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={participantValues[member.id] ?? ''}
+                          onChange={(event) =>
+                            setParticipantValues((current) => ({
+                              ...current,
+                              [member.id]: event.target.value,
+                            }))
+                          }
+                          inputMode="decimal"
+                          placeholder={
+                            splitMethod === 'percentage' ? '0' : '0.00'
+                          }
+                          className="h-10 w-20 rounded-full border border-gray-200 px-3 text-right text-sm text-gray-900 outline-none"
+                        />
+                        <span className="text-xs text-gray-400">
+                          {splitMethod === 'percentage' ? '%' : currency}
+                        </span>
+                      </div>
+                    )
+                  ) : (
+                    <span className="shrink-0 text-sm text-gray-400">0</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={toggleAllParticipants}
+            className="mt-4 flex w-full items-center justify-center gap-2 py-3 text-gray-600"
+          >
+            <Plus className="size-4" />
+            <span className="text-sm">
+              {selectedCount === members.length && members.length > 0
+                ? 'Quitar participantes'
+                : 'Agregar participantes'}
+            </span>
+          </button>
+        </section>
+
+        {!splitIsValid && selectedCount > 0 ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            {splitMethod === 'percentage'
+              ? 'La suma de porcentajes debe ser 100.'
+              : 'La suma de montos debe coincidir con el total.'}
+          </div>
+        ) : null}
+
+        {error ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
+
+        <p className="text-xs text-gray-500">
+          {selectedCount === 0
+            ? 'Gasto personal'
+            : splitMethod === 'percentage'
+              ? `${selectedCount} participantes · ${splitSum.toFixed(2)}%`
+              : `${selectedCount} participantes · ${formatMoney(currency, splitMethod === 'equal' ? equalShare || 0 : splitSum || 0)} por persona`}
+        </p>
       </div>
-    </main>
+
+      <div className="px-6 pb-8">
+        <Button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!canSubmit || isPending}
+          className="h-14 w-full rounded-full bg-rose-500 text-base font-medium text-white hover:bg-rose-500/90"
+        >
+          {isPending
+            ? isEditMode
+              ? 'Guardando...'
+              : 'Agregando...'
+            : isEditMode
+              ? 'Guardar cambios'
+              : 'Agregar gasto'}
+        </Button>
+      </div>
+
+      <Drawer open={showSplitDrawer} onOpenChange={setShowSplitDrawer}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Método de división</DrawerTitle>
+            <DrawerDescription>
+              Elige cómo se repartirá este gasto.
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="space-y-2 px-5 pb-5">
+            {splitMethods.map((method) => {
+              const active = splitMethod === method.value;
+              return (
+                <button
+                  key={method.value}
+                  type="button"
+                  onClick={() => setMethod(method.value)}
+                  className={`flex w-full items-center justify-between rounded-2xl px-4 py-4 text-left transition ${
+                    active ? 'bg-rose-50' : 'bg-white'
+                  }`}
+                >
+                  <div>
+                    <p className="text-base font-semibold text-[#132238]">
+                      {method.label}
+                    </p>
+                    <p className="text-sm text-[#64748b]">
+                      {method.value === 'equal'
+                        ? 'Todos pagan lo mismo de este gasto.'
+                        : method.value === 'percentage'
+                          ? 'Cada persona paga un porcentaje del total.'
+                          : 'Cada persona paga un monto distinto.'}
+                    </p>
+                  </div>
+                  {active ? <Check className="size-5 text-rose-500" /> : null}
+                </button>
+              );
+            })}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={showCurrencyDrawer} onOpenChange={setShowCurrencyDrawer}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Moneda</DrawerTitle>
+            <DrawerDescription>
+              Elige la moneda de este gasto.
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="space-y-1 px-5 pb-5">
+            {currencyOptions.map((option) => {
+              const meta = currencyMeta[option];
+              const active = currency === option;
+
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setCurrencyAndClose(option)}
+                  className="flex w-full items-center justify-between rounded-2xl px-1 py-3 text-left"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="text-2xl">{meta.flag}</span>
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-medium text-gray-900">
+                        {meta.label} - {meta.name}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`flex size-6 items-center justify-center rounded-full border ${
+                      active
+                        ? 'border-rose-500 bg-rose-500'
+                        : 'border-gray-300 bg-white'
+                    }`}
+                  >
+                    {active ? <Check className="size-4 text-white" /> : null}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </MobilePageLayout>
   );
 }

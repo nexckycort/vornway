@@ -1,5 +1,11 @@
 import { Link } from '@tanstack/react-router';
-import { ArrowLeft, ArrowUpRight, BarChart3, MoreHorizontal, Plus } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  BarChart3,
+  MoreHorizontal,
+  Plus,
+} from 'lucide-react';
 
 import { formatMoney } from './group-detail.utils';
 
@@ -31,17 +37,16 @@ export function GroupDetailHeader({
   return (
     <header className="px-4 pb-6 pt-6 text-white">
       <div className="mb-5 flex items-start gap-3">
-        <Link
-          to="/groups"
+        <button
+          type="button"
+          onClick={() => window.history.back()}
           className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
+          aria-label="Atrás"
         >
           <ArrowLeft className="size-4" />
-        </Link>
+        </button>
 
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/45">
-            Grupo
-          </p>
           <h1 className="truncate text-xl font-semibold leading-7">
             {groupName}
           </h1>
@@ -50,15 +55,6 @@ export function GroupDetailHeader({
             {description ? ` · ${description}` : ''}
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={onOpenMore}
-          className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
-          aria-label="Más opciones"
-        >
-          <MoreHorizontal className="size-4" />
-        </button>
       </div>
 
       <section className="rounded-[28px] bg-[#1f1f1f] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.25)]">

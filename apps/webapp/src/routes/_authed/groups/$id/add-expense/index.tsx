@@ -41,7 +41,12 @@ const currencyMeta: Record<
   COP: { label: 'COP', flag: '🇨🇴', name: 'Pesos Colombianos' },
   USD: { label: 'USD', flag: '🇺🇸', name: 'Dólares Estadounidenses' },
   EUR: { label: 'EUR', flag: '🇪🇺', name: 'Euros' },
+  GBP: { label: 'GBP', flag: '🇬🇧', name: 'Libra esterlina' },
+  MXN: { label: 'MXN', flag: '🇲🇽', name: 'Peso mexicano' },
+  BRL: { label: 'BRL', flag: '🇧🇷', name: 'Real brasileño' },
 };
+
+const currencyOptions = ['COP', 'EUR', 'USD', 'GBP', 'MXN', 'BRL'] as const;
 
 export const Route = createFileRoute('/_authed/groups/$id/add-expense/')({
   validateSearch: (
@@ -75,6 +80,7 @@ function RouteComponent() {
   const [paidById, setPaidById] = useState('');
   const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
+  const [showCurrencyDrawer, setShowCurrencyDrawer] = useState(false);
   const [showSplitDrawer, setShowSplitDrawer] = useState(false);
   const [participantValues, setParticipantValues] = useState<
     Record<string, string>
@@ -297,6 +303,11 @@ function RouteComponent() {
     }
   };
 
+  const setCurrencyAndClose = (nextCurrency: string) => {
+    setCurrency(nextCurrency);
+    setShowCurrencyDrawer(false);
+  };
+
   if (isLoading) {
     return (
       <main className="min-h-screen bg-white">
@@ -355,7 +366,11 @@ function RouteComponent() {
 
         <div className="px-6 pb-6">
           <div className="flex items-baseline justify-between gap-4">
-            <button type="button" className="flex items-center gap-1 text-left">
+            <button
+              type="button"
+              onClick={() => setShowCurrencyDrawer(true)}
+              className="flex items-center gap-1 text-left"
+            >
               <span className="text-4xl font-light text-gray-900">
                 {currentCurrency.label}
               </span>
@@ -653,6 +668,51 @@ function RouteComponent() {
                       </p>
                     </div>
                     {active ? <Check className="size-5 text-rose-500" /> : null}
+                  </button>
+                );
+              })}
+            </div>
+          </DrawerContent>
+        </Drawer>
+
+        <Drawer open={showCurrencyDrawer} onOpenChange={setShowCurrencyDrawer}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Moneda</DrawerTitle>
+              <DrawerDescription>
+                Elige la moneda de este gasto.
+              </DrawerDescription>
+            </DrawerHeader>
+
+            <div className="space-y-1 px-5 pb-5">
+              {currencyOptions.map((option) => {
+                const meta = currencyMeta[option];
+                const active = currency === option;
+
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setCurrencyAndClose(option)}
+                    className="flex w-full items-center justify-between rounded-2xl px-1 py-3 text-left"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="text-2xl">{meta.flag}</span>
+                      <div className="min-w-0">
+                        <p className="truncate text-base font-medium text-gray-900">
+                          {meta.label} - {meta.name}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={`flex size-6 items-center justify-center rounded-full border ${
+                        active
+                          ? 'border-rose-500 bg-rose-500'
+                          : 'border-gray-300 bg-white'
+                      }`}
+                    >
+                      {active ? <Check className="size-4 text-white" /> : null}
+                    </span>
                   </button>
                 );
               })}

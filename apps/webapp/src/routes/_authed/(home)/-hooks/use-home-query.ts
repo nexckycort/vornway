@@ -1,4 +1,3 @@
-import type { InferResponseType } from '#/lib/hc';
 import { client } from '#/lib/hc';
 import { useQuery } from '@tanstack/react-query';
 
@@ -23,7 +22,10 @@ export type Trip = {
   id: string;
   name: string;
   dates: string;
-  avatars: string[];
+  avatars: Array<{
+    name: string;
+    image: string | null;
+  }>;
   extraPeople: number;
 } & (
   | {
@@ -58,7 +60,51 @@ export type HomeQueryData = {
 };
 
 const homeEndpoint = client.api.home.$get;
-type HomeApiResponse = InferResponseType<typeof homeEndpoint>;
+
+type HomeApiResponse = {
+  groups: Array<{
+    id: string;
+    name: string;
+    type: string;
+    description: string | null;
+    createdAt: string;
+    members: Array<{
+      id: string;
+      name: string;
+      image: string | null;
+    }>;
+    currentUser: {
+      memberId: string;
+      name: string;
+      image: string | null;
+    } | null;
+    hasExpenses: boolean;
+    participantBalances: Array<{
+      memberId: string;
+      memberName: string;
+      currency: string;
+      amount: number;
+      direction: 'theyOweYou' | 'youOweThem';
+      label: string;
+    }>;
+    totalsByCurrency: Record<string, number>;
+  }>;
+  goals: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    currency: string;
+    targetAmount: number;
+    savedAmount: number;
+    progress: number;
+    endDate: string;
+    createdAt: string;
+    group: {
+      id: string;
+      name: string;
+    };
+  }>;
+};
 
 const homeActions: HomeAction[] = [
   {
@@ -77,15 +123,31 @@ const homeActions: HomeAction[] = [
 
 function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
   const trips: Trip[] = apiData.groups.map((group) => {
-    const names =
+    const avatarCandidates =
       group.members.length > 0
-        ? group.members.map((member) => member.name)
+        ? group.members.map((member) => ({
+            name: member.name,
+            image: member.image,
+          }))
         : [
-            ...(group.currentUser ? [group.currentUser.name] : []),
-            ...group.participantBalances.map((item) => item.memberName),
+            ...(group.currentUser
+              ? [
+                  {
+                    name: group.currentUser.name,
+                    image: group.currentUser.image,
+                  },
+                ]
+              : []),
+            ...group.participantBalances.map((item) => ({
+              name: item.memberName,
+              image: null,
+            })),
           ];
-    const uniqueNames = Array.from(new Set(names));
-    const avatars = uniqueNames.slice(0, 2).map(toInitials);
+
+    const uniqueNames = Array.from(
+      new Map(avatarCandidates.map((avatar) => [avatar.name, avatar])).values(),
+    );
+    const avatars = uniqueNames.slice(0, 2);
     const extraPeople = Math.max(0, uniqueNames.length - avatars.length);
 
     const balances = group.participantBalances.map((item) => ({
@@ -178,13 +240,6 @@ function formatShortDate(value: string): string {
     day: 'numeric',
     month: 'short',
   }).format(date);
-}
-
-function toInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '??';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
 }
 
 export function useHomeQuery() {

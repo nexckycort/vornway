@@ -12,7 +12,12 @@ function summarizeGroup(
     type: string;
     description: string | null;
     createdAt: Date;
-    GroupMember: Array<{ id: string; name: string; userId: string | null }>;
+    GroupMember: Array<{
+      id: string;
+      name: string;
+      userId: string | null;
+      user: { image: string | null } | null;
+    }>;
     Expense: Array<{
       currency: string;
       paidById: string;
@@ -20,6 +25,10 @@ function summarizeGroup(
     }>;
   },
   userId: string,
+  currentUserProfile: {
+    name: string;
+    image: string | null;
+  } | null,
 ) {
   const currentMember = group.GroupMember.find((member) => member.userId === userId);
 
@@ -33,8 +42,15 @@ function summarizeGroup(
       members: group.GroupMember.map((member) => ({
         id: member.id,
         name: member.name,
+        image: member.user?.image ?? null,
       })),
-      currentUser: null,
+      currentUser: currentUserProfile
+        ? {
+            memberId: userId,
+            name: currentUserProfile.name,
+            image: currentUserProfile.image,
+          }
+        : null,
       hasExpenses: group.Expense.length > 0,
       participantBalances: [],
       totalsByCurrency: {},
@@ -103,10 +119,12 @@ function summarizeGroup(
     members: group.GroupMember.map((member) => ({
       id: member.id,
       name: member.name,
+      image: member.user?.image ?? null,
     })),
     currentUser: {
       memberId: currentMember.id,
       name: currentMember.name,
+      image: currentMember.user?.image ?? null,
     },
     hasExpenses: group.Expense.length > 0,
     participantBalances,
@@ -188,6 +206,11 @@ export function createHomeService(): HomeService {
               id: true,
               name: true,
               userId: true,
+              user: {
+                select: {
+                  image: true,
+                },
+              },
             },
           },
           Expense: {
@@ -218,7 +241,17 @@ export function createHomeService(): HomeService {
         },
       });
 
-      const groupsWithBalances = groups.map((group) => summarizeGroup(group, userId));
+      const currentUser = await db.user.findUnique({
+        where: { id: userId },
+        select: {
+          name: true,
+          image: true,
+        },
+      });
+
+      const groupsWithBalances = groups.map((group) =>
+        summarizeGroup(group, userId, currentUser),
+      );
 
       const goals = await db.goal.findMany({
         where: {

@@ -12,6 +12,7 @@ interface User {
   id: string;
   name: string;
   email: string;
+  image: string | null;
 }
 
 export type AuthContextProps = {
@@ -54,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: data?.user.id ?? '',
         name: data?.user.name ?? '',
         email: data?.user.email ?? '',
+        image: data?.user.image ?? null,
       });
     }
   }, [data]);

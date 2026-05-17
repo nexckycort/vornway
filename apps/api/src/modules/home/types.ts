@@ -16,10 +16,12 @@ export type HomeGroupSummary = {
   members: Array<{
     id: string;
     name: string;
+    image: string | null;
   }>;
   currentUser: {
     memberId: string;
     name: string;
+    image: string | null;
   } | null;
   hasExpenses: boolean;
   participantBalances: HomeParticipantBalance[];

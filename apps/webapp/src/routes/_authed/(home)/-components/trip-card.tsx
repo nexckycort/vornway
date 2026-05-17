@@ -19,14 +19,24 @@ export function TripCard({ trip }: TripCardProps) {
         </div>
 
         <div className="flex items-center">
-          {trip.avatars.map((avatar) => (
-            <span
-              key={avatar}
-              className="-mr-1.5 flex size-8 items-center justify-center rounded-full border border-border bg-[#fafafa] text-sm font-medium leading-5"
-            >
-              {avatar}
-            </span>
-          ))}
+          {trip.avatars.map((avatar) =>
+            avatar.image ? (
+              <img
+                key={`${avatar.name}-${avatar.image}`}
+                src={avatar.image}
+                alt={avatar.name}
+                className="-mr-1.5 size-8 rounded-full border border-border object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span
+                key={avatar.name}
+                className="-mr-1.5 flex size-8 items-center justify-center rounded-full border border-border bg-[#fafafa] text-sm font-medium leading-5"
+              >
+                {toInitials(avatar.name)}
+              </span>
+            ),
+          )}
           <span className="flex size-8 items-center justify-center rounded-full border border-border bg-white text-sm font-medium leading-5 shadow-sm">
             +{trip.extraPeople}
           </span>
@@ -62,4 +72,11 @@ export function TripCard({ trip }: TripCardProps) {
       )}
     </Link>
   );
+}
+
+function toInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '??';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
 }

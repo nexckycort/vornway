@@ -29,6 +29,7 @@ function RouteComponent() {
 
   const userName = auth.user?.name?.trim() || 'Usuario';
   const userEmail = auth.user?.email?.trim() || 'Sin correo';
+  const userImage = auth.user?.image ?? null;
   const notificationLabel =
     notificationStatus === 'unsupported'
       ? 'No compatible'
@@ -115,9 +116,18 @@ function RouteComponent() {
     <main className="flex h-dvh items-center justify-center overflow-hidden bg-background px-4 py-6">
       <section className="w-full max-w-md overflow-hidden rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_28px_70px_rgba(15,23,42,0.14)] backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <UserRound className="size-5" />
-          </div>
+          {userImage ? (
+            <img
+              src={userImage}
+              alt={userName}
+              className="size-11 rounded-2xl border border-border/60 object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <UserRound className="size-5" />
+            </div>
+          )}
           <div>
             <p className="text-base font-semibold leading-5 text-foreground">
               Mi perfil
@@ -133,10 +143,10 @@ function RouteComponent() {
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
               Nombre
             </p>
-            <p className="mt-1 text-lg font-semibold leading-6 text-foreground">
-              {userName}
-            </p>
-          </div>
+              <p className="mt-1 text-lg font-semibold leading-6 text-foreground">
+                {userName}
+              </p>
+            </div>
 
           <div className="h-px bg-border/70" />
 

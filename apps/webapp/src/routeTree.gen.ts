@@ -20,6 +20,7 @@ import { Route as AuthedhomeIndexRouteImport } from './routes/_authed/(home)/ind
 import { Route as AuthedGroupsNewRouteImport } from './routes/_authed/groups/new'
 import { Route as AuthedGroupsNewIndexRouteImport } from './routes/_authed/groups/new/index'
 import { Route as AuthedGroupsIdIndexRouteImport } from './routes/_authed/groups/$id/index'
+import { Route as AuthedGoalsNewIndexRouteImport } from './routes/_authed/goals/new/index'
 import { Route as AuthedGroupsNewParticipantsRouteImport } from './routes/_authed/groups/new/participants'
 import { Route as AuthedGroupsIdSettleRouteImport } from './routes/_authed/groups/$id/settle'
 import { Route as AuthedGroupsIdParticipantsRouteImport } from './routes/_authed/groups/$id/participants'
@@ -79,6 +80,11 @@ const AuthedGroupsIdIndexRoute = AuthedGroupsIdIndexRouteImport.update({
   path: '/groups/$id/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedGoalsNewIndexRoute = AuthedGoalsNewIndexRouteImport.update({
+  id: '/goals/new/',
+  path: '/goals/new/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedGroupsNewParticipantsRoute =
   AuthedGroupsNewParticipantsRouteImport.update({
     id: '/participants',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/groups/$id/participants': typeof AuthedGroupsIdParticipantsRoute
   '/groups/$id/settle': typeof AuthedGroupsIdSettleRoute
   '/groups/new/participants': typeof AuthedGroupsNewParticipantsRoute
+  '/goals/new/': typeof AuthedGoalsNewIndexRoute
   '/groups/$id/': typeof AuthedGroupsIdIndexRoute
   '/groups/new/': typeof AuthedGroupsNewIndexRoute
   '/groups/$id/expense/$expenseId': typeof AuthedGroupsIdExpenseExpenseIdRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/groups/$id/participants': typeof AuthedGroupsIdParticipantsRoute
   '/groups/$id/settle': typeof AuthedGroupsIdSettleRoute
   '/groups/new/participants': typeof AuthedGroupsNewParticipantsRoute
+  '/goals/new': typeof AuthedGoalsNewIndexRoute
   '/groups/$id': typeof AuthedGroupsIdIndexRoute
   '/groups/new': typeof AuthedGroupsNewIndexRoute
   '/groups/$id/expense/$expenseId': typeof AuthedGroupsIdExpenseExpenseIdRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/_authed/groups/$id/participants': typeof AuthedGroupsIdParticipantsRoute
   '/_authed/groups/$id/settle': typeof AuthedGroupsIdSettleRoute
   '/_authed/groups/new/participants': typeof AuthedGroupsNewParticipantsRoute
+  '/_authed/goals/new/': typeof AuthedGoalsNewIndexRoute
   '/_authed/groups/$id/': typeof AuthedGroupsIdIndexRoute
   '/_authed/groups/new/': typeof AuthedGroupsNewIndexRoute
   '/_authed/groups/$id/expense/$expenseId': typeof AuthedGroupsIdExpenseExpenseIdRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/groups/$id/participants'
     | '/groups/$id/settle'
     | '/groups/new/participants'
+    | '/goals/new/'
     | '/groups/$id/'
     | '/groups/new/'
     | '/groups/$id/expense/$expenseId'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/groups/$id/participants'
     | '/groups/$id/settle'
     | '/groups/new/participants'
+    | '/goals/new'
     | '/groups/$id'
     | '/groups/new'
     | '/groups/$id/expense/$expenseId'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/_authed/groups/$id/participants'
     | '/_authed/groups/$id/settle'
     | '/_authed/groups/new/participants'
+    | '/_authed/goals/new/'
     | '/_authed/groups/$id/'
     | '/_authed/groups/new/'
     | '/_authed/groups/$id/expense/$expenseId'
@@ -295,6 +307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedGroupsIdIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/goals/new/': {
+      id: '/_authed/goals/new/'
+      path: '/goals/new'
+      fullPath: '/goals/new/'
+      preLoaderRoute: typeof AuthedGoalsNewIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/groups/new/participants': {
       id: '/_authed/groups/new/participants'
       path: '/participants'
@@ -356,6 +375,7 @@ interface AuthedRouteChildren {
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
   AuthedGroupsIdParticipantsRoute: typeof AuthedGroupsIdParticipantsRoute
   AuthedGroupsIdSettleRoute: typeof AuthedGroupsIdSettleRoute
+  AuthedGoalsNewIndexRoute: typeof AuthedGoalsNewIndexRoute
   AuthedGroupsIdIndexRoute: typeof AuthedGroupsIdIndexRoute
   AuthedGroupsIdExpenseExpenseIdRoute: typeof AuthedGroupsIdExpenseExpenseIdRoute
   AuthedGroupsIdAddExpenseIndexRoute: typeof AuthedGroupsIdAddExpenseIndexRoute
@@ -370,6 +390,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
   AuthedGroupsIdParticipantsRoute: AuthedGroupsIdParticipantsRoute,
   AuthedGroupsIdSettleRoute: AuthedGroupsIdSettleRoute,
+  AuthedGoalsNewIndexRoute: AuthedGoalsNewIndexRoute,
   AuthedGroupsIdIndexRoute: AuthedGroupsIdIndexRoute,
   AuthedGroupsIdExpenseExpenseIdRoute: AuthedGroupsIdExpenseExpenseIdRoute,
   AuthedGroupsIdAddExpenseIndexRoute: AuthedGroupsIdAddExpenseIndexRoute,

@@ -12,6 +12,25 @@ const goalsQuerySchema = z.object({
   cursor: z.string().optional(),
 });
 
+const createGoalSchema = z.object({
+  name: z.string().min(1).max(120),
+  description: z.string().max(400).optional(),
+  currency: z.string().min(1).max(8),
+  targetAmount: z.number().positive(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  installmentCount: z.number().int().positive(),
+  installmentAmount: z.number().positive().optional(),
+  participants: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(120),
+        userId: z.string().min(1).optional(),
+      }),
+    )
+    .optional(),
+});
+
 const app = new Hono<AppContext>().get(
   '/',
   zValidator('query', goalsQuerySchema),
@@ -21,6 +40,29 @@ const app = new Hono<AppContext>().get(
 
     const goals = await goalsService.list(userId, query);
     return c.json(goals);
+  },
+).post(
+  '/',
+  zValidator('json', createGoalSchema),
+  async (c) => {
+    const data = c.req.valid('json');
+    const { id: userId, name: ownerName } = c.get('user');
+
+    const goal = await goalsService.create({
+      userId,
+      ownerName,
+      name: data.name,
+      description: data.description,
+      currency: data.currency,
+      targetAmount: data.targetAmount,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      installmentCount: data.installmentCount,
+      installmentAmount: data.installmentAmount,
+      participants: data.participants,
+    });
+
+    return c.json(goal, 201);
   },
 );
 

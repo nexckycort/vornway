@@ -22,3 +22,24 @@ export type GoalsListResponse = {
     nextCursor: string | null;
   };
 };
+
+export type CreateGoalInput = {
+  userId: string;
+  ownerName: string;
+  name: string;
+  description?: string;
+  currency: string;
+  targetAmount: number;
+  startDate: Date;
+  endDate: Date;
+  installmentCount: number;
+  installmentAmount?: number;
+  participants?: Array<{
+    name: string;
+    userId?: string | null;
+  }>;
+};
+
+export type CreateGoalResult = {
+  id: string;
+};

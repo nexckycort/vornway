@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Target } from 'lucide-react';
+import { Plus, Target } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
 
 import { GoalCard } from './-components/goal-card';
@@ -69,6 +69,15 @@ function RouteComponent() {
             </div>
           </header>
 
+          <button
+            type="button"
+            onClick={() => void navigate({ to: '/goals/new' })}
+            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-medium text-white shadow-[0_10px_24px_rgba(59,130,246,0.22)]"
+          >
+            <Plus className="size-4" />
+            Crear meta
+          </button>
+
           <section className="mt-6">
             {goalsQuery.isLoading ? (
               <GoalsSkeleton />
@@ -85,8 +94,16 @@ function RouteComponent() {
                   Aún no tienes metas
                 </p>
                 <p className="mt-2 text-sm text-[#64748b]">
-                  Cuando crees una meta aparecerá aquí con su progreso y vencimiento.
+                  Cuando crees una meta aparecerá aquí con su progreso y
+                  vencimiento.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => void navigate({ to: '/goals/new' })}
+                  className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white"
+                >
+                  Crear meta
+                </button>
               </div>
             ) : (
               <div className="space-y-4">

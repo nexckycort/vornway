@@ -5,8 +5,8 @@ import { createRouter, RouterProvider } from '@tanstack/react-router';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
+import { FullscreenLoader } from './components/fullscreen-loader';
 import { Toaster } from './components/ui/sonner';
-import { Spinner } from './components/ui/spinner';
 import { ThemeProvider } from './components/ui/theme-provider';
 import {
   type AuthContextProps,
@@ -37,7 +37,7 @@ declare module '@tanstack/react-router' {
 function App() {
   const auth = useAuth();
 
-  if (auth.loading) return <Spinner />;
+  if (auth.loading) return <FullscreenLoader />;
 
   return <RouterProvider router={router} context={{ auth }} />;
 }

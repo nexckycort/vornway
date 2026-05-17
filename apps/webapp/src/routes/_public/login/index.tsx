@@ -82,7 +82,7 @@ function RouteComponent() {
     try {
       await signIn.social({
         provider: 'google',
-        callbackURL: redirect,
+        callbackURL: 'https://app.vornway.com/',
       });
     } catch (rawError) {
       console.error('Error en login con Google:', rawError);

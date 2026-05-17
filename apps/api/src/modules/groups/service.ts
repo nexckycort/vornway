@@ -4,6 +4,7 @@ import type {
   CreateGroupInput,
   CreateGroupExpenseInput,
   CreateGroupResult,
+  DeleteGroupExpenseInput,
   GroupListItem,
   GroupSummaryResult,
   ListGroupExpensesInput,
@@ -19,6 +20,7 @@ export type GroupsService = {
   getGroupSummary: (input: { userId: string; groupId: string }) => Promise<GroupSummaryResult>;
   listGroupExpenses: (input: ListGroupExpensesInput) => Promise<ListGroupExpensesResult>;
   createExpense: (input: CreateGroupExpenseInput) => Promise<{ id: string }>;
+  deleteExpense: (input: DeleteGroupExpenseInput) => Promise<{ id: string }>;
   settleDebt: (input: SettleGroupDebtInput) => Promise<{ id: string }>;
   addMember: (input: AddGroupMemberInput) => Promise<{ id: string; name: string }>;
 };
@@ -689,6 +691,84 @@ export function createGroupsService(): GroupsService {
       });
 
       return expense;
+    },
+    deleteExpense: async ({ userId, groupId, expenseId }) => {
+      const membership = await db.groupMember.findFirst({
+        where: { groupId, userId },
+        select: { id: true, name: true },
+      });
+
+      if (!membership) {
+        throw new Error('No tienes acceso a este grupo');
+      }
+
+      const expense = await db.expense.findFirst({
+        where: {
+          id: expenseId,
+          groupId,
+        },
+        select: {
+          id: true,
+          amount: true,
+          currency: true,
+          description: true,
+          notes: true,
+        },
+      });
+
+      if (!expense) {
+        throw new Error('Gasto no encontrado');
+      }
+
+      if (expense.notes?.includes('[DELETED]')) {
+        return { id: expense.id };
+      }
+
+      await db.$transaction(async (tx) => {
+        await tx.expense.update({
+          where: { id: expense.id },
+          data: {
+            notes: expense.notes
+              ? `${expense.notes} [DELETED:${new Date().toISOString()}]`
+              : `[DELETED:${new Date().toISOString()}]`,
+          },
+        });
+
+        const group = await tx.group.findUnique({
+          where: { id: groupId },
+          select: { totals: true },
+        });
+        const totals = (group?.totals as Record<string, number>) ?? {};
+
+        await tx.group.update({
+          where: { id: groupId },
+          data: {
+            totals: {
+              ...totals,
+              [expense.currency]: normalizeAmount(
+                Math.max(0, (totals[expense.currency] ?? 0) - expense.amount),
+              ),
+            },
+          },
+        });
+
+        await tx.activityLog.create({
+          data: {
+            groupId,
+            actorUserId: userId,
+            actorName: membership.name,
+            action: 'expense.deleted',
+            targetName: expense.description,
+            details: {
+              expenseId: expense.id,
+              amount: expense.amount,
+              currency: expense.currency,
+            },
+          },
+        });
+      });
+
+      return { id: expense.id };
     },
     settleDebt: async ({
       userId,

@@ -7,6 +7,7 @@ import {
   addGroupMemberSchema,
   createGroupSchema,
   createGroupExpenseSchema,
+  groupExpenseParamsSchema,
   groupParamsSchema,
   listGroupExpensesQuerySchema,
   listGroupsQuerySchema,
@@ -102,6 +103,28 @@ const groups = new Hono<AppContext>()
           participantIds: data.participantIds,
         });
         return c.json(result, 201);
+      } catch (error) {
+        if (error instanceof Error) {
+          return c.json({ error: error.message }, 400);
+        }
+        throw error;
+      }
+    },
+  )
+  .delete(
+    '/:id/expenses/:expenseId',
+    zValidator('param', groupExpenseParamsSchema),
+    async (c) => {
+      const { id, expenseId } = c.req.valid('param');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.deleteExpense({
+          userId,
+          groupId: id,
+          expenseId,
+        });
+        return c.json(result);
       } catch (error) {
         if (error instanceof Error) {
           return c.json({ error: error.message }, 400);

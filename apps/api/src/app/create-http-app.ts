@@ -3,7 +3,6 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 
-import { env } from '~/config/env';
 import { auth } from '~/infrastructure/auth/better-auth.config';
 import authedRoutes from '../routes/authed/routes';
 import publicRoutes from '../routes/public/routes';
@@ -20,7 +19,6 @@ export function createHttpApp(): Hono {
   app.use(
     cors({
       origin: [
-        env.BETTER_AUTH_URL,
         'https://vornway.com',
         'https://www.vornway.com',
         'https://app.vornway.com',

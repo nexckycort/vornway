@@ -21,6 +21,12 @@ export type CreateGroupExpenseInput = {
   participantIds: string[];
 };
 
+export type DeleteGroupExpenseInput = {
+  userId: string;
+  groupId: string;
+  expenseId: string;
+};
+
 export type SettleGroupDebtInput = {
   userId: string;
   groupId: string;

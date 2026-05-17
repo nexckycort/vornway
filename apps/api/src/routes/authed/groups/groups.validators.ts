@@ -9,6 +9,11 @@ export const groupParamsSchema = z.object({
   id: z.string().min(1),
 });
 
+export const groupExpenseParamsSchema = z.object({
+  id: z.string().min(1),
+  expenseId: z.string().min(1),
+});
+
 export const listGroupExpensesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   cursor: z.string().min(1).optional(),

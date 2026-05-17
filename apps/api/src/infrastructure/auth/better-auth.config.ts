@@ -8,6 +8,7 @@ import { resend } from '~/infrastructure/email/resend.config';
 
 const authConfig = {
   baseURL: env.BETTER_AUTH_URL,
+  trustedOrigins: ['https://app.vornway.com'],
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),

@@ -11,7 +11,7 @@ export type PushNotificationPayload = {
   body: string;
   url: string;
   groupId: string;
-  expenseId: string;
+  expenseId: string | null;
 };
 
 export type StoredPushSubscription = {

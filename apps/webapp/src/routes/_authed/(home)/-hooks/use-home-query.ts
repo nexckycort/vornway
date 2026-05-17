@@ -123,32 +123,16 @@ const homeActions: HomeAction[] = [
 
 function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
   const trips: Trip[] = apiData.groups.map((group) => {
-    const avatarCandidates =
-      group.members.length > 0
-        ? group.members.map((member) => ({
-            name: member.name,
-            image: member.image,
-          }))
-        : [
-            ...(group.currentUser
-              ? [
-                  {
-                    name: group.currentUser.name,
-                    image: group.currentUser.image,
-                  },
-                ]
-              : []),
-            ...group.participantBalances.map((item) => ({
-              name: item.memberName,
-              image: null,
-            })),
-          ];
-
-    const uniqueNames = Array.from(
-      new Map(avatarCandidates.map((avatar) => [avatar.name, avatar])).values(),
-    );
-    const avatars = uniqueNames.slice(0, 2);
-    const extraPeople = Math.max(0, uniqueNames.length - avatars.length);
+    const avatars =
+      group.members.length <= 2
+        ? group.members
+        : [group.members[0], group.members[group.members.length - 1]].filter(
+            Boolean,
+          ) as Array<{
+            name: string;
+            image: string | null;
+          }>;
+    const extraPeople = Math.max(0, group.members.length - avatars.length);
 
     const balances = group.participantBalances.map((item) => ({
       person: item.memberName,

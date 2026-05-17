@@ -1,5 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { useEffect, useMemo, useRef } from 'react';
+import { TripCard } from '#/routes/_authed/(home)/-components/trip-card';
+import type { Trip } from '#/routes/_authed/(home)/-hooks/use-home-query';
 import { useGroupsInfiniteQuery } from '#/routes/_authed/groups/-hooks/use-groups-infinite-query';
 
 export const Route = createFileRoute('/_authed/groups/')({
@@ -38,6 +40,34 @@ function RouteComponent() {
     return () => observer.disconnect();
   }, [groupsQuery]);
 
+  const groupTrips = useMemo(
+    () =>
+      groups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        dates: `Creado ${formatShortDate(group.createdAt)}`,
+        avatars: mapMembersToAvatars(group.members),
+        extraPeople: Math.max(0, group.members.length - 2),
+        ...(mapBalances(group).length > 0
+          ? {
+              balanceLabel: mapBalances(group)[0]?.label ?? 'Sin saldos pendientes',
+              balanceItems: mapBalances(group).slice(0, 2).map((item) => ({
+                person: item.memberName,
+                amount: item.label,
+              })),
+              ...(mapBalances(group).length > 2
+                ? {
+                    balanceOverflowLabel: `y ${mapBalances(group).length - 2} otros saldos`,
+                  }
+                : {}),
+            }
+          : {
+              emptyLabel: group.hasExpenses ? 'Sin saldos pendientes' : 'Sin gastos',
+            }),
+      })) as Trip[],
+    [groups],
+  );
+
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa] px-4 pb-10 pt-6">
@@ -71,45 +101,8 @@ function RouteComponent() {
         ) : null}
 
         <section className="flex flex-col gap-3">
-          {groups.map((group) => (
-            <article
-              key={group.id}
-              className="rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm"
-            >
-              <Link to="/groups/$id" params={{ id: group.id }} className="block">
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h2 className="truncate text-base font-semibold text-[#0f172a]">
-                      {group.name}
-                    </h2>
-                    <p className="text-xs uppercase tracking-wide text-[#64748b]">
-                      {group.type}
-                    </p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-[#eff6ff] px-2.5 py-1 text-xs font-medium text-[#1d4ed8]">
-                    {group.participantCount} miembros
-                  </span>
-                </div>
-              </Link>
-
-              {group.description ? (
-                <p className="mb-3 line-clamp-2 text-sm text-[#475569]">
-                  {group.description}
-                </p>
-              ) : null}
-
-              <div className="flex items-center justify-between text-xs text-[#64748b]">
-                <span>
-                  Rol:{' '}
-                  <span className="font-medium text-[#334155]">
-                    {group.myMembership?.role ?? 'member'}
-                  </span>
-                </span>
-                <span className="font-mono text-[#475569]">
-                  {group.inviteCode}
-                </span>
-              </div>
-            </article>
+          {groupTrips.map((trip) => (
+            <TripCard key={trip.id} trip={trip} />
           ))}
         </section>
 
@@ -127,4 +120,41 @@ function RouteComponent() {
       </div>
     </main>
   );
+}
+
+function mapMembersToAvatars(
+  members: Array<{ name: string; image: string | null }>,
+) {
+  const visibleMembers =
+    members.length <= 2
+      ? members
+      : [members[0], members[members.length - 1]].filter(
+          Boolean,
+        ) as Array<{ name: string; image: string | null }>;
+
+  return visibleMembers.map((member) => ({
+    name: member.name,
+    image: member.image,
+  }));
+}
+
+function mapBalances(group: {
+  participantBalances: Array<{
+    memberName: string;
+    amount: number;
+    currency: string;
+    direction: 'theyOweYou' | 'youOweThem';
+    label: string;
+  }>;
+}) {
+  return group.participantBalances;
+}
+
+function formatShortDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('es-CO', {
+    day: 'numeric',
+    month: 'short',
+  }).format(date);
 }

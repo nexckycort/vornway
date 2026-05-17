@@ -86,6 +86,25 @@ export type GroupListItem = {
   updatedAt: Date;
   participantCount: number;
   totals: Record<string, number>;
+  members: Array<{
+    id: string;
+    name: string;
+    image: string | null;
+  }>;
+  currentUser: {
+    memberId: string;
+    name: string;
+    image: string | null;
+  } | null;
+  hasExpenses: boolean;
+  participantBalances: Array<{
+    memberId: string;
+    memberName: string;
+    currency: string;
+    amount: number;
+    direction: 'theyOweYou' | 'youOweThem';
+    label: string;
+  }>;
   myMembership: {
     id: string;
     name: string;

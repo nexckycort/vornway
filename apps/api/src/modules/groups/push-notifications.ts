@@ -55,10 +55,24 @@ export function buildExpensePushPayload(input: {
   const formattedAmount = formatExpenseAmount(input.amount, input.currency);
 
   return {
-    title: `New expense in ${input.groupName}`,
-    body: `${input.createdByName} added ${formattedAmount} for ${input.expenseTitle}`,
+    title: `Nuevo gasto en ${input.groupName}`,
+    body: `${input.createdByName} agregó ${formattedAmount} por ${input.expenseTitle}`,
     url: `/groups/${input.groupId}/expenses/${input.expenseId}`,
     groupId: input.groupId,
     expenseId: input.expenseId,
+  };
+}
+
+export function buildGroupMemberAddedPushPayload(input: {
+  groupId: string;
+  groupName: string;
+  addedByName: string;
+}): PushNotificationPayload {
+  return {
+    title: `Te agregaron a ${input.groupName}`,
+    body: `${input.addedByName} te agregó al grupo`,
+    url: `/groups/${input.groupId}`,
+    groupId: input.groupId,
+    expenseId: input.groupId,
   };
 }

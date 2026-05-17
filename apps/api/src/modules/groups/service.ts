@@ -1,5 +1,9 @@
 import { db } from '~/infrastructure/database/connection';
-import { buildExpensePushPayload, getExpensePushRecipientUserIds } from './push-notifications';
+import {
+  buildExpensePushPayload,
+  buildGroupMemberAddedPushPayload,
+  getExpensePushRecipientUserIds,
+} from './push-notifications';
 import { pushNotificationService } from '~/modules/push';
 import type {
   AddGroupMemberInput,
@@ -299,15 +303,43 @@ export function createGroupsService(): GroupsService {
             updatedAt: true,
             totals: true,
             GroupMember: {
-              where: {
-                userId,
-              },
               select: {
                 id: true,
                 name: true,
                 role: true,
+                userId: true,
+                user: {
+                  select: {
+                    image: true,
+                  },
+                },
               },
-              take: 1,
+              orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }],
+            },
+            Expense: {
+              where: {
+                OR: [
+                  { notes: null },
+                  {
+                    notes: {
+                      not: {
+                        contains: '[DELETED]',
+                      },
+                    },
+                  },
+                ],
+              },
+              select: {
+                amount: true,
+                currency: true,
+                paidById: true,
+                participants: {
+                  select: {
+                    memberId: true,
+                    share: true,
+                  },
+                },
+              },
             },
             _count: {
               select: {
@@ -322,24 +354,119 @@ export function createGroupsService(): GroupsService {
       const pageRows = hasNextPage ? rows.slice(0, limit) : rows;
       const nextCursor = hasNextPage ? pageRows[pageRows.length - 1]?.id ?? null : null;
 
-      const data: GroupListItem[] = pageRows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        type: row.type,
-        description: row.description,
-        inviteCode: row.inviteCode,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
-        participantCount: row._count.GroupMember,
-        totals: (row.totals as Record<string, number>) ?? {},
-        myMembership: row.GroupMember[0]
-          ? {
-              id: row.GroupMember[0].id,
-              name: row.GroupMember[0].name,
-              role: row.GroupMember[0].role,
+      const currentUser = await db.user.findUnique({
+        where: { id: userId },
+        select: {
+          name: true,
+          image: true,
+        },
+      });
+
+      const data: GroupListItem[] = pageRows.map((row) => {
+        const currentMember =
+          row.GroupMember.find((member) => member.userId === userId) ?? null;
+        const orderedMembers = currentMember
+          ? [
+              ...row.GroupMember.filter((member) => member.id !== currentMember.id),
+              currentMember,
+            ]
+          : row.GroupMember;
+
+        const pairBalances = new Map<string, number>();
+        const activeMember = currentMember;
+
+        if (activeMember) {
+          for (const expense of row.Expense) {
+            if (expense.participants.length === 0) continue;
+
+            if (expense.paidById === activeMember.id) {
+              for (const participant of expense.participants) {
+                if (participant.memberId === activeMember.id) continue;
+                const key = `${participant.memberId}:${expense.currency}`;
+                pairBalances.set(
+                  key,
+                  (pairBalances.get(key) ?? 0) - participant.share,
+                );
+              }
+              continue;
             }
-          : null,
-      }));
+
+            const ownShare = expense.participants.find(
+              (participant) => participant.memberId === activeMember.id,
+            );
+            if (!ownShare) continue;
+
+            const key = `${expense.paidById}:${expense.currency}`;
+            pairBalances.set(
+              key,
+              (pairBalances.get(key) ?? 0) + ownShare.share,
+            );
+          }
+        }
+
+        const participantBalances: GroupListItem['participantBalances'] = [];
+
+        for (const [key, rawValue] of pairBalances.entries()) {
+          if (Math.abs(rawValue) < 0.01) continue;
+
+          const [memberId, currency] = key.split(':');
+          const member = orderedMembers.find((item) => item.id === memberId);
+          const direction =
+            rawValue < 0 ? 'theyOweYou' : 'youOweThem';
+          const amount = normalizeAmount(Math.abs(rawValue));
+
+          participantBalances.push({
+            memberId,
+            memberName: member?.name ?? 'Participante',
+            currency,
+            amount,
+            direction,
+            label:
+              direction === 'theyOweYou'
+                ? `Te debe ${amount.toLocaleString()} ${currency}`
+                : `Debes ${amount.toLocaleString()} ${currency}`,
+          });
+        }
+
+        return {
+          id: row.id,
+          name: row.name,
+          type: row.type,
+          description: row.description,
+          inviteCode: row.inviteCode,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+          participantCount: row._count.GroupMember,
+          totals: (row.totals as Record<string, number>) ?? {},
+          members: orderedMembers.map((member) => ({
+            id: member.id,
+            name: member.name,
+            image: member.user?.image ?? null,
+          })),
+          currentUser: currentMember
+            ? {
+                memberId: currentMember.id,
+                name: currentMember.name,
+                image: currentMember.user?.image ?? null,
+              }
+            : currentUser
+              ? {
+                  memberId: userId,
+                  name: currentUser.name,
+                  image: currentUser.image,
+                }
+              : null,
+          hasExpenses: row.Expense.length > 0,
+          participantBalances,
+          myMembership: currentMember
+            ? {
+                id: currentMember.id,
+                name: currentMember.name,
+                role: currentMember.role,
+              }
+            : null,
+        };
+      });
 
       return {
         data,
@@ -1295,6 +1422,41 @@ export function createGroupsService(): GroupsService {
           name: true,
         },
       });
+
+      if (linkedUserId) {
+        void (async () => {
+          try {
+            const [group, recipient] = await Promise.all([
+              db.group.findUnique({
+                where: { id: groupId },
+                select: { name: true },
+              }),
+              db.user.findUnique({
+                where: { id: linkedUserId },
+                select: { id: true },
+              }),
+            ]);
+
+            if (!group || !recipient) {
+              return;
+            }
+
+            await pushNotificationService.sendToUsers(
+              [linkedUserId],
+              buildGroupMemberAddedPushPayload({
+                groupId,
+                groupName: group.name,
+                addedByName: name,
+              }),
+            );
+          } catch (error) {
+            console.warn('Failed to send group member push notification', {
+              groupId,
+              error,
+            });
+          }
+        })();
+      }
 
       return member;
     },

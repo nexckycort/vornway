@@ -12,6 +12,7 @@ import {
   AuthProvider,
 } from './contexts/auth/auth-context';
 import { useAuth } from './contexts/auth/use-auth';
+import { registerPushServiceWorker } from './lib/push-notifications';
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
@@ -35,6 +36,10 @@ declare module '@tanstack/react-router' {
 
 function App() {
   const auth = useAuth();
+
+  React.useEffect(() => {
+    void registerPushServiceWorker();
+  }, []);
 
   if (auth.loading) return <FullscreenLoader />;
 

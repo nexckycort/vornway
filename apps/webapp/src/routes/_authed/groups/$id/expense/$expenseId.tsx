@@ -65,6 +65,7 @@ function RouteComponent() {
     latestOffset: 0,
     hasMoved: false,
   });
+  const suppressNextClickRef = useRef(false);
 
   const expense = useMemo(() => {
     const items = expensesQuery.data?.pages.flatMap((page) => page.data) ?? [];
@@ -81,7 +82,7 @@ function RouteComponent() {
     setSwipeOffset(0);
   };
 
-  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+  const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
 
     setSwipeError(null);
@@ -90,11 +91,12 @@ function RouteComponent() {
     dragStateRef.current.startX = event.clientX;
     dragStateRef.current.latestOffset = 0;
     dragStateRef.current.hasMoved = false;
+    suppressNextClickRef.current = false;
     setSwipeOffset(0);
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
-  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+  const handlePointerMove = (event: PointerEvent<HTMLButtonElement>) => {
     if (!dragStateRef.current.active) return;
     if (
       dragStateRef.current.pointerId !== -1 &&
@@ -112,7 +114,7 @@ function RouteComponent() {
   };
 
   const handlePointerEnd = () => {
-    if (!dragStateRef.current.active) return;
+    if (!dragStateRef.current.active) return false;
 
     const shouldOpenDrawer = dragStateRef.current.latestOffset <= -72;
     resetSwipe();
@@ -120,15 +122,19 @@ function RouteComponent() {
     if (shouldOpenDrawer) {
       setOptionsDrawerOpen(false);
       setDeleteDrawerOpen(true);
+      suppressNextClickRef.current = true;
+      return true;
     }
+
+    return false;
   };
 
-  const handleExpenseTap = () => {
-    if (dragStateRef.current.hasMoved) {
+  const handleCardAction = () => {
+    if (deleteDrawerOpen || swipeOffset !== 0 || dragStateRef.current.hasMoved) {
       dragStateRef.current.hasMoved = false;
       return;
     }
-    if (deleteDrawerOpen) return;
+
     setOptionsDrawerOpen(true);
   };
 
@@ -217,8 +223,9 @@ function RouteComponent() {
                 Eliminar
               </div>
 
-              <div
-                className="relative z-10 touch-pan-y bg-white transition-transform duration-200"
+              <button
+                type="button"
+                className="relative z-10 block w-full touch-pan-y bg-white text-left transition-transform duration-200"
                 style={{
                   transform: `translate3d(${swipeOffset}px, 0, 0)`,
                   transitionDuration: dragStateRef.current.active
@@ -227,9 +234,22 @@ function RouteComponent() {
                 }}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerEnd}
+                onPointerUp={() => {
+                  const openedDeleteDrawer = handlePointerEnd();
+                  if (!openedDeleteDrawer && !suppressNextClickRef.current) {
+                    handleCardAction();
+                  }
+                  suppressNextClickRef.current = false;
+                }}
                 onPointerCancel={handlePointerEnd}
-                onClick={handleExpenseTap}
+                onClick={() => {
+                  if (suppressNextClickRef.current) {
+                    suppressNextClickRef.current = false;
+                    return;
+                  }
+
+                  handleCardAction();
+                }}
               >
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-4">
@@ -269,7 +289,7 @@ function RouteComponent() {
                     ) : null}
                   </div>
                 </div>
-              </div>
+              </button>
             </div>
           </section>
         ) : null}

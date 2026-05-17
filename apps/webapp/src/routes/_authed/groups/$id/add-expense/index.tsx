@@ -21,7 +21,6 @@ import {
   ChevronLeft,
   Minus,
   Plus,
-  RefreshCw,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatMoney, getInitials } from '../-components/group-detail.utils';
@@ -428,6 +427,7 @@ function RouteComponent() {
             />
           </label>
 
+          {/*
           <button
             type="button"
             className="flex w-full items-center justify-between rounded-xl border border-gray-200 px-4 py-3"
@@ -446,6 +446,7 @@ function RouteComponent() {
             </div>
             <RefreshCw className="size-5 text-gray-400" />
           </button>
+          */}
 
           <section>
             <p className="mb-3 text-sm text-gray-600">Pagado por</p>

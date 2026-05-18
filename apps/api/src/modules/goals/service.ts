@@ -3,6 +3,7 @@ import { db } from '~/infrastructure/database/connection';
 import type {
   CreateGoalInput,
   CreateGoalResult,
+  GoalDetailResult,
   GoalListItem,
   GoalsListResponse,
 } from './types';
@@ -47,6 +48,93 @@ function summarizeGoal(goal: {
   };
 }
 
+function summarizeGoalDetail(goal: {
+  id: string;
+  title: string;
+  description: string | null;
+  currency: string;
+  targetAmount: number;
+  startDate: Date;
+  endDate: Date;
+  installmentCount: number;
+  installmentAmount: number;
+  createdAt: Date;
+  updatedAt: Date;
+  group: {
+    id: string;
+    name: string;
+    type: string;
+    description: string | null;
+    inviteCode: string;
+    createdAt: Date;
+    updatedAt: Date;
+    GroupMember: Array<{
+      id: string;
+      name: string;
+      role: string;
+      userId: string | null;
+      user: {
+        email: string;
+        image: string | null;
+      } | null;
+    }>;
+  };
+  contributions: Array<{ amount: number }>;
+}, userId: string): GoalDetailResult {
+  const savedAmount = normalizeAmount(
+    goal.contributions.reduce((total, contribution) => total + contribution.amount, 0),
+  );
+  const progress =
+    goal.targetAmount > 0
+      ? Math.min(100, normalizeAmount((savedAmount / goal.targetAmount) * 100))
+      : 0;
+  const currentMembership = goal.group.GroupMember.find(
+    (member) => member.userId === userId,
+  );
+
+  return {
+    id: goal.id,
+    title: goal.title,
+    description: goal.description,
+    currency: goal.currency,
+    targetAmount: goal.targetAmount,
+    savedAmount,
+    progress,
+    endDate: goal.endDate,
+    createdAt: goal.createdAt,
+    startDate: goal.startDate,
+    installmentCount: goal.installmentCount,
+    installmentAmount: goal.installmentAmount,
+    updatedAt: goal.updatedAt,
+    group: {
+      id: goal.group.id,
+      name: goal.group.name,
+      type: goal.group.type,
+      description: goal.group.description,
+      inviteCode: goal.group.inviteCode,
+      createdAt: goal.group.createdAt,
+      updatedAt: goal.group.updatedAt,
+    },
+    members: goal.group.GroupMember.map((member) => ({
+      id: member.id,
+      name: member.name,
+      email: member.user?.email ?? null,
+      image: member.user?.image ?? null,
+      role: member.role,
+      userId: member.userId,
+      isCurrentUser: member.userId === userId,
+    })),
+    myMembership: currentMembership
+      ? {
+          id: currentMembership.id,
+          name: currentMembership.name,
+          role: currentMembership.role,
+        }
+      : null,
+    participantCount: goal.group.GroupMember.length,
+  };
+}
+
 export type GoalsListQuery = {
   limit: number;
   cursor?: string;
@@ -54,6 +142,7 @@ export type GoalsListQuery = {
 
 export type GoalsService = {
   list: (userId: string, query: GoalsListQuery) => Promise<GoalsListResponse>;
+  getById: (userId: string, goalId: string) => Promise<GoalDetailResult | null>;
   create: (input: CreateGoalInput) => Promise<CreateGoalResult>;
 };
 
@@ -128,6 +217,86 @@ export function createGoalsService(): GoalsService {
         },
       };
     },
+    getById: async (userId, goalId) => {
+      const goal = await db.goal.findFirst({
+        where: {
+          id: goalId,
+          deletedAt: null,
+          group: {
+            type: 'meta' as const,
+            OR: [
+              {
+                ownerId: userId,
+              },
+              {
+                GroupMember: {
+                  some: {
+                    userId,
+                  },
+                },
+              },
+            ],
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          currency: true,
+          targetAmount: true,
+          startDate: true,
+          endDate: true,
+          installmentCount: true,
+          installmentAmount: true,
+          createdAt: true,
+          updatedAt: true,
+          group: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              description: true,
+              inviteCode: true,
+              createdAt: true,
+              updatedAt: true,
+              GroupMember: {
+                orderBy: [
+                  {
+                    joinedAt: 'asc',
+                  },
+                  {
+                    id: 'asc',
+                  },
+                ],
+                select: {
+                  id: true,
+                  name: true,
+                  role: true,
+                  userId: true,
+                  user: {
+                    select: {
+                      email: true,
+                      image: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          contributions: {
+            select: {
+              amount: true,
+            },
+          },
+        },
+      });
+
+      if (!goal) {
+        return null;
+      }
+
+      return summarizeGoalDetail(goal, userId);
+    },
     create: async (input) => {
       if (!input.name.trim()) {
         throw new Error('El nombre de la meta es obligatorio');
@@ -151,6 +320,23 @@ export function createGoalsService(): GoalsService {
         input.installmentAmount && input.installmentAmount > 0
           ? input.installmentAmount
           : input.targetAmount / input.installmentCount;
+      const normalizedParticipants = (input.participants ?? [])
+        .map((participant) => ({
+          name: participant.name.trim(),
+          userId: participant.userId?.trim() || null,
+        }))
+        .filter((participant) => participant.name.length > 0)
+        .filter((participant) => participant.userId !== input.userId)
+        .filter(
+          (participant, index, array) =>
+            array.findIndex(
+              (item) =>
+                (item.userId && item.userId === participant.userId) ||
+                (!item.userId &&
+                  item.name.toLocaleLowerCase('es-CO') ===
+                    participant.name.toLocaleLowerCase('es-CO')),
+            ) === index,
+        );
 
       return db.$transaction(async (tx) => {
         const group = await tx.group.create({
@@ -187,12 +373,12 @@ export function createGoalsService(): GoalsService {
           },
         });
 
-        if (input.participants && input.participants.length > 0) {
+        if (normalizedParticipants.length > 0) {
           await tx.groupMember.createMany({
-            data: input.participants.map((participant) => ({
+            data: normalizedParticipants.map((participant) => ({
               groupId: group.id,
-              userId: participant.userId ?? null,
-              name: participant.name.trim(),
+              userId: participant.userId,
+              name: participant.name,
               role: 'member',
               joinedAt: now,
             })),
@@ -230,7 +416,7 @@ export function createGoalsService(): GoalsService {
               currency: input.currency,
               installmentCount: input.installmentCount,
               installmentAmount,
-              participantCount: (input.participants?.length ?? 0) + 1,
+              participantCount: normalizedParticipants.length + 1,
               startDate: input.startDate,
               endDate: input.endDate,
             },
@@ -244,3 +430,4 @@ export function createGoalsService(): GoalsService {
     },
   };
 }
+

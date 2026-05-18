@@ -16,6 +16,10 @@ export type CreateGoalFormValues = {
   endDate: string;
   installmentCount: string;
   installmentAmount: string;
+  participants: Array<{
+    name: string;
+    userId?: string;
+  }>;
 };
 
 async function createGoal(values: CreateGoalFormValues): Promise<CreateGoalResponse> {
@@ -30,6 +34,14 @@ async function createGoal(values: CreateGoalFormValues): Promise<CreateGoalRespo
       installmentCount: Number(values.installmentCount),
       ...(values.installmentAmount.trim()
         ? { installmentAmount: Number(values.installmentAmount) }
+        : {}),
+      ...(values.participants.length > 0
+        ? {
+            participants: values.participants.map((participant) => ({
+              name: participant.name.trim(),
+              ...(participant.userId ? { userId: participant.userId } : {}),
+            })),
+          }
         : {}),
     },
   };

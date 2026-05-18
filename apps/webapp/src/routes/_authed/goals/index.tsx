@@ -113,8 +113,8 @@ function RouteComponent() {
                     goal={goal}
                     onPress={() => {
                       void navigate({
-                        to: '/groups/$id',
-                        params: { id: goal.group.id },
+                        to: '/goals/$id',
+                        params: { id: goal.id },
                       });
                     }}
                   />

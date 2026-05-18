@@ -12,6 +12,10 @@ const goalsQuerySchema = z.object({
   cursor: z.string().optional(),
 });
 
+const goalParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
 const createGoalSchema = z.object({
   name: z.string().min(1).max(120),
   description: z.string().max(400).optional(),
@@ -40,6 +44,21 @@ const app = new Hono<AppContext>().get(
 
     const goals = await goalsService.list(userId, query);
     return c.json(goals);
+  },
+).get(
+  '/:id',
+  zValidator('param', goalParamsSchema),
+  async (c) => {
+    const { id } = c.req.valid('param');
+    const { id: userId } = c.get('user');
+
+    const goal = await goalsService.getById(userId, id);
+
+    if (!goal) {
+      return c.json({ error: 'Meta no encontrada' }, 404);
+    }
+
+    return c.json(goal);
   },
 ).post(
   '/',

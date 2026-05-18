@@ -1,4 +1,5 @@
 import { db } from '~/infrastructure/database/connection';
+import { Prisma } from '~/generated/prisma/client';
 import {
   buildExpensePushPayload,
   buildGroupMemberAddedPushPayload,
@@ -19,8 +20,10 @@ import type {
   ListGroupExpensesResult,
   ListGroupsInput,
   ListGroupsResult,
+  RemoveGroupMemberInput,
   SearchGroupMembersResult,
   SettleGroupDebtInput,
+  UnlinkGroupMemberInput,
   UpdateGroupExpenseInput,
 } from './types';
 
@@ -35,6 +38,8 @@ export type GroupsService = {
   deleteExpense: (input: DeleteGroupExpenseInput) => Promise<{ id: string }>;
   settleDebt: (input: SettleGroupDebtInput) => Promise<{ id: string }>;
   addMember: (input: AddGroupMemberInput) => Promise<{ id: string; name: string }>;
+  removeMember: (input: RemoveGroupMemberInput) => Promise<{ id: string; name: string }>;
+  unlinkMember: (input: UnlinkGroupMemberInput) => Promise<{ id: string; name: string }>;
   searchMembers: (input: {
     userId: string;
     groupId: string;
@@ -77,7 +82,105 @@ function buildGroupAccessWhere(userId: string, groupId?: string) {
         },
       },
     ],
-  };
+  } as Prisma.GroupWhereInput;
+}
+
+function buildActiveGroupMemberWhere(userId: string, groupId?: string) {
+  return {
+    ...(groupId ? { groupId } : {}),
+    userId,
+  } as Prisma.GroupMemberWhereInput;
+}
+
+function buildDeletedExpenseWhere(): Prisma.ExpenseWhereInput {
+  return {
+    OR: [
+      { notes: null },
+      {
+        notes: {
+          not: {
+            contains: '[DELETED]',
+          },
+        },
+      },
+    ],
+  } as Prisma.ExpenseWhereInput;
+}
+
+function buildActiveExpenseWhere(groupId?: string): Prisma.ExpenseWhereInput {
+  return {
+    ...(groupId ? { groupId } : {}),
+    ...buildDeletedExpenseWhere(),
+  } as Prisma.ExpenseWhereInput;
+}
+
+async function getMemberBalanceByCurrency(input: {
+  groupId: string;
+  memberId: string;
+}) {
+  const expenses = await db.expense.findMany({
+    where: buildActiveExpenseWhere(input.groupId),
+    select: {
+      amount: true,
+      currency: true,
+      paidById: true,
+      participants: {
+        select: {
+          memberId: true,
+          share: true,
+        },
+      },
+    },
+  });
+
+  const balances = new Map<string, number>();
+
+  for (const expense of expenses) {
+    if (expense.paidById === input.memberId) {
+      balances.set(
+        expense.currency,
+        normalizeAmount((balances.get(expense.currency) ?? 0) + expense.amount),
+      );
+    }
+
+    const participation = expense.participants.find(
+      (participant) => participant.memberId === input.memberId,
+    );
+
+    if (!participation) {
+      continue;
+    }
+
+    balances.set(
+      expense.currency,
+      normalizeAmount((balances.get(expense.currency) ?? 0) - participation.share),
+    );
+  }
+
+  return balances;
+}
+
+async function getMemberExpenseUsageCount(input: {
+  groupId: string;
+  memberId: string;
+}) {
+  return db.expense.count({
+    where: {
+      ...buildActiveExpenseWhere(input.groupId),
+      OR: [
+        {
+          paidById: input.memberId,
+        },
+        {
+          participants: {
+            some: {
+              memberId: input.memberId,
+            },
+          },
+        },
+      ],
+    },
+  });
 }
 
 const groupListSelect = {
@@ -104,18 +207,7 @@ const groupListSelect = {
     orderBy: [{ joinedAt: 'asc' as const }, { id: 'asc' as const }],
   },
   Expense: {
-    where: {
-      OR: [
-        { notes: null },
-        {
-          notes: {
-            not: {
-              contains: '[DELETED]',
-            },
-          },
-        },
-      ],
-    },
+    where: buildActiveExpenseWhere(),
     select: {
       amount: true,
       currency: true,
@@ -126,11 +218,6 @@ const groupListSelect = {
           share: true,
         },
       },
-    },
-  },
-  _count: {
-    select: {
-      GroupMember: true,
     },
   },
 };
@@ -251,7 +338,7 @@ function mapGroupListRow(
     inviteCode: row.inviteCode,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-    participantCount: row._count.GroupMember,
+    participantCount: row.GroupMember.length,
     totals: (row.totals as Record<string, number>) ?? {},
     members: orderedMembers.map((member) => ({
       id: member.id,
@@ -688,18 +775,7 @@ export function createGroupsService(): GroupsService {
             orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }],
           },
           Expense: {
-            where: {
-              OR: [
-                { notes: null },
-                {
-                  notes: {
-                    not: {
-                      contains: '[DELETED]',
-                    },
-                  },
-                },
-              ],
-            },
+            where: buildActiveExpenseWhere(),
             select: {
               amount: true,
               currency: true,
@@ -710,11 +786,6 @@ export function createGroupsService(): GroupsService {
                   share: true,
                 },
               },
-            },
-          },
-          _count: {
-            select: {
-              GroupMember: true,
             },
           },
         },
@@ -730,15 +801,22 @@ export function createGroupsService(): GroupsService {
         group.GroupMember.map((member) => [member.id, member.name]),
       );
       const balanceByMember = new Map<string, Record<string, number>>();
+      const expenseCountByMember = new Map<string, number>();
       const directDebtByPair = new Map<string, number>();
       const allDebtByPair = new Map<string, number>();
 
       for (const member of group.GroupMember) {
         balanceByMember.set(member.id, {});
+        expenseCountByMember.set(member.id, 0);
       }
 
       for (const expense of group.Expense) {
         if (expense.participants.length === 0) continue;
+
+        const payerCount = expenseCountByMember.get(expense.paidById);
+        if (payerCount !== undefined) {
+          expenseCountByMember.set(expense.paidById, payerCount + 1);
+        }
 
         const payerBalances = balanceByMember.get(expense.paidById);
         if (payerBalances) {
@@ -748,6 +826,11 @@ export function createGroupsService(): GroupsService {
         }
 
         for (const participant of expense.participants) {
+          const currentCount = expenseCountByMember.get(participant.memberId);
+          if (currentCount !== undefined) {
+            expenseCountByMember.set(participant.memberId, currentCount + 1);
+          }
+
           const participantBalances = balanceByMember.get(participant.memberId);
           if (participantBalances) {
             participantBalances[expense.currency] = normalizeAmount(
@@ -839,16 +922,17 @@ export function createGroupsService(): GroupsService {
         .filter((entry) => entry.amount > 0)
         .sort((a, b) => b.amount - a.amount);
 
-      return {
-        id: group.id,
-        name: group.name,
-        type: group.type,
-        description: group.description,
-        inviteCode: group.inviteCode,
-        createdAt: group.createdAt,
-        updatedAt: group.updatedAt,
-        totals: (group.totals as Record<string, number>) ?? {},
-        participantCount: group._count.GroupMember,
+        return {
+          id: group.id,
+          name: group.name,
+          type: group.type,
+          description: group.description,
+          inviteCode: group.inviteCode,
+          ownerId: group.ownerId,
+          createdAt: group.createdAt,
+          updatedAt: group.updatedAt,
+          totals: (group.totals as Record<string, number>) ?? {},
+        participantCount: group.GroupMember.length,
         members: group.GroupMember.map((member) => ({
           id: member.id,
           name: member.name,
@@ -857,6 +941,7 @@ export function createGroupsService(): GroupsService {
           role: member.role,
           userId: member.userId,
           isCurrentUser: member.userId === userId,
+          expenseCount: expenseCountByMember.get(member.id) ?? 0,
         })),
         memberBalances: group.GroupMember.map((member) => ({
           memberId: member.id,
@@ -900,22 +985,11 @@ export function createGroupsService(): GroupsService {
         throw new Error('Grupo no encontrado');
       }
 
-      const currentMember = group.GroupMember.find(
-        (member) => member.userId === userId,
-      );
+      const currentMember =
+        group.GroupMember.find((member) => member.userId === userId) ?? null;
 
       const where: NonNullable<Parameters<typeof db.expense.findMany>[0]>['where'] = {
-        groupId,
-        OR: [
-          { notes: null },
-          {
-            notes: {
-              not: {
-                contains: '[DELETED]',
-              },
-            },
-          },
-        ],
+        ...buildActiveExpenseWhere(groupId),
       };
 
       const [total, rows] = await Promise.all([
@@ -1107,7 +1181,7 @@ export function createGroupsService(): GroupsService {
       exactShares,
     }) => {
       const membership = await db.groupMember.findFirst({
-        where: { groupId, userId },
+        where: buildActiveGroupMemberWhere(userId, groupId),
         select: { id: true, name: true },
       });
 
@@ -1271,7 +1345,7 @@ export function createGroupsService(): GroupsService {
       exactShares,
     }) => {
       const membership = await db.groupMember.findFirst({
-        where: { groupId, userId },
+        where: buildActiveGroupMemberWhere(userId, groupId),
         select: { id: true, name: true },
       });
 
@@ -1408,7 +1482,7 @@ export function createGroupsService(): GroupsService {
     },
     deleteExpense: async ({ userId, groupId, expenseId }) => {
       const membership = await db.groupMember.findFirst({
-        where: { groupId, userId },
+        where: buildActiveGroupMemberWhere(userId, groupId),
         select: { id: true, name: true },
       });
 
@@ -1493,7 +1567,7 @@ export function createGroupsService(): GroupsService {
       currency,
     }) => {
       const membership = await db.groupMember.findFirst({
-        where: { groupId, userId },
+        where: buildActiveGroupMemberWhere(userId, groupId),
         select: { id: true, name: true },
       });
 
@@ -1562,13 +1636,16 @@ export function createGroupsService(): GroupsService {
     },
     addMember: async ({ userId, groupId, name, linkedUserId }) => {
       const membership = await db.groupMember.findFirst({
-        where: { groupId, userId },
+        where: buildActiveGroupMemberWhere(userId, groupId),
         select: { id: true },
       });
 
       if (!membership) {
         throw new Error('No tienes acceso a este grupo');
       }
+
+      let member: { id: string; name: string } | null = null;
+      let shouldNotify = false;
 
       if (linkedUserId) {
         const existingLinkedMember = await db.groupMember.findFirst({
@@ -1587,20 +1664,23 @@ export function createGroupsService(): GroupsService {
         }
       }
 
-      const member = await db.groupMember.create({
-        data: {
-          groupId,
-          name,
-          ...(linkedUserId ? { userId: linkedUserId } : {}),
-          role: 'member',
-        },
-        select: {
-          id: true,
-          name: true,
-        },
-      });
+      if (!member) {
+        member = await db.groupMember.create({
+          data: {
+            groupId,
+            name,
+            ...(linkedUserId ? { userId: linkedUserId } : {}),
+            role: 'member',
+          },
+          select: {
+            id: true,
+            name: true,
+          },
+        });
+        shouldNotify = Boolean(linkedUserId);
+      }
 
-      if (linkedUserId) {
+      if (linkedUserId && shouldNotify) {
         void (async () => {
           try {
             const [group, recipient] = await Promise.all([
@@ -1637,9 +1717,184 @@ export function createGroupsService(): GroupsService {
 
       return member;
     },
+    removeMember: async ({ userId, groupId, memberId }) => {
+      const membership = await db.groupMember.findFirst({
+        where: buildActiveGroupMemberWhere(userId, groupId),
+        select: {
+          id: true,
+          name: true,
+        },
+      });
+
+      if (!membership) {
+        throw new Error('No tienes acceso a este grupo');
+      }
+
+      const group = await db.group.findFirst({
+        where: {
+          ...buildGroupAccessWhere(userId, groupId),
+          type: {
+            not: 'meta',
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          ownerId: true,
+        },
+      });
+
+      if (!group) {
+        throw new Error('No tienes acceso a este grupo');
+      }
+
+      if (group.ownerId !== userId) {
+        throw new Error('Solo el creador puede eliminar participantes');
+      }
+
+      const targetMember = await db.groupMember.findFirst({
+        where: {
+          id: memberId,
+          groupId,
+        },
+        select: {
+          id: true,
+          name: true,
+          userId: true,
+          role: true,
+        },
+      });
+
+      if (!targetMember) {
+        throw new Error('Participante no encontrado');
+      }
+
+      if (targetMember.userId === group.ownerId || targetMember.role === 'admin') {
+        throw new Error('No puedes eliminar al creador del grupo');
+      }
+
+      const usageCount = await getMemberExpenseUsageCount({
+        groupId,
+        memberId: targetMember.id,
+      });
+      if (usageCount > 0) {
+        throw new Error('El participante ya tiene gastos');
+      }
+
+      await db.$transaction(async (tx) => {
+        await tx.groupMember.delete({
+          where: { id: targetMember.id },
+        });
+
+        await tx.activityLog.create({
+          data: {
+            groupId,
+            actorUserId: userId,
+            actorName: membership.name,
+            action: 'group.member_removed',
+            targetName: targetMember.name,
+            details: {
+              memberId: targetMember.id,
+            },
+          },
+        });
+      });
+
+      return {
+        id: targetMember.id,
+        name: targetMember.name,
+      };
+    },
+    unlinkMember: async ({ userId, groupId, memberId }) => {
+      const membership = await db.groupMember.findFirst({
+        where: buildActiveGroupMemberWhere(userId, groupId),
+        select: {
+          id: true,
+          name: true,
+        },
+      });
+
+      if (!membership) {
+        throw new Error('No tienes acceso a este grupo');
+      }
+
+      const group = await db.group.findFirst({
+        where: {
+          ...buildGroupAccessWhere(userId, groupId),
+          type: {
+            not: 'meta',
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          ownerId: true,
+        },
+      });
+
+      if (!group) {
+        throw new Error('No tienes acceso a este grupo');
+      }
+
+      if (group.ownerId !== userId) {
+        throw new Error('Solo el creador puede desvincular participantes');
+      }
+
+      const targetMember = await db.groupMember.findFirst({
+        where: {
+          id: memberId,
+          groupId,
+        },
+        select: {
+          id: true,
+          name: true,
+          userId: true,
+          role: true,
+        },
+      });
+
+      if (!targetMember) {
+        throw new Error('Participante no encontrado');
+      }
+
+      if (!targetMember.userId) {
+        throw new Error('El participante ya no tiene una cuenta vinculada');
+      }
+
+      if (targetMember.userId === group.ownerId) {
+        throw new Error('No puedes desvincular al creador del grupo');
+      }
+
+      await db.$transaction(async (tx) => {
+        await tx.groupMember.update({
+          where: { id: targetMember.id },
+          data: {
+            userId: null,
+          },
+        });
+
+        await tx.activityLog.create({
+          data: {
+            groupId,
+            actorUserId: userId,
+            actorName: membership.name,
+            action: 'group.member_unlinked',
+            targetName: targetMember.name,
+            details: {
+              memberId: targetMember.id,
+            },
+          },
+        });
+      });
+
+      return {
+        id: targetMember.id,
+        name: targetMember.name,
+      };
+    },
     searchMembers: async ({ userId, groupId, query }) => {
       const membership = await db.groupMember.findFirst({
-        where: { groupId, userId },
+        where: buildActiveGroupMemberWhere(userId, groupId),
         select: { id: true },
       });
 

@@ -30,6 +30,7 @@ export type GroupMemberIdentity = {
   role: string;
   userId: string | null;
   isCurrentUser: boolean;
+  expenseCount: number;
 };
 
 export type GroupMemberBalance = {
@@ -45,6 +46,7 @@ export type GroupSummary = {
   type: string;
   description: string | null;
   inviteCode: string;
+  ownerId: string;
   createdAt: string;
   updatedAt: string;
   participantCount: number;

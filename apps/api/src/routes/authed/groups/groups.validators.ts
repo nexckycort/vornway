@@ -16,6 +16,11 @@ export const groupExpenseParamsSchema = z.object({
   expenseId: z.string().min(1),
 });
 
+export const groupMemberParamsSchema = z.object({
+  id: z.string().min(1),
+  memberId: z.string().min(1),
+});
+
 export const listGroupExpensesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   cursor: z.string().min(1).optional(),
@@ -41,6 +46,10 @@ export const settleGroupDebtSchema = z.object({
 export const addGroupMemberSchema = z.object({
   name: z.string().min(1).max(120),
   linkedUserId: z.string().min(1).optional(),
+});
+
+export const groupMemberActionQuerySchema = z.object({
+  unlink: z.coerce.boolean().optional(),
 });
 
 export const searchGroupMembersQuerySchema = z.object({

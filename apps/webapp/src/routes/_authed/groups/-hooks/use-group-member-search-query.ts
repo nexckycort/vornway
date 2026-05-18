@@ -1,5 +1,5 @@
-import type { InferResponseType } from '#/lib/hc';
 import { client } from '#/lib/hc';
+import type { InferResponseType } from '#/lib/hc';
 import { useQuery } from '@tanstack/react-query';
 
 const groupMemberSearchEndpoint = client.api.groups[':id'].members.search.$get;

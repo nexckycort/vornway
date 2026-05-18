@@ -1,11 +1,23 @@
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
-import { useAddMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
+import {
+  useAddMemberMutation,
+  useRemoveMemberMutation,
+  useUnlinkMemberMutation,
+} from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useGroupMemberSearchQuery } from '#/routes/_authed/groups/-hooks/use-group-member-search-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Share2, UserPlus } from 'lucide-react';
+import { Crown, Link2Off, Share2, Trash2, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
 
 export const Route = createFileRoute('/_authed/groups/$id/participants')({
   component: RouteComponent,
@@ -16,11 +28,19 @@ function RouteComponent() {
   const navigate = useNavigate();
   const groupQuery = useGroupSummaryQuery(id);
   const addMemberMutation = useAddMemberMutation(id);
+  const removeMemberMutation = useRemoveMemberMutation(id);
+  const unlinkMemberMutation = useUnlinkMemberMutation(id);
   const [name, setName] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [memberToRemove, setMemberToRemove] = useState<
+    NonNullable<typeof groupQuery.data>['members'][number] | null
+  >(null);
+  const [memberToUnlink, setMemberToUnlink] = useState<
+    NonNullable<typeof groupQuery.data>['members'][number] | null
+  >(null);
 
   const group = groupQuery.data;
   const searchQuery = useGroupMemberSearchQuery(id, debouncedSearch);
@@ -71,6 +91,42 @@ function RouteComponent() {
       setMessage('Enlace copiado');
     } catch {
       setMessage('No se pudo compartir el enlace');
+    }
+  };
+
+  const handleRemoveMember = async () => {
+    if (!memberToRemove) return;
+
+    try {
+      await removeMemberMutation.mutateAsync({
+        memberId: memberToRemove.id,
+      });
+      setMessage('Participante eliminado correctamente');
+      setMemberToRemove(null);
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo eliminar el participante',
+      );
+    }
+  };
+
+  const handleUnlinkMember = async () => {
+    if (!memberToUnlink) return;
+
+    try {
+      await unlinkMemberMutation.mutateAsync({
+        memberId: memberToUnlink.id,
+      });
+      setMessage('Cuenta desvinculada correctamente');
+      setMemberToUnlink(null);
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo desvincular la cuenta',
+      );
     }
   };
 
@@ -235,14 +291,167 @@ function RouteComponent() {
                 {member.isCurrentUser ? (
                   <span className="ml-1 text-xs text-[#94a3b8]">(tú)</span>
                 ) : null}
+                {group?.ownerId === member.userId ? (
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                    <Crown className="size-3" />
+                    Dueño
+                  </span>
+                ) : null}
               </p>
               <p className="truncate text-xs text-[#64748b]">
                 {member.email ?? 'Sin cuenta vinculada'}
               </p>
+              {group?.isOwner && !member.isCurrentUser ? (
+                <div className="mt-1 flex flex-wrap gap-2 text-xs text-[#94a3b8]">
+                  {member.userId ? (
+                    <span className="rounded-full bg-[#f8fafc] px-2 py-1">
+                      Cuenta vinculada
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-[#f8fafc] px-2 py-1">
+                      Sin cuenta vinculada
+                    </span>
+                  )}
+                  <span className="rounded-full bg-[#f8fafc] px-2 py-1">
+                    {member.expenseCount > 0
+                      ? 'No se puede eliminar: tiene gastos'
+                      : 'Se puede eliminar'}
+                  </span>
+                </div>
+              ) : null}
             </div>
+            {group?.isOwner && !member.isCurrentUser ? (
+              <div className="flex items-center gap-2">
+                {member.userId ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="size-10 rounded-2xl text-amber-600"
+                    onClick={() => setMemberToUnlink(member)}
+                  >
+                    <Link2Off className="size-4" />
+                  </Button>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="size-10 rounded-2xl text-red-500"
+                  disabled={member.expenseCount > 0}
+                  onClick={() => setMemberToRemove(member)}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            ) : null}
           </article>
         ))}
       </section>
+
+      <Drawer
+        open={Boolean(memberToUnlink)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMemberToUnlink(null);
+          }
+        }}
+      >
+        <DrawerContent>
+          {memberToUnlink ? (
+            <>
+              <DrawerHeader>
+                <DrawerTitle>Desvincular cuenta</DrawerTitle>
+                <DrawerDescription>
+                  Se quitará la cuenta vinculada, pero el nombre del
+                  participante permanecerá para que otra persona lo pueda
+                  reclamar más adelante.
+                </DrawerDescription>
+              </DrawerHeader>
+
+              <div className="px-5 pb-2">
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  Vas a desvincular a <strong>{memberToUnlink.name}</strong> de
+                  su cuenta actual.
+                </div>
+              </div>
+
+              <DrawerFooter>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="h-11 rounded-full"
+                  disabled={unlinkMemberMutation.isPending}
+                  onClick={handleUnlinkMember}
+                >
+                  {unlinkMemberMutation.isPending
+                    ? 'Desvinculando...'
+                    : 'Sí, desvincular cuenta'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-full"
+                  onClick={() => setMemberToUnlink(null)}
+                >
+                  Cancelar
+                </Button>
+              </DrawerFooter>
+            </>
+          ) : null}
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer
+        open={Boolean(memberToRemove)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMemberToRemove(null);
+          }
+        }}
+      >
+        <DrawerContent>
+          {memberToRemove ? (
+            <>
+              <DrawerHeader>
+                <DrawerTitle>Eliminar participante</DrawerTitle>
+                <DrawerDescription>
+                  Solo puedes eliminarlo si no tiene gastos.
+                </DrawerDescription>
+              </DrawerHeader>
+
+              <div className="px-5 pb-2">
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  Vas a eliminar a <strong>{memberToRemove.name}</strong> del
+                  grupo.
+                </div>
+              </div>
+
+              <DrawerFooter>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="h-11 rounded-full"
+                  disabled={removeMemberMutation.isPending}
+                  onClick={handleRemoveMember}
+                >
+                  {removeMemberMutation.isPending
+                    ? 'Eliminando...'
+                    : 'Sí, eliminar participante'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-full"
+                  onClick={() => setMemberToRemove(null)}
+                >
+                  Cancelar
+                </Button>
+              </DrawerFooter>
+            </>
+          ) : null}
+        </DrawerContent>
+      </Drawer>
     </MobilePageLayout>
   );
 }

@@ -9,13 +9,14 @@ import {
 } from '#/components/ui/drawer';
 import { usePinnedExpenseIds } from '#/lib/expense-pins';
 import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-delete-expense';
+import { useRemoveMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import {
   useGroupExpensesInfiniteQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Copy, Pencil, Share2, Trash2, UserPlus } from 'lucide-react';
+import { Copy, Pencil, Share2, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { GroupBalancesSection } from './-components/group-balances-section';
@@ -23,7 +24,7 @@ import { GroupDetailHeader } from './-components/group-detail-header';
 import { formatMoney, sumByCurrency } from './-components/group-detail.utils';
 import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
 import { GroupParticipantsStrip } from './-components/group-participants-strip';
-import type { ExpenseItem } from './-types/group-detail.types';
+import type { ExpenseItem, GroupSummary } from './-types/group-detail.types';
 
 export const Route = createFileRoute('/_authed/groups/$id/')({
   component: RouteComponent,
@@ -38,22 +39,36 @@ function RouteComponent() {
   const [showExpenseOptionsDrawer, setShowExpenseOptionsDrawer] =
     useState(false);
   const [showDeleteExpenseDrawer, setShowDeleteExpenseDrawer] = useState(false);
+  const [showRemoveMemberDrawer, setShowRemoveMemberDrawer] = useState(false);
   const [expenseForOptions, setExpenseForOptions] =
     useState<ExpenseItem | null>(null);
   const [expenseToDelete, setExpenseToDelete] = useState<ExpenseItem | null>(
     null,
   );
+  const [memberToRemove, setMemberToRemove] =
+    useState<GroupSummary['members'][number] | null>(null);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   const groupQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
   const deleteExpenseMutation = useDeleteExpenseMutation(id);
+  const removeMemberMutation = useRemoveMemberMutation(id);
   const toggleExpensePinMutation = useToggleExpensePinMutation();
   const pinnedExpenseIds = usePinnedExpenseIds(id);
 
   const expenses = useMemo(
     () => expensesQuery.data?.pages.flatMap((page) => page.data) ?? [],
     [expensesQuery.data],
+  );
+  const memberBalancesById = useMemo(
+    () =>
+      new Map(
+        groupQuery.data?.memberBalances.map((memberBalance) => [
+          memberBalance.memberId,
+          memberBalance,
+        ]) ?? [],
+      ),
+    [groupQuery.data?.memberBalances],
   );
 
   useEffect(() => {
@@ -198,6 +213,29 @@ function RouteComponent() {
     setShowDeleteExpenseDrawer(true);
   };
 
+  const handleOpenRemoveMember = (
+    member: GroupSummary['members'][number],
+  ) => {
+    setMemberToRemove(member);
+    setShowRemoveMemberDrawer(true);
+  };
+
+  const handleConfirmRemoveMember = async () => {
+    if (!memberToRemove) return;
+
+    try {
+      await removeMemberMutation.mutateAsync({
+        memberId: memberToRemove.id,
+      });
+      setShowRemoveMemberDrawer(false);
+      setMemberToRemove(null);
+    } catch (error) {
+      setShareMessage(
+        error instanceof Error ? error.message : 'No se pudo eliminar el miembro',
+      );
+    }
+  };
+
   const handleConfirmDeleteExpense = async () => {
     if (!expenseToDelete) return;
 
@@ -290,29 +328,76 @@ function RouteComponent() {
               <span className="font-medium text-[#132238]">Copiar código</span>
             </button>
 
-            <a
-              href={`/groups/${id}/participants`}
-              onClick={() => setShowMoreDrawer(false)}
-              className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left"
-            >
-              <UserPlus className="size-5 text-primary" />
-              <span className="font-medium text-[#132238]">Participantes</span>
-            </a>
+            {group.isOwner ? (
+              <div className="rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4">
+                <p className="mb-2 text-sm font-medium text-[#132238]">
+                  Gestionar miembros
+                </p>
+                <p className="mb-3 text-xs text-[#64748b]">
+                  Solo puedes eliminar miembros sin saldos pendientes.
+                </p>
+                <div className="space-y-2">
+                  {group.members
+                    .filter((member) => !member.isCurrentUser)
+                    .map((member) => {
+                      const memberBalance = memberBalancesById.get(member.id);
+                      const hasPendingBalances = Boolean(
+                        memberBalance &&
+                          Object.values(memberBalance.balances).some(
+                            (amount) => Math.abs(amount) >= 0.01,
+                          ),
+                      );
 
-            <div className="rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4">
-              <p className="mb-2 text-sm font-medium text-[#132238]">Totales</p>
-              {Object.entries(group.totals).length === 0 ? (
-                <p className="text-sm text-[#64748b]">Sin gastos</p>
-              ) : (
-                <div className="space-y-1">
-                  {Object.entries(group.totals).map(([currency, total]) => (
-                    <p key={currency} className="text-sm text-[#64748b]">
-                      {formatMoney(currency, total)}
-                    </p>
-                  ))}
+                      return (
+                        <div
+                          key={member.id}
+                          className="flex items-center justify-between gap-3 rounded-2xl border border-[#eef2f7] px-3 py-3"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            {member.image ? (
+                              <img
+                                src={member.image}
+                                alt={member.name}
+                                className="size-10 shrink-0 rounded-full border border-[#e5e7eb] object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#f3f4f6] text-sm font-semibold text-[#132238]">
+                                {member.name
+                                  .split(' ')
+                                  .filter(Boolean)
+                                  .slice(0, 2)
+                                  .map((part) => part[0]?.toUpperCase())
+                                  .join('')}
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-[#132238]">
+                                {member.name}
+                              </p>
+                              <p className="truncate text-xs text-[#64748b]">
+                                {member.email ?? 'Sin correo'}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (hasPendingBalances) return;
+                              setShowMoreDrawer(false);
+                              handleOpenRemoveMember(member);
+                            }}
+                            disabled={hasPendingBalances}
+                            className="shrink-0 rounded-full border border-[#e2e8f0] px-3 py-2 text-xs font-medium text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {hasPendingBalances ? 'Saldos pendientes' : 'Eliminar'}
+                          </button>
+                        </div>
+                      );
+                    })}
                 </div>
-              )}
-            </div>
+              </div>
+            ) : null}
 
             {shareMessage ? (
               <p className="rounded-2xl bg-[#f8fafc] px-4 py-3 text-sm text-[#64748b]">
@@ -485,6 +570,63 @@ function RouteComponent() {
                   onClick={() => {
                     setShowDeleteExpenseDrawer(false);
                     setExpenseToDelete(null);
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </DrawerFooter>
+            </>
+          ) : null}
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer
+        open={showRemoveMemberDrawer && Boolean(memberToRemove)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowRemoveMemberDrawer(false);
+            setMemberToRemove(null);
+          } else {
+            setShowRemoveMemberDrawer(true);
+          }
+        }}
+      >
+        <DrawerContent>
+          {memberToRemove ? (
+            <>
+              <DrawerHeader>
+                <DrawerTitle>Eliminar miembro</DrawerTitle>
+                <DrawerDescription>
+                  Solo puedes eliminarlo si no tiene saldos pendientes.
+                </DrawerDescription>
+              </DrawerHeader>
+
+              <div className="px-5 pb-2">
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  Vas a eliminar a <strong>{memberToRemove.name}</strong> del
+                  grupo.
+                </div>
+              </div>
+
+              <DrawerFooter>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="h-11 rounded-full"
+                  onClick={handleConfirmRemoveMember}
+                  disabled={removeMemberMutation.isPending}
+                >
+                  {removeMemberMutation.isPending
+                    ? 'Eliminando...'
+                    : 'Sí, eliminar miembro'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-full"
+                  onClick={() => {
+                    setShowRemoveMemberDrawer(false);
+                    setMemberToRemove(null);
                   }}
                 >
                   Cancelar

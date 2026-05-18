@@ -6,6 +6,7 @@ const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
 const updateExpenseEndpoint = client.api.groups[':id'].expenses[':expenseId'].$put;
 const settleDebtEndpoint = client.api.groups[':id'].settlements.$post;
 const addMemberEndpoint = client.api.groups[':id'].members.$post;
+const removeMemberEndpoint = client.api.groups[':id'].members[':memberId'].$delete;
 
 type CreateExpenseRequest = InferRequestType<typeof createExpenseEndpoint>;
 type CreateExpenseResponse = InferResponseType<typeof createExpenseEndpoint>;
@@ -15,6 +16,7 @@ type SettleDebtRequest = InferRequestType<typeof settleDebtEndpoint>;
 type SettleDebtResponse = InferResponseType<typeof settleDebtEndpoint>;
 type AddMemberRequest = InferRequestType<typeof addMemberEndpoint>;
 type AddMemberResponse = InferResponseType<typeof addMemberEndpoint>;
+type RemoveMemberResponse = InferResponseType<typeof removeMemberEndpoint>;
 
 function invalidateGroup(queryClient: ReturnType<typeof useQueryClient>, groupId: string) {
   return Promise.all([
@@ -110,6 +112,52 @@ export function useAddMemberMutation(groupId: string) {
       }
 
       return (await response.json()) as AddMemberResponse;
+    },
+    onSuccess: async () => {
+      await invalidateGroup(queryClient, groupId);
+    },
+  });
+}
+
+export function useRemoveMemberMutation(groupId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ memberId }: { memberId: string }) => {
+      const response = await removeMemberEndpoint({
+        param: { id: groupId, memberId },
+        query: { unlink: 'true' },
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudo eliminar el participante');
+      }
+
+      return (await response.json()) as RemoveMemberResponse;
+    },
+    onSuccess: async () => {
+      await invalidateGroup(queryClient, groupId);
+    },
+  });
+}
+
+export function useUnlinkMemberMutation(groupId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ memberId }: { memberId: string }) => {
+      const response = await removeMemberEndpoint({
+        param: { id: groupId, memberId },
+        query: { unlink: 'true' },
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudo desvincular la cuenta');
+      }
+
+      return (await response.json()) as RemoveMemberResponse;
     },
     onSuccess: async () => {
       await invalidateGroup(queryClient, groupId);

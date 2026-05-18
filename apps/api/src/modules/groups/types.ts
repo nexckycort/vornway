@@ -57,6 +57,18 @@ export type AddGroupMemberInput = {
   linkedUserId?: string | null;
 };
 
+export type RemoveGroupMemberInput = {
+  userId: string;
+  groupId: string;
+  memberId: string;
+};
+
+export type UnlinkGroupMemberInput = {
+  userId: string;
+  groupId: string;
+  memberId: string;
+};
+
 export type CreateGroupInput = {
   userId: string;
   ownerName: string;
@@ -131,6 +143,7 @@ export type GroupSummaryMember = {
   role: string;
   userId: string | null;
   isCurrentUser: boolean;
+  expenseCount: number;
 };
 
 export type GroupSummaryResult = {
@@ -139,6 +152,7 @@ export type GroupSummaryResult = {
   type: string;
   description: string | null;
   inviteCode: string;
+  ownerId: string;
   createdAt: Date;
   updatedAt: Date;
   totals: Record<string, number>;

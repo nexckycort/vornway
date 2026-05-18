@@ -60,17 +60,6 @@ function RouteComponent() {
     () => expensesQuery.data?.pages.flatMap((page) => page.data) ?? [],
     [expensesQuery.data],
   );
-  const memberBalancesById = useMemo(
-    () =>
-      new Map(
-        groupQuery.data?.memberBalances.map((memberBalance) => [
-          memberBalance.memberId,
-          memberBalance,
-        ]) ?? [],
-      ),
-    [groupQuery.data?.memberBalances],
-  );
-
   useEffect(() => {
     const node = loadMoreRef.current;
     if (!node) return;
@@ -213,13 +202,6 @@ function RouteComponent() {
     setShowDeleteExpenseDrawer(true);
   };
 
-  const handleOpenRemoveMember = (
-    member: GroupSummary['members'][number],
-  ) => {
-    setMemberToRemove(member);
-    setShowRemoveMemberDrawer(true);
-  };
-
   const handleConfirmRemoveMember = async () => {
     if (!memberToRemove) return;
 
@@ -327,77 +309,6 @@ function RouteComponent() {
               <Copy className="size-5 text-primary" />
               <span className="font-medium text-[#132238]">Copiar código</span>
             </button>
-
-            {group.isOwner ? (
-              <div className="rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4">
-                <p className="mb-2 text-sm font-medium text-[#132238]">
-                  Gestionar miembros
-                </p>
-                <p className="mb-3 text-xs text-[#64748b]">
-                  Solo puedes eliminar miembros sin saldos pendientes.
-                </p>
-                <div className="space-y-2">
-                  {group.members
-                    .filter((member) => !member.isCurrentUser)
-                    .map((member) => {
-                      const memberBalance = memberBalancesById.get(member.id);
-                      const hasPendingBalances = Boolean(
-                        memberBalance &&
-                          Object.values(memberBalance.balances).some(
-                            (amount) => Math.abs(amount) >= 0.01,
-                          ),
-                      );
-
-                      return (
-                        <div
-                          key={member.id}
-                          className="flex items-center justify-between gap-3 rounded-2xl border border-[#eef2f7] px-3 py-3"
-                        >
-                          <div className="flex min-w-0 items-center gap-3">
-                            {member.image ? (
-                              <img
-                                src={member.image}
-                                alt={member.name}
-                                className="size-10 shrink-0 rounded-full border border-[#e5e7eb] object-cover"
-                                referrerPolicy="no-referrer"
-                              />
-                            ) : (
-                              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#f3f4f6] text-sm font-semibold text-[#132238]">
-                                {member.name
-                                  .split(' ')
-                                  .filter(Boolean)
-                                  .slice(0, 2)
-                                  .map((part) => part[0]?.toUpperCase())
-                                  .join('')}
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium text-[#132238]">
-                                {member.name}
-                              </p>
-                              <p className="truncate text-xs text-[#64748b]">
-                                {member.email ?? 'Sin correo'}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (hasPendingBalances) return;
-                              setShowMoreDrawer(false);
-                              handleOpenRemoveMember(member);
-                            }}
-                            disabled={hasPendingBalances}
-                            className="shrink-0 rounded-full border border-[#e2e8f0] px-3 py-2 text-xs font-medium text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {hasPendingBalances ? 'Saldos pendientes' : 'Eliminar'}
-                          </button>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            ) : null}
 
             {shareMessage ? (
               <p className="rounded-2xl bg-[#f8fafc] px-4 py-3 text-sm text-[#64748b]">

@@ -18,6 +18,7 @@ import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Copy, Pencil, Share2, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import QRCode from 'qrcode';
 
 import { GroupDetailHeader } from './-components/group-detail-header';
 import { formatMoney, sumByCurrency } from './-components/group-detail.utils';
@@ -46,6 +47,7 @@ function RouteComponent() {
   const [memberToRemove, setMemberToRemove] =
     useState<GroupSummary['members'][number] | null>(null);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [groupQrCode, setGroupQrCode] = useState<string | null>(null);
 
   const groupQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
@@ -58,6 +60,10 @@ function RouteComponent() {
     () => expensesQuery.data?.pages.flatMap((page) => page.data) ?? [],
     [expensesQuery.data],
   );
+  const inviteLink =
+    groupQuery.data?.inviteCode && typeof window !== 'undefined'
+      ? `https://join.vornway.com/${groupQuery.data.inviteCode}`
+      : '';
   useEffect(() => {
     const node = loadMoreRef.current;
     if (!node) return;
@@ -79,6 +85,39 @@ function RouteComponent() {
     observer.observe(node);
     return () => observer.disconnect();
   }, [expensesQuery]);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!inviteLink) {
+      setGroupQrCode(null);
+      return;
+    }
+
+    void QRCode.toDataURL(inviteLink, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 320,
+      color: {
+        dark: '#111111',
+        light: '#ffffff',
+      },
+    })
+      .then((dataUrl: string) => {
+        if (active) {
+          setGroupQrCode(dataUrl);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setGroupQrCode(null);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [inviteLink]);
 
   if (groupQuery.isLoading) {
     return (
@@ -131,11 +170,6 @@ function RouteComponent() {
     : debtEntries[0]
       ? 'text-rose-300'
       : 'text-white/70';
-  const inviteLink =
-    group.inviteCode && typeof window !== 'undefined'
-      ? `https://join.vornway.com/${group.inviteCode}`
-      : '';
-
   const copyText = async (value: string, label: string) => {
     try {
       await navigator.clipboard.writeText(value);
@@ -300,6 +334,27 @@ function RouteComponent() {
               <Copy className="size-5 text-primary" />
               <span className="font-medium text-[#132238]">Copiar código</span>
             </button>
+
+            {groupQrCode ? (
+              <div className="rounded-3xl border border-[#e2e8f0] bg-white p-4">
+                <div className="mb-3">
+                  <p className="text-sm font-medium text-[#132238]">
+                    Compartir con QR
+                  </p>
+                  <p className="mt-1 text-xs text-[#64748b]">
+                    Escanea este código para abrir la invitación del grupo.
+                  </p>
+                </div>
+
+                <div className="flex justify-center rounded-[28px] bg-white p-4">
+                  <img
+                    src={groupQrCode}
+                    alt={`Código QR para unirse a ${group.name}`}
+                    className="size-56 rounded-[24px] bg-white object-contain"
+                  />
+                </div>
+              </div>
+            ) : null}
 
             {shareMessage ? (
               <p className="rounded-2xl bg-[#f8fafc] px-4 py-3 text-sm text-[#64748b]">

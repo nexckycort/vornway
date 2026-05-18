@@ -2,7 +2,7 @@
   "name": "@vornway/join",
   "scripts": {
     "postinstall": "bun db:generate",
-    "dev": "bun run --env-file=.env --hot src/index.ts",
+    "dev": "bun run --env-file=.env --hot src/index.tsx",
     "check": "biome check --write",
     "clean": "rm -rf node_modules && rm -rf dist",
     "db:generate": "DATABASE_URL=dummy prisma generate",

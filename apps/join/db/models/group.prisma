@@ -1,14 +1,29 @@
 model Group {
-  id          String   @id
+  id          String        @id
   name        String
   type        String
   createdAt   DateTime
   updatedAt   DateTime
   description String?
   ownerId     String
-  inviteCode  String   @unique
-  totals      Json     @default("{}") // Caché de totales por moneda: { "COP": 150000, "USD": 50 }
-  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  inviteCode  String        @unique
+  totals      Json          @default("{}") // Caché de totales por moneda: { "COP": 150000, "USD": 50 }
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  GroupMember GroupMember[]
 
   @@map("group")
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  userId   String? // Opcional: null si el participante no está registrado
+  groupId  String
+  name     String // Nombre del participante (requerido para todos)
+  role     String   @default("member") // "admin" | "member"
+  joinedAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id])
+
+  @@unique([userId, groupId])
+  @@map("group_member")
 }

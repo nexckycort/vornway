@@ -27,7 +27,7 @@ function RouteComponent() {
   const searchResults = searchQuery.data?.data ?? [];
   const inviteLink =
     group?.inviteCode && typeof window !== 'undefined'
-      ? `${window.location.origin}/join/${group.inviteCode}`
+      ? `https://join.vornway.com/${group.inviteCode}`
       : '';
 
   useEffect(() => {
@@ -142,10 +142,14 @@ function RouteComponent() {
         </p>
 
         {searchQuery.isFetching ? (
-          <p className="mt-3 text-sm text-[#64748b]">Buscando coincidencias...</p>
+          <p className="mt-3 text-sm text-[#64748b]">
+            Buscando coincidencias...
+          </p>
         ) : null}
 
-        {debouncedSearch && !searchQuery.isFetching && searchResults.length === 0 ? (
+        {debouncedSearch &&
+        !searchQuery.isFetching &&
+        searchResults.length === 0 ? (
           <p className="mt-3 text-sm text-[#64748b]">
             No encontramos coincidencias. Puedes crearlo solo con el nombre.
           </p>

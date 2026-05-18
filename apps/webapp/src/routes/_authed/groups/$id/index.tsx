@@ -7,23 +7,23 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
+import { usePinnedExpenseIds } from '#/lib/expense-pins';
 import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-delete-expense';
-import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
 import {
   useGroupExpensesInfiniteQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { usePinnedExpenseIds } from '#/lib/expense-pins';
+import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Copy, Pencil, Share2, Trash2, UserPlus } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { GroupBalancesSection } from './-components/group-balances-section';
 import { GroupDetailHeader } from './-components/group-detail-header';
+import { formatMoney, sumByCurrency } from './-components/group-detail.utils';
 import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
 import { GroupParticipantsStrip } from './-components/group-participants-strip';
 import type { ExpenseItem } from './-types/group-detail.types';
-import { formatMoney, sumByCurrency } from './-components/group-detail.utils';
 
 export const Route = createFileRoute('/_authed/groups/$id/')({
   component: RouteComponent,
@@ -116,9 +116,9 @@ function RouteComponent() {
   const debtEntries = Object.entries(sumByCurrency(group.directDebts)).filter(
     ([, amount]) => amount > 0,
   );
-  const creditEntries = Object.entries(sumByCurrency(group.directCredits)).filter(
-    ([, amount]) => amount > 0,
-  );
+  const creditEntries = Object.entries(
+    sumByCurrency(group.directCredits),
+  ).filter(([, amount]) => amount > 0);
   const balanceLabel = creditEntries[0]
     ? `Te deben ${formatMoney(creditEntries[0][0], creditEntries[0][1])}`
     : debtEntries[0]
@@ -131,7 +131,7 @@ function RouteComponent() {
       : 'text-white/70';
   const inviteLink =
     group.inviteCode && typeof window !== 'undefined'
-      ? `${window.location.origin}/join/${group.inviteCode}`
+      ? `https://join.vornway.com/${group.inviteCode}`
       : '';
 
   const copyText = async (value: string, label: string) => {

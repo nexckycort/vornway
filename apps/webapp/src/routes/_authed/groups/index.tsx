@@ -14,9 +14,12 @@ export const Route = createFileRoute('/_authed/groups/')({
 
 function RouteComponent() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const groupsQuery = useGroupsInfiniteQuery();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<GroupFilter>('all');
+  const groupsQuery = useGroupsInfiniteQuery({
+    search,
+    filter,
+  });
 
   const groups = useMemo(
     () => groupsQuery.data?.pages.flatMap((page) => page.data) ?? [],
@@ -53,17 +56,17 @@ function RouteComponent() {
         dates: `Creado ${formatShortDate(group.createdAt)}`,
         avatars: mapMembersToAvatars(group.members),
         extraPeople: Math.max(0, group.members.length - 2),
-        ...(mapBalances(group).length > 0
+        ...(group.participantBalances.length > 0
           ? {
               balanceLabel:
-                mapBalances(group)[0]?.label ?? 'Sin saldos pendientes',
-              balanceItems: mapBalances(group).slice(0, 2).map((item) => ({
+                group.participantBalances[0]?.label ?? 'Sin saldos pendientes',
+              balanceItems: group.participantBalances.slice(0, 2).map((item) => ({
                 person: item.memberName,
                 amount: item.label,
               })),
-              ...(mapBalances(group).length > 2
+              ...(group.participantBalances.length > 2
                 ? {
-                    balanceOverflowLabel: `y ${mapBalances(group).length - 2} otros saldos`,
+                    balanceOverflowLabel: `y ${group.participantBalances.length - 2} otros saldos`,
                   }
                 : {}),
             }
@@ -73,34 +76,6 @@ function RouteComponent() {
       })) as Trip[],
     [groups],
   );
-
-  const filteredTrips = useMemo(() => {
-    const searchValue = search.trim().toLocaleLowerCase('es-CO');
-
-    return groupTrips.filter((trip) => {
-      const source = groups.find((group) => group.id === trip.id);
-      if (!source) return false;
-
-      const matchesSearch =
-        searchValue.length === 0 ||
-        trip.name.toLocaleLowerCase('es-CO').includes(searchValue);
-
-      if (!matchesSearch) return false;
-
-      if (filter === 'all') return true;
-
-      const hasCredits = source.participantBalances.some(
-        (item) => item.direction === 'theyOweYou' && item.amount > 0,
-      );
-      const hasDebts = source.participantBalances.some(
-        (item) => item.direction === 'youOweThem' && item.amount > 0,
-      );
-
-      if (filter === 'theyOweYou') return hasCredits;
-      if (filter === 'youOweThem') return hasDebts;
-      return !hasCredits && !hasDebts;
-    });
-  }, [filter, groupTrips, groups, search]);
 
   const total = groupsQuery.data?.pages[0]?.pagination.total ?? 0;
 
@@ -154,7 +129,7 @@ function RouteComponent() {
               {groupsQuery.isLoading ? 'Cargando grupos...' : `${total} grupos en total`}
             </p>
             <p className="text-sm text-[#64748b]">
-              {filteredTrips.length} visibles
+              {groupTrips.length} visibles
             </p>
           </div>
         </header>
@@ -165,14 +140,14 @@ function RouteComponent() {
           </div>
         ) : null}
 
-        {!groupsQuery.isLoading && filteredTrips.length === 0 ? (
+        {!groupsQuery.isLoading && groupTrips.length === 0 ? (
           <div className="mt-5 rounded-2xl border border-dashed border-[#cbd5e1] bg-white px-5 py-8 text-center text-sm text-[#64748b]">
             No encontramos grupos con esos filtros.
           </div>
         ) : null}
 
         <section className="mt-5 flex flex-col gap-4">
-          {filteredTrips.map((trip) => (
+          {groupTrips.map((trip) => (
             <TripCard key={trip.id} trip={trip} />
           ))}
         </section>
@@ -214,18 +189,6 @@ function mapMembersToAvatars(
     name: member.name,
     image: member.image,
   }));
-}
-
-function mapBalances(group: {
-  participantBalances: Array<{
-    memberName: string;
-    amount: number;
-    currency: string;
-    direction: 'theyOweYou' | 'youOweThem';
-    label: string;
-  }>;
-}) {
-  return group.participantBalances;
 }
 
 function formatShortDate(value: string): string {

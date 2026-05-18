@@ -14,8 +14,8 @@ export function MobilePageLayout({
   children,
 }: MobilePageLayoutProps) {
   return (
-    <main className="min-h-screen bg-white">
-      <div className="flex min-h-screen w-full flex-col bg-white">
+    <main className="min-h-dvh bg-white">
+      <div className="flex min-h-dvh w-full flex-col bg-white">
         <header className="flex items-center justify-between px-4 pt-6 pb-4">
           <Button
             type="button"
@@ -34,7 +34,7 @@ export function MobilePageLayout({
           <div className="size-8" />
         </header>
 
-        <div className="px-4 pb-6">{children}</div>
+        <div className="flex flex-1 flex-col px-4 pb-6">{children}</div>
       </div>
     </main>
   );

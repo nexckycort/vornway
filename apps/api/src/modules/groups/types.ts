@@ -2,6 +2,8 @@ export type ListGroupsInput = {
   userId: string;
   limit: number;
   cursor?: string;
+  search?: string;
+  filter?: 'all' | 'theyOweYou' | 'youOweThem' | 'noDebt';
 };
 
 export type ListGroupExpensesInput = {

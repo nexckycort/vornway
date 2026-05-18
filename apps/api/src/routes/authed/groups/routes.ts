@@ -41,6 +41,8 @@ const groups = new Hono<AppContext>()
       userId,
       limit: query.limit,
       cursor: query.cursor,
+      search: query.search,
+      filter: query.filter,
     });
 
     return c.json(result);

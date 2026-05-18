@@ -3,6 +3,8 @@ import * as z from 'zod';
 export const listGroupsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   cursor: z.string().min(1).optional(),
+  search: z.string().trim().min(1).max(120).optional(),
+  filter: z.enum(['all', 'theyOweYou', 'youOweThem', 'noDebt']).default('all'),
 });
 
 export const groupParamsSchema = z.object({

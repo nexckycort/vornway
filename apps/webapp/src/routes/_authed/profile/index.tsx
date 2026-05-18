@@ -16,6 +16,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
 
 import { Button } from '#/components/ui/button';
 import {
@@ -81,6 +82,10 @@ function RouteComponent() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['profile-sessions'] });
+      toast.success('Sesión eliminada correctamente');
+    },
+    onError: () => {
+      toast.error('No se pudo eliminar la sesión');
     },
   });
 
@@ -156,6 +161,7 @@ function RouteComponent() {
 
   async function handleRemoveCurrentSession() {
     await auth.logout();
+    toast.success('Sesión cerrada correctamente');
     await navigate({
       to: '/login',
       search: { redirect: '/login' },

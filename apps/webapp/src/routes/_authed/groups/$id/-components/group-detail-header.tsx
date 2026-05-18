@@ -19,7 +19,7 @@ type GroupDetailHeaderProps = {
   balanceLabel: string;
   balanceTone: string;
   onOpenMore: () => void;
-  onScrollToBalances: () => void;
+  onOpenBalances: () => void;
 };
 
 export function GroupDetailHeader({
@@ -32,7 +32,7 @@ export function GroupDetailHeader({
   balanceLabel,
   balanceTone,
   onOpenMore,
-  onScrollToBalances,
+  onOpenBalances,
 }: GroupDetailHeaderProps) {
   return (
     <header className="px-4 pb-6 pt-6 text-white">
@@ -118,7 +118,7 @@ export function GroupDetailHeader({
 
         <button
           type="button"
-          onClick={onScrollToBalances}
+          onClick={onOpenBalances}
           className="flex flex-col items-center gap-2"
         >
           <span className="flex size-14 items-center justify-center rounded-2xl bg-white/10 text-white">

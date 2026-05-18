@@ -19,7 +19,6 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Copy, Pencil, Share2, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { GroupBalancesSection } from './-components/group-balances-section';
 import { GroupDetailHeader } from './-components/group-detail-header';
 import { formatMoney, sumByCurrency } from './-components/group-detail.utils';
 import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
@@ -34,7 +33,6 @@ function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const balanceRef = useRef<HTMLElement | null>(null);
   const [showMoreDrawer, setShowMoreDrawer] = useState(false);
   const [showExpenseOptionsDrawer, setShowExpenseOptionsDrawer] =
     useState(false);
@@ -120,9 +118,9 @@ function RouteComponent() {
   const debtEntries = Object.entries(sumByCurrency(group.directDebts)).filter(
     ([, amount]) => amount > 0,
   );
-  const creditEntries = Object.entries(
-    sumByCurrency(group.directCredits),
-  ).filter(([, amount]) => amount > 0);
+  const creditEntries = Object.entries(sumByCurrency(group.directCredits)).filter(
+    ([, amount]) => amount > 0,
+  );
   const balanceLabel = creditEntries[0]
     ? `Te deben ${formatMoney(creditEntries[0][0], creditEntries[0][1])}`
     : debtEntries[0]
@@ -235,13 +233,6 @@ function RouteComponent() {
     }
   };
 
-  const handleScrollToBalances = () => {
-    balanceRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    });
-  };
-
   return (
     <main className="min-h-screen bg-[#111111] text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#111111]">
@@ -255,7 +246,9 @@ function RouteComponent() {
           balanceLabel={balanceLabel}
           balanceTone={balanceTone}
           onOpenMore={() => setShowMoreDrawer(true)}
-          onScrollToBalances={handleScrollToBalances}
+          onOpenBalances={() =>
+            void navigate({ to: '/groups/$id/balances', params: { id } })
+          }
         />
 
         <div className="flex-1 rounded-t-[32px] bg-white px-4 pb-8 pt-6 shadow-[0_-16px_40px_rgba(0,0,0,0.12)]">
@@ -277,8 +270,6 @@ function RouteComponent() {
             onOpenOptions={handleOpenExpenseOptions}
             onDeleteExpense={handleDeleteExpense}
           />
-
-          <GroupBalancesSection group={group} balanceRef={balanceRef} />
         </div>
       </div>
 

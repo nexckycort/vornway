@@ -33,6 +33,7 @@ import {
   enablePushNotifications,
   getPushNotificationStatus,
 } from '#/lib/push-notifications';
+import { QrScannerDialog } from './-components/qr-scanner-dialog';
 
 export const Route = createFileRoute('/_authed/profile/')({
   component: RouteComponent,
@@ -53,6 +54,9 @@ function RouteComponent() {
   const [notificationStatus, setNotificationStatus] =
     useState<NotificationStatus>('permission-required');
   const [showSessionsDialog, setShowSessionsDialog] = useState(false);
+  const [showQrScannerDialog, setShowQrScannerDialog] = useState(false);
+  const [showDisableNotificationsDialog, setShowDisableNotificationsDialog] =
+    useState(false);
 
   const userName = auth.user?.name?.trim() || 'Usuario';
   const userEmail = auth.user?.email?.trim() || 'Sin correo';
@@ -217,7 +221,14 @@ function RouteComponent() {
               icon={<Bell className="size-5" />}
               title="Notificaciones"
               subtitle={notificationLabel}
-              onClick={() => void handleNotificationToggle()}
+              onClick={() => {
+                if (notificationStatus === 'enabled') {
+                  setShowDisableNotificationsDialog(true);
+                  return;
+                }
+
+                void handleEnableNotifications();
+              }}
               trailing={notificationStatus === 'enabled' ? 'Desactivar' : 'Activar'}
             />
             <ProfileActionRow
@@ -230,9 +241,7 @@ function RouteComponent() {
               icon={<QrCode className="size-5" />}
               title="Escanear QR"
               subtitle="Unirse a un grupo"
-              onClick={() => {
-                // Placeholder para siguiente iteración.
-              }}
+              onClick={() => setShowQrScannerDialog(true)}
             />
           </section>
 
@@ -257,6 +266,54 @@ function RouteComponent() {
           </section>
         </div>
       </main>
+
+      <QrScannerDialog
+        open={showQrScannerDialog}
+        onOpenChange={setShowQrScannerDialog}
+        onScanned={async (inviteCode) => {
+          await navigate({
+            to: '/i/$inviteCode',
+            params: { inviteCode },
+            replace: true,
+          });
+        }}
+      />
+
+      <Dialog
+        open={showDisableNotificationsDialog}
+        onOpenChange={setShowDisableNotificationsDialog}
+      >
+        <DialogContent className="max-w-[calc(100%-1rem)] rounded-[28px] p-4 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Desactivar notificaciones</DialogTitle>
+            <DialogDescription>
+              Si las desactivas, dejarás de recibir avisos de gastos, cambios y
+              movimientos del grupo en esta app.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 flex gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 flex-1 rounded-full"
+              onClick={() => setShowDisableNotificationsDialog(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="h-12 flex-1 rounded-full bg-destructive text-white hover:bg-destructive/90"
+              onClick={() => {
+                setShowDisableNotificationsDialog(false);
+                void handleDisableNotifications();
+              }}
+            >
+              Sí, desactivar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showSessionsDialog} onOpenChange={setShowSessionsDialog}>
         <DialogContent className="flex max-h-[calc(100dvh-1.5rem)] max-w-[calc(100%-1rem)] flex-col overflow-hidden rounded-[28px] p-4 sm:max-w-md">
@@ -349,15 +406,6 @@ function RouteComponent() {
       </Dialog>
     </>
   );
-
-  async function handleNotificationToggle() {
-    if (notificationStatus === 'enabled') {
-      await handleDisableNotifications();
-      return;
-    }
-
-    await handleEnableNotifications();
-  }
 }
 
 function ProfileActionRow({

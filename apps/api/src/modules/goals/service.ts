@@ -167,6 +167,7 @@ function summarizeGoalDetail(goal: {
 export type GoalsListQuery = {
   limit: number;
   cursor?: string;
+  search?: string;
 };
 
 export type GoalsService = {
@@ -186,6 +187,14 @@ export function createGoalsService(): GoalsService {
     list: async (userId, query) => {
       const where = {
         deletedAt: null,
+        ...(query.search
+          ? {
+              title: {
+                contains: query.search,
+                mode: 'insensitive' as const,
+              },
+            }
+          : {}),
         group: {
           type: 'meta' as const,
           OR: [

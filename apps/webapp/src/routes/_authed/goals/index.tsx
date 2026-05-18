@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Plus, Target } from 'lucide-react';
-import { useEffect, useMemo, useRef } from 'react';
+import { Plus, Search, Target } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { GoalCard } from './-components/goal-card';
 import { GoalsSkeleton } from './-components/goals-skeleton';
@@ -13,7 +13,8 @@ export const Route = createFileRoute('/_authed/goals/')({
 function RouteComponent() {
   const navigate = useNavigate();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const goalsQuery = useGoalsInfiniteQuery();
+  const [search, setSearch] = useState('');
+  const goalsQuery = useGoalsInfiniteQuery(search);
 
   const goals = useMemo(
     () => goalsQuery.data?.pages.flatMap((page) => page.data) ?? [],
@@ -46,37 +47,30 @@ function RouteComponent() {
     <main className="min-h-screen bg-[#efefef] text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa]">
         <div className="flex-1 overflow-y-auto px-4 pb-32 pt-6">
-          <header className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full bg-[#f1f5f9] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[#475569]">
-                Metas de ahorro
-              </div>
-              <h1 className="mt-3 text-2xl font-semibold leading-8 text-[#0f172a]">
-                Tus objetivos
-              </h1>
-              <p className="mt-1 text-sm text-[#64748b]">
-                Seguimiento de ahorro por meta y grupo asociado.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-white px-3 py-2 text-right shadow-[0_8px_18px_rgba(15,23,42,0.06)]">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-[#64748b]">
-                Total
-              </p>
-              <p className="mt-1 text-sm font-semibold text-[#0f172a]">
-                {goals.length}
-              </p>
-            </div>
+          <header>
+            <h1 className="text-3xl font-semibold leading-9 text-[#0f172a]">
+              Metas
+            </h1>
           </header>
 
           <button
             type="button"
             onClick={() => void navigate({ to: '/goals/new' })}
-            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-medium text-white shadow-[0_10px_24px_rgba(59,130,246,0.22)]"
+            className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-medium text-white shadow-[0_10px_24px_rgba(59,130,246,0.22)]"
           >
             <Plus className="size-4" />
-            Crear meta
+            Crear nueva meta
           </button>
+
+          <label className="mt-4 flex h-12 items-center gap-3 rounded-full border border-[#e2e8f0] bg-white px-4 shadow-[0_6px_16px_rgba(15,23,42,0.04)]">
+            <Search className="size-4 shrink-0 text-[#94a3b8]" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar por nombre de meta"
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#94a3b8]"
+            />
+          </label>
 
           <section className="mt-6">
             {goalsQuery.isLoading ? (

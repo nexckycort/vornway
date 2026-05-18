@@ -10,6 +10,7 @@ const goalsService = createGoalsService();
 const goalsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(50).default(12),
   cursor: z.string().optional(),
+  search: z.string().trim().min(1).max(120).optional(),
 });
 
 const goalParamsSchema = z.object({
@@ -89,7 +90,7 @@ const app = new Hono<AppContext>()
       const query = c.req.valid('query');
       const { id: userId } = c.get('user');
 
-      const goals = await goalsService.list(userId, query);
+    const goals = await goalsService.list(userId, query);
       return c.json(goals);
     },
   )

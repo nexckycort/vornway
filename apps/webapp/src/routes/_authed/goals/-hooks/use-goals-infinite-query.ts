@@ -8,15 +8,18 @@ type GoalsApiResponse = InferResponseType<typeof goalsEndpoint>;
 
 export type GoalListItem = GoalsApiResponse['data'][number];
 
-export function useGoalsInfiniteQuery() {
+export function useGoalsInfiniteQuery(search: string) {
+  const normalizedSearch = search.trim();
+
   return useInfiniteQuery({
-    queryKey: ['goals-list'],
+    queryKey: ['goals-list', normalizedSearch],
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const response = await goalsEndpoint({
         query: {
           limit: '12',
           ...(pageParam ? { cursor: pageParam } : {}),
+          ...(normalizedSearch ? { search: normalizedSearch } : {}),
         },
       });
 

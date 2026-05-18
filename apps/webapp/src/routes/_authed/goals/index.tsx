@@ -51,6 +51,9 @@ function RouteComponent() {
             <h1 className="text-3xl font-semibold leading-9 text-[#0f172a]">
               Metas
             </h1>
+            <div className="mt-3 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+              En construcción: esta sección puede cambiar o tener errores
+            </div>
           </header>
 
           <button

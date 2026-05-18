@@ -60,10 +60,12 @@ function RouteComponent() {
           ? {
               balanceLabel:
                 group.participantBalances[0]?.label ?? 'Sin saldos pendientes',
-              balanceItems: group.participantBalances.slice(0, 2).map((item) => ({
-                person: item.memberName,
-                amount: item.label,
-              })),
+              balanceItems: group.participantBalances
+                .slice(0, 2)
+                .map((item) => ({
+                  person: item.memberName,
+                  amount: item.label,
+                })),
               ...(group.participantBalances.length > 2
                 ? {
                     balanceOverflowLabel: `y ${group.participantBalances.length - 2} otros saldos`,
@@ -71,10 +73,18 @@ function RouteComponent() {
                 : {}),
             }
           : {
-              emptyLabel: group.hasExpenses ? 'Sin saldos pendientes' : 'Sin gastos',
+              emptyLabel: group.hasExpenses
+                ? 'Sin saldos pendientes'
+                : 'Sin gastos',
             }),
-      })) as Trip[],
+        createdAt: group.createdAt,
+      })) as Array<Trip & { createdAt: string }>,
     [groups],
+  );
+
+  const groupedTrips = useMemo(
+    () => buildTripSections(groupTrips),
+    [groupTrips],
   );
 
   const total = groupsQuery.data?.pages[0]?.pagination.total ?? 0;
@@ -83,9 +93,6 @@ function RouteComponent() {
     <main className="min-h-screen bg-[#efefef] text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa] px-4 pb-28 pt-6">
         <header>
-          <p className="text-xs uppercase tracking-[0.18em] text-[#94a3b8]">
-            Lista de viajes / Filled
-          </p>
           <h1 className="mt-2 text-3xl font-semibold leading-9 text-[#0f172a]">
             Mis grupos
           </h1>
@@ -94,7 +101,7 @@ function RouteComponent() {
             to="/groups/new"
             className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-medium text-white shadow-[0_10px_24px_rgba(222,3,77,0.18)]"
           >
-            + Crear grupo
+            + Crear nuevo grupo
           </Link>
 
           <label className="mt-4 flex h-12 items-center gap-3 rounded-full border border-[#e2e8f0] bg-white px-4 shadow-[0_6px_16px_rgba(15,23,42,0.04)]">
@@ -126,7 +133,9 @@ function RouteComponent() {
 
           <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-[#64748b]">
-              {groupsQuery.isLoading ? 'Cargando grupos...' : `${total} grupos en total`}
+              {groupsQuery.isLoading
+                ? 'Cargando grupos...'
+                : `${total} grupos en total`}
             </p>
             <p className="text-sm text-[#64748b]">
               {groupTrips.length} visibles
@@ -146,11 +155,20 @@ function RouteComponent() {
           </div>
         ) : null}
 
-        <section className="mt-5 flex flex-col gap-4">
-          {groupTrips.map((trip) => (
-            <TripCard key={trip.id} trip={trip} />
+        <div className="mt-5 flex flex-col gap-5">
+          {groupedTrips.map((section) => (
+            <section key={section.title} className="flex flex-col gap-4">
+              <h2 className="text-sm font-medium text-[#475569]">
+                {section.title}
+              </h2>
+              <div className="flex flex-col gap-4">
+                {section.trips.map((trip) => (
+                  <TripCard key={trip.id} trip={trip} />
+                ))}
+              </div>
+            </section>
           ))}
-        </section>
+        </div>
 
         <div ref={loadMoreRef} className="h-8" />
 
@@ -181,14 +199,56 @@ function mapMembersToAvatars(
   const visibleMembers =
     members.length <= 2
       ? members
-      : [members[0], members[members.length - 1]].filter(
-          Boolean,
-        ) as Array<{ name: string; image: string | null }>;
+      : ([members[0], members[members.length - 1]].filter(Boolean) as Array<{
+          name: string;
+          image: string | null;
+        }>);
 
   return visibleMembers.map((member) => ({
     name: member.name,
     image: member.image,
   }));
+}
+
+function buildTripSections(trips: Array<Trip & { createdAt: string }>) {
+  const sections = {
+    recent: [] as Trip[],
+    lastTwoMonths: [] as Trip[],
+    older: [] as Trip[],
+  };
+
+  for (const trip of trips) {
+    const bucket = getRecencyBucket(trip.createdAt);
+    sections[bucket].push(trip);
+  }
+
+  return [
+    {
+      title: 'Más recientes',
+      trips: sections.recent,
+    },
+    {
+      title: 'Últimos 2 meses',
+      trips: sections.lastTwoMonths,
+    },
+    {
+      title: 'Más antiguos',
+      trips: sections.older,
+    },
+  ].filter((section) => section.trips.length > 0);
+}
+
+function getRecencyBucket(value: string): 'recent' | 'lastTwoMonths' | 'older' {
+  const createdAt = new Date(value);
+  if (Number.isNaN(createdAt.getTime())) return 'older';
+
+  const diffDays = Math.floor(
+    (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
+  if (diffDays <= 30) return 'recent';
+  if (diffDays <= 60) return 'lastTwoMonths';
+  return 'older';
 }
 
 function formatShortDate(value: string): string {

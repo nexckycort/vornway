@@ -16,6 +16,11 @@ const goalParamsSchema = z.object({
   id: z.string().min(1),
 });
 
+const contributionParamsSchema = z.object({
+  id: z.string().min(1),
+  contributionId: z.string().min(1),
+});
+
 const createGoalSchema = z.object({
   name: z.string().min(1).max(120),
   description: z.string().max(400).optional(),
@@ -35,20 +40,60 @@ const createGoalSchema = z.object({
     .optional(),
 });
 
-const app = new Hono<AppContext>().get(
-  '/',
-  zValidator('query', goalsQuerySchema),
-  async (c) => {
-    const query = c.req.valid('query');
+const createGoalContributionSchema = z.object({
+  memberId: z.string().min(1),
+  amount: z.number().positive(),
+  contributedAt: z.coerce.date().optional(),
+  notes: z.string().max(400).optional(),
+});
+
+const contributionsApp = new Hono<AppContext>()
+  .post('/', zValidator('param', goalParamsSchema), zValidator('json', createGoalContributionSchema), async (c) => {
+    const { id: goalId } = c.req.valid('param');
+    const data = c.req.valid('json');
     const { id: userId } = c.get('user');
 
-    const goals = await goalsService.list(userId, query);
-    return c.json(goals);
-  },
-).get(
-  '/:id',
-  zValidator('param', goalParamsSchema),
-  async (c) => {
+    const contribution = await goalsService.addContribution({
+      userId,
+      goalId,
+      memberId: data.memberId,
+      amount: data.amount,
+      contributedAt: data.contributedAt,
+      notes: data.notes,
+    });
+
+    return c.json(contribution, 201);
+  })
+  .delete(
+    '/:contributionId',
+    zValidator('param', contributionParamsSchema),
+    async (c) => {
+      const { id: goalId, contributionId } = c.req.valid('param');
+      const { id: userId } = c.get('user');
+
+      const contribution = await goalsService.deleteContribution({
+        userId,
+        goalId,
+        contributionId,
+      });
+
+      return c.json(contribution);
+    },
+  );
+
+const app = new Hono<AppContext>()
+  .get(
+    '/',
+    zValidator('query', goalsQuerySchema),
+    async (c) => {
+      const query = c.req.valid('query');
+      const { id: userId } = c.get('user');
+
+      const goals = await goalsService.list(userId, query);
+      return c.json(goals);
+    },
+  )
+  .get('/:id', zValidator('param', goalParamsSchema), async (c) => {
     const { id } = c.req.valid('param');
     const { id: userId } = c.get('user');
 
@@ -59,11 +104,8 @@ const app = new Hono<AppContext>().get(
     }
 
     return c.json(goal);
-  },
-).post(
-  '/',
-  zValidator('json', createGoalSchema),
-  async (c) => {
+  })
+  .post('/', zValidator('json', createGoalSchema), async (c) => {
     const data = c.req.valid('json');
     const { id: userId, name: ownerName } = c.get('user');
 
@@ -82,7 +124,7 @@ const app = new Hono<AppContext>().get(
     });
 
     return c.json(goal, 201);
-  },
-);
+  })
+  .route('/:id/contributions', contributionsApp);
 
 export default app;

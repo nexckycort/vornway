@@ -24,6 +24,19 @@ export type GoalDetailMember = {
   isCurrentUser: boolean;
 };
 
+export type GoalContributionItem = {
+  id: string;
+  amount: number;
+  contributedAt: Date;
+  notes: string | null;
+  member: {
+    id: string;
+    name: string;
+    image: string | null;
+    isCurrentUser: boolean;
+  };
+};
+
 export type GoalDetailResult = GoalListItem & {
   startDate: Date;
   installmentCount: number;
@@ -45,6 +58,7 @@ export type GoalDetailResult = GoalListItem & {
     role: string;
   } | null;
   participantCount: number;
+  contributions: GoalContributionItem[];
 };
 
 export type GoalsListResponse = {
@@ -74,5 +88,28 @@ export type CreateGoalInput = {
 };
 
 export type CreateGoalResult = {
+  id: string;
+};
+
+export type CreateGoalContributionInput = {
+  userId: string;
+  goalId: string;
+  memberId: string;
+  amount: number;
+  contributedAt?: Date;
+  notes?: string;
+};
+
+export type CreateGoalContributionResult = {
+  id: string;
+};
+
+export type DeleteGoalContributionInput = {
+  userId: string;
+  goalId: string;
+  contributionId: string;
+};
+
+export type DeleteGoalContributionResult = {
   id: string;
 };

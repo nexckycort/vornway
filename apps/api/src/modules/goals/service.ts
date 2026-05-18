@@ -1,8 +1,12 @@
 import { db } from '~/infrastructure/database/connection';
 
 import type {
+  CreateGoalContributionInput,
+  CreateGoalContributionResult,
   CreateGoalInput,
   CreateGoalResult,
+  DeleteGoalContributionInput,
+  DeleteGoalContributionResult,
   GoalDetailResult,
   GoalListItem,
   GoalsListResponse,
@@ -79,7 +83,20 @@ function summarizeGoalDetail(goal: {
       } | null;
     }>;
   };
-  contributions: Array<{ amount: number }>;
+  contributions: Array<{
+    id: string;
+    amount: number;
+    contributedAt: Date;
+    notes: string | null;
+    member: {
+      id: string;
+      name: string;
+      userId: string | null;
+      user: {
+        image: string | null;
+      } | null;
+    };
+  }>;
 }, userId: string): GoalDetailResult {
   const savedAmount = normalizeAmount(
     goal.contributions.reduce((total, contribution) => total + contribution.amount, 0),
@@ -132,6 +149,18 @@ function summarizeGoalDetail(goal: {
         }
       : null,
     participantCount: goal.group.GroupMember.length,
+    contributions: goal.contributions.map((contribution) => ({
+      id: contribution.id,
+      amount: contribution.amount,
+      contributedAt: contribution.contributedAt,
+      notes: contribution.notes,
+      member: {
+        id: contribution.member.id,
+        name: contribution.member.name,
+        image: contribution.member.user?.image ?? null,
+        isCurrentUser: contribution.member.userId === userId,
+      },
+    })),
   };
 }
 
@@ -144,6 +173,12 @@ export type GoalsService = {
   list: (userId: string, query: GoalsListQuery) => Promise<GoalsListResponse>;
   getById: (userId: string, goalId: string) => Promise<GoalDetailResult | null>;
   create: (input: CreateGoalInput) => Promise<CreateGoalResult>;
+  addContribution: (
+    input: CreateGoalContributionInput,
+  ) => Promise<CreateGoalContributionResult>;
+  deleteContribution: (
+    input: DeleteGoalContributionInput,
+  ) => Promise<DeleteGoalContributionResult>;
 };
 
 export function createGoalsService(): GoalsService {
@@ -284,8 +319,31 @@ export function createGoalsService(): GoalsService {
             },
           },
           contributions: {
+            orderBy: [
+              {
+                contributedAt: 'desc',
+              },
+              {
+                id: 'desc',
+              },
+            ],
             select: {
+              id: true,
               amount: true,
+              contributedAt: true,
+              notes: true,
+              member: {
+                select: {
+                  id: true,
+                  name: true,
+                  userId: true,
+                  user: {
+                    select: {
+                      image: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -296,6 +354,222 @@ export function createGoalsService(): GoalsService {
       }
 
       return summarizeGoalDetail(goal, userId);
+    },
+    addContribution: async ({
+      userId,
+      goalId,
+      memberId,
+      amount,
+      contributedAt,
+      notes,
+    }) => {
+      if (amount <= 0) {
+        throw new Error('El aporte debe ser mayor a 0');
+      }
+
+      const goal = await db.goal.findFirst({
+        where: {
+          id: goalId,
+          deletedAt: null,
+          group: {
+            type: 'meta' as const,
+            OR: [
+              {
+                ownerId: userId,
+              },
+              {
+                GroupMember: {
+                  some: {
+                    userId,
+                  },
+                },
+              },
+            ],
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          currency: true,
+          groupId: true,
+        },
+      });
+
+      if (!goal) {
+        throw new Error('Meta no encontrada');
+      }
+
+      const actorMember = await db.groupMember.findFirst({
+        where: {
+          groupId: goal.groupId,
+          userId,
+        },
+        select: {
+          id: true,
+          name: true,
+          role: true,
+        },
+      });
+
+      if (!actorMember) {
+        throw new Error('No tienes acceso a esta meta');
+      }
+
+      if (actorMember.role !== 'admin') {
+        throw new Error('Solo un admin puede registrar aportes');
+      }
+
+      const contributionMember = await db.groupMember.findFirst({
+        where: {
+          id: memberId,
+          groupId: goal.groupId,
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+      });
+
+      if (!contributionMember) {
+        throw new Error('Participante inválido');
+      }
+
+      const contribution = await db.goalContribution.create({
+        data: {
+          goalId: goal.id,
+          memberId: contributionMember.id,
+          amount,
+          contributedAt: contributedAt ?? new Date(),
+          notes: notes?.trim() || null,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      await db.activityLog.create({
+        data: {
+          groupId: goal.groupId,
+          actorUserId: userId,
+          actorName: actorMember.name,
+          action: 'goal.contribution.created',
+          targetName: goal.title,
+          details: {
+            goalId: goal.id,
+            contributionId: contribution.id,
+            amount,
+            currency: goal.currency,
+            memberId: contributionMember.id,
+            memberName: contributionMember.name,
+          },
+        },
+      });
+
+      return {
+        id: contribution.id,
+      };
+    },
+    deleteContribution: async ({ userId, goalId, contributionId }) => {
+      const goal = await db.goal.findFirst({
+        where: {
+          id: goalId,
+          deletedAt: null,
+          group: {
+            type: 'meta' as const,
+            OR: [
+              {
+                ownerId: userId,
+              },
+              {
+                GroupMember: {
+                  some: {
+                    userId,
+                  },
+                },
+              },
+            ],
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          currency: true,
+          groupId: true,
+        },
+      });
+
+      if (!goal) {
+        throw new Error('Meta no encontrada');
+      }
+
+      const actorMember = await db.groupMember.findFirst({
+        where: {
+          groupId: goal.groupId,
+          userId,
+        },
+        select: {
+          id: true,
+          name: true,
+          role: true,
+        },
+      });
+
+      if (!actorMember) {
+        throw new Error('No tienes acceso a esta meta');
+      }
+
+      if (actorMember.role !== 'admin') {
+        throw new Error('Solo un admin puede eliminar aportes');
+      }
+
+      const contribution = await db.goalContribution.findFirst({
+        where: {
+          id: contributionId,
+          goalId: goal.id,
+        },
+        select: {
+          id: true,
+          amount: true,
+          member: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!contribution) {
+        throw new Error('Aporte no encontrado');
+      }
+
+      await db.goalContribution.delete({
+        where: {
+          id: contribution.id,
+        },
+      });
+
+      await db.activityLog.create({
+        data: {
+          groupId: goal.groupId,
+          actorUserId: userId,
+          actorName: actorMember.name,
+          action: 'goal.contribution.deleted',
+          targetName: goal.title,
+          details: {
+            goalId: goal.id,
+            contributionId: contribution.id,
+            amount: contribution.amount,
+            currency: goal.currency,
+            memberId: contribution.member.id,
+            memberName: contribution.member.name,
+          },
+        },
+      });
+
+      return {
+        id: contribution.id,
+      };
     },
     create: async (input) => {
       if (!input.name.trim()) {
@@ -430,4 +704,3 @@ export function createGoalsService(): GoalsService {
     },
   };
 }
-

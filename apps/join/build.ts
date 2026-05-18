@@ -1,6 +1,6 @@
 // @ts-expect-error
 await Bun.build({
-  entrypoints: ['./src/index.ts'],
+  entrypoints: ['./src/index.tsx'],
   compile: {
     outfile: './dist/join',
   },

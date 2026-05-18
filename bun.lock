@@ -89,10 +89,15 @@
     "apps/join": {
       "name": "@vornway/join",
       "dependencies": {
+        "@prisma/adapter-pg": "catalog:",
+        "@prisma/client": "catalog:",
         "hono": "catalog:",
       },
       "devDependencies": {
         "@types/bun": "latest",
+        "@typescript/native-preview": "catalog:",
+        "prisma": "catalog:",
+        "typescript": "catalog:",
       },
     },
     "apps/landing": {

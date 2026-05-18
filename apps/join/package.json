@@ -1,12 +1,22 @@
 {
   "name": "@vornway/join",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "postinstall": "bun db:generate",
+    "dev": "bun run --env-file=.env --hot src/index.ts",
+    "check": "biome check --write",
+    "clean": "rm -rf node_modules && rm -rf dist",
+    "db:generate": "DATABASE_URL=dummy prisma generate",
+    "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "catalog:",
+    "@prisma/client": "catalog:",
     "hono": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@typescript/native-preview": "catalog:",
+    "prisma": "catalog:",
+    "typescript": "catalog:"
   }
 }

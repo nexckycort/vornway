@@ -8,6 +8,8 @@ import {
   createGroupExpenseSchema,
   createGroupSchema,
   groupExpenseParamsSchema,
+  groupMemberParamsSchema,
+  groupMemberActionQuerySchema,
   groupParamsSchema,
   listGroupExpensesQuerySchema,
   listGroupsQuerySchema,
@@ -272,6 +274,39 @@ const groups = new Hono<AppContext>()
           linkedUserId: data.linkedUserId,
         });
         return c.json(result, 201);
+      } catch (error) {
+        if (error instanceof Error) {
+          return c.json({ error: error.message }, 400);
+        }
+        throw error;
+      }
+    },
+  )
+  .delete(
+    '/:id/members/:memberId',
+    zValidator('param', groupMemberParamsSchema),
+    zValidator('query', groupMemberActionQuerySchema),
+    async (c) => {
+      const { id, memberId } = c.req.valid('param');
+      const { unlink } = c.req.valid('query');
+      const { id: userId } = c.get('user');
+
+      try {
+        if (unlink) {
+          const result = await groupsService.unlinkMember({
+            userId,
+            groupId: id,
+            memberId,
+          });
+          return c.json(result);
+        }
+
+        const result = await groupsService.removeMember({
+          userId,
+          groupId: id,
+          memberId,
+        });
+        return c.json(result);
       } catch (error) {
         if (error instanceof Error) {
           return c.json({ error: error.message }, 400);

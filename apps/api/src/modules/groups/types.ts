@@ -135,6 +135,42 @@ export type ListGroupsResult = {
   };
 };
 
+export type GroupsService = {
+  listGroups: (input: ListGroupsInput) => Promise<ListGroupsResult>;
+  createGroup: (input: CreateGroupInput) => Promise<CreateGroupResult>;
+  getGroupSummary: (input: {
+    userId: string;
+    groupId: string;
+  }) => Promise<GroupSummaryResult>;
+  listGroupExpenses: (
+    input: ListGroupExpensesInput,
+  ) => Promise<ListGroupExpensesResult>;
+  getGroupReportsTotals: (
+    input: GroupReportsTotalsInput,
+  ) => Promise<GroupReportsTotalsResult>;
+  getGroupExpense: (
+    input: GetGroupExpenseInput,
+  ) => Promise<GroupExpenseDetailResult>;
+  createExpense: (input: CreateGroupExpenseInput) => Promise<{ id: string }>;
+  updateExpense: (input: UpdateGroupExpenseInput) => Promise<{ id: string }>;
+  deleteExpense: (input: DeleteGroupExpenseInput) => Promise<{ id: string }>;
+  settleDebt: (input: SettleGroupDebtInput) => Promise<{ id: string }>;
+  addMember: (
+    input: AddGroupMemberInput,
+  ) => Promise<{ id: string; name: string }>;
+  removeMember: (
+    input: RemoveGroupMemberInput,
+  ) => Promise<{ id: string; name: string }>;
+  unlinkMember: (
+    input: UnlinkGroupMemberInput,
+  ) => Promise<{ id: string; name: string }>;
+  searchMembers: (input: {
+    userId: string;
+    groupId: string;
+    query: string;
+  }) => Promise<SearchGroupMembersResult>;
+};
+
 export type GroupSummaryMember = {
   id: string;
   name: string;

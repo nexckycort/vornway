@@ -11,6 +11,7 @@ import {
   type AuthContextProps,
   AuthProvider,
 } from './contexts/auth/auth-context';
+import { useOfflineExpenseSync } from './lib/offline-expense-sync';
 import { useAuth } from './contexts/auth/use-auth';
 import { registerPushServiceWorker } from './lib/push-notifications';
 
@@ -40,6 +41,8 @@ function App() {
   React.useEffect(() => {
     void registerPushServiceWorker();
   }, []);
+
+  useOfflineExpenseSync(queryClient, auth.isAuthenticated);
 
   if (auth.loading) return <FullscreenLoader />;
 

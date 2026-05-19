@@ -1,15 +1,17 @@
-import { client } from '#/lib/hc';
 import type { InferRequestType, InferResponseType } from '#/lib/hc';
+import { client } from '#/lib/hc';
+import { createExpenseWithOfflineSupport } from '#/lib/offline-expense-sync';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
-const updateExpenseEndpoint = client.api.groups[':id'].expenses[':expenseId'].$put;
+const updateExpenseEndpoint =
+  client.api.groups[':id'].expenses[':expenseId'].$put;
 const settleDebtEndpoint = client.api.groups[':id'].settlements.$post;
 const addMemberEndpoint = client.api.groups[':id'].members.$post;
-const removeMemberEndpoint = client.api.groups[':id'].members[':memberId'].$delete;
+const removeMemberEndpoint =
+  client.api.groups[':id'].members[':memberId'].$delete;
 
 type CreateExpenseRequest = InferRequestType<typeof createExpenseEndpoint>;
-type CreateExpenseResponse = InferResponseType<typeof createExpenseEndpoint>;
 type UpdateExpenseRequest = InferRequestType<typeof updateExpenseEndpoint>;
 type UpdateExpenseResponse = InferResponseType<typeof updateExpenseEndpoint>;
 type SettleDebtRequest = InferRequestType<typeof settleDebtEndpoint>;
@@ -55,7 +57,10 @@ function getApiErrorMessage(error: unknown, fallback: string) {
   return getApiErrorMessage(candidate.error, fallback);
 }
 
-function invalidateGroup(queryClient: ReturnType<typeof useQueryClient>, groupId: string) {
+function invalidateGroup(
+  queryClient: ReturnType<typeof useQueryClient>,
+  groupId: string,
+) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
     queryClient.invalidateQueries({ queryKey: ['group-expenses', groupId] }),
@@ -77,10 +82,7 @@ export function useUpdateGroupImageMutation(groupId: string) {
       if (!response.ok) {
         const payload = (await response.json()) as { error?: unknown };
         throw new Error(
-          getApiErrorMessage(
-            payload.error,
-            'No se pudo actualizar la imagen',
-          ),
+          getApiErrorMessage(payload.error, 'No se pudo actualizar la imagen'),
         );
       }
 
@@ -97,19 +99,13 @@ export function useCreateExpenseMutation(groupId: string) {
 
   return useMutation({
     mutationFn: async (json: CreateExpenseRequest['json']) => {
-      const response = await createExpenseEndpoint({
-        param: { id: groupId },
-        json,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo crear el gasto');
+      return createExpenseWithOfflineSupport(groupId, json, queryClient);
+    },
+    onSuccess: async (data) => {
+      if (data && typeof data === 'object' && 'queued' in data && data.queued) {
+        return;
       }
 
-      return (await response.json()) as CreateExpenseResponse;
-    },
-    onSuccess: async () => {
       await invalidateGroup(queryClient, groupId);
     },
   });

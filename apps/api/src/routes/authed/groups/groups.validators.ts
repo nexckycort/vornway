@@ -41,6 +41,7 @@ export const createGroupExpenseSchema = z.object({
   participantIds: z.array(z.string().min(1)).default([]),
   splitMethod: z.enum(['equal', 'percentage', 'exact']).default('equal'),
   exactShares: z.record(z.string(), z.number().nonnegative()).optional(),
+  clientMutationId: z.string().min(1).max(100).optional(),
 });
 
 export const settleGroupDebtSchema = z.object({

@@ -1006,6 +1006,12 @@ export function createGroupsService(): GroupsService {
             currency: true,
             date: true,
             notes: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
             paidBy: {
               select: {
                 id: true,
@@ -1074,7 +1080,7 @@ export function createGroupsService(): GroupsService {
                 ? (row.participants[0]?.member.name ?? null)
                 : null,
               paidBy: row.paidBy,
-              category: null,
+              category: row.category,
               participantCount: row._count.participants,
               currentUserBalance,
             };

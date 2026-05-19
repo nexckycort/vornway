@@ -23,6 +23,7 @@ import { GroupDetailHeader } from './-components/group-detail-header';
 import { formatMoney, sumByCurrency } from './-components/group-detail.utils';
 import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
 import { GroupParticipantsStrip } from './-components/group-participants-strip';
+import { GroupDetailSkeleton } from './-components/group-detail-skeleton';
 import type { ExpenseItem, GroupSummary } from './-types/group-detail.types';
 
 export const Route = createFileRoute('/_authed/groups/$id/')({
@@ -120,13 +121,7 @@ function RouteComponent() {
   }, [inviteLink]);
 
   if (groupQuery.isLoading) {
-    return (
-      <main className="min-h-screen bg-[#efefef] text-foreground">
-        <div className="mx-auto flex min-h-screen w-full max-w-[412px] items-center justify-center bg-[#fafafa] px-4">
-          <p className="text-sm text-[#64748b]">Cargando grupo...</p>
-        </div>
-      </main>
-    );
+    return <GroupDetailSkeleton />;
   }
 
   if (groupQuery.isError || !groupQuery.data) {

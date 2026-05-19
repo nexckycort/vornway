@@ -1,3 +1,4 @@
+import { API_URL } from '#/config/env';
 import type { InferRequestType } from '#/lib/hc';
 import { client } from '#/lib/hc';
 import type { QueryClient } from '@tanstack/react-query';
@@ -26,6 +27,7 @@ type OfflineExpenseQueueItem = {
 
 const STORAGE_KEY = 'vornway:offline-expense-queue:v1';
 const STORAGE_EVENT = 'vornway:offline-expense-queue-changed';
+const NETWORK_REQUEST_TIMEOUT_MS = 8000;
 let queueVersion = 0;
 
 function isBrowser(): boolean {
@@ -142,29 +144,79 @@ function getErrorMessage(error: unknown): string {
   return 'No se pudo sincronizar el gasto';
 }
 
+function isNetworkError(error: unknown): boolean {
+  if (error instanceof TypeError) {
+    return true;
+  }
+
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  return (
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('load failed') ||
+    message.includes('fetch failed') ||
+    message.includes('timed out') ||
+    message.includes('timeout') ||
+    message.includes('agotado')
+  );
+}
+
+function createNetworkTimeoutError(): Error {
+  const error = new Error('Tiempo de red agotado');
+  error.name = 'TimeoutError';
+  return error;
+}
+
 async function createExpenseOnServer(
   groupId: string,
   request: OfflineExpenseRequest,
 ) {
-  const response = await createExpenseEndpoint({
-    param: { id: groupId },
-    json: request,
-  });
+  const timeoutController = new AbortController();
+  const timeoutId = window.setTimeout(() => {
+    timeoutController.abort(createNetworkTimeoutError());
+  }, NETWORK_REQUEST_TIMEOUT_MS);
 
-  if (response.ok) {
-    return (await response.json()) as { id: string };
-  }
+  try {
+    const response = await fetch(
+      `${API_URL.replace(/\/$/, '')}/api/groups/${groupId}/expenses`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+        signal: timeoutController.signal,
+      },
+    );
 
-  const payload = (await response.json().catch(() => null)) as {
-    error?: unknown;
-  } | null;
-  const message = getErrorMessage(payload?.error);
+    if (response.ok) {
+      return (await response.json()) as { id: string };
+    }
 
-  if (response.status >= 500) {
+    const payload = (await response.json().catch(() => null)) as {
+      error?: unknown;
+    } | null;
+    const message = getErrorMessage(payload?.error);
+
+    if (response.status >= 500) {
+      throw new Error(message);
+    }
+
     throw new Error(message);
-  }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw createNetworkTimeoutError();
+    }
 
-  throw new Error(message);
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }
 
 async function syncOfflineExpenseQueueItem(
@@ -265,7 +317,7 @@ export async function createExpenseWithOfflineSupport(
     ]);
     return result;
   } catch (error) {
-    if (!isBrowser() || navigator.onLine === false) {
+    if (!isBrowser() || navigator.onLine === false || isNetworkError(error)) {
       createOfflineExpenseQueueItem(groupId, payload);
       emitQueueChange();
       toast.success('Se guardó sin conexión y se sincronizará luego');

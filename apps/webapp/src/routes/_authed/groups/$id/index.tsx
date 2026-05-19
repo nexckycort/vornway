@@ -16,10 +16,9 @@ import {
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Copy, Pencil, Share2, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Pencil, Share2, Trash2 } from 'lucide-react';
 import QRCode from 'qrcode';
-
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { GroupDetailHeader } from './-components/group-detail-header';
 import { formatMoney, sumByCurrency } from './-components/group-detail.utils';
 import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
@@ -44,8 +43,9 @@ function RouteComponent() {
   const [expenseToDelete, setExpenseToDelete] = useState<ExpenseItem | null>(
     null,
   );
-  const [memberToRemove, setMemberToRemove] =
-    useState<GroupSummary['members'][number] | null>(null);
+  const [memberToRemove, setMemberToRemove] = useState<
+    GroupSummary['members'][number] | null
+  >(null);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [groupQrCode, setGroupQrCode] = useState<string | null>(null);
 
@@ -157,9 +157,9 @@ function RouteComponent() {
   const debtEntries = Object.entries(sumByCurrency(group.directDebts)).filter(
     ([, amount]) => amount > 0,
   );
-  const creditEntries = Object.entries(sumByCurrency(group.directCredits)).filter(
-    ([, amount]) => amount > 0,
-  );
+  const creditEntries = Object.entries(
+    sumByCurrency(group.directCredits),
+  ).filter(([, amount]) => amount > 0);
   const balanceLabel = creditEntries[0]
     ? `Te deben ${formatMoney(creditEntries[0][0], creditEntries[0][1])}`
     : debtEntries[0]
@@ -245,7 +245,9 @@ function RouteComponent() {
       setMemberToRemove(null);
     } catch (error) {
       setShareMessage(
-        error instanceof Error ? error.message : 'No se pudo eliminar el miembro',
+        error instanceof Error
+          ? error.message
+          : 'No se pudo eliminar el miembro',
       );
     }
   };
@@ -280,8 +282,8 @@ function RouteComponent() {
           balanceLabel={balanceLabel}
           balanceTone={balanceTone}
           onOpenMore={() => setShowMoreDrawer(true)}
-          onOpenBalances={() =>
-            void navigate({ to: '/groups/$id/balances', params: { id } })
+          onOpenReports={() =>
+            void navigate({ to: '/groups/$id/reports', params: { id } })
           }
         />
 
@@ -324,15 +326,6 @@ function RouteComponent() {
               <span className="font-medium text-[#132238]">
                 Compartir grupo
               </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => copyText(group.inviteCode, 'Código')}
-              className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left"
-            >
-              <Copy className="size-5 text-primary" />
-              <span className="font-medium text-[#132238]">Copiar código</span>
             </button>
 
             {groupQrCode ? (

@@ -35,7 +35,6 @@ export function QrScannerDialog({
 
   const stopScanner = useCallback(async () => {
     const scanner = scannerRef.current;
-    scannerRef.current = null;
 
     if (!scanner) return;
 
@@ -47,6 +46,9 @@ export function QrScannerDialog({
 
     try {
       await scanner.clear();
+      if (scannerRef.current === scanner) {
+        scannerRef.current = null;
+      }
     } catch {
       // Ignored on purpose. The scanner may already be disposed.
     }
@@ -194,11 +196,12 @@ export function QrScannerDialog({
             type="button"
             variant="outline"
             className="h-12 w-full rounded-full"
-            onClick={() => {
-              resolvedRef.current = false;
-              onOpenChange(false);
-            }}
-          >
+          onClick={() => {
+            resolvedRef.current = false;
+            void stopScanner();
+            onOpenChange(false);
+          }}
+        >
             Cerrar
           </Button>
         </div>

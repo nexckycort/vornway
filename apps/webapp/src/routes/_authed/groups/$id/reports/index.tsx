@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { ArrowDownLeft, ArrowUpRight, ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Cell, Pie, PieChart } from 'recharts';
 
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
+import { ChartContainer } from '#/components/ui/chart';
 import {
   useGroupExpensesInfiniteQuery,
   useGroupSummaryQuery,
@@ -19,12 +21,6 @@ export const Route = createFileRoute('/_authed/groups/$id/reports/')({
 
 type ReportTab = 'balance' | 'totales';
 type TotalsRange = 'all' | 7 | 15 | 30;
-
-type CategoryTotalsEntry = {
-  name: string;
-  amount: number;
-  color: string;
-};
 
 const TOTALS_RANGE_OPTIONS: Array<{ label: string; value: TotalsRange }> = [
   { label: 'Todo el periodo', value: 'all' },
@@ -122,10 +118,6 @@ function RouteComponent() {
   }, [filteredTotalsExpenses]);
   const categoryTotal = useMemo(
     () => categoryBreakdown.reduce((sum, item) => sum + item.amount, 0),
-    [categoryBreakdown],
-  );
-  const chartGradient = useMemo(
-    () => buildConicGradient(categoryBreakdown),
     [categoryBreakdown],
   );
   useEffect(() => {
@@ -360,69 +352,87 @@ function RouteComponent() {
 
             <section className="mt-4">
               <div className="flex gap-2 overflow-x-auto pb-1">
-              {TOTALS_RANGE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setSelectedRange(option.value)}
-                  className={[
-                    'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors',
-                    selectedRange === option.value
-                      ? 'bg-primary text-white'
-                      : 'border border-[#e2e8f0] bg-white text-[#64748b]',
-                  ].join(' ')}
-                >
-                  {option.label}
-                </button>
-              ))}
+                {TOTALS_RANGE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setSelectedRange(option.value)}
+                    className={[
+                      'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors',
+                      selectedRange === option.value
+                        ? 'bg-primary text-white'
+                        : 'border border-[#e2e8f0] bg-white text-[#64748b]',
+                    ].join(' ')}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
             </section>
 
             <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
-              <div className="flex flex-wrap gap-2">
-                {availableCurrencies.map((currency) => (
-                  <button
-                    key={currency}
-                    type="button"
-                    onClick={() => setSelectedCurrency(currency)}
-                    className={[
-                      'inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors',
-                      selectedCurrency === currency
-                        ? 'border-primary/20 bg-primary/10 text-primary'
-                        : 'border-[#e2e8f0] bg-white text-[#64748b]',
-                    ].join(' ')}
-                  >
-                    <span
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                  {availableCurrencies.map((currency) => (
+                    <button
+                      key={currency}
+                      type="button"
+                      onClick={() => setSelectedCurrency(currency)}
                       className={[
-                        'size-2.5 rounded-full',
+                        'inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors',
                         selectedCurrency === currency
-                          ? 'bg-primary'
-                          : 'bg-[#cbd5e1]',
+                          ? 'border-primary/20 bg-primary/10 text-primary'
+                          : 'border-[#e2e8f0] bg-white text-[#64748b]',
                       ].join(' ')}
-                    />
-                    {currency}
-                  </button>
-                ))}
+                    >
+                      <span
+                        className={[
+                          'size-2.5 rounded-full',
+                          selectedCurrency === currency
+                            ? 'bg-primary'
+                            : 'bg-[#cbd5e1]',
+                        ].join(' ')}
+                      />
+                      {currency}
+                    </button>
+                  ))}
               </div>
 
-              <p className="mt-4 text-sm font-medium text-[#132238]">
-                Gastos en {selectedCurrency}
-              </p>
-
-              <div className="flex items-center justify-center">
-                <div
-                  className="relative mt-3 flex size-56 items-center justify-center rounded-full"
-                  style={{
-                    background: chartGradient || '#f1f5f9',
-                  }}
+              <div className="mt-3 flex items-center justify-center">
+                <ChartContainer
+                  className="aspect-square h-56 w-56"
+                  config={categoryBreakdown.reduce<
+                    Record<string, { label: string; color: string }>
+                  >((acc, entry) => {
+                    acc[entry.name] = {
+                      label: entry.name,
+                      color: entry.color,
+                    };
+                    return acc;
+                  }, {})}
                 >
-                  <div className="flex size-[14.5rem] flex-col items-center justify-center rounded-full bg-white text-center shadow-[inset_0_0_0_1px_rgba(226,232,240,0.85)]">
-                    <p className="text-xs text-[#94a3b8]">Total grupo</p>
-                    <p className="mt-1 text-2xl font-semibold text-[#132238]">
-                      {formatMoney(selectedCurrency, categoryTotal)}
-                    </p>
-                  </div>
-                </div>
+                  <PieChart>
+                    <Pie
+                      data={categoryBreakdown}
+                      dataKey="amount"
+                      nameKey="name"
+                      innerRadius={74}
+                      outerRadius={108}
+                      paddingAngle={3}
+                      stroke="transparent"
+                    >
+                      {categoryBreakdown.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ChartContainer>
+              </div>
+
+              <div className="mt-3 flex flex-col items-center">
+                <p className="text-xs text-[#94a3b8]">Total grupo</p>
+                <p className="mt-1 text-2xl font-semibold text-[#132238]">
+                  {formatMoney(selectedCurrency, categoryTotal)}
+                </p>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
@@ -569,21 +579,4 @@ function getDaysAgoStart(days: Exclude<TotalsRange, 'all'>) {
     now.getMonth(),
     now.getDate() - (days - 1),
   ).getTime();
-}
-
-function buildConicGradient(entries: CategoryTotalsEntry[]) {
-  if (entries.length === 0) return '';
-
-  const total = entries.reduce((sum, entry) => sum + entry.amount, 0);
-  if (total <= 0) return '';
-
-  let cursor = 0;
-  const segments = entries.map((entry) => {
-    const start = cursor;
-    const segmentSize = (entry.amount / total) * 100;
-    cursor += segmentSize;
-    return `${entry.color} ${start}% ${cursor}%`;
-  });
-
-  return `conic-gradient(${segments.join(', ')})`;
 }

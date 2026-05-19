@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router';
+import { Link, useRouter } from '@tanstack/react-router';
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -37,12 +37,18 @@ export function GroupDetailHeader({
   onOpenMore,
   onOpenReports,
 }: GroupDetailHeaderProps) {
+  const router = useRouter();
+
+  const goBack = () => {
+    router.history.back();
+  };
+
   return (
     <header className="px-4 pb-6 pt-6 text-white">
       <div className="mb-5 flex items-start gap-3">
         <button
           type="button"
-          onClick={() => window.history.back()}
+          onClick={goBack}
           className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
           aria-label="Atrás"
         >

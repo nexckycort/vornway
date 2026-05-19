@@ -238,6 +238,7 @@ export type GroupReportsTotalsResult = {
   range: 'all' | 7 | 15 | 30;
   totalsByCurrency: Record<string, number>;
   expenseCountByCurrency: Record<string, number>;
+  currentUserSpentByCurrency: Record<string, number>;
   categoriesByCurrency: Record<
     string,
     Array<{

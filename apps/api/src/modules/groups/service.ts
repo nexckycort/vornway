@@ -1138,6 +1138,16 @@ export function createGroupsService(): GroupsService {
         throw new Error('Grupo no encontrado');
       }
 
+      const currentMember = await db.groupMember.findFirst({
+        where: {
+          groupId: group.id,
+          userId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
       const expenses = await db.expense.findMany({
         where: buildReportExpenseWhere({
           groupId: group.id,
@@ -1147,6 +1157,7 @@ export function createGroupsService(): GroupsService {
           amount: true,
           currency: true,
           notes: true,
+          paidById: true,
           category: {
             select: {
               name: true,
@@ -1158,6 +1169,7 @@ export function createGroupsService(): GroupsService {
 
       const currencyTotals = new Map<string, number>();
       const currencyExpenseCounts = new Map<string, number>();
+      const currentUserSpentByCurrency = new Map<string, number>();
       const currencyCategories = new Map<string, Map<string, number>>();
 
       const palette = [
@@ -1181,6 +1193,15 @@ export function createGroupsService(): GroupsService {
           expense.currency,
           (currencyExpenseCounts.get(expense.currency) ?? 0) + 1,
         );
+        if (currentMember && expense.paidById === currentMember.id) {
+          currentUserSpentByCurrency.set(
+            expense.currency,
+            normalizeAmount(
+              (currentUserSpentByCurrency.get(expense.currency) ?? 0) +
+                expense.amount,
+            ),
+          );
+        }
 
         const categoryName = expense.category?.name?.trim() || 'Sin categoría';
         const categoryMap =
@@ -1197,6 +1218,9 @@ export function createGroupsService(): GroupsService {
         totalsByCurrency: Object.fromEntries(currencyTotals.entries()),
         expenseCountByCurrency: Object.fromEntries(
           currencyExpenseCounts.entries(),
+        ),
+        currentUserSpentByCurrency: Object.fromEntries(
+          currentUserSpentByCurrency.entries(),
         ),
         categoriesByCurrency: Object.fromEntries(
           Array.from(currencyCategories.entries()).map(([currencyKey, map]) => [

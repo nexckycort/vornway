@@ -76,21 +76,14 @@ function RouteComponent() {
       }),
     [group?.memberBalances],
   );
-  const currentUserBalance = useMemo(() => {
-    if (!group) return 0;
-
-    const currentUserMember = group.memberBalances.find(
-      (member) => member.isCurrentUser,
-    );
-
-    return currentUserMember?.balances[selectedCurrency] ?? 0;
-  }, [group, selectedCurrency]);
   const categoryBreakdown =
     reportsTotalsQuery.data?.categoriesByCurrency[selectedCurrency] ?? [];
   const categoryTotal =
     reportsTotalsQuery.data?.totalsByCurrency[selectedCurrency] ?? 0;
   const expenseCount =
     reportsTotalsQuery.data?.expenseCountByCurrency[selectedCurrency] ?? 0;
+  const currentUserSpent =
+    reportsTotalsQuery.data?.currentUserSpentByCurrency[selectedCurrency] ?? 0;
   const chartConfig = useMemo(
     () =>
       categoryBreakdown.reduce<Record<string, { label: string; color: string }>>(
@@ -455,17 +448,7 @@ function RouteComponent() {
               <div className="rounded-[24px] bg-[#111111] p-4 text-white shadow-[0_8px_24px_rgba(15,23,42,0.14)]">
                 <p className="text-xs font-medium text-white/70">Tu parte</p>
                 <p className="mt-1 text-2xl font-semibold">
-                  {formatMoney(
-                    selectedCurrency,
-                    Math.abs(currentUserBalance),
-                  )}
-                </p>
-                <p className="mt-1 text-xs text-white/60">
-                  {currentUserBalance > 0
-                    ? 'Te deben'
-                    : currentUserBalance < 0
-                      ? 'Debes'
-                      : 'Sin balance'}
+                  {formatMoney(selectedCurrency, currentUserSpent)}
                 </p>
               </div>
             </section>

@@ -16,10 +16,15 @@ import {
 } from '../-components/group-detail.utils';
 
 export const Route = createFileRoute('/_authed/groups/$id/reports/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab:
+      search.tab === 'totales' || search.tab === 'balance'
+        ? search.tab
+        : 'balance',
+  }),
   component: RouteComponent,
 });
 
-type ReportTab = 'balance' | 'totales';
 type TotalsRange = 'all' | 7 | 15 | 30;
 
 const TOTALS_RANGE_OPTIONS: Array<{ label: string; value: TotalsRange }> = [
@@ -31,11 +36,12 @@ const TOTALS_RANGE_OPTIONS: Array<{ label: string; value: TotalsRange }> = [
 
 function RouteComponent() {
   const { id } = Route.useParams();
+  const { tab } = Route.useSearch();
   const navigate = useNavigate();
   const groupQuery = useGroupSummaryQuery(id);
-  const [activeTab, setActiveTab] = useState<ReportTab>('balance');
   const [selectedCurrency, setSelectedCurrency] = useState<string>('COP');
   const [selectedRange, setSelectedRange] = useState<TotalsRange>('all');
+  const activeTab = tab;
   const group = groupQuery.data;
   const reportsTotalsQuery = useGroupReportsTotalsQuery(
     id,
@@ -133,7 +139,12 @@ function RouteComponent() {
           <div className="grid grid-cols-2 gap-1 rounded-[20px] bg-[#eef2f7] p-1">
             <button
               type="button"
-              onClick={() => setActiveTab('balance')}
+              onClick={() =>
+                void navigate({
+                  search: { tab: 'balance' } as any,
+                  replace: true,
+                })
+              }
               className={[
                 'inline-flex h-10 items-center justify-center rounded-[16px] text-sm font-semibold transition-colors',
                 activeTab === 'balance'
@@ -145,7 +156,12 @@ function RouteComponent() {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('totales')}
+              onClick={() =>
+                void navigate({
+                  search: { tab: 'totales' } as any,
+                  replace: true,
+                })
+              }
               className={[
                 'inline-flex h-10 items-center justify-center rounded-[16px] text-sm font-semibold transition-colors',
                 activeTab === 'totales'

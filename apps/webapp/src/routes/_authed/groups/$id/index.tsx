@@ -279,7 +279,11 @@ function RouteComponent() {
           onOpenQr={() => setShowQrDrawer(true)}
           onOpenMore={() => setShowMoreDrawer(true)}
           onOpenReports={() =>
-            void navigate({ to: '/groups/$id/reports', params: { id } })
+            void navigate({
+              to: '/groups/$id/reports',
+              params: { id },
+              search: { tab: 'balance' },
+            })
           }
         />
 

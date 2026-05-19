@@ -1,9 +1,13 @@
+self.__VORNWAY_SW_CACHE_NAME = 'vornway-app-shell-v1';
+
+const CACHE_NAME = self.__VORNWAY_SW_CACHE_NAME;
+
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 
   event.waitUntil(
     (async () => {
-      const cache = await caches.open('vornway-app-shell-v1');
+      const cache = await caches.open(CACHE_NAME);
 
       await cache.addAll(['/', '/index.html', '/logo.webp', '/favicon.ico']);
 
@@ -34,7 +38,22 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    (async () => {
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName === CACHE_NAME) {
+            return Promise.resolve();
+          }
+
+          return caches.delete(cacheName);
+        }),
+      );
+
+      await clients.claim();
+    })(),
+  );
 });
 
 self.addEventListener('fetch', (event) => {
@@ -51,7 +70,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith((async () => {
-    const cache = await caches.open('vornway-app-shell-v1');
+    const cache = await caches.open(CACHE_NAME);
 
     const cached = await cache.match(request);
     if (cached) {

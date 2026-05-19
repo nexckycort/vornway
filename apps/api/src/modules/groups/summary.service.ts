@@ -4,6 +4,7 @@ import {
   buildGroupAccessWhere,
   normalizeAmount,
 } from './helpers';
+import { getVersionedGroupImageUrl } from './group-image.service';
 import type { GroupSummaryResult } from './types';
 
 export function createGroupSummaryService() {
@@ -205,7 +206,7 @@ export function createGroupSummaryService() {
         name: group.name,
         type: group.type,
         description: group.description,
-        imageUrl: group.imageUrl,
+        imageUrl: getVersionedGroupImageUrl(group.imageUrl, group.updatedAt),
         inviteCode: group.inviteCode,
         ownerId: group.ownerId,
         createdAt: group.createdAt,

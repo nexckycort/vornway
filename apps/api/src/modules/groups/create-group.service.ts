@@ -1,5 +1,8 @@
 import { db } from '~/infrastructure/database/connection';
-import { uploadGroupImage } from './group-image.service';
+import {
+  getVersionedGroupImageUrl,
+  uploadGroupImage,
+} from './group-image.service';
 import type { CreateGroupInput, CreateGroupResult } from './types';
 
 async function generateInviteCode(): Promise<string> {
@@ -118,7 +121,7 @@ export function createGroupCreateService() {
         name: normalizedName,
         type: normalizedType,
         description: normalizedDescription,
-        imageUrl,
+        imageUrl: getVersionedGroupImageUrl(imageUrl, now),
         inviteCode,
         createdAt: now,
       };

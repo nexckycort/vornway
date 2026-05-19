@@ -9,6 +9,27 @@ export const GROUP_IMAGE_ASSET_FOLDER = 'groups';
 export const GROUP_IMAGE_ASSET_FILENAME = 'cover.webp';
 const GROUP_IMAGE_ASSET_PREFIX = `/${GROUP_IMAGE_ASSET_FOLDER}/`;
 
+export function getVersionedGroupImageUrl(
+  imageUrl: string | null | undefined,
+  updatedAt: Date | string | null | undefined,
+) {
+  if (!imageUrl) return null;
+
+  const version =
+    updatedAt instanceof Date
+      ? updatedAt.getTime()
+      : typeof updatedAt === 'string'
+        ? Date.parse(updatedAt)
+        : null;
+
+  if (!version || Number.isNaN(version)) {
+    return imageUrl;
+  }
+
+  const separator = imageUrl.includes('?') ? '&' : '?';
+  return `${imageUrl}${separator}v=${version}`;
+}
+
 function parseDataUrl(dataUrl: string) {
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (!match) {

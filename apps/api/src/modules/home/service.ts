@@ -1,4 +1,5 @@
 import { db } from '~/infrastructure/database/connection';
+import { getVersionedGroupImageUrl } from '../groups/group-image.service';
 import type { HomeParticipantBalance, HomeSummary } from './types';
 
 function normalizeAmount(value: number): number {
@@ -13,6 +14,7 @@ function summarizeGroup(
     description: string | null;
     imageUrl: string | null;
     createdAt: Date;
+    updatedAt: Date;
     GroupMember: Array<{
       id: string;
       name: string;
@@ -45,7 +47,7 @@ function summarizeGroup(
         name: group.name,
         type: group.type,
         description: group.description,
-        imageUrl: group.imageUrl,
+        imageUrl: getVersionedGroupImageUrl(group.imageUrl, group.updatedAt),
         createdAt: group.createdAt,
       members: orderedMembers.map((member) => ({
         id: member.id,
@@ -123,7 +125,7 @@ function summarizeGroup(
     name: group.name,
     type: group.type,
     description: group.description,
-    imageUrl: group.imageUrl,
+    imageUrl: getVersionedGroupImageUrl(group.imageUrl, group.updatedAt),
     createdAt: group.createdAt,
     members: orderedMembers.map((member) => ({
       id: member.id,
@@ -211,6 +213,7 @@ export function createHomeService(): HomeService {
           description: true,
           imageUrl: true,
           createdAt: true,
+          updatedAt: true,
           GroupMember: {
             select: {
               id: true,

@@ -1,5 +1,9 @@
 import { db } from '~/infrastructure/database/connection';
-import { deleteGroupImage, uploadGroupImage } from './group-image.service';
+import {
+  deleteGroupImage,
+  getVersionedGroupImageUrl,
+  uploadGroupImage,
+} from './group-image.service';
 import type { UpdateGroupImageInput } from './types';
 import { buildGroupAccessWhere } from './helpers';
 
@@ -31,12 +35,13 @@ export function createGroupImageService() {
         groupId,
         dataUrl: image.dataUrl,
       });
+      const updatedAt = new Date();
 
       await db.group.update({
         where: { id: groupId },
         data: {
           imageUrl: nextImageUrl,
-          updatedAt: new Date(),
+          updatedAt,
         },
       });
 
@@ -44,7 +49,9 @@ export function createGroupImageService() {
         await deleteGroupImage(group.imageUrl).catch(() => undefined);
       }
 
-      return { imageUrl: nextImageUrl };
+      return {
+        imageUrl: getVersionedGroupImageUrl(nextImageUrl, updatedAt),
+      };
     },
   };
 }

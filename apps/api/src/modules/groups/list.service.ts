@@ -4,6 +4,7 @@ import {
   buildGroupAccessWhere,
   normalizeAmount,
 } from './helpers';
+import { getVersionedGroupImageUrl } from './group-image.service';
 import type { GroupListItem, ListGroupsInput, ListGroupsResult } from './types';
 
 type CurrentUserIdentity = { name: string | null; image: string | null } | null;
@@ -158,7 +159,7 @@ function mapGroupListRow(
     name: row.name,
     type: row.type,
     description: row.description,
-    imageUrl: row.imageUrl,
+    imageUrl: getVersionedGroupImageUrl(row.imageUrl, row.updatedAt),
     inviteCode: row.inviteCode,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

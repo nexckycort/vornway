@@ -11,7 +11,7 @@ export type GroupCreateDraft = {
 };
 
 const STORAGE_PREFIX = 'vornway:create-group-draft:';
-const MAX_GROUP_IMAGE_BYTES = 3 * 1024 * 1024;
+const MAX_GROUP_IMAGE_BYTES = 10 * 1024 * 1024;
 
 export function createGroupDraftId() {
   return crypto.randomUUID();
@@ -41,7 +41,7 @@ export function clearGroupDraft(draftId: string) {
 
 export async function compressGroupImageFile(file: File): Promise<string> {
   if (file.size > MAX_GROUP_IMAGE_BYTES) {
-    throw new Error('La imagen no puede superar 3 MB');
+    throw new Error('La imagen no puede superar 10 MB');
   }
 
   if (typeof createImageBitmap === 'undefined' || typeof document === 'undefined') {

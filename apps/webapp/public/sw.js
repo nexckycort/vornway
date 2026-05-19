@@ -64,36 +64,58 @@ self.addEventListener('fetch', (event) => {
   }
 
   const url = new URL(request.url);
+  const isNavigation =
+    request.mode === 'navigate' ||
+    (request.headers.get('accept') || '').includes('text/html');
 
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) {
     return;
   }
 
-  event.respondWith((async () => {
-    const cache = await caches.open(CACHE_NAME);
+  event.respondWith(
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
 
-    const cached = await cache.match(request);
-    if (cached) {
-      return cached;
-    }
-
-    try {
-      const response = await fetch(request);
-      if (response?.ok) {
-        void cache.put(request, response.clone());
-      }
-      return response;
-    } catch (error) {
-      if (request.mode === 'navigate') {
-        const rootResponse = await cache.match('/index.html');
-        if (rootResponse) {
-          return rootResponse;
+      if (isNavigation) {
+        try {
+          const response = await fetch(request);
+          if (response?.ok) {
+            void cache.put('/index.html', response.clone());
+          }
+          return response;
+        } catch (_error) {
+          const cachedRoot = await cache.match('/index.html');
+          if (cachedRoot) {
+            return cachedRoot;
+          }
         }
+
+        return fetch(request);
       }
 
-      throw error;
-    }
-  })());
+      const cached = await cache.match(request);
+      if (cached) {
+        return cached;
+      }
+
+      try {
+        const response = await fetch(request);
+        if (response?.ok) {
+          void cache.put(request, response.clone());
+        }
+        return response;
+      } catch (error) {
+        if (request.mode === 'navigate') {
+          const rootResponse = await cache.match('/index.html');
+          if (rootResponse) {
+            return rootResponse;
+          }
+        }
+
+        throw error;
+      }
+    })(),
+  );
 });
 
 self.addEventListener('push', (event) => {

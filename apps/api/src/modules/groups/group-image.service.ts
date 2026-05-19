@@ -3,7 +3,7 @@ import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { env } from '~/config/env';
 import { S3 } from '~/infrastructure/storage/r2';
 
-const MAX_GROUP_IMAGE_BYTES = 3 * 1024 * 1024;
+const MAX_GROUP_IMAGE_BYTES = 10 * 1024 * 1024;
 export const GROUP_IMAGE_ASSET_BASE_URL = 'https://assets.vornway.com';
 export const GROUP_IMAGE_ASSET_FOLDER = 'groups';
 export const GROUP_IMAGE_ASSET_FILENAME = 'cover.webp';
@@ -28,7 +28,7 @@ export async function uploadGroupImage(input: {
   const { bytes } = parseDataUrl(input.dataUrl);
 
   if (bytes.byteLength > MAX_GROUP_IMAGE_BYTES) {
-    throw new Error('La imagen no puede superar 3 MB');
+    throw new Error('La imagen no puede superar 10 MB');
   }
 
   const image = new Bun.Image(bytes);

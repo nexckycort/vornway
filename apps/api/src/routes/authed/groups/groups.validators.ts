@@ -65,7 +65,7 @@ export const searchGroupMembersQuerySchema = z.object({
 });
 
 export const groupImageSchema = z.object({
-  dataUrl: z.string().min(1).max(5_000_000),
+  dataUrl: z.string().min(1).max(15_000_000),
   fileName: z.string().min(1).max(200).optional(),
 });
 

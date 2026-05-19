@@ -435,11 +435,11 @@ function RouteComponent() {
                 </p>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {categoryBreakdown.slice(0, 4).map((entry) => (
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                {categoryBreakdown.map((entry) => (
                   <span
                     key={entry.name}
-                    className="inline-flex items-center gap-2 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-xs font-medium text-[#334155]"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-xs font-medium text-[#334155]"
                   >
                     <span
                       className="size-2.5 rounded-full"

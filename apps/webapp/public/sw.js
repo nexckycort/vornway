@@ -1,9 +1,40 @@
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
+
   event.waitUntil(
-    caches.open('vornway-app-shell-v1').then((cache) =>
-      cache.addAll(['/', '/index.html', '/logo.webp', '/favicon.ico']),
-    ),
+    (async () => {
+      const cache = await caches.open('vornway-app-shell-v1');
+
+      await cache.addAll(['/', '/index.html', '/logo.webp', '/favicon.ico']);
+
+      try {
+        const response = await fetch('/asset-manifest.json', {
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const manifest = await response.json();
+        const assets = Array.isArray(manifest?.allFiles)
+          ? manifest.allFiles
+              .filter((asset) => typeof asset === 'string' && asset.length > 0)
+              .map((asset) => new URL(asset, self.location.origin).href)
+          : [];
+
+        if (assets.length > 0) {
+          await cache.addAll(assets);
+        }
+      } catch (_error) {
+        return;
+      }
+    })(),
   );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
 });
 
 self.addEventListener('fetch', (event) => {
@@ -19,33 +50,31 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    (async () => {
-      const cache = await caches.open('vornway-app-shell-v1');
+  event.respondWith((async () => {
+    const cache = await caches.open('vornway-app-shell-v1');
 
-      try {
-        const response = await fetch(request);
-        if (response && response.ok) {
-          void cache.put(request, response.clone());
-        }
-        return response;
-      } catch (_error) {
-        const cached = await cache.match(request);
-        if (cached) {
-          return cached;
-        }
+    const cached = await cache.match(request);
+    if (cached) {
+      return cached;
+    }
 
-        if (request.mode === 'navigate') {
-          const rootResponse = await cache.match('/index.html');
-          if (rootResponse) {
-            return rootResponse;
-          }
-        }
-
-        throw _error;
+    try {
+      const response = await fetch(request);
+      if (response?.ok) {
+        void cache.put(request, response.clone());
       }
-    })(),
-  );
+      return response;
+    } catch (error) {
+      if (request.mode === 'navigate') {
+        const rootResponse = await cache.match('/index.html');
+        if (rootResponse) {
+          return rootResponse;
+        }
+      }
+
+      throw error;
+    }
+  })());
 });
 
 self.addEventListener('push', (event) => {

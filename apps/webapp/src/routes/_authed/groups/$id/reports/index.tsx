@@ -34,6 +34,15 @@ const TOTALS_RANGE_OPTIONS: Array<{ label: string; value: TotalsRange }> = [
   { label: 'Hace 30 días', value: 30 },
 ];
 
+const CURRENCY_META: Record<string, { flag: string; label: string }> = {
+  COP: { flag: '🇨🇴', label: 'COP' },
+  USD: { flag: '🇺🇸', label: 'USD' },
+  EUR: { flag: '🇪🇺', label: 'EUR' },
+  GBP: { flag: '🇬🇧', label: 'GBP' },
+  MXN: { flag: '🇲🇽', label: 'MXN' },
+  BRL: { flag: '🇧🇷', label: 'BRL' },
+};
+
 function RouteComponent() {
   const { id } = Route.useParams();
   const { tab } = Route.useSearch();
@@ -346,7 +355,13 @@ function RouteComponent() {
 
             <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
               <div className="flex gap-2 overflow-x-auto pb-1">
-                  {availableCurrencies.map((currency) => (
+                {availableCurrencies.map((currency) => {
+                  const meta = CURRENCY_META[currency] ?? {
+                    flag: '💱',
+                    label: currency,
+                  };
+
+                  return (
                     <button
                       key={currency}
                       type="button"
@@ -358,17 +373,11 @@ function RouteComponent() {
                           : 'border-[#e2e8f0] bg-white text-[#64748b]',
                       ].join(' ')}
                     >
-                      <span
-                        className={[
-                          'size-2.5 rounded-full',
-                          selectedCurrency === currency
-                            ? 'bg-primary'
-                            : 'bg-[#cbd5e1]',
-                        ].join(' ')}
-                      />
-                      {currency}
+                      <span className="text-sm leading-none">{meta.flag}</span>
+                      <span>{meta.label}</span>
                     </button>
-                  ))}
+                  );
+                })}
               </div>
 
               <div className="mt-3 flex items-center justify-center">

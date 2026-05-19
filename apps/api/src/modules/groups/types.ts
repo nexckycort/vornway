@@ -228,6 +228,26 @@ export type GroupExpenseListItem = {
   currentUserBalance: number | null;
 };
 
+export type GroupReportsTotalsInput = {
+  userId: string;
+  groupId: string;
+  range: 'all' | 7 | 15 | 30;
+};
+
+export type GroupReportsTotalsResult = {
+  range: 'all' | 7 | 15 | 30;
+  totalsByCurrency: Record<string, number>;
+  expenseCountByCurrency: Record<string, number>;
+  categoriesByCurrency: Record<
+    string,
+    Array<{
+      name: string;
+      amount: number;
+      fill: string;
+    }>
+  >;
+};
+
 export type GroupExpenseParticipant = {
   memberId: string;
   name: string;

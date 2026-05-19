@@ -7,7 +7,7 @@ import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import { ChartContainer } from '#/components/ui/chart';
 import {
-  useGroupExpensesInfiniteQuery,
+  useGroupReportsTotalsQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import {
@@ -29,41 +29,30 @@ const TOTALS_RANGE_OPTIONS: Array<{ label: string; value: TotalsRange }> = [
   { label: 'Hace 30 días', value: 30 },
 ];
 
-const CATEGORY_COLORS = [
-  '#ff7fa3',
-  '#f6c15b',
-  '#8dd3ff',
-  '#7ddfa8',
-  '#c4a6ff',
-  '#ffae63',
-];
-
 function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const groupQuery = useGroupSummaryQuery(id);
-  const expensesQuery = useGroupExpensesInfiniteQuery(id);
   const [activeTab, setActiveTab] = useState<ReportTab>('balance');
   const [selectedCurrency, setSelectedCurrency] = useState<string>('COP');
   const [selectedRange, setSelectedRange] = useState<TotalsRange>('all');
   const group = groupQuery.data;
-  const allExpenses = useMemo(
-    () => expensesQuery.data?.pages.flatMap((page) => page.data) ?? [],
-    [expensesQuery.data],
+  const reportsTotalsQuery = useGroupReportsTotalsQuery(
+    id,
+    selectedRange,
+    activeTab === 'totales',
   );
   const availableCurrencies = useMemo(() => {
     const currencies = new Set<string>();
 
-    for (const entry of Object.keys(group?.totals ?? {})) {
+    for (const entry of Object.keys(
+      reportsTotalsQuery.data?.totalsByCurrency ?? group?.totals ?? {},
+    )) {
       currencies.add(entry);
     }
 
-    for (const expense of allExpenses) {
-      currencies.add(expense.currency);
-    }
-
     return Array.from(currencies);
-  }, [allExpenses, group?.totals]);
+  }, [group?.totals, reportsTotalsQuery.data?.totalsByCurrency]);
   const sortedMembers = useMemo(
     () =>
       [...(group?.memberBalances ?? [])].sort((left, right) => {
@@ -81,43 +70,24 @@ function RouteComponent() {
 
     return currentUserMember?.balances[selectedCurrency] ?? 0;
   }, [group, selectedCurrency]);
-  const filteredTotalsExpenses = useMemo(() => {
-    const cutoff =
-      selectedRange === 'all' ? null : getDaysAgoStart(selectedRange);
-
-    return allExpenses.filter((expense) => {
-      if (expense.isDeleted || expense.isSettlement) return false;
-      if (expense.currency !== selectedCurrency) return false;
-
-      const expenseDate = new Date(expense.date);
-      if (Number.isNaN(expenseDate.getTime())) return false;
-
-      if (cutoff === null) return true;
-
-      return expenseDate.getTime() >= cutoff;
-    });
-  }, [allExpenses, selectedCurrency, selectedRange]);
-  const categoryBreakdown = useMemo(() => {
-    const totals = new Map<string, number>();
-
-    for (const expense of filteredTotalsExpenses) {
-      const categoryName = expense.category?.name?.trim() || 'Sin categoría';
-      totals.set(
-        categoryName,
-        (totals.get(categoryName) ?? 0) + expense.amount,
-      );
-    }
-
-    return Array.from(totals.entries())
-      .map(([name, amount], index) => ({
-        name,
-        amount,
-        fill: CATEGORY_COLORS[index % CATEGORY_COLORS.length] ?? '#94a3b8',
-      }))
-      .sort((left, right) => right.amount - left.amount);
-  }, [filteredTotalsExpenses]);
-  const categoryTotal = useMemo(
-    () => categoryBreakdown.reduce((sum, item) => sum + item.amount, 0),
+  const categoryBreakdown =
+    reportsTotalsQuery.data?.categoriesByCurrency[selectedCurrency] ?? [];
+  const categoryTotal =
+    reportsTotalsQuery.data?.totalsByCurrency[selectedCurrency] ?? 0;
+  const expenseCount =
+    reportsTotalsQuery.data?.expenseCountByCurrency[selectedCurrency] ?? 0;
+  const chartConfig = useMemo(
+    () =>
+      categoryBreakdown.reduce<Record<string, { label: string; color: string }>>(
+        (accumulator, entry) => {
+          accumulator[entry.name] = {
+            label: entry.name,
+            color: entry.fill,
+          };
+          return accumulator;
+        },
+        {},
+      ),
     [categoryBreakdown],
   );
   useEffect(() => {
@@ -126,18 +96,6 @@ function RouteComponent() {
 
     setSelectedCurrency(availableCurrencies[0] ?? 'COP');
   }, [availableCurrencies, selectedCurrency]);
-
-  useEffect(() => {
-    if (activeTab !== 'totales') return;
-    if (!expensesQuery.hasNextPage || expensesQuery.isFetchingNextPage) return;
-
-    void expensesQuery.fetchNextPage();
-  }, [
-    activeTab,
-    expensesQuery.fetchNextPage,
-    expensesQuery.hasNextPage,
-    expensesQuery.isFetchingNextPage,
-  ]);
 
   if (groupQuery.isLoading) {
     return (
@@ -332,8 +290,8 @@ function RouteComponent() {
                   Gastos
                 </h2>
                 <p className="mt-1 text-xs text-[#64748b]">
-                  {filteredTotalsExpenses.length > 0
-                    ? `${filteredTotalsExpenses.length} gastos en ${selectedCurrency}`
+                  {expenseCount
+                    ? `${expenseCount} gastos`
                     : 'Sin gastos para este periodo'}
                 </p>
               </div>
@@ -398,39 +356,42 @@ function RouteComponent() {
               </div>
 
               <div className="mt-3 flex items-center justify-center">
-                <ChartContainer
-                  className="aspect-square h-56 w-56"
-                  config={categoryBreakdown.reduce<
-                    Record<string, { label: string; color: string }>
-                  >((acc, entry) => {
-                    acc[entry.name] = {
-                      label: entry.name,
-                      color: entry.fill,
-                    };
-                    return acc;
-                  }, {})}
-                >
-                  <PieChart>
-                    <Pie
-                      data={categoryBreakdown}
-                      dataKey="amount"
-                      nameKey="name"
-                      innerRadius={74}
-                      outerRadius={108}
-                      paddingAngle={3}
-                      stroke="transparent"
-                      fill="#94a3b8"
-                    >
-                    </Pie>
-                  </PieChart>
-                </ChartContainer>
+                {reportsTotalsQuery.isLoading ? (
+                  <div className="flex aspect-square h-56 w-56 items-center justify-center rounded-full border border-dashed border-[#e2e8f0] bg-[#f8fafc] text-xs text-[#94a3b8]">
+                    Cargando totales...
+                  </div>
+                ) : (
+                  <ChartContainer
+                    className="aspect-square h-56 w-56"
+                    config={chartConfig}
+                  >
+                    <PieChart>
+                      <Pie
+                        data={categoryBreakdown}
+                        dataKey="amount"
+                        nameKey="name"
+                        innerRadius={74}
+                        outerRadius={108}
+                        paddingAngle={3}
+                        stroke="transparent"
+                        fill="#94a3b8"
+                      />
+                    </PieChart>
+                  </ChartContainer>
+                )}
               </div>
 
               <div className="mt-3 flex flex-col items-center">
                 <p className="text-xs text-[#94a3b8]">Total grupo</p>
-                <p className="mt-1 text-2xl font-semibold text-[#132238]">
-                  {formatMoney(selectedCurrency, categoryTotal)}
-                </p>
+                {reportsTotalsQuery.isLoading ? (
+                  <p className="mt-1 text-2xl font-semibold text-[#132238]">
+                    —
+                  </p>
+                ) : (
+                  <p className="mt-1 text-2xl font-semibold text-[#132238]">
+                    {formatMoney(selectedCurrency, categoryTotal)}
+                  </p>
+                )}
               </div>
 
               <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
@@ -455,9 +416,15 @@ function RouteComponent() {
             <section className="mt-4 grid grid-cols-2 gap-3">
               <div className="rounded-[24px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
                 <p className="text-xs font-medium text-[#64748b]">Total grupo</p>
-                <p className="mt-1 text-2xl font-semibold text-[#132238]">
-                  {formatMoney(selectedCurrency, categoryTotal)}
-                </p>
+                {reportsTotalsQuery.isLoading ? (
+                  <p className="mt-1 text-2xl font-semibold text-[#132238]">
+                    —
+                  </p>
+                ) : (
+                  <p className="mt-1 text-2xl font-semibold text-[#132238]">
+                    {formatMoney(selectedCurrency, categoryTotal)}
+                  </p>
+                )}
               </div>
 
               <div className="rounded-[24px] bg-[#111111] p-4 text-white shadow-[0_8px_24px_rgba(15,23,42,0.14)]">
@@ -558,23 +525,9 @@ function RouteComponent() {
               </div>
             </section>
 
-            {expensesQuery.isFetchingNextPage ? (
-              <p className="mt-3 text-center text-sm text-[#64748b]">
-                Cargando más...
-              </p>
-            ) : null}
           </>
         )}
       </div>
     </MobilePageLayout>
   );
-}
-
-function getDaysAgoStart(days: Exclude<TotalsRange, 'all'>) {
-  const now = new Date();
-  return new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() - (days - 1),
-  ).getTime();
 }

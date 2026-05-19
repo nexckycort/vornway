@@ -26,6 +26,13 @@ export const listGroupExpensesQuerySchema = z.object({
   cursor: z.string().min(1).optional(),
 });
 
+export const groupReportsTotalsQuerySchema = z.object({
+  range: z.union([
+    z.literal('all'),
+    z.coerce.number().int().refine((value) => [7, 15, 30].includes(value)),
+  ]).default('all'),
+});
+
 export const createGroupExpenseSchema = z.object({
   description: z.string().min(1).max(160),
   amount: z.number().positive(),

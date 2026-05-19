@@ -8,6 +8,7 @@ const PAGE_LIMIT = 20;
 const groupSummaryEndpoint = client.api.groups[':id'].$get;
 const groupExpensesEndpoint = client.api.groups[':id'].expenses.$get;
 const groupExpenseEndpoint = client.api.groups[':id'].expenses[':expenseId'].$get;
+const groupReportsTotalsEndpoint = client.api.groups[':id'].reports.totals.$get;
 
 type GroupExpensesPageResponse = InferResponseType<typeof groupExpensesEndpoint>;
 type GroupExpenseResponse = InferResponseType<typeof groupExpenseEndpoint>;
@@ -17,6 +18,19 @@ type GroupExpensesPageSuccess = Extract<
 >;
 type GroupExpenseSuccess = Extract<GroupExpenseResponse, { id: string }> & {
   category: { id: string; name: string } | null;
+};
+type GroupReportsTotalsSuccess = {
+  range: 'all' | 7 | 15 | 30;
+  totalsByCurrency: Record<string, number>;
+  expenseCountByCurrency: Record<string, number>;
+  categoriesByCurrency: Record<
+    string,
+    Array<{
+      name: string;
+      amount: number;
+      fill: string;
+    }>
+  >;
 };
 
 export function useGroupSummaryQuery(groupId: string) {
@@ -78,6 +92,32 @@ export function useGroupExpenseQuery(groupId: string, expenseId: string | undefi
       }
 
       return (await response.json()) as GroupExpenseSuccess;
+    },
+  });
+}
+
+export function useGroupReportsTotalsQuery(
+  groupId: string,
+  range: 'all' | 7 | 15 | 30,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ['group-reports-totals', groupId, range],
+    enabled,
+    placeholderData: (previous) => previous,
+    queryFn: async () => {
+      const response = await groupReportsTotalsEndpoint({
+        param: { id: groupId },
+        query: {
+          range: String(range),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('No se pudieron cargar los totales');
+      }
+
+      return (await response.json()) as GroupReportsTotalsSuccess;
     },
   });
 }

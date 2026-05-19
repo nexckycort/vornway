@@ -1,5 +1,5 @@
-import { client } from '#/lib/hc';
 import type { InferResponseType } from '#/lib/hc';
+import { client } from '#/lib/hc';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const PAGE_LIMIT = 20;

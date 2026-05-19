@@ -11,6 +11,7 @@ function summarizeGroup(
     name: string;
     type: string;
     description: string | null;
+    imageUrl: string | null;
     createdAt: Date;
     GroupMember: Array<{
       id: string;
@@ -39,12 +40,13 @@ function summarizeGroup(
     : group.GroupMember;
 
   if (!currentMember) {
-    return {
-      id: group.id,
-      name: group.name,
-      type: group.type,
-      description: group.description,
-      createdAt: group.createdAt,
+      return {
+        id: group.id,
+        name: group.name,
+        type: group.type,
+        description: group.description,
+        imageUrl: group.imageUrl,
+        createdAt: group.createdAt,
       members: orderedMembers.map((member) => ({
         id: member.id,
         name: member.name,
@@ -121,6 +123,7 @@ function summarizeGroup(
     name: group.name,
     type: group.type,
     description: group.description,
+    imageUrl: group.imageUrl,
     createdAt: group.createdAt,
     members: orderedMembers.map((member) => ({
       id: member.id,
@@ -206,6 +209,7 @@ export function createHomeService(): HomeService {
           name: true,
           type: true,
           description: true,
+          imageUrl: true,
           createdAt: true,
           GroupMember: {
             select: {

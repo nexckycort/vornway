@@ -67,6 +67,12 @@ export const createGroupSchema = z.object({
   name: z.string().min(1).max(120),
   type: z.string().min(1).max(60),
   description: z.string().max(400).optional(),
+  image: z
+    .object({
+      dataUrl: z.string().min(1).max(5_000_000),
+      fileName: z.string().min(1).max(200).optional(),
+    })
+    .optional(),
   participants: z
     .array(
       z.object({

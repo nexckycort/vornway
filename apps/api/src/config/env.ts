@@ -17,6 +17,11 @@ const serverEnvSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().min(1),
   VAPID_SUBJECT: z.string().min(1),
 
+  CLOUDFLARE_ACCOUNT_ID: z.string().min(1),
+  CLOUDFLARE_ACCESS_KEY_ID: z.string().min(1),
+  CLOUDFLARE_SECRET_ACCESS_KEY: z.string().min(1),
+  CLOUDFLARE_BUCKET_NAME: z.string().min(1),
+
   MCP_TOKEN_SECRET: z.string().min(1).optional(),
   MCP_OAUTH_CLIENTS: z.string().optional(),
 });

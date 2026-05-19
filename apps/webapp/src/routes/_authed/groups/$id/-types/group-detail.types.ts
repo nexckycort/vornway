@@ -45,6 +45,7 @@ export type GroupSummary = {
   name: string;
   type: string;
   description: string | null;
+  imageUrl: string | null;
   inviteCode: string;
   ownerId: string;
   createdAt: string;

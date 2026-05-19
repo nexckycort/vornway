@@ -272,6 +272,7 @@ function RouteComponent() {
           groupId={id}
           groupName={group.name}
           description={group.description}
+          imageUrl={group.imageUrl}
           totalsEntries={totalsEntries}
           primaryTotal={primaryTotal}
           balanceLabel={balanceLabel}

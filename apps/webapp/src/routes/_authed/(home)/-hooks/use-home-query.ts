@@ -22,6 +22,7 @@ export type Trip = {
   id: string;
   name: string;
   dates: string;
+  imageUrl: string | null;
   avatars: Array<{
     name: string;
     image: string | null;
@@ -67,6 +68,7 @@ type HomeApiResponse = {
     name: string;
     type: string;
     description: string | null;
+    imageUrl: string | null;
     createdAt: string;
     members: Array<{
       id: string;
@@ -159,6 +161,7 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
         id: group.id,
         name: group.name,
         dates: `Creado ${formatShortDate(group.createdAt)}`,
+        imageUrl: group.imageUrl,
         avatars,
         extraPeople,
         emptyLabel: group.hasExpenses ? 'Sin saldos pendientes' : 'Sin gastos',
@@ -169,6 +172,7 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
       id: group.id,
       name: group.name,
       dates: `Creado ${formatShortDate(group.createdAt)}`,
+      imageUrl: group.imageUrl,
       avatars,
       extraPeople,
       balanceLabel,

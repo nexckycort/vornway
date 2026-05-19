@@ -72,9 +72,14 @@ export type UnlinkGroupMemberInput = {
 export type CreateGroupInput = {
   userId: string;
   ownerName: string;
+  mediaBaseUrl: string;
   name: string;
   type: string;
   description?: string;
+  image?: {
+    dataUrl: string;
+    fileName?: string;
+  };
   participants?: Array<{
     name: string;
     userId?: string;
@@ -86,6 +91,7 @@ export type CreateGroupResult = {
   name: string;
   type: string;
   description: string | null;
+  imageUrl: string | null;
   inviteCode: string;
   createdAt: Date;
 };
@@ -95,6 +101,7 @@ export type GroupListItem = {
   name: string;
   type: string;
   description: string | null;
+  imageUrl: string | null;
   inviteCode: string;
   createdAt: Date;
   updatedAt: Date;
@@ -187,6 +194,7 @@ export type GroupSummaryResult = {
   name: string;
   type: string;
   description: string | null;
+  imageUrl: string | null;
   inviteCode: string;
   ownerId: string;
   createdAt: Date;

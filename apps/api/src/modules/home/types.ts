@@ -12,6 +12,7 @@ export type HomeGroupSummary = {
   name: string;
   type: string;
   description: string | null;
+  imageUrl: string | null;
   createdAt: Date;
   members: Array<{
     id: string;

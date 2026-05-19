@@ -11,6 +11,10 @@ export type CreateGroupFormValues = {
   name: string;
   type: string;
   description: string;
+  image?: {
+    dataUrl: string;
+    fileName?: string;
+  } | null;
   participants?: Array<{
     name: string;
     userId?: string;
@@ -27,6 +31,14 @@ async function createGroup(values: CreateGroupFormValues): Promise<CreateGroupRe
         : {}),
       ...(values.participants && values.participants.length > 0
         ? { participants: values.participants }
+        : {}),
+      ...(values.image
+        ? {
+            image: {
+              dataUrl: values.image.dataUrl,
+              ...(values.image.fileName ? { fileName: values.image.fileName } : {}),
+            },
+          }
         : {}),
     },
   };

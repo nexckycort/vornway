@@ -14,6 +14,7 @@ type GroupDetailHeaderProps = {
   groupId: string;
   groupName: string;
   description: string | null;
+  imageUrl: string | null;
   totalsEntries: Array<[string, number]>;
   primaryTotal: [string, number] | undefined;
   balanceLabel: string;
@@ -27,6 +28,7 @@ export function GroupDetailHeader({
   groupId,
   groupName,
   description,
+  imageUrl,
   totalsEntries,
   primaryTotal,
   balanceLabel,
@@ -48,9 +50,19 @@ export function GroupDetailHeader({
         </button>
 
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-semibold leading-7">
-            {groupName}
-          </h1>
+          <div className="flex items-center gap-3">
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={groupName}
+                className="size-11 shrink-0 rounded-2xl object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : null}
+            <h1 className="truncate text-xl font-semibold leading-7">
+              {groupName}
+            </h1>
+          </div>
           <p className="truncate text-sm text-white/55">
             {description ? ` · ${description}` : ''}
           </p>

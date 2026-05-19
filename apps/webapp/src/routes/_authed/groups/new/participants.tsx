@@ -2,6 +2,11 @@ import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import { useCreateGroupMutation } from '#/routes/_authed/groups/-hooks/use-create-group';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
+import {
+  clearGroupDraft,
+  type GroupCreateDraft,
+  loadGroupDraft,
+} from '#/routes/_authed/groups/new/-lib/group-create-draft';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { PlusCircle, UserPlus, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -11,6 +16,7 @@ export const Route = createFileRoute('/_authed/groups/new/participants')({
     name: typeof search.name === 'string' ? search.name : '',
     type: typeof search.type === 'string' ? search.type : '',
     description: typeof search.description === 'string' ? search.description : '',
+    draftId: typeof search.draftId === 'string' ? search.draftId : '',
   }),
   component: RouteComponent,
 });
@@ -27,10 +33,11 @@ function normalizeText(value: string) {
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const { name, type, description } = Route.useSearch();
+  const { name, type, description, draftId } = Route.useSearch();
   const createGroupMutation = useCreateGroupMutation();
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const [draft, setDraft] = useState<GroupCreateDraft | null>(null);
   const [participantInput, setParticipantInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [participants, setParticipants] = useState<DraftParticipant[]>([]);
@@ -55,6 +62,15 @@ function RouteComponent() {
   }, []);
 
   useEffect(() => {
+    if (!draftId) {
+      setDraft(null);
+      return;
+    }
+
+    setDraft(loadGroupDraft(draftId));
+  }, [draftId]);
+
+  useEffect(() => {
     const timeout = window.setTimeout(() => {
       setDebouncedSearch(participantInput.trim());
     }, 300);
@@ -69,6 +85,7 @@ function RouteComponent() {
         name,
         type,
         description,
+        draftId: draftId || '',
       },
       replace: true,
     });
@@ -119,14 +136,27 @@ function RouteComponent() {
 
     try {
       await createGroupMutation.mutateAsync({
-        name,
-        type,
-        description,
+        name: draft?.name ?? name,
+        type: draft?.type ?? type,
+        description: draft?.description ?? description,
+        ...(draft?.image
+          ? {
+              image: {
+                dataUrl: draft.image.dataUrl,
+                ...(draft.image.fileName
+                  ? { fileName: draft.image.fileName }
+                  : {}),
+              },
+            }
+          : {}),
         participants: participants.map((participant) => ({
           name: participant.name,
           ...(participant.userId ? { userId: participant.userId } : {}),
         })),
       });
+      if (draftId) {
+        clearGroupDraft(draftId);
+      }
       await navigate({ to: '/groups', replace: true });
     } catch (submitError) {
       setError(
@@ -159,10 +189,23 @@ function RouteComponent() {
     <MobilePageLayout title="Agregar participantes" onBack={goBack}>
       <div className="flex min-h-full flex-col">
         <section className="mb-3 rounded-2xl border border-[#e2e8f0] bg-white p-4">
-          <p className="truncate text-base font-semibold text-[#0f172a]">{name}</p>
-          <p className="mt-1 text-xs uppercase tracking-wide text-[#64748b]">
-            {type}
-          </p>
+          <div className="flex items-center gap-3">
+            {draft?.image?.dataUrl ? (
+              <img
+                src={draft.image.dataUrl}
+                alt={draft.name}
+                className="size-12 rounded-2xl object-cover"
+              />
+            ) : null}
+            <div className="min-w-0">
+              <p className="truncate text-base font-semibold text-[#0f172a]">
+                {draft?.name ?? name}
+              </p>
+              <p className="mt-1 text-xs uppercase tracking-wide text-[#64748b]">
+                {draft?.type ?? type}
+              </p>
+            </div>
+          </div>
         </section>
 
         <label

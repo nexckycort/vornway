@@ -1,4 +1,5 @@
 import { db } from '~/infrastructure/database/connection';
+import { uploadGroupImage } from './group-image.service';
 import type { CreateGroupInput, CreateGroupResult } from './types';
 
 async function generateInviteCode(): Promise<string> {
@@ -22,9 +23,11 @@ export function createGroupCreateService() {
     createGroup: async ({
       userId,
       ownerName,
+      mediaBaseUrl,
       name,
       type,
       description,
+      image,
       participants,
     }: CreateGroupInput): Promise<CreateGroupResult> => {
       const now = new Date();
@@ -33,6 +36,13 @@ export function createGroupCreateService() {
       const normalizedName = name.trim();
       const normalizedType = type.trim();
       const normalizedDescription = description?.trim() || null;
+      const imageUrl = image
+        ? await uploadGroupImage({
+            groupId,
+            dataUrl: image.dataUrl,
+            mediaBaseUrl,
+          }).catch(() => null)
+        : null;
 
       await db.$transaction(async (tx) => {
         await tx.group.create({
@@ -41,6 +51,7 @@ export function createGroupCreateService() {
             name: normalizedName,
             type: normalizedType,
             description: normalizedDescription,
+            imageUrl,
             createdAt: now,
             updatedAt: now,
             ownerId: userId,
@@ -109,6 +120,7 @@ export function createGroupCreateService() {
         name: normalizedName,
         type: normalizedType,
         description: normalizedDescription,
+        imageUrl,
         inviteCode,
         createdAt: now,
       };

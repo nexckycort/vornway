@@ -48,6 +48,23 @@ export function HomeAction({ action }: HomeActionProps) {
     );
   }
 
+  if (to === '/groups/new') {
+    return (
+      <Link
+        to={to}
+        search={{
+          name: '',
+          type: '',
+          description: '',
+          draftId: '',
+        }}
+        className={className}
+      >
+        {content}
+      </Link>
+    );
+  }
+
   return (
     <Link to={to} className={className}>
       {content}

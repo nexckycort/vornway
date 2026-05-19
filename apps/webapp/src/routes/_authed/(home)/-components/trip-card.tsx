@@ -13,9 +13,19 @@ export function TripCard({ trip }: TripCardProps) {
       className="block rounded-[24px] bg-white px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-transform active:translate-y-px"
     >
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-semibold leading-7">{trip.name}</h3>
-          <p className="text-xs leading-4">{trip.dates}</p>
+        <div className="flex min-w-0 items-start gap-3">
+          {trip.imageUrl ? (
+            <img
+              src={trip.imageUrl}
+              alt={trip.name}
+              className="size-12 shrink-0 rounded-2xl object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : null}
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold leading-7">{trip.name}</h3>
+            <p className="text-xs leading-4">{trip.dates}</p>
+          </div>
         </div>
 
         <div className="flex items-center">

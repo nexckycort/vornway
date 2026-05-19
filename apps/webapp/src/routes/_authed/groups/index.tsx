@@ -54,6 +54,7 @@ function RouteComponent() {
         id: group.id,
         name: group.name,
         dates: `Creado ${formatShortDate(group.createdAt)}`,
+        imageUrl: group.imageUrl,
         avatars: mapMembersToAvatars(group.members),
         extraPeople: Math.max(0, group.members.length - 2),
         ...(group.participantBalances.length > 0
@@ -99,6 +100,12 @@ function RouteComponent() {
 
           <Link
             to="/groups/new"
+            search={{
+              name: '',
+              type: '',
+              description: '',
+              draftId: '',
+            }}
             className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-medium text-white shadow-[0_10px_24px_rgba(222,3,77,0.18)]"
           >
             + Crear nuevo grupo

@@ -1,7 +1,7 @@
 import type { InferRequestType } from '#/lib/hc';
 import { client } from '#/lib/hc';
 import type { QueryClient } from '@tanstack/react-query';
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 
 const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
@@ -26,6 +26,7 @@ type OfflineExpenseQueueItem = {
 
 const STORAGE_KEY = 'vornway:offline-expense-queue:v1';
 const STORAGE_EVENT = 'vornway:offline-expense-queue-changed';
+let queueVersion = 0;
 
 function isBrowser(): boolean {
   return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
@@ -319,13 +320,18 @@ export function useOfflineExpenseSync(
 }
 
 export function useOfflineExpenseQueue(groupId: string) {
-  return useSyncExternalStore(
+  const version = useSyncExternalStore(
     (onStoreChange) => {
       if (!isBrowser()) {
         return () => undefined;
       }
 
-      const handleChange = () => onStoreChange();
+      const handleChange = (event: Event) => {
+        if (event.type === 'storage' || event.type === STORAGE_EVENT) {
+          queueVersion += 1;
+          onStoreChange();
+        }
+      };
 
       window.addEventListener(STORAGE_EVENT, handleChange);
       window.addEventListener('storage', handleChange);
@@ -335,7 +341,12 @@ export function useOfflineExpenseQueue(groupId: string) {
         window.removeEventListener('storage', handleChange);
       };
     },
+    () => queueVersion,
+    () => 0,
+  );
+
+  return useMemo(
     () => readQueue().filter((item) => item.groupId === groupId),
-    () => [],
+    [groupId, version],
   );
 }

@@ -351,6 +351,7 @@ function RouteComponent() {
           primaryTotal={primaryTotal}
           balanceLabel={balanceLabel}
           balanceTone={balanceTone}
+          offlinePendingCount={offlineExpenses.length}
           onOpenQr={() => setShowQrDrawer(true)}
           onOpenMore={() => setShowMoreDrawer(true)}
           onOpenReports={() =>

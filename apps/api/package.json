@@ -23,6 +23,7 @@
     }
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1048.0",
     "@hono/mcp": "^0.2.5",
     "@hono/zod-validator": "^0.7.6",
     "@modelcontextprotocol/sdk": "^1.29.0",

@@ -71,10 +71,10 @@ export function GroupDetailHeader({
         <button
           type="button"
           onClick={onOpenQr}
-          className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
+          className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
           aria-label="Código QR del grupo"
         >
-          <QrCode className="size-4" />
+          <QrCode className="size-6" />
         </button>
       </div>
 

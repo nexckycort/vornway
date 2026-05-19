@@ -9,14 +9,17 @@ import {
 } from '#/components/ui/drawer';
 import { usePinnedExpenseIds } from '#/lib/expense-pins';
 import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-delete-expense';
-import { useRemoveMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
+import {
+  useRemoveMemberMutation,
+  useUpdateGroupImageMutation,
+} from '#/routes/_authed/groups/-hooks/use-group-actions';
 import {
   useGroupExpensesInfiniteQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Pencil, Share2, Trash2 } from 'lucide-react';
+import { ImagePlus, Pencil, Share2, Trash2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GroupDetailHeader } from './-components/group-detail-header';
@@ -25,6 +28,7 @@ import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
 import { GroupParticipantsStrip } from './-components/group-participants-strip';
 import { GroupDetailSkeleton } from './-components/group-detail-skeleton';
 import type { ExpenseItem, GroupSummary } from './-types/group-detail.types';
+import { compressGroupImageFile } from '../new/-lib/group-create-draft';
 
 export const Route = createFileRoute('/_authed/groups/$id/')({
   component: RouteComponent,
@@ -34,12 +38,14 @@ function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [showMoreDrawer, setShowMoreDrawer] = useState(false);
   const [showQrDrawer, setShowQrDrawer] = useState(false);
   const [showExpenseOptionsDrawer, setShowExpenseOptionsDrawer] =
     useState(false);
   const [showDeleteExpenseDrawer, setShowDeleteExpenseDrawer] = useState(false);
   const [showRemoveMemberDrawer, setShowRemoveMemberDrawer] = useState(false);
+  const [isUpdatingGroupImage, setIsUpdatingGroupImage] = useState(false);
   const [expenseForOptions, setExpenseForOptions] =
     useState<ExpenseItem | null>(null);
   const [expenseToDelete, setExpenseToDelete] = useState<ExpenseItem | null>(
@@ -55,6 +61,7 @@ function RouteComponent() {
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
   const deleteExpenseMutation = useDeleteExpenseMutation(id);
   const removeMemberMutation = useRemoveMemberMutation(id);
+  const updateGroupImageMutation = useUpdateGroupImageMutation(id);
   const toggleExpensePinMutation = useToggleExpensePinMutation();
   const pinnedExpenseIds = usePinnedExpenseIds(id);
 
@@ -185,6 +192,31 @@ function RouteComponent() {
       await copyText(inviteLink, 'Enlace');
     } catch {
       setShareMessage('No se pudo compartir');
+    }
+  };
+
+  const handleSelectGroupImage = async (file: File | null) => {
+    if (!file) return;
+
+    setShareMessage(null);
+    setIsUpdatingGroupImage(true);
+
+    try {
+      const dataUrl = await compressGroupImageFile(file);
+      await updateGroupImageMutation.mutateAsync({
+        dataUrl,
+        ...(file.name ? { fileName: file.name } : {}),
+      });
+      setShowMoreDrawer(false);
+      setShareMessage('Imagen del grupo actualizada');
+    } catch (error) {
+      setShareMessage(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar la imagen',
+      );
+    } finally {
+      setIsUpdatingGroupImage(false);
     }
   };
 
@@ -357,6 +389,17 @@ function RouteComponent() {
           </DrawerHeader>
 
           <div className="space-y-2 px-5 pb-5">
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (event) => {
+                await handleSelectGroupImage(event.target.files?.[0] ?? null);
+                event.currentTarget.value = '';
+              }}
+            />
+
             <button
               type="button"
               onClick={shareInvite}
@@ -365,6 +408,18 @@ function RouteComponent() {
               <Share2 className="size-5 text-primary" />
               <span className="font-medium text-[#132238]">
                 Compartir grupo
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => imageInputRef.current?.click()}
+              disabled={isUpdatingGroupImage}
+              className="flex w-full items-center gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 text-left disabled:opacity-70"
+            >
+              <ImagePlus className="size-5 text-primary" />
+              <span className="font-medium text-[#132238]">
+                {isUpdatingGroupImage ? 'Subiendo imagen...' : 'Actualizar imagen'}
               </span>
             </button>
 

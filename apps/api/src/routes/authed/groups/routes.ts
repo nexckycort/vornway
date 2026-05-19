@@ -7,6 +7,7 @@ import {
   addGroupMemberSchema,
   createGroupExpenseSchema,
   createGroupSchema,
+  groupImageSchema,
   groupExpenseParamsSchema,
   groupMemberParamsSchema,
   groupMemberActionQuerySchema,
@@ -31,6 +32,7 @@ const groups = new Hono<AppContext>()
       name: data.name,
       type: data.type,
       description: data.description,
+      image: data.image,
       participants: data.participants,
     });
 
@@ -67,6 +69,32 @@ const groups = new Hono<AppContext>()
       throw error;
     }
   })
+  .patch(
+    '/:id/image',
+    zValidator('param', groupParamsSchema),
+    zValidator('json', groupImageSchema),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      const data = c.req.valid('json');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.updateGroupImage({
+          userId,
+          groupId: id,
+          image: data,
+        });
+
+        return c.json(result);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Grupo no encontrado') {
+          return c.json({ error: error.message }, 404);
+        }
+
+        throw error;
+      }
+    },
+  )
   .get(
     '/:id/expenses',
     zValidator('param', groupParamsSchema),

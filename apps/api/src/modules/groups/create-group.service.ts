@@ -23,7 +23,6 @@ export function createGroupCreateService() {
     createGroup: async ({
       userId,
       ownerName,
-      mediaBaseUrl,
       name,
       type,
       description,
@@ -40,7 +39,6 @@ export function createGroupCreateService() {
         ? await uploadGroupImage({
             groupId,
             dataUrl: image.dataUrl,
-            mediaBaseUrl,
           }).catch(() => null)
         : null;
 

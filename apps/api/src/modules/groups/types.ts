@@ -72,7 +72,6 @@ export type UnlinkGroupMemberInput = {
 export type CreateGroupInput = {
   userId: string;
   ownerName: string;
-  mediaBaseUrl: string;
   name: string;
   type: string;
   description?: string;
@@ -84,6 +83,15 @@ export type CreateGroupInput = {
     name: string;
     userId?: string;
   }>;
+};
+
+export type UpdateGroupImageInput = {
+  userId: string;
+  groupId: string;
+  image: {
+    dataUrl: string;
+    fileName?: string;
+  };
 };
 
 export type CreateGroupResult = {
@@ -145,6 +153,9 @@ export type ListGroupsResult = {
 export type GroupsService = {
   listGroups: (input: ListGroupsInput) => Promise<ListGroupsResult>;
   createGroup: (input: CreateGroupInput) => Promise<CreateGroupResult>;
+  updateGroupImage: (
+    input: UpdateGroupImageInput,
+  ) => Promise<{ imageUrl: string | null }>;
   getGroupSummary: (input: {
     userId: string;
     groupId: string;

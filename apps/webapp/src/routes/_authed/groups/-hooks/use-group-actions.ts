@@ -18,6 +18,43 @@ type AddMemberRequest = InferRequestType<typeof addMemberEndpoint>;
 type AddMemberResponse = InferResponseType<typeof addMemberEndpoint>;
 type RemoveMemberResponse = InferResponseType<typeof removeMemberEndpoint>;
 
+type UpdateGroupImageRequest = {
+  dataUrl: string;
+  fileName?: string;
+};
+
+type UpdateGroupImageResponse = {
+  imageUrl: string | null;
+};
+
+const updateGroupImageEndpoint = client.api.groups[':id'] as unknown as {
+  image: {
+    $patch: (args: {
+      param: { id: string };
+      json: UpdateGroupImageRequest;
+    }) => Promise<{
+      ok: boolean;
+      json: () => Promise<unknown>;
+    }>;
+  };
+};
+
+function getApiErrorMessage(error: unknown, fallback: string) {
+  if (typeof error === 'string') return error;
+  if (!error || typeof error !== 'object') return fallback;
+
+  const candidate = error as {
+    message?: unknown;
+    error?: unknown;
+  };
+
+  if (typeof candidate.message === 'string') {
+    return candidate.message;
+  }
+
+  return getApiErrorMessage(candidate.error, fallback);
+}
+
 function invalidateGroup(queryClient: ReturnType<typeof useQueryClient>, groupId: string) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
@@ -25,6 +62,34 @@ function invalidateGroup(queryClient: ReturnType<typeof useQueryClient>, groupId
     queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
     queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
   ]);
+}
+
+export function useUpdateGroupImageMutation(groupId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (json: UpdateGroupImageRequest) => {
+      const response = await updateGroupImageEndpoint.image.$patch({
+        param: { id: groupId },
+        json,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: unknown };
+        throw new Error(
+          getApiErrorMessage(
+            payload.error,
+            'No se pudo actualizar la imagen',
+          ),
+        );
+      }
+
+      return (await response.json()) as UpdateGroupImageResponse;
+    },
+    onSuccess: async () => {
+      await invalidateGroup(queryClient, groupId);
+    },
+  });
 }
 
 export function useCreateExpenseMutation(groupId: string) {

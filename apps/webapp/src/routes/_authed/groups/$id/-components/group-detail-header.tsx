@@ -5,6 +5,7 @@ import {
   BarChart3,
   MoreHorizontal,
   Plus,
+  QrCode,
 } from 'lucide-react';
 
 import { formatMoney } from './group-detail.utils';
@@ -13,11 +14,11 @@ type GroupDetailHeaderProps = {
   groupId: string;
   groupName: string;
   description: string | null;
-  participantCount: number;
   totalsEntries: Array<[string, number]>;
   primaryTotal: [string, number] | undefined;
   balanceLabel: string;
   balanceTone: string;
+  onOpenQr: () => void;
   onOpenMore: () => void;
   onOpenReports: () => void;
 };
@@ -26,11 +27,11 @@ export function GroupDetailHeader({
   groupId,
   groupName,
   description,
-  participantCount,
   totalsEntries,
   primaryTotal,
   balanceLabel,
   balanceTone,
+  onOpenQr,
   onOpenMore,
   onOpenReports,
 }: GroupDetailHeaderProps) {
@@ -51,10 +52,18 @@ export function GroupDetailHeader({
             {groupName}
           </h1>
           <p className="truncate text-sm text-white/55">
-            {participantCount} participantes
             {description ? ` · ${description}` : ''}
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={onOpenQr}
+          className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
+          aria-label="Código QR del grupo"
+        >
+          <QrCode className="size-4" />
+        </button>
       </div>
 
       <section className="rounded-[28px] bg-[#1f1f1f] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.25)]">

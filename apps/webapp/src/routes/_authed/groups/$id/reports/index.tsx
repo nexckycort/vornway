@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { ArrowDownLeft, ArrowUpRight, ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Cell, Pie, PieChart } from 'recharts';
+import { Pie, PieChart } from 'recharts';
 
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
@@ -112,7 +112,7 @@ function RouteComponent() {
       .map(([name, amount], index) => ({
         name,
         amount,
-        color: CATEGORY_COLORS[index % CATEGORY_COLORS.length] ?? '#94a3b8',
+        fill: CATEGORY_COLORS[index % CATEGORY_COLORS.length] ?? '#94a3b8',
       }))
       .sort((left, right) => right.amount - left.amount);
   }, [filteredTotalsExpenses]);
@@ -405,7 +405,7 @@ function RouteComponent() {
                   >((acc, entry) => {
                     acc[entry.name] = {
                       label: entry.name,
-                      color: entry.color,
+                      color: entry.fill,
                     };
                     return acc;
                   }, {})}
@@ -419,10 +419,8 @@ function RouteComponent() {
                       outerRadius={108}
                       paddingAngle={3}
                       stroke="transparent"
+                      fill="#94a3b8"
                     >
-                      {categoryBreakdown.map((entry) => (
-                        <Cell key={entry.name} fill={entry.color} />
-                      ))}
                     </Pie>
                   </PieChart>
                 </ChartContainer>
@@ -443,7 +441,7 @@ function RouteComponent() {
                   >
                     <span
                       className="size-2.5 rounded-full"
-                      style={{ backgroundColor: entry.color }}
+                      style={{ backgroundColor: entry.fill }}
                     />
                     {entry.name}
                     <span className="text-[#64748b]">

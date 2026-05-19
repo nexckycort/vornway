@@ -35,6 +35,7 @@ function RouteComponent() {
   const navigate = useNavigate();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [showMoreDrawer, setShowMoreDrawer] = useState(false);
+  const [showQrDrawer, setShowQrDrawer] = useState(false);
   const [showExpenseOptionsDrawer, setShowExpenseOptionsDrawer] =
     useState(false);
   const [showDeleteExpenseDrawer, setShowDeleteExpenseDrawer] = useState(false);
@@ -271,11 +272,11 @@ function RouteComponent() {
           groupId={id}
           groupName={group.name}
           description={group.description}
-          participantCount={group.participantCount}
           totalsEntries={totalsEntries}
           primaryTotal={primaryTotal}
           balanceLabel={balanceLabel}
           balanceTone={balanceTone}
+          onOpenQr={() => setShowQrDrawer(true)}
           onOpenMore={() => setShowMoreDrawer(true)}
           onOpenReports={() =>
             void navigate({ to: '/groups/$id/reports', params: { id } })
@@ -304,6 +305,45 @@ function RouteComponent() {
         </div>
       </div>
 
+      <Drawer open={showQrDrawer} onOpenChange={setShowQrDrawer}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Código QR del grupo</DrawerTitle>
+            <DrawerDescription>{group.name}</DrawerDescription>
+          </DrawerHeader>
+
+          <div className="space-y-3 px-5 pb-5">
+            <p className="text-sm text-[#64748b]">
+              Escanea este código desde otro celular para abrir la invitación
+              del grupo.
+            </p>
+
+            {groupQrCode ? (
+              <div className="flex justify-center rounded-[28px] border border-[#e2e8f0] bg-white p-4">
+                <img
+                  src={groupQrCode}
+                  alt={`Código QR para unirse a ${group.name}`}
+                  className="size-64 rounded-[24px] bg-white object-contain"
+                />
+              </div>
+            ) : (
+              <div className="rounded-[28px] border border-dashed border-[#cbd5e1] bg-[#f8fafc] px-4 py-10 text-center text-sm text-[#64748b]">
+                Generando QR...
+              </div>
+            )}
+
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full rounded-full"
+              onClick={shareInvite}
+            >
+              Compartir enlace
+            </Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
       <Drawer open={showMoreDrawer} onOpenChange={setShowMoreDrawer}>
         <DrawerContent>
           <DrawerHeader>
@@ -322,27 +362,6 @@ function RouteComponent() {
                 Compartir grupo
               </span>
             </button>
-
-            {groupQrCode ? (
-              <div className="rounded-3xl border border-[#e2e8f0] bg-white p-4">
-                <div className="mb-3">
-                  <p className="text-sm font-medium text-[#132238]">
-                    Compartir con QR
-                  </p>
-                  <p className="mt-1 text-xs text-[#64748b]">
-                    Escanea este código para abrir la invitación del grupo.
-                  </p>
-                </div>
-
-                <div className="flex justify-center rounded-[28px] bg-white p-4">
-                  <img
-                    src={groupQrCode}
-                    alt={`Código QR para unirse a ${group.name}`}
-                    className="size-56 rounded-[24px] bg-white object-contain"
-                  />
-                </div>
-              </div>
-            ) : null}
 
             {shareMessage ? (
               <p className="rounded-2xl bg-[#f8fafc] px-4 py-3 text-sm text-[#64748b]">

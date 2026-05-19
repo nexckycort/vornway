@@ -20,7 +20,6 @@ export type ExpenseItem = {
   };
   participantCount: number;
   currentUserBalance: number | null;
-  isPendingSync?: boolean;
 };
 
 export type GroupMemberIdentity = {

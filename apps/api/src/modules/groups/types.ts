@@ -23,7 +23,6 @@ export type CreateGroupExpenseInput = {
   participantIds: string[];
   splitMethod: 'equal' | 'percentage' | 'exact';
   exactShares?: Record<string, number>;
-  clientMutationId?: string;
 };
 
 export type UpdateGroupExpenseInput = CreateGroupExpenseInput & {

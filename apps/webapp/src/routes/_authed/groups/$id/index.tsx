@@ -17,7 +17,6 @@ import {
   useGroupExpensesInfiniteQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { useOfflineExpenseQueue } from '#/lib/offline-expense-sync';
 import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { ImagePlus, Pencil, Share2, Trash2 } from 'lucide-react';
@@ -31,41 +30,9 @@ import { GroupDetailSkeleton } from './-components/group-detail-skeleton';
 import type { ExpenseItem, GroupSummary } from './-types/group-detail.types';
 import { compressGroupImageFile } from '../new/-lib/group-create-draft';
 
-type OfflineExpenseQueueItem = ReturnType<typeof useOfflineExpenseQueue>[number];
-
 export const Route = createFileRoute('/_authed/groups/$id/')({
   component: RouteComponent,
 });
-
-function mapOfflineExpenseToExpenseItem(
-  item: OfflineExpenseQueueItem,
-  members: GroupSummary['members'],
-): ExpenseItem {
-  const participantIds = item.request.participantIds ?? [];
-  const paidBy = members.find((member) => member.id === item.request.paidById);
-
-  return {
-    id: item.request.clientMutationId,
-    category: null,
-    description: item.request.description,
-    amount: item.request.amount,
-    currency: item.request.currency,
-    date: item.createdAt,
-    isDeleted: false,
-    isSettlement: false,
-    isPersonal: participantIds.length === 0,
-    expenseType: 'standard',
-    subExpenseCount: 0,
-    settlementToName: null,
-    paidBy: {
-      id: item.request.paidById,
-      name: paidBy?.name ?? 'Pendiente',
-    },
-    participantCount: participantIds.length,
-    currentUserBalance: null,
-    isPendingSync: true,
-  };
-}
 
 function RouteComponent() {
   const { id } = Route.useParams();
@@ -92,7 +59,6 @@ function RouteComponent() {
 
   const groupQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
-  const offlineExpenses = useOfflineExpenseQueue(id);
   const deleteExpenseMutation = useDeleteExpenseMutation(id);
   const removeMemberMutation = useRemoveMemberMutation(id);
   const updateGroupImageMutation = useUpdateGroupImageMutation(id);
@@ -101,16 +67,13 @@ function RouteComponent() {
 
   const expenses = useMemo(() => {
     const serverExpenses = expensesQuery.data?.pages.flatMap((page) => page.data) ?? [];
-    const pendingExpenses = offlineExpenses.map((item) =>
-      mapOfflineExpenseToExpenseItem(item, groupQuery.data?.members ?? []),
-    );
 
-    return [...pendingExpenses, ...serverExpenses].sort((left, right) => {
+    return [...serverExpenses].sort((left, right) => {
       const leftDate = new Date(left.date).getTime();
       const rightDate = new Date(right.date).getTime();
       return rightDate - leftDate;
     });
-  }, [expensesQuery.data, groupQuery.data?.members, offlineExpenses]);
+  }, [expensesQuery.data]);
   const inviteLink =
     groupQuery.data?.inviteCode && typeof window !== 'undefined'
       ? `https://join.vornway.com/${groupQuery.data.inviteCode}`
@@ -349,12 +312,11 @@ function RouteComponent() {
           imageUrl={group.imageUrl}
           totalsEntries={totalsEntries}
           primaryTotal={primaryTotal}
-          balanceLabel={balanceLabel}
-          balanceTone={balanceTone}
-          offlinePendingCount={offlineExpenses.length}
-          onOpenQr={() => setShowQrDrawer(true)}
-          onOpenMore={() => setShowMoreDrawer(true)}
-          onOpenReports={() =>
+        balanceLabel={balanceLabel}
+        balanceTone={balanceTone}
+        onOpenQr={() => setShowQrDrawer(true)}
+        onOpenMore={() => setShowMoreDrawer(true)}
+        onOpenReports={() =>
             void navigate({
               to: '/groups/$id/reports',
               params: { id },

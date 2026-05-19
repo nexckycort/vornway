@@ -19,7 +19,6 @@ type GroupDetailHeaderProps = {
   primaryTotal: [string, number] | undefined;
   balanceLabel: string;
   balanceTone: string;
-  offlinePendingCount: number;
   onOpenQr: () => void;
   onOpenMore: () => void;
   onOpenReports: () => void;
@@ -34,7 +33,6 @@ export function GroupDetailHeader({
   primaryTotal,
   balanceLabel,
   balanceTone,
-  offlinePendingCount,
   onOpenQr,
   onOpenMore,
   onOpenReports,
@@ -97,14 +95,6 @@ export function GroupDetailHeader({
         <p className={`mt-2 text-sm font-medium ${balanceTone}`}>
           {balanceLabel}
         </p>
-
-        {offlinePendingCount > 0 ? (
-          <div className="mt-3 inline-flex rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold text-amber-700">
-            {offlinePendingCount === 1
-              ? '1 gasto pendiente de sincronizar'
-              : `${offlinePendingCount} gastos pendientes de sincronizar`}
-          </div>
-        ) : null}
 
         {totalsEntries.length > 1 ? (
           <div className="mt-3 flex flex-wrap gap-2">

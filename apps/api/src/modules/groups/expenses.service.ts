@@ -266,7 +266,6 @@ export function createGroupExpensesService() {
       participantIds,
       splitMethod,
       exactShares,
-      clientMutationId,
     }: CreateGroupExpenseInput): Promise<{ id: string }> => {
       const membership = await db.groupMember.findFirst({
         where: buildActiveGroupMemberWhere(userId, groupId),
@@ -296,23 +295,6 @@ export function createGroupExpensesService() {
         (memberId) => validMemberIds.has(memberId),
       );
 
-      if (clientMutationId) {
-        const existingExpense = await db.expense.findFirst({
-          where: {
-            groupId,
-            metadata: {
-              path: ['clientMutationId'],
-              equals: clientMutationId,
-            },
-          },
-          select: { id: true },
-        });
-
-        if (existingExpense) {
-          return existingExpense;
-        }
-      }
-
       const { shares: participantShares, normalizedMethod } = createSplitShares(
         {
           amount,
@@ -333,7 +315,6 @@ export function createGroupExpensesService() {
             metadata: {
               splitMethod: normalizedMethod,
               splitValues: exactShares ?? null,
-              ...(clientMutationId ? { clientMutationId } : {}),
             },
             ...(validParticipantIds.length > 0
               ? {

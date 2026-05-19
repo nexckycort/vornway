@@ -1,6 +1,5 @@
 import type { InferRequestType, InferResponseType } from '#/lib/hc';
 import { client } from '#/lib/hc';
-import { createExpenseWithOfflineSupport } from '#/lib/offline-expense-sync';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
@@ -99,14 +98,20 @@ export function useCreateExpenseMutation(groupId: string) {
 
   return useMutation({
     mutationFn: async (json: CreateExpenseRequest['json']) => {
-      return createExpenseWithOfflineSupport(groupId, json, queryClient);
-    },
-    onSuccess: async (data) => {
-      if (data && typeof data === 'object' && 'queued' in data && data.queued) {
-        return;
+      const response = await createExpenseEndpoint({
+        param: { id: groupId },
+        json,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudo crear el gasto');
       }
 
-      await invalidateGroup(queryClient, groupId);
+      return (await response.json()) as { id: string };
+    },
+    onSuccess: () => {
+      void invalidateGroup(queryClient, groupId);
     },
   });
 }

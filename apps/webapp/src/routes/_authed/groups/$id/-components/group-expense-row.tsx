@@ -1,6 +1,5 @@
 import { useRef, useState, type MouseEvent, type TouchEvent } from 'react';
 import { Pin, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 import type { ExpenseItem } from '../-types/group-detail.types';
 import { formatMoney, getExpenseEmoji, getExpenseRowTag } from './group-detail.utils';
@@ -33,7 +32,6 @@ export function GroupExpenseRow({
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showDeleteAction = !expense.isDeleted && translateX < -2;
-  const isPendingSync = expense.isPendingSync === true;
 
   const clearLongPressTimeout = () => {
     if (longPressTimeoutRef.current) {
@@ -43,7 +41,6 @@ export function GroupExpenseRow({
   };
 
   const startLongPressTimeout = () => {
-    if (isPendingSync) return;
     clearLongPressTimeout();
     longPressTimeoutRef.current = setTimeout(() => {
       setDidLongPress(true);
@@ -54,7 +51,7 @@ export function GroupExpenseRow({
   };
 
   const handleTouchStart = (event: TouchEvent<HTMLButtonElement>) => {
-    if (expense.isDeleted || isPendingSync) return;
+    if (expense.isDeleted) return;
     const touch = event.touches[0];
     setStartX(touch.clientX);
     setStartY(touch.clientY);
@@ -69,8 +66,7 @@ export function GroupExpenseRow({
       !isDragging ||
       startX === null ||
       startY === null ||
-      expense.isDeleted ||
-      isPendingSync
+      expense.isDeleted
     ) {
       return;
     }
@@ -94,7 +90,7 @@ export function GroupExpenseRow({
 
   const handleTouchEnd = () => {
     clearLongPressTimeout();
-    if (!isDragging || expense.isDeleted || isPendingSync) return;
+    if (!isDragging || expense.isDeleted) return;
 
     if (didLongPress) {
       setIsDragging(false);
@@ -122,7 +118,7 @@ export function GroupExpenseRow({
   };
 
   const handleMouseDown = () => {
-    if (expense.isDeleted || isPendingSync) return;
+    if (expense.isDeleted) return;
     setDidLongPress(false);
     startLongPressTimeout();
   };
@@ -132,11 +128,6 @@ export function GroupExpenseRow({
   };
 
   const handleOpenExpense = () => {
-    if (isPendingSync) {
-      toast.info('Este gasto se sincronizará cuando vuelva la conexión');
-      return;
-    }
-
     if (didSwipe) {
       setDidSwipe(false);
       return;
@@ -157,10 +148,6 @@ export function GroupExpenseRow({
 
   const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    if (isPendingSync) {
-      toast.info('Este gasto se sincronizará cuando vuelva la conexión');
-      return;
-    }
     onDeleteExpense(expense);
     setTranslateX(0);
   };
@@ -194,17 +181,10 @@ export function GroupExpenseRow({
         onMouseLeave={handleMouseUp}
         onContextMenu={(event) => {
           event.preventDefault();
-          if (isPendingSync) {
-            toast.info('Este gasto se sincronizará cuando vuelva la conexión');
-            return;
-          }
           onOpenOptions(expense);
         }}
-        className={`native-tap relative z-10 flex w-full items-start gap-3 bg-white px-4 py-4 text-left transition-transform duration-200 ${
-          isPendingSync ? 'opacity-90' : ''
-        }`}
+        className="native-tap relative z-10 flex w-full items-start gap-3 bg-white px-4 py-4 text-left transition-transform duration-200"
         style={{ transform: `translateX(${translateX}px)` }}
-        aria-disabled={isPendingSync}
       >
         <div
           className={`flex size-11 shrink-0 items-center justify-center rounded-full ${
@@ -212,9 +192,7 @@ export function GroupExpenseRow({
               ? 'bg-emerald-100'
               : expense.expenseType === 'composite'
                 ? 'bg-blue-100'
-                : isPendingSync
-                  ? 'bg-amber-100'
-                  : 'bg-[#f3f4f6]'
+                : 'bg-[#f3f4f6]'
           }`}
         >
           <span className="text-base">{getExpenseEmoji(expense)}</span>
@@ -234,11 +212,6 @@ export function GroupExpenseRow({
               : `Pagado por ${expense.paidBy.name}`}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            {isPendingSync ? (
-              <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold text-amber-700">
-                Sin conexión
-              </span>
-            ) : null}
             {expense.category ? (
               <span className="inline-flex rounded-full bg-[#f8fafc] px-3 py-1 text-[11px] font-medium text-[#64748b]">
                 {expense.category.name}

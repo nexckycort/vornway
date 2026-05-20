@@ -74,6 +74,7 @@ function RouteComponent() {
   const auth = useAuth();
   const session = useSession();
   const {
+    isInstallable,
     isInstalled,
     installApp,
     getInstallInstructions,
@@ -359,7 +360,7 @@ function RouteComponent() {
                 onClick={() => {
                   void handleInstallApp();
                 }}
-                trailing="Instalar"
+                trailing={isInstallable ? 'Instalar' : 'Manual'}
               />
             ) : null}
             <ProfileActionRow

@@ -256,10 +256,6 @@ export function createGroupMembersService() {
         throw new Error('No tienes acceso a este grupo');
       }
 
-      if (group.ownerId !== userId) {
-        throw new Error('Solo el creador puede desvincular participantes');
-      }
-
       const targetMember = await db.groupMember.findFirst({
         where: {
           id: memberId,
@@ -277,21 +273,39 @@ export function createGroupMembersService() {
         throw new Error('Participante no encontrado');
       }
 
+      const isSelfUnlink = targetMember.userId === userId;
+
+      if (!isSelfUnlink && group.ownerId !== userId) {
+        throw new Error('Solo el creador puede desvincular participantes');
+      }
+
       if (!targetMember.userId) {
         throw new Error('El participante ya no tiene una cuenta vinculada');
       }
 
-      if (targetMember.userId === group.ownerId) {
+      if (targetMember.userId === group.ownerId && !isSelfUnlink) {
         throw new Error('No puedes desvincular al creador del grupo');
       }
 
+      const usageCount = await getMemberExpenseUsageCount({
+        groupId,
+        memberId: targetMember.id,
+      });
+      const shouldDeleteMember = isSelfUnlink && usageCount === 0;
+
       await db.$transaction(async (tx) => {
-        await tx.groupMember.update({
-          where: { id: targetMember.id },
-          data: {
-            userId: null,
-          },
-        });
+        if (shouldDeleteMember) {
+          await tx.groupMember.delete({
+            where: { id: targetMember.id },
+          });
+        } else {
+          await tx.groupMember.update({
+            where: { id: targetMember.id },
+            data: {
+              userId: null,
+            },
+          });
+        }
 
         await tx.activityLog.create({
           data: {

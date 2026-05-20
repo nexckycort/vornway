@@ -52,6 +52,13 @@ export function createGroupExpensesService() {
               userId: true,
             },
           },
+          categories: {
+            select: {
+              id: true,
+              name: true,
+            },
+            orderBy: [{ createdAt: 'asc' }, { name: 'asc' }],
+          },
         },
       });
 
@@ -154,9 +161,9 @@ export function createGroupExpensesService() {
               isDeleted: Boolean(row.notes?.includes('[DELETED]')),
               isSettlement,
               isPersonal,
-              expenseType: 'standard' as const,
-              subExpenseCount: 0,
-              settlementToName: isSettlement
+            expenseType: 'standard' as const,
+            subExpenseCount: 0,
+            settlementToName: isSettlement
                 ? (row.participants[0]?.member.name ?? null)
                 : null,
               paidBy: row.paidBy,
@@ -262,6 +269,7 @@ export function createGroupExpensesService() {
       description,
       amount,
       currency,
+      categoryId,
       paidById,
       participantIds,
       splitMethod,
@@ -291,6 +299,20 @@ export function createGroupExpensesService() {
         throw new Error('El pagador no pertenece al grupo');
       }
 
+      const category = categoryId
+        ? await db.expenseCategory.findFirst({
+            where: {
+              id: categoryId,
+              groupId,
+            },
+            select: { id: true },
+          })
+        : null;
+
+      if (categoryId && !category) {
+        throw new Error('La categoría no pertenece al grupo');
+      }
+
       const validParticipantIds = Array.from(new Set(participantIds)).filter(
         (memberId) => validMemberIds.has(memberId),
       );
@@ -309,6 +331,7 @@ export function createGroupExpensesService() {
           data: {
             groupId,
             paidById,
+            ...(categoryId ? { categoryId } : {}),
             description,
             amount,
             currency,
@@ -429,6 +452,7 @@ export function createGroupExpensesService() {
       description,
       amount,
       currency,
+      categoryId,
       paidById,
       participantIds,
       splitMethod,
@@ -456,6 +480,20 @@ export function createGroupExpensesService() {
 
       if (!validMemberIds.has(paidById)) {
         throw new Error('El pagador no pertenece al grupo');
+      }
+
+      const category = categoryId
+        ? await db.expenseCategory.findFirst({
+            where: {
+              id: categoryId,
+              groupId,
+            },
+            select: { id: true },
+          })
+        : null;
+
+      if (categoryId && !category) {
+        throw new Error('La categoría no pertenece al grupo');
       }
 
       const validParticipantIds = Array.from(new Set(participantIds)).filter(
@@ -499,6 +537,7 @@ export function createGroupExpensesService() {
             description,
             amount,
             currency,
+            ...(categoryId ? { categoryId } : { categoryId: null }),
             paidById,
             metadata: {
               splitMethod: normalizedMethod,

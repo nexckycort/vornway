@@ -37,6 +37,7 @@ export const createGroupExpenseSchema = z.object({
   description: z.string().min(1).max(160),
   amount: z.number().positive(),
   currency: z.string().min(1).max(8),
+  categoryId: z.string().min(1).optional(),
   paidById: z.string().min(1),
   participantIds: z.array(z.string().min(1)).default([]),
   splitMethod: z.enum(['equal', 'percentage', 'exact']).default('equal'),

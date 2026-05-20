@@ -19,6 +19,7 @@ export type CreateGroupExpenseInput = {
   description: string;
   amount: number;
   currency: string;
+  categoryId?: string | null;
   paidById: string;
   participantIds: string[];
   splitMethod: 'equal' | 'percentage' | 'exact';
@@ -242,6 +243,10 @@ export type GroupSummaryResult = {
   updatedAt: Date;
   totals: Record<string, number>;
   participantCount: number;
+  categories: Array<{
+    id: string;
+    name: string;
+  }>;
   members: GroupSummaryMember[];
   memberBalances: Array<{
     memberId: string;

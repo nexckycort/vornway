@@ -86,9 +86,11 @@ function RouteComponent() {
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('COP');
   const [paidById, setPaidById] = useState('');
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
   const [showCurrencyDrawer, setShowCurrencyDrawer] = useState(false);
+  const [showCategoryDrawer, setShowCategoryDrawer] = useState(false);
   const [showSplitDrawer, setShowSplitDrawer] = useState(false);
   const [participantValues, setParticipantValues] = useState<
     Record<string, string>
@@ -100,8 +102,10 @@ function RouteComponent() {
   const didMountAmountRef = useRef(false);
 
   const members = groupQuery.data?.members ?? [];
+  const categories = groupQuery.data?.categories ?? [];
   const expense = expenseQuery.data;
   const currentCurrency = currencyMeta[currency] ?? currencyMeta.COP;
+  const selectedCategory = categories.find((item) => item.id === categoryId);
 
   useEffect(() => {
     const node = amountInputRef.current;
@@ -136,6 +140,7 @@ function RouteComponent() {
       setDescription(expense.description);
       setAmount(expense.amount.toString());
       setCurrency(expense.currency);
+      setCategoryId(expense.category?.id ?? null);
       setPaidById(expense.paidBy.id);
       setParticipantIds(
         expense.participants.map((participant) => participant.memberId),
@@ -308,6 +313,7 @@ function RouteComponent() {
       description: description.trim(),
       amount: normalizedAmount,
       currency,
+      ...(categoryId ? { categoryId } : {}),
       paidById,
       participantIds,
       splitMethod,
@@ -390,7 +396,7 @@ function RouteComponent() {
         navigate({ to: '/groups/$id', params: { id }, replace: true })
       }
     >
-      <div className="px-6 pb-6">
+      <div className="px-2 pb-6">
         <div className="flex items-baseline justify-between gap-4">
           <button
             type="button"
@@ -438,7 +444,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <div className="space-y-5 px-6 pb-6">
+      <div className="space-y-5 px-2 pb-6">
         <label className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3.5">
           <input
             value={description}
@@ -447,6 +453,20 @@ function RouteComponent() {
             className="w-full bg-transparent text-gray-700 outline-none placeholder:text-gray-400"
           />
         </label>
+
+        <button
+          type="button"
+          onClick={() => setShowCategoryDrawer(true)}
+          className="flex w-full items-center justify-between rounded-xl border border-gray-200 px-4 py-3.5 text-left"
+        >
+          <div>
+            <p className="text-xs text-gray-500">Categoría</p>
+            <p className="text-sm font-medium text-gray-900">
+              {selectedCategory?.name ?? 'Sin categoría'}
+            </p>
+          </div>
+          <ChevronDown className="size-4 text-gray-400" />
+        </button>
 
         <section>
           <p className="mb-3 text-sm text-gray-600">Pagado por</p>
@@ -633,7 +653,7 @@ function RouteComponent() {
         </p>
       </div>
 
-      <div className="px-6 pb-8">
+      <div className="px-2 pb-8">
         <Button
           type="button"
           onClick={handleSubmit}
@@ -684,6 +704,74 @@ function RouteComponent() {
                     </p>
                   </div>
                   {active ? <Check className="size-5 text-rose-500" /> : null}
+                </button>
+              );
+            })}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={showCategoryDrawer} onOpenChange={setShowCategoryDrawer}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Categoría</DrawerTitle>
+            <DrawerDescription>
+              Elige una categoría para este gasto.
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="space-y-1 px-5 pb-5">
+            <button
+              type="button"
+              onClick={() => {
+                setCategoryId(null);
+                setShowCategoryDrawer(false);
+              }}
+              className="flex w-full items-center justify-between rounded-2xl px-1 py-3 text-left"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-base font-medium text-gray-900">
+                  Sin categoría
+                </p>
+              </div>
+              <span
+                className={`flex size-6 items-center justify-center rounded-full border ${
+                  !categoryId
+                    ? 'border-rose-500 bg-rose-500'
+                    : 'border-gray-300 bg-white'
+                }`}
+              >
+                {!categoryId ? <Check className="size-4 text-white" /> : null}
+              </span>
+            </button>
+
+            {categories.map((category) => {
+              const active = categoryId === category.id;
+
+              return (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => {
+                    setCategoryId(category.id);
+                    setShowCategoryDrawer(false);
+                  }}
+                  className="flex w-full items-center justify-between rounded-2xl px-1 py-3 text-left"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-medium text-gray-900">
+                      {category.name}
+                    </p>
+                  </div>
+                  <span
+                    className={`flex size-6 items-center justify-center rounded-full border ${
+                      active
+                        ? 'border-rose-500 bg-rose-500'
+                        : 'border-gray-300 bg-white'
+                    }`}
+                  >
+                    {active ? <Check className="size-4 text-white" /> : null}
+                  </span>
                 </button>
               );
             })}

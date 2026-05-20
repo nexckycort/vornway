@@ -52,6 +52,10 @@ export type GroupSummary = {
   updatedAt: string;
   participantCount: number;
   totals: Record<string, number>;
+  categories: Array<{
+    id: string;
+    name: string;
+  }>;
   members: GroupMemberIdentity[];
   directDebts: Array<{
     currency: string;

@@ -34,6 +34,13 @@ export function createGroupSummaryService() {
           createdAt: true,
           updatedAt: true,
           totals: true,
+          categories: {
+            select: {
+              id: true,
+              name: true,
+            },
+            orderBy: [{ createdAt: 'asc' }, { name: 'asc' }],
+          },
           GroupMember: {
             select: {
               id: true,
@@ -213,6 +220,10 @@ export function createGroupSummaryService() {
         updatedAt: group.updatedAt,
         totals: (group.totals as Record<string, number>) ?? {},
         participantCount: group.GroupMember.length,
+        categories: group.categories.map((category) => ({
+          id: category.id,
+          name: category.name,
+        })),
         members: group.GroupMember.map((member) => ({
           id: member.id,
           name: member.name,

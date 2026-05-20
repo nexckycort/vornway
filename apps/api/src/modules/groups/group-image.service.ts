@@ -9,11 +9,24 @@ export const GROUP_IMAGE_ASSET_FOLDER = 'groups';
 export const GROUP_IMAGE_ASSET_FILENAME = 'cover.webp';
 const GROUP_IMAGE_ASSET_PREFIX = `/${GROUP_IMAGE_ASSET_FOLDER}/`;
 
+export function resolveGroupImageUrl(
+  imagePathOrUrl: string | null | undefined,
+) {
+  if (!imagePathOrUrl) return null;
+  if (imagePathOrUrl.startsWith('https://')) return imagePathOrUrl;
+  if (imagePathOrUrl.startsWith('/')) {
+    return `${GROUP_IMAGE_ASSET_BASE_URL}${imagePathOrUrl}`;
+  }
+
+  return `${GROUP_IMAGE_ASSET_BASE_URL}/${imagePathOrUrl}`;
+}
+
 export function getVersionedGroupImageUrl(
   imageUrl: string | null | undefined,
   updatedAt: Date | string | null | undefined,
 ) {
-  if (!imageUrl) return null;
+  const resolvedImageUrl = resolveGroupImageUrl(imageUrl);
+  if (!resolvedImageUrl) return null;
 
   const version =
     updatedAt instanceof Date
@@ -23,11 +36,11 @@ export function getVersionedGroupImageUrl(
         : null;
 
   if (!version || Number.isNaN(version)) {
-    return imageUrl;
+    return resolvedImageUrl;
   }
 
-  const separator = imageUrl.includes('?') ? '&' : '?';
-  return `${imageUrl}${separator}v=${version}`;
+  const separator = resolvedImageUrl.includes('?') ? '&' : '?';
+  return `${resolvedImageUrl}${separator}v=${version}`;
 }
 
 function parseDataUrl(dataUrl: string) {
@@ -75,7 +88,7 @@ export async function uploadGroupImage(input: {
     }),
   );
 
-  return `${GROUP_IMAGE_ASSET_BASE_URL}/${key}`;
+  return `/${key}`;
 }
 
 export async function deleteGroupImage(imageUrl: string | null | undefined) {
@@ -94,6 +107,12 @@ function extractGroupImageKey(imageUrl: string | null | undefined) {
   if (!imageUrl) return null;
 
   try {
+    if (imageUrl.startsWith('/')) {
+      return imageUrl.startsWith(GROUP_IMAGE_ASSET_PREFIX)
+        ? imageUrl.slice(1)
+        : null;
+    }
+
     const url = new URL(imageUrl);
     if (imageUrl.startsWith(GROUP_IMAGE_ASSET_BASE_URL)) {
       return url.pathname.startsWith(GROUP_IMAGE_ASSET_PREFIX)

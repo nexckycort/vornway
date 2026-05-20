@@ -11,7 +11,6 @@ import { useUpdateGroupImageMutation } from '#/routes/_authed/groups/-hooks/use-
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
-  ChevronRight,
   Copy,
   ImagePlus,
   LogOut,
@@ -189,7 +188,7 @@ function RouteComponent() {
   return (
     <MobilePageLayout title="Ajustes" onBack={goBack}>
       <div className="flex flex-1 flex-col pb-4">
-        <section className="border-y border-[#e5e7eb] bg-white">
+        <section className="-mx-4 border-y border-[#e5e7eb] bg-white px-4">
           <div className="flex items-center gap-3 py-4">
             <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#fff1f5]">
               {group.imageUrl ? (
@@ -225,67 +224,58 @@ function RouteComponent() {
           </div>
         </section>
 
-        <section className="mt-6">
-          <p className="px-1 pb-3 text-sm text-[#64748b]">
+        <section className="-mx-4 mt-6">
+          <p className="px-3 pb-1 text-sm text-[#64748b]">
             Invitar participantes
           </p>
 
-          <div className="border-y border-[#e5e7eb] bg-white">
-            <button
-              type="button"
-              className="flex w-full items-center gap-3 px-1 py-4 text-left"
-              onClick={() => setShowQrDrawer(true)}
-            >
-              <span className="flex size-9 items-center justify-center text-[#132238]">
-                <QrCode className="size-5" />
-              </span>
-              <span className="flex-1 text-sm text-[#132238]">
-                Ver código QR
-              </span>
-              <ChevronRight className="size-4 text-[#94a3b8]" />
-            </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 px-1 py-2 text-left"
+            onClick={() => setShowQrDrawer(true)}
+          >
+            <span className="flex size-9 items-center justify-center text-[#132238]">
+              <QrCode className="size-5" />
+            </span>
+            <span className="flex-1 text-sm text-[#132238]">Ver código QR</span>
+          </button>
 
-            <button
-              type="button"
-              className="flex w-full items-center gap-3 border-t border-[#e5e7eb] px-1 py-4 text-left"
-              onClick={() => setShowShareDrawer(true)}
-            >
-              <span className="flex size-9 items-center justify-center text-[#132238]">
-                <Share2 className="size-5" />
-              </span>
-              <span className="flex-1 text-sm text-[#132238]">
-                Compartir enlace de invitación
-              </span>
-              <ChevronRight className="size-4 text-[#94a3b8]" />
-            </button>
-          </div>
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 px-1 py-2 text-left"
+            onClick={() => setShowShareDrawer(true)}
+          >
+            <span className="flex size-9 items-center justify-center text-[#132238]">
+              <Share2 className="size-5" />
+            </span>
+            <span className="flex-1 text-sm text-[#132238]">
+              Compartir enlace de invitación
+            </span>
+          </button>
         </section>
 
-        <section className="mt-6">
-          <p className="px-1 pb-3 text-sm text-[#64748b]">
+        <section className="-mx-4 mt-2">
+          <p className="px-3 pb-1 text-sm text-[#64748b]">
             Otras configuraciones
           </p>
 
-          <div className="border-y border-[#e5e7eb] bg-white">
-            <button
-              type="button"
-              className="flex w-full items-center gap-3 px-1 py-4 text-left"
-              onClick={() => {
-                void 0;
-              }}
-            >
-              <span className="flex size-9 items-center justify-center text-[#132238]">
-                <ImagePlus className="size-5" />
-              </span>
-              <span className="flex-1 text-sm text-[#132238]">
-                Crear y editar categorías
-              </span>
-              <ChevronRight className="size-4 text-[#94a3b8]" />
-            </button>
-          </div>
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 px-1 py-2 pb-4 text-left"
+            onClick={() => {
+              void 0;
+            }}
+          >
+            <span className="flex size-9 items-center justify-center text-[#132238]">
+              <ImagePlus className="size-5" />
+            </span>
+            <span className="flex-1 text-sm text-[#132238]">
+              Crear y editar categorías
+            </span>
+          </button>
         </section>
 
-        <div className="mt-auto border-t border-[#e5e7eb] pt-4">
+        <div className="-mx-4 mt-1 border-t border-[#e5e7eb] px-4 pt-4">
           <button
             type="button"
             className={`flex w-full items-center justify-start gap-3 text-left text-sm font-medium ${

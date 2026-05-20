@@ -36,7 +36,7 @@ function RouteComponent() {
               <header className="flex items-center justify-between">
                 <div>
                   <h1 className="text-lg leading-7">
-                    Hola,
+                    Hola,&nbsp;
                     <span className="font-semibold text-primary">
                       {userName}
                     </span>

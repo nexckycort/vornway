@@ -12,6 +12,7 @@ import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-d
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   ChevronRight,
+  Copy,
   ImagePlus,
   LogOut,
   Pencil,
@@ -32,9 +33,14 @@ function RouteComponent() {
   const navigate = useNavigate();
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [showQrDrawer, setShowQrDrawer] = useState(false);
+  const [showShareDrawer, setShowShareDrawer] = useState(false);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [isLinkCopied, setIsLinkCopied] = useState(false);
   const [groupQrCode, setGroupQrCode] = useState<string | null>(null);
   const [isUpdatingGroupImage, setIsUpdatingGroupImage] = useState(false);
+  const copiedResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const groupQuery = useGroupSummaryQuery(id);
   const updateGroupImageMutation = useUpdateGroupImageMutation(id);
@@ -80,10 +86,27 @@ function RouteComponent() {
     try {
       await navigator.clipboard.writeText(value);
       setShareMessage(`${label} copiado`);
+      setIsLinkCopied(true);
+
+      if (copiedResetTimeoutRef.current) {
+        clearTimeout(copiedResetTimeoutRef.current);
+      }
+
+      copiedResetTimeoutRef.current = setTimeout(() => {
+        setIsLinkCopied(false);
+      }, 1200);
     } catch {
       setShareMessage('No se pudo copiar');
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (copiedResetTimeoutRef.current) {
+        clearTimeout(copiedResetTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const shareInvite = async () => {
     if (!inviteLink) return;
@@ -225,7 +248,7 @@ function RouteComponent() {
             <button
               type="button"
               className="flex w-full items-center gap-3 border-t border-[#e5e7eb] px-1 py-4 text-left"
-              onClick={shareInvite}
+              onClick={() => setShowShareDrawer(true)}
             >
               <span className="flex size-9 items-center justify-center text-[#132238]">
                 <Share2 className="size-5" />
@@ -323,6 +346,55 @@ function RouteComponent() {
                 Generando QR...
               </div>
             )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={showShareDrawer} onOpenChange={setShowShareDrawer}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Invita a tus compañeros de Grupo</DrawerTitle>
+            <DrawerDescription>
+              Comienza a gestionar los gastos compartidos del Grupo
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="space-y-3 px-5 pb-8">
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1 rounded-[24px] border border-[#e5e7eb] bg-[#f8fafc] px-4 py-3">
+                <p className="truncate text-sm text-[#132238]">{inviteLink}</p>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className={`size-14 shrink-0 rounded-full transition-all duration-200 ${
+                  isLinkCopied
+                    ? 'scale-105 border-[#fb7185] bg-[#fff1f2] text-[#fb7185]'
+                    : ''
+                }`}
+                onClick={async () => {
+                  await copyText(inviteLink, 'Enlace');
+                }}
+              >
+                {isLinkCopied ? (
+                  <span className="text-xs font-semibold">OK</span>
+                ) : (
+                  <Copy className="size-5" />
+                )}
+              </Button>
+            </div>
+
+            <Button
+              type="button"
+              className="h-11 w-full rounded-full bg-[#ff4d6a] text-white hover:bg-[#ff4d6a]/90"
+              onClick={async () => {
+                await shareInvite();
+              }}
+            >
+              <Share2 className="mr-2 size-4" />
+              Compartir enlace
+            </Button>
           </div>
         </DrawerContent>
       </Drawer>

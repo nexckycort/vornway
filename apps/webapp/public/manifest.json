@@ -146,6 +146,13 @@
       "type": "image/webp",
       "form_factor": "narrow",
       "label": "Pantalla de inicio de Vornway con resumen y lista de grupos"
+    },
+    {
+      "src": "screenshots/home.webp",
+      "sizes": "892x1983",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Pantalla de inicio de Vornway con resumen y lista de grupos"
     }
   ]
 }

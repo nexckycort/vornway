@@ -8,6 +8,7 @@ type InviteGroup = {
   description: string | null;
   type: string;
   inviteCode: string;
+  imageUrl: string | null;
   owner: {
     name: string | null;
   } | null;
@@ -31,6 +32,7 @@ app.get('/:inviteCode', async (c) => {
         title="Invitación no encontrada"
         description="Este enlace ya no es válido o el grupo fue eliminado."
         inviteCode={inviteCode}
+        imageUrl={null}
         inviterName={null}
         memberCount={0}
         groupType={null}
@@ -47,6 +49,7 @@ app.get('/:inviteCode', async (c) => {
       title={group.name}
       description={buildInviteDescription(group)}
       inviteCode={group.inviteCode}
+      imageUrl={group.imageUrl}
       inviterName={group.owner?.name ?? null}
       memberCount={group._count.GroupMember}
       groupType={group.type}
@@ -85,6 +88,7 @@ async function getInviteGroup(inviteCode: string) {
       description: true,
       type: true,
       inviteCode: true,
+      imageUrl: true,
       owner: {
         select: {
           name: true,
@@ -117,7 +121,10 @@ function firstHeaderValue(value?: string): string | undefined {
 }
 
 function normalizeInviteCode(value: string) {
-  return value.trim().replace(/[?#].*$/g, '').replace(/\/+$/g, '');
+  return value
+    .trim()
+    .replace(/[?#].*$/g, '')
+    .replace(/\/+$/g, '');
 }
 
 function buildInviteDescription(group: InviteGroup) {
@@ -153,7 +160,9 @@ function buildInvitationImage(input: {
   groupType: string | null;
   notFound: boolean;
 }) {
-  const typeLabel = input.groupType ? formatGroupType(input.groupType) : 'Vornway';
+  const typeLabel = input.groupType
+    ? formatGroupType(input.groupType)
+    : 'Vornway';
   const title = escapeXml(input.title);
   const inviter = escapeXml(input.inviterName);
   const memberLabel = `${input.memberCount} participante${input.memberCount === 1 ? '' : 's'}`;
@@ -219,6 +228,7 @@ function InvitePage(props: {
   title: string;
   description: string;
   inviteCode: string;
+  imageUrl: string | null;
   inviterName: string | null;
   memberCount: number;
   groupType: string | null;
@@ -227,7 +237,14 @@ function InvitePage(props: {
 }) {
   const inviteUrl = getInviteUrl(props.origin, props.inviteCode);
   const imageUrl = `${props.origin}/${props.inviteCode}/og-image.svg`;
-  const groupTypeLabel = props.groupType ? formatGroupType(props.groupType) : null;
+  const metadataImageUrl = getInviteMetadataImageUrl(
+    props.imageUrl,
+    props.origin,
+    imageUrl,
+  );
+  const groupTypeLabel = props.groupType
+    ? formatGroupType(props.groupType)
+    : null;
 
   return (
     <html lang="es">
@@ -245,7 +262,7 @@ function InvitePage(props: {
         <meta property="og:title" content={props.title} />
         <meta property="og:description" content={props.description} />
         <meta property="og:url" content={inviteUrl} />
-        <meta property="og:image" content={imageUrl} />
+        <meta property="og:image" content={metadataImageUrl} />
         <meta property="og:image:alt" content={props.title} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
@@ -260,7 +277,7 @@ function InvitePage(props: {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={props.title} />
         <meta name="twitter:description" content={props.description} />
-        <meta name="twitter:image" content={imageUrl} />
+        <meta name="twitter:image" content={metadataImageUrl} />
         <style>{`
           :root {
             color-scheme: light;
@@ -494,4 +511,29 @@ function InvitePage(props: {
       </body>
     </html>
   );
+}
+
+function getInviteMetadataImageUrl(
+  groupImageUrl: string | null | undefined,
+  origin: string,
+  fallbackImageUrl: string,
+) {
+  if (!groupImageUrl) return fallbackImageUrl;
+
+  if (
+    groupImageUrl.startsWith('http://') ||
+    groupImageUrl.startsWith('https://')
+  ) {
+    return groupImageUrl;
+  }
+
+  if (groupImageUrl.startsWith('/')) {
+    return `https://assets.vornway.com${groupImageUrl}`;
+  }
+
+  if (groupImageUrl.startsWith('groups/')) {
+    return `https://assets.vornway.com/${groupImageUrl}`;
+  }
+
+  return `${origin}/${groupImageUrl.replace(/^\/+/, '')}`;
 }

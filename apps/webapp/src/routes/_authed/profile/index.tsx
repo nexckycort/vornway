@@ -9,6 +9,7 @@ import {
   CalendarClock,
   Camera,
   ChevronRight,
+  Download,
   LaptopMinimal,
   LogOut,
   QrCode,
@@ -34,7 +35,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
 import { useAuth } from '#/contexts/auth/use-auth';
+import { usePWAInstall } from '#/hooks/use-pwa-install';
 import {
   listSessions,
   revokeSession,
@@ -64,6 +73,12 @@ function RouteComponent() {
   const queryClient = useQueryClient();
   const auth = useAuth();
   const session = useSession();
+  const {
+    isInstallable,
+    isInstalled,
+    installApp,
+    getInstallInstructions,
+  } = usePWAInstall();
   const currentSession = session.data;
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -74,11 +89,14 @@ function RouteComponent() {
   const [showQrScannerDialog, setShowQrScannerDialog] = useState(false);
   const [showDisableNotificationsDialog, setShowDisableNotificationsDialog] =
     useState(false);
+  const [showInstallInstructionsDialog, setShowInstallInstructionsDialog] =
+    useState(false);
 
   const userName = auth.user?.name?.trim() || 'Usuario';
   const userEmail = auth.user?.email?.trim() || 'Sin correo';
   const userImage = previewImageUrl ?? auth.user?.image ?? null;
   const notificationLabel = getNotificationLabel(notificationStatus);
+  const installInstructions = getInstallInstructions();
   const currentSessionId = currentSession?.session.id ?? null;
 
   const sessionsQuery = useQuery({
@@ -223,6 +241,16 @@ function RouteComponent() {
     }
   }
 
+  async function handleInstallApp() {
+    if (isInstalled) return;
+
+    const result = await installApp();
+
+    if (!result.success && result.reason === 'not-available' && !isInstalled) {
+      setShowInstallInstructionsDialog(true);
+    }
+  }
+
   async function handleDisableNotifications() {
     try {
       const status = await disablePushNotifications();
@@ -324,6 +352,17 @@ function RouteComponent() {
               }}
               trailing={notificationStatus === 'enabled' ? 'Desactivar' : 'Activar'}
             />
+            {!isInstalled ? (
+              <ProfileActionRow
+                icon={<Download className="size-5" />}
+                title="Instalar app"
+                subtitle="Agregar a la pantalla de inicio"
+                onClick={() => {
+                  void handleInstallApp();
+                }}
+                trailing={isInstallable ? 'Instalar' : 'Manual'}
+              />
+            ) : null}
             <ProfileActionRow
               icon={<Shield className="size-5" />}
               title="Seguridad"
@@ -407,6 +446,35 @@ function RouteComponent() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Drawer
+        open={showInstallInstructionsDialog}
+        onOpenChange={setShowInstallInstructionsDialog}
+      >
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{installInstructions.title}</DrawerTitle>
+            <DrawerDescription>
+              Sigue estos pasos para instalar Vornway como una app en tu
+              dispositivo.
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="space-y-3 px-4 pb-4">
+            {installInstructions.steps.map((step, index) => (
+              <div
+                key={step}
+                className="rounded-2xl border border-[#e2e8f0] bg-[#f8fafc] px-4 py-3 text-sm text-[#0f172a]"
+              >
+                <span className="mr-2 font-semibold text-primary">
+                  {index + 1}.
+                </span>
+                {step}
+              </div>
+            ))}
+          </div>
+        </DrawerContent>
+      </Drawer>
 
       <Dialog open={showSessionsDialog} onOpenChange={setShowSessionsDialog}>
         <DialogContent className="flex max-h-[calc(100dvh-1.5rem)] max-w-[calc(100%-1rem)] flex-col overflow-hidden rounded-[28px] p-4 sm:max-w-md">

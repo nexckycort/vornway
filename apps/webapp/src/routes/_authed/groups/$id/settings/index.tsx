@@ -14,14 +14,7 @@ import {
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import {
-  Copy,
-  LogOut,
-  Pencil,
-  QrCode,
-  Share2,
-  Trash2,
-} from 'lucide-react';
+import { Copy, LogOut, Pencil, QrCode, Share2, Trash2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -424,9 +417,7 @@ function RouteComponent() {
               onClick={handleConfirmDeleteGroup}
               disabled={deleteGroupMutation.isPending}
             >
-              {deleteGroupMutation.isPending
-                ? 'Eliminando...'
-                : 'Sí, eliminar'}
+              {deleteGroupMutation.isPending ? 'Eliminando...' : 'Sí, eliminar'}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -440,7 +431,8 @@ function RouteComponent() {
           <DrawerHeader>
             <DrawerTitle>Salir del grupo</DrawerTitle>
             <DrawerDescription>
-              Esta acción te sacará del grupo.
+              Dejarás de tener acceso a los gastos, balances y actividad de este
+              Grupo y el grupo se eliminará de tu cuenta.
             </DrawerDescription>
           </DrawerHeader>
 

@@ -7,6 +7,7 @@ import {
   addGroupMemberSchema,
   createGroupExpenseSchema,
   createGroupSchema,
+  groupCategorySchema,
   groupImageSchema,
   groupExpenseParamsSchema,
   groupMemberParamsSchema,
@@ -141,6 +142,38 @@ const groups = new Hono<AppContext>()
       } catch (error) {
         if (error instanceof Error && error.message === 'Grupo no encontrado') {
           return c.json({ error: error.message }, 404);
+        }
+
+        throw error;
+      }
+    },
+  )
+  .post(
+    '/:id/categories',
+    zValidator('param', groupParamsSchema),
+    zValidator('json', groupCategorySchema),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      const data = c.req.valid('json');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.createCategory({
+          userId,
+          groupId: id,
+          name: data.name,
+        });
+
+        return c.json(result, 201);
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message === 'Grupo no encontrado') {
+            return c.json({ error: error.message }, 404);
+          }
+          if (error.message === 'Solo el creador puede crear categorías') {
+            return c.json({ error: error.message }, 403);
+          }
+          return c.json({ error: error.message }, 400);
         }
 
         throw error;

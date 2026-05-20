@@ -8,6 +8,14 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog';
+import {
+  useCreateCategoryMutation,
   useCreateExpenseMutation,
   useUpdateExpenseMutation,
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
@@ -79,6 +87,7 @@ function RouteComponent() {
 
   const groupQuery = useGroupSummaryQuery(id);
   const expenseQuery = useGroupExpenseQuery(id, expenseId);
+  const createCategoryMutation = useCreateCategoryMutation(id);
   const createExpenseMutation = useCreateExpenseMutation(id);
   const updateExpenseMutation = useUpdateExpenseMutation(id, expenseId ?? '');
 
@@ -91,6 +100,9 @@ function RouteComponent() {
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
   const [showCurrencyDrawer, setShowCurrencyDrawer] = useState(false);
   const [showCategoryDrawer, setShowCategoryDrawer] = useState(false);
+  const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
+    useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
   const [showSplitDrawer, setShowSplitDrawer] = useState(false);
   const [participantValues, setParticipantValues] = useState<
     Record<string, string>
@@ -293,6 +305,26 @@ function RouteComponent() {
   const setCurrencyAndClose = (nextCurrency: string) => {
     setCurrency(nextCurrency);
     setShowCurrencyDrawer(false);
+  };
+
+  const handleCreateCategory = async () => {
+    const trimmedName = newCategoryName.trim();
+    if (!trimmedName || createCategoryMutation.isPending) return;
+
+    try {
+      const created = await createCategoryMutation.mutateAsync({
+        name: trimmedName,
+      });
+      setCategoryId(created.id);
+      setNewCategoryName('');
+      setShowCreateCategoryDialog(false);
+    } catch (creationError) {
+      setError(
+        creationError instanceof Error
+          ? creationError.message
+          : 'No se pudo crear la categoría',
+      );
+    }
   };
 
   const handleSubmit = async () => {
@@ -718,9 +750,18 @@ function RouteComponent() {
             <DrawerDescription>
               Elige una categoría para este gasto.
             </DrawerDescription>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-2 h-10 w-full justify-start rounded-full px-0 text-rose-500 hover:bg-rose-50 hover:text-rose-500"
+              onClick={() => setShowCreateCategoryDialog(true)}
+            >
+              <Plus className="mr-2 size-4" />
+              Crear una nueva categoría
+            </Button>
           </DrawerHeader>
 
-          <div className="space-y-1 px-5 pb-5">
+          <div className="space-y-3 px-5 pb-5">
             <button
               type="button"
               onClick={() => {
@@ -778,6 +819,45 @@ function RouteComponent() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      <Dialog
+        open={showCreateCategoryDialog}
+        onOpenChange={setShowCreateCategoryDialog}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Crear categoría</DialogTitle>
+            <DialogDescription>
+              Agrega una nueva categoría para este grupo.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 px-1 pb-2">
+            <label className="flex flex-col gap-2">
+              <span className="text-xs font-medium text-gray-500">
+                Nombre de la categoría
+              </span>
+              <input
+                value={newCategoryName}
+                onChange={(event) => setNewCategoryName(event.target.value)}
+                placeholder="Ej: Comida"
+                className="h-11 rounded-xl border border-gray-200 px-4 text-sm outline-none focus:border-rose-500"
+              />
+            </label>
+
+            <Button
+              type="button"
+              className="h-11 w-full rounded-full bg-primary text-white hover:bg-primary/90"
+              onClick={handleCreateCategory}
+              disabled={createCategoryMutation.isPending}
+            >
+              {createCategoryMutation.isPending
+                ? 'Creando...'
+                : 'Guardar categoría'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Drawer open={showCurrencyDrawer} onOpenChange={setShowCurrencyDrawer}>
         <DrawerContent>

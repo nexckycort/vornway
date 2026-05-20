@@ -9,6 +9,7 @@ const updateGroupEndpoint = client.api.groups[':id'].$patch;
 const deleteGroupEndpoint = client.api.groups[':id'].$delete;
 const settleDebtEndpoint = client.api.groups[':id'].settlements.$post;
 const addMemberEndpoint = client.api.groups[':id'].members.$post;
+const createCategoryEndpoint = client.api.groups[':id'].categories.$post;
 const removeMemberEndpoint =
   client.api.groups[':id'].members[':memberId'].$delete;
 
@@ -22,6 +23,9 @@ type SettleDebtRequest = InferRequestType<typeof settleDebtEndpoint>;
 type SettleDebtResponse = InferResponseType<typeof settleDebtEndpoint>;
 type AddMemberRequest = InferRequestType<typeof addMemberEndpoint>;
 type AddMemberResponse = InferResponseType<typeof addMemberEndpoint>;
+type CreateCategoryRequest = InferRequestType<typeof createCategoryEndpoint>;
+type CreateCategoryResponse = InferResponseType<typeof createCategoryEndpoint>;
+type CreateCategorySuccess = Extract<CreateCategoryResponse, { id: string }>;
 type RemoveMemberResponse = InferResponseType<typeof removeMemberEndpoint>;
 
 type UpdateGroupImageRequest = {
@@ -231,6 +235,29 @@ export function useAddMemberMutation(groupId: string) {
       }
 
       return (await response.json()) as AddMemberResponse;
+    },
+    onSuccess: async () => {
+      await invalidateGroup(queryClient, groupId);
+    },
+  });
+}
+
+export function useCreateCategoryMutation(groupId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (json: CreateCategoryRequest['json']) => {
+      const response = await createCategoryEndpoint({
+        param: { id: groupId },
+        json,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudo crear la categoría');
+      }
+
+      return (await response.json()) as CreateCategorySuccess;
     },
     onSuccess: async () => {
       await invalidateGroup(queryClient, groupId);

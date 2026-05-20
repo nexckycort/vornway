@@ -1,5 +1,6 @@
 export type { GroupsService } from './types';
 import { createGroupCreateService } from './create-group.service';
+import { createGroupCategoriesService } from './categories.service';
 import { createGroupDeleteService } from './delete-group.service';
 import { createGroupExpensesService } from './expenses.service';
 import { createGroupImageService } from './image.service';
@@ -13,6 +14,7 @@ import type { GroupsService } from './types';
 export function createGroupsService(): GroupsService {
   return {
     ...createGroupCreateService(),
+    ...createGroupCategoriesService(),
     ...createGroupDeleteService(),
     ...createGroupListService(),
     ...createGroupSummaryService(),

@@ -126,6 +126,17 @@ export type UpdateGroupResult = {
   updatedAt: Date;
 };
 
+export type CreateGroupCategoryInput = {
+  userId: string;
+  groupId: string;
+  name: string;
+};
+
+export type CreateGroupCategoryResult = {
+  id: string;
+  name: string;
+};
+
 export type GroupDeleteResult = {
   id: string;
 };
@@ -180,6 +191,9 @@ export type GroupsService = {
   listGroups: (input: ListGroupsInput) => Promise<ListGroupsResult>;
   createGroup: (input: CreateGroupInput) => Promise<CreateGroupResult>;
   updateGroup: (input: UpdateGroupInput) => Promise<UpdateGroupResult>;
+  createCategory: (
+    input: CreateGroupCategoryInput,
+  ) => Promise<CreateGroupCategoryResult>;
   updateGroupImage: (
     input: UpdateGroupImageInput,
   ) => Promise<{ imageUrl: string | null }>;

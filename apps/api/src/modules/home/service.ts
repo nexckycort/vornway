@@ -1,5 +1,6 @@
 import { db } from '~/infrastructure/database/connection';
 import { getVersionedGroupImageUrl } from '../groups/group-image.service';
+import { resolveUserImageUrl } from '../users/user-image.service';
 import type { HomeParticipantBalance, HomeSummary } from './types';
 
 function normalizeAmount(value: number): number {
@@ -19,7 +20,7 @@ function summarizeGroup(
       id: string;
       name: string;
       userId: string | null;
-      user: { image: string | null } | null;
+      user: { image: string | null; updatedAt: Date } | null;
     }>;
     Expense: Array<{
       currency: string;
@@ -31,9 +32,12 @@ function summarizeGroup(
   currentUserProfile: {
     name: string;
     image: string | null;
+    updatedAt: Date;
   } | null,
 ) {
-  const currentMember = group.GroupMember.find((member) => member.userId === userId);
+  const currentMember = group.GroupMember.find(
+    (member) => member.userId === userId,
+  );
   const orderedMembers = currentMember
     ? [
         ...group.GroupMember.filter((member) => member.id !== currentMember.id),
@@ -42,23 +46,29 @@ function summarizeGroup(
     : group.GroupMember;
 
   if (!currentMember) {
-      return {
-        id: group.id,
-        name: group.name,
-        type: group.type,
-        description: group.description,
-        imageUrl: getVersionedGroupImageUrl(group.imageUrl, group.updatedAt),
-        createdAt: group.createdAt,
+    return {
+      id: group.id,
+      name: group.name,
+      type: group.type,
+      description: group.description,
+      imageUrl: getVersionedGroupImageUrl(group.imageUrl, group.updatedAt),
+      createdAt: group.createdAt,
       members: orderedMembers.map((member) => ({
         id: member.id,
         name: member.name,
-        image: member.user?.image ?? null,
+        image: resolveUserImageUrl(
+          member.user?.image ?? null,
+          member.user?.updatedAt ?? null,
+        ),
       })),
       currentUser: currentUserProfile
         ? {
             memberId: userId,
             name: currentUserProfile.name,
-            image: currentUserProfile.image,
+            image: resolveUserImageUrl(
+              currentUserProfile.image,
+              currentUserProfile.updatedAt,
+            ),
           }
         : null,
       hasExpenses: group.Expense.length > 0,
@@ -130,12 +140,18 @@ function summarizeGroup(
     members: orderedMembers.map((member) => ({
       id: member.id,
       name: member.name,
-      image: member.user?.image ?? null,
+      image: resolveUserImageUrl(
+        member.user?.image ?? null,
+        member.user?.updatedAt ?? null,
+      ),
     })),
     currentUser: {
       memberId: currentMember.id,
       name: currentMember.name,
-      image: currentMember.user?.image ?? null,
+      image: resolveUserImageUrl(
+        currentMember.user?.image ?? null,
+        currentMember.user?.updatedAt ?? null,
+      ),
     },
     hasExpenses: group.Expense.length > 0,
     participantBalances,
@@ -222,6 +238,7 @@ export function createHomeService(): HomeService {
               user: {
                 select: {
                   image: true,
+                  updatedAt: true,
                 },
               },
             },
@@ -259,6 +276,7 @@ export function createHomeService(): HomeService {
         select: {
           name: true,
           image: true,
+          updatedAt: true,
         },
       });
 

@@ -1,4 +1,5 @@
 import { db } from '~/infrastructure/database/connection';
+import { resolveUserImageUrl } from '../users/user-image.service';
 
 import type {
   CreateGoalContributionInput,
@@ -31,7 +32,10 @@ function summarizeGoal(goal: {
   contributions: Array<{ amount: number }>;
 }): GoalListItem {
   const savedAmount = normalizeAmount(
-    goal.contributions.reduce((total, contribution) => total + contribution.amount, 0),
+    goal.contributions.reduce(
+      (total, contribution) => total + contribution.amount,
+      0,
+    ),
   );
   const progress =
     goal.targetAmount > 0
@@ -52,54 +56,62 @@ function summarizeGoal(goal: {
   };
 }
 
-function summarizeGoalDetail(goal: {
-  id: string;
-  title: string;
-  description: string | null;
-  currency: string;
-  targetAmount: number;
-  startDate: Date;
-  endDate: Date;
-  installmentCount: number;
-  installmentAmount: number;
-  createdAt: Date;
-  updatedAt: Date;
-  group: {
+function summarizeGoalDetail(
+  goal: {
     id: string;
-    name: string;
-    type: string;
+    title: string;
     description: string | null;
-    inviteCode: string;
+    currency: string;
+    targetAmount: number;
+    startDate: Date;
+    endDate: Date;
+    installmentCount: number;
+    installmentAmount: number;
     createdAt: Date;
     updatedAt: Date;
-    GroupMember: Array<{
+    group: {
       id: string;
       name: string;
-      role: string;
-      userId: string | null;
-      user: {
-        email: string;
-        image: string | null;
-      } | null;
-    }>;
-  };
-  contributions: Array<{
-    id: string;
-    amount: number;
-    contributedAt: Date;
-    notes: string | null;
-    member: {
-      id: string;
-      name: string;
-      userId: string | null;
-      user: {
-        image: string | null;
-      } | null;
+      type: string;
+      description: string | null;
+      inviteCode: string;
+      createdAt: Date;
+      updatedAt: Date;
+      GroupMember: Array<{
+        id: string;
+        name: string;
+        role: string;
+        userId: string | null;
+        user: {
+          email: string;
+          image: string | null;
+          updatedAt: Date;
+        } | null;
+      }>;
     };
-  }>;
-}, userId: string): GoalDetailResult {
+    contributions: Array<{
+      id: string;
+      amount: number;
+      contributedAt: Date;
+      notes: string | null;
+      member: {
+        id: string;
+        name: string;
+        userId: string | null;
+        user: {
+          image: string | null;
+          updatedAt: Date;
+        } | null;
+      };
+    }>;
+  },
+  userId: string,
+): GoalDetailResult {
   const savedAmount = normalizeAmount(
-    goal.contributions.reduce((total, contribution) => total + contribution.amount, 0),
+    goal.contributions.reduce(
+      (total, contribution) => total + contribution.amount,
+      0,
+    ),
   );
   const progress =
     goal.targetAmount > 0
@@ -136,7 +148,10 @@ function summarizeGoalDetail(goal: {
       id: member.id,
       name: member.name,
       email: member.user?.email ?? null,
-      image: member.user?.image ?? null,
+      image: resolveUserImageUrl(
+        member.user?.image ?? null,
+        member.user?.updatedAt ?? null,
+      ),
       role: member.role,
       userId: member.userId,
       isCurrentUser: member.userId === userId,
@@ -157,7 +172,10 @@ function summarizeGoalDetail(goal: {
       member: {
         id: contribution.member.id,
         name: contribution.member.name,
-        image: contribution.member.user?.image ?? null,
+        image: resolveUserImageUrl(
+          contribution.member.user?.image ?? null,
+          contribution.member.user?.updatedAt ?? null,
+        ),
         isCurrentUser: contribution.member.userId === userId,
       },
     })),
@@ -257,7 +275,7 @@ export function createGoalsService(): GoalsService {
         pagination: {
           limit: query.limit,
           total,
-          nextCursor: hasNextPage ? data[data.length - 1]?.id ?? null : null,
+          nextCursor: hasNextPage ? (data[data.length - 1]?.id ?? null) : null,
         },
       };
     },
@@ -321,6 +339,7 @@ export function createGoalsService(): GoalsService {
                     select: {
                       email: true,
                       image: true,
+                      updatedAt: true,
                     },
                   },
                 },
@@ -349,6 +368,7 @@ export function createGoalsService(): GoalsService {
                   user: {
                     select: {
                       image: true,
+                      updatedAt: true,
                     },
                   },
                 },
@@ -591,7 +611,8 @@ export function createGoalsService(): GoalsService {
 
       if (
         input.installmentAmount !== undefined &&
-        (!Number.isFinite(input.installmentAmount) || input.installmentAmount <= 0)
+        (!Number.isFinite(input.installmentAmount) ||
+          input.installmentAmount <= 0)
       ) {
         throw new Error('La cuota mensual debe ser mayor a 0');
       }

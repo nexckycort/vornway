@@ -1,4 +1,9 @@
 import { db } from '~/infrastructure/database/connection';
+import {
+  deleteUserImage,
+  resolveUserImageUrl,
+  uploadUserImage,
+} from './user-image.service';
 import type { SearchUsersResult } from './types';
 
 export type UsersService = {
@@ -6,6 +11,10 @@ export type UsersService = {
     userId: string;
     query: string;
   }) => Promise<SearchUsersResult>;
+  updateCurrentUserImage: (input: {
+    userId: string;
+    dataUrl: string;
+  }) => Promise<{ imageUrl: string | null }>;
 };
 
 export function createUsersService(): UsersService {
@@ -48,8 +57,42 @@ export function createUsersService(): UsersService {
           id: user.id,
           name: user.name,
           email: user.email,
-          isCurrentUser: user.id === userId,
-        })),
+        isCurrentUser: user.id === userId,
+      })),
+      };
+    },
+    updateCurrentUserImage: async ({ userId, dataUrl }) => {
+      const currentUser = await db.user.findUnique({
+        where: { id: userId },
+        select: {
+          image: true,
+        },
+      });
+
+      if (!currentUser) {
+        throw new Error('Usuario no encontrado');
+      }
+
+      const nextImageUrl = await uploadUserImage({
+        userId,
+        dataUrl,
+      });
+
+      const updatedUser = await db.user.update({
+        where: { id: userId },
+        data: { image: nextImageUrl },
+        select: {
+          image: true,
+          updatedAt: true,
+        },
+      });
+
+      if (currentUser.image && currentUser.image !== nextImageUrl) {
+        await deleteUserImage(currentUser.image).catch(() => undefined);
+      }
+
+      return {
+        imageUrl: resolveUserImageUrl(updatedUser.image, updatedUser.updatedAt),
       };
     },
   };

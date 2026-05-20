@@ -1,13 +1,18 @@
 import { db } from '~/infrastructure/database/connection';
+import { resolveUserImageUrl } from '../users/user-image.service';
+import { getVersionedGroupImageUrl } from './group-image.service';
 import {
   buildActiveExpenseWhere,
   buildGroupAccessWhere,
   normalizeAmount,
 } from './helpers';
-import { getVersionedGroupImageUrl } from './group-image.service';
 import type { GroupListItem, ListGroupsInput, ListGroupsResult } from './types';
 
-type CurrentUserIdentity = { name: string | null; image: string | null } | null;
+type CurrentUserIdentity = {
+  name: string | null;
+  image: string | null;
+  updatedAt: Date | string;
+} | null;
 
 const groupListSelect = {
   id: true,
@@ -28,6 +33,7 @@ const groupListSelect = {
       user: {
         select: {
           image: true,
+          updatedAt: true,
         },
       },
     },
@@ -168,19 +174,28 @@ function mapGroupListRow(
     members: orderedMembers.map((member) => ({
       id: member.id,
       name: member.name,
-      image: member.user?.image ?? null,
+      image: resolveUserImageUrl(
+        member.user?.image ?? null,
+        member.user?.updatedAt ?? null,
+      ),
     })),
     currentUser: currentMember
       ? {
           memberId: currentMember.id,
           name: currentMember.name,
-          image: currentMember.user?.image ?? null,
+          image: resolveUserImageUrl(
+            currentMember.user?.image ?? null,
+            currentMember.user?.updatedAt ?? null,
+          ),
         }
       : currentUser
         ? {
             memberId: userId,
             name: currentUser.name ?? 'Usuario',
-            image: currentUser.image,
+            image: resolveUserImageUrl(
+              currentUser.image,
+              currentUser.updatedAt,
+            ),
           }
         : null,
     hasExpenses: row.Expense.length > 0,
@@ -348,6 +363,7 @@ export function createGroupListService() {
         select: {
           name: true,
           image: true,
+          updatedAt: true,
         },
       });
 

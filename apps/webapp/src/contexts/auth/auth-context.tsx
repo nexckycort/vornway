@@ -7,12 +7,14 @@ import {
 } from 'react';
 
 import { signIn, signOut, useSession } from '#/lib/auth-client';
+import { resolveAssetUrl } from '#/lib/asset-url';
 
 interface User {
   id: string;
   name: string;
   email: string;
   image: string | null;
+  updatedAt: Date;
 }
 
 export type AuthContextProps = {
@@ -55,7 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: data?.user.id ?? '',
         name: data?.user.name ?? '',
         email: data?.user.email ?? '',
-        image: data?.user.image ?? null,
+        image: resolveAssetUrl(
+          data?.user.image ?? null,
+          data?.user.updatedAt ?? null,
+        ),
+        updatedAt: data?.user.updatedAt ?? '',
       });
     }
   }, [data]);

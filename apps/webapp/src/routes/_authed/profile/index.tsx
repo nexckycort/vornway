@@ -7,6 +7,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   Bell,
   CalendarClock,
+  Camera,
   ChevronRight,
   LaptopMinimal,
   LogOut,
@@ -15,7 +16,14 @@ import {
   Smartphone,
   UserRound,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '#/components/ui/button';
@@ -27,7 +35,13 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog';
 import { useAuth } from '#/contexts/auth/use-auth';
-import { listSessions, revokeSession, useSession } from '#/lib/auth-client';
+import {
+  listSessions,
+  revokeSession,
+  useSession,
+} from '#/lib/auth-client';
+import { compressImageFileToDataUrl } from '#/lib/image-compression';
+import { client } from '#/lib/hc';
 import {
   disablePushNotifications,
   enablePushNotifications,
@@ -49,8 +63,11 @@ function RouteComponent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const auth = useAuth();
-  const { data: currentSession } = useSession();
+  const session = useSession();
+  const currentSession = session.data;
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [notificationStatus, setNotificationStatus] =
     useState<NotificationStatus>('permission-required');
   const [showSessionsDialog, setShowSessionsDialog] = useState(false);
@@ -60,7 +77,7 @@ function RouteComponent() {
 
   const userName = auth.user?.name?.trim() || 'Usuario';
   const userEmail = auth.user?.email?.trim() || 'Sin correo';
-  const userImage = auth.user?.image ?? null;
+  const userImage = previewImageUrl ?? auth.user?.image ?? null;
   const notificationLabel = getNotificationLabel(notificationStatus);
   const currentSessionId = currentSession?.session.id ?? null;
 
@@ -90,6 +107,58 @@ function RouteComponent() {
     },
     onError: () => {
       toast.error('No se pudo eliminar la sesión');
+    },
+  });
+
+  const updateProfileImageMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const dataUrl = await compressImageFileToDataUrl(file);
+
+      setPreviewImageUrl(dataUrl);
+
+      const uploadResponse = await client.api.users.me.image.$patch({
+        json: { dataUrl },
+      });
+
+      if (!uploadResponse.ok) {
+        const payload = (await uploadResponse.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(
+          payload?.error ?? 'No se pudo actualizar la foto de perfil',
+        );
+      }
+
+      const payload = (await uploadResponse.json()) as {
+        imageUrl?: string | null;
+      };
+
+      if (!payload.imageUrl) {
+        throw new Error('No se pudo actualizar la foto de perfil');
+      }
+
+      await session.refetch();
+
+      return payload.imageUrl;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['profile-sessions'] });
+      toast.success('Foto de perfil actualizada');
+      setPreviewImageUrl(null);
+      if (imageInputRef.current) {
+        imageInputRef.current.value = '';
+      }
+    },
+    onError: (error) => {
+      setPreviewImageUrl(null);
+      if (imageInputRef.current) {
+        imageInputRef.current.value = '';
+      }
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar la foto de perfil',
+      );
     },
   });
 
@@ -177,6 +246,13 @@ function RouteComponent() {
     await revokeSessionMutation.mutateAsync(sessionToken);
   }
 
+  function handleImageInputChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    updateProfileImageMutation.mutate(file);
+  }
+
   return (
     <>
       <main className="min-h-screen bg-[#fafafa] text-foreground">
@@ -189,7 +265,13 @@ function RouteComponent() {
 
           <section className="rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
             <div className="flex items-center gap-4">
-              <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                className="relative shrink-0 overflow-hidden rounded-3xl transition-transform active:scale-95"
+                aria-label="Actualizar foto de perfil"
+                disabled={updateProfileImageMutation.isPending}
+              >
                 {userImage ? (
                   <img
                     src={userImage}
@@ -202,8 +284,11 @@ function RouteComponent() {
                     <UserRound className="size-6" />
                   </div>
                 )}
-                <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-500" />
-              </div>
+                <span className="absolute inset-0 bg-black/0 transition-colors hover:bg-black/5" />
+                <span className="absolute -right-1 -bottom-1 flex size-7 items-center justify-center rounded-full border border-white bg-primary text-white shadow-lg">
+                  <Camera className="size-3.5" />
+                </span>
+              </button>
 
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-[#0f172a]">
@@ -215,6 +300,14 @@ function RouteComponent() {
               </div>
             </div>
           </section>
+
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageInputChange}
+          />
 
           <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-2 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
             <ProfileActionRow

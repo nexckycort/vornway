@@ -74,7 +74,6 @@ function RouteComponent() {
   const auth = useAuth();
   const session = useSession();
   const {
-    isInstallable,
     isInstalled,
     installApp,
     getInstallInstructions,
@@ -246,7 +245,7 @@ function RouteComponent() {
 
     const result = await installApp();
 
-    if (!result.success && result.reason === 'not-available' && !isInstalled) {
+    if (result.reason === 'not-available' && !isInstalled) {
       setShowInstallInstructionsDialog(true);
     }
   }
@@ -360,7 +359,7 @@ function RouteComponent() {
                 onClick={() => {
                   void handleInstallApp();
                 }}
-                trailing={isInstallable ? 'Instalar' : 'Manual'}
+                trailing="Instalar"
               />
             ) : null}
             <ProfileActionRow

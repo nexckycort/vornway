@@ -296,24 +296,26 @@ function RouteComponent() {
               <button
                 type="button"
                 onClick={() => imageInputRef.current?.click()}
-                className="relative shrink-0 overflow-hidden rounded-3xl transition-transform active:scale-95"
+                className="relative shrink-0 overflow-visible transition-transform active:scale-95"
                 aria-label="Actualizar foto de perfil"
                 disabled={updateProfileImageMutation.isPending}
               >
-                {userImage ? (
-                  <img
-                    src={userImage}
-                    alt={userName}
-                    className="size-14 rounded-3xl object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <div className="flex size-14 items-center justify-center rounded-3xl bg-[#f1f5f9] text-primary">
-                    <UserRound className="size-6" />
-                  </div>
-                )}
+                <div className="relative size-14 overflow-hidden rounded-3xl">
+                  {userImage ? (
+                    <img
+                      src={userImage}
+                      alt={userName}
+                      className="size-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="flex size-full items-center justify-center rounded-3xl bg-[#f1f5f9] text-primary">
+                      <UserRound className="size-6" />
+                    </div>
+                  )}
+                </div>
                 <span className="absolute inset-0 bg-black/0 transition-colors hover:bg-black/5" />
-                <span className="absolute -right-1 -bottom-1 flex size-7 items-center justify-center rounded-full border border-white bg-primary text-white shadow-lg">
+                <span className="absolute -right-1 -bottom-1 z-10 flex size-7 items-center justify-center rounded-full border border-white bg-primary text-white shadow-lg">
                   <Camera className="size-3.5" />
                 </span>
               </button>

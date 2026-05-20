@@ -57,7 +57,7 @@ function RouteComponent() {
 
   const goBack = () => {
     void navigate({
-      to: '/groups/$id/ajustes',
+      to: '/groups/$id/settings',
       params: { id },
       replace: true,
     });
@@ -108,7 +108,7 @@ function RouteComponent() {
       });
 
       void navigate({
-        to: '/groups/$id/ajustes',
+        to: '/groups/$id/settings',
         params: { id },
         replace: true,
       });

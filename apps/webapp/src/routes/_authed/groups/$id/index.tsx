@@ -207,13 +207,6 @@ function RouteComponent() {
     setShowExpenseOptionsDrawer(true);
   };
 
-  const handleOpenSettings = () => {
-    void navigate({
-      to: '/groups/$id/ajustes',
-      params: { id },
-    });
-  };
-
   const handleEditExpense = (expense: ExpenseItem) => {
     void navigate({
       to: '/groups/$id/add-expense',
@@ -286,17 +279,19 @@ function RouteComponent() {
           groupId={id}
           groupName={group.name}
           description={group.description}
-          imageUrl={group.imageUrl}
-          totalsEntries={totalsEntries}
-          primaryTotal={primaryTotal}
-          balanceLabel={balanceLabel}
-          balanceTone={balanceTone}
-          onOpenQr={() => setShowQrDrawer(true)}
-          onOpenMore={handleOpenSettings}
-          onOpenReports={() =>
-            void navigate({
-              to: '/groups/$id/reports',
-              params: { id },
+        imageUrl={group.imageUrl}
+        totalsEntries={totalsEntries}
+        primaryTotal={primaryTotal}
+        balanceLabel={balanceLabel}
+        balanceTone={balanceTone}
+        onOpenQr={() => setShowQrDrawer(true)}
+        onOpenSettings={() =>
+          void navigate({ to: '/groups/$id/settings', params: { id } })
+        }
+        onOpenReports={() =>
+          void navigate({
+            to: '/groups/$id/reports',
+            params: { id },
               search: { tab: 'balance' },
             })
           }

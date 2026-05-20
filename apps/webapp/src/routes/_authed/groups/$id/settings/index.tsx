@@ -16,7 +16,6 @@ import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-d
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   Copy,
-  ImagePlus,
   LogOut,
   Pencil,
   QrCode,
@@ -26,7 +25,7 @@ import {
 import QRCode from 'qrcode';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-export const Route = createFileRoute('/_authed/groups/$id/ajustes/')({
+export const Route = createFileRoute('/_authed/groups/$id/settings/')({
   component: RouteComponent,
 });
 
@@ -208,7 +207,9 @@ function RouteComponent() {
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <ImagePlus className="size-5 text-[#e11d48]" />
+                <span className="text-[#e11d48]">
+                  <QrCode className="size-5" />
+                </span>
               )}
             </div>
 
@@ -279,7 +280,7 @@ function RouteComponent() {
             }}
           >
             <span className="flex size-9 items-center justify-center text-[#132238]">
-              <ImagePlus className="size-5" />
+              <QrCode className="size-5" />
             </span>
             <span className="flex-1 text-sm text-[#132238]">
               Crear y editar categorías
@@ -423,7 +424,9 @@ function RouteComponent() {
               onClick={handleConfirmDeleteGroup}
               disabled={deleteGroupMutation.isPending}
             >
-              {deleteGroupMutation.isPending ? 'Eliminando...' : 'Sí, eliminar'}
+              {deleteGroupMutation.isPending
+                ? 'Eliminando...'
+                : 'Sí, eliminar'}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -437,8 +440,7 @@ function RouteComponent() {
           <DrawerHeader>
             <DrawerTitle>Salir del grupo</DrawerTitle>
             <DrawerDescription>
-              Dejarás de tener acceso a los gastos, balances y actividad de este
-              Grupo y el grupo se eliminará de tu cuenta.
+              Esta acción te sacará del grupo.
             </DrawerDescription>
           </DrawerHeader>
 

@@ -20,7 +20,7 @@ type GroupDetailHeaderProps = {
   balanceLabel: string;
   balanceTone: string;
   onOpenQr: () => void;
-  onOpenMore: () => void;
+  onOpenSettings: () => void;
   onOpenReports: () => void;
 };
 
@@ -34,7 +34,7 @@ export function GroupDetailHeader({
   balanceLabel,
   balanceTone,
   onOpenQr,
-  onOpenMore,
+  onOpenSettings,
   onOpenReports,
 }: GroupDetailHeaderProps) {
   const router = useRouter();
@@ -158,7 +158,7 @@ export function GroupDetailHeader({
 
         <button
           type="button"
-          onClick={onOpenMore}
+          onClick={onOpenSettings}
           className="flex flex-col items-center gap-2"
         >
           <span className="flex size-14 items-center justify-center rounded-2xl bg-white/10 text-white">

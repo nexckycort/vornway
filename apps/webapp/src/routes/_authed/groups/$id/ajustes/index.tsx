@@ -4,10 +4,14 @@ import {
   Drawer,
   DrawerContent,
   DrawerDescription,
+  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
-import { useUpdateGroupImageMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
+import {
+  useDeleteGroupMutation,
+  useUpdateGroupImageMutation,
+} from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
@@ -33,6 +37,7 @@ function RouteComponent() {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [showQrDrawer, setShowQrDrawer] = useState(false);
   const [showShareDrawer, setShowShareDrawer] = useState(false);
+  const [showDeleteGroupDrawer, setShowDeleteGroupDrawer] = useState(false);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
   const [groupQrCode, setGroupQrCode] = useState<string | null>(null);
@@ -42,6 +47,7 @@ function RouteComponent() {
   );
 
   const groupQuery = useGroupSummaryQuery(id);
+  const deleteGroupMutation = useDeleteGroupMutation(id);
   const updateGroupImageMutation = useUpdateGroupImageMutation(id);
 
   const inviteLink = useMemo(() => {
@@ -148,6 +154,17 @@ function RouteComponent() {
 
   const goBack = () => {
     void navigate({ to: '/groups/$id', params: { id }, replace: true });
+  };
+
+  const handleConfirmDeleteGroup = async () => {
+    try {
+      await deleteGroupMutation.mutateAsync();
+      void navigate({ to: '/groups', replace: true });
+    } catch (error) {
+      setShareMessage(
+        error instanceof Error ? error.message : 'No se pudo eliminar el grupo',
+      );
+    }
   };
 
   if (groupQuery.isLoading) {
@@ -282,7 +299,9 @@ function RouteComponent() {
               isOwner ? 'text-[#ef4444]' : 'text-[#ef4444]'
             }`}
             onClick={() => {
-              void 0;
+              if (isOwner) {
+                setShowDeleteGroupDrawer(true);
+              }
             }}
           >
             {isOwner ? (
@@ -386,6 +405,43 @@ function RouteComponent() {
               Compartir enlace
             </Button>
           </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer
+        open={showDeleteGroupDrawer}
+        onOpenChange={setShowDeleteGroupDrawer}
+      >
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Eliminar grupo</DrawerTitle>
+            <DrawerDescription>
+              Esta acción eliminará el grupo, los gastos y toda la información
+              del Grupo para todos los participantes. Esta acción no se puede
+              deshacer.
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <DrawerFooter className="flex-row gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 flex-1 rounded-full"
+              onClick={() => setShowDeleteGroupDrawer(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="h-11 flex-1 rounded-full bg-primary text-white hover:bg-primary/90"
+              onClick={handleConfirmDeleteGroup}
+              disabled={deleteGroupMutation.isPending}
+            >
+              {deleteGroupMutation.isPending
+                ? 'Eliminando...'
+                : 'Sí, eliminar'}
+            </Button>
+          </DrawerFooter>
         </DrawerContent>
       </Drawer>
     </MobilePageLayout>

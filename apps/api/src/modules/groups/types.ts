@@ -104,6 +104,10 @@ export type CreateGroupResult = {
   createdAt: Date;
 };
 
+export type GroupDeleteResult = {
+  id: string;
+};
+
 export type GroupListItem = {
   id: string;
   name: string;
@@ -156,6 +160,10 @@ export type GroupsService = {
   updateGroupImage: (
     input: UpdateGroupImageInput,
   ) => Promise<{ imageUrl: string | null }>;
+  deleteGroup: (input: {
+    userId: string;
+    groupId: string;
+  }) => Promise<GroupDeleteResult>;
   getGroupSummary: (input: {
     userId: string;
     groupId: string;

@@ -69,6 +69,23 @@ const groups = new Hono<AppContext>()
       throw error;
     }
   })
+  .delete('/:id', zValidator('param', groupParamsSchema), async (c) => {
+    const { id } = c.req.valid('param');
+    const { id: userId } = c.get('user');
+
+    try {
+      const result = await groupsService.deleteGroup({
+        userId,
+        groupId: id,
+      });
+      return c.json(result);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Grupo no encontrado') {
+        return c.json({ error: error.message }, 404);
+      }
+      throw error;
+    }
+  })
   .patch(
     '/:id/image',
     zValidator('param', groupParamsSchema),

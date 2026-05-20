@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
 const updateExpenseEndpoint =
   client.api.groups[':id'].expenses[':expenseId'].$put;
+const deleteGroupEndpoint = client.api.groups[':id'].$delete;
 const settleDebtEndpoint = client.api.groups[':id'].settlements.$post;
 const addMemberEndpoint = client.api.groups[':id'].members.$post;
 const removeMemberEndpoint =
@@ -13,6 +14,7 @@ const removeMemberEndpoint =
 type CreateExpenseRequest = InferRequestType<typeof createExpenseEndpoint>;
 type UpdateExpenseRequest = InferRequestType<typeof updateExpenseEndpoint>;
 type UpdateExpenseResponse = InferResponseType<typeof updateExpenseEndpoint>;
+type DeleteGroupResponse = InferResponseType<typeof deleteGroupEndpoint>;
 type SettleDebtRequest = InferRequestType<typeof settleDebtEndpoint>;
 type SettleDebtResponse = InferResponseType<typeof settleDebtEndpoint>;
 type AddMemberRequest = InferRequestType<typeof addMemberEndpoint>;
@@ -89,6 +91,31 @@ export function useUpdateGroupImageMutation(groupId: string) {
     },
     onSuccess: async () => {
       await invalidateGroup(queryClient, groupId);
+    },
+  });
+}
+
+export function useDeleteGroupMutation(groupId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const response = await deleteGroupEndpoint({
+        param: { id: groupId },
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudo eliminar el grupo');
+      }
+
+      return (await response.json()) as DeleteGroupResponse;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }

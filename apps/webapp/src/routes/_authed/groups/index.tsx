@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Search } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { TripCard } from '#/routes/_authed/(home)/-components/trip-card';
@@ -157,8 +157,28 @@ function RouteComponent() {
         ) : null}
 
         {!groupsQuery.isLoading && groupTrips.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-dashed border-[#cbd5e1] bg-white px-5 py-8 text-center text-sm text-[#64748b]">
-            No encontramos grupos con esos filtros.
+          <div className="mt-5 rounded-[28px] border border-[#e2e8f0] bg-white px-5 py-8 text-center shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+            <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-[#eef2ff]">
+              <Users className="size-7 text-primary" />
+            </div>
+            <p className="text-base font-semibold text-[#0f172a]">
+              Aún no tienes grupos
+            </p>
+            <p className="mt-2 text-sm text-[#64748b]">
+              Cuando crees un grupo aparecerá aquí con sus saldos y gastos.
+            </p>
+            <Link
+              to="/groups/new"
+              search={{
+                name: '',
+                type: '',
+                description: '',
+                draftId: '',
+              }}
+              className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white"
+            >
+              Crear grupo
+            </Link>
           </div>
         ) : null}
 

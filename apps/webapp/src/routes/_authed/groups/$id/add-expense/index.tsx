@@ -95,7 +95,9 @@ function RouteComponent() {
   >({});
   const [error, setError] = useState<string | null>(null);
   const [hasInitializedForm, setHasInitializedForm] = useState(false);
+  const [isAmountAnimating, setIsAmountAnimating] = useState(false);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
+  const didMountAmountRef = useRef(false);
 
   const members = groupQuery.data?.members ?? [];
   const expense = expenseQuery.data;
@@ -112,6 +114,20 @@ function RouteComponent() {
 
     return () => window.cancelAnimationFrame(frame);
   }, []);
+
+  useEffect(() => {
+    if (!didMountAmountRef.current) {
+      didMountAmountRef.current = true;
+      return;
+    }
+
+    setIsAmountAnimating(true);
+    const frame = window.requestAnimationFrame(() => {
+      setIsAmountAnimating(false);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [amount, currency]);
 
   useEffect(() => {
     if (isEditMode) {
@@ -389,10 +405,19 @@ function RouteComponent() {
 
           <label className="min-w-0 flex-1 text-right">
             <span className="sr-only">Monto</span>
-            <div className="inline-flex items-baseline justify-end gap-1">
-              <span className="shrink-0 text-4xl font-light text-gray-900">
-                {getCurrencySymbol(currency)}
-              </span>
+            <div className="relative flex min-h-14 w-full items-end justify-end">
+              <div
+                aria-hidden="true"
+                className={`pointer-events-none inline-flex origin-right items-baseline justify-end gap-1 text-4xl font-light leading-none text-gray-900 transition-transform duration-150 ease-out ${
+                  isAmountAnimating ? 'scale-[1.02]' : 'scale-100'
+                }`}
+              >
+                <span className="shrink-0">{getCurrencySymbol(currency)}</span>
+                <span className="tabular-nums">
+                  {amount.length > 0 ? amount : '0'}
+                </span>
+              </div>
+
               <input
                 ref={amountInputRef}
                 value={amount}
@@ -400,8 +425,8 @@ function RouteComponent() {
                 inputMode="numeric"
                 pattern="[0-9]*"
                 placeholder="0"
-                style={{ width: `${Math.max(amount.length, 1)}ch` }}
-                className="bg-transparent text-left text-4xl font-light tabular-nums text-gray-900 outline-none placeholder:text-gray-300"
+                aria-label="Monto"
+                className="absolute inset-0 h-full w-full bg-transparent text-right text-[16px] leading-none tabular-nums text-transparent outline-none caret-gray-900 [font-size:16px]"
               />
             </div>
           </label>

@@ -10,6 +10,7 @@ import {
 } from '#/components/ui/drawer';
 import {
   useDeleteGroupMutation,
+  useUnlinkMemberMutation,
   useUpdateGroupImageMutation,
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
@@ -38,6 +39,7 @@ function RouteComponent() {
   const [showQrDrawer, setShowQrDrawer] = useState(false);
   const [showShareDrawer, setShowShareDrawer] = useState(false);
   const [showDeleteGroupDrawer, setShowDeleteGroupDrawer] = useState(false);
+  const [showLeaveGroupDrawer, setShowLeaveGroupDrawer] = useState(false);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
   const [groupQrCode, setGroupQrCode] = useState<string | null>(null);
@@ -48,6 +50,7 @@ function RouteComponent() {
 
   const groupQuery = useGroupSummaryQuery(id);
   const deleteGroupMutation = useDeleteGroupMutation(id);
+  const unlinkMemberMutation = useUnlinkMemberMutation(id);
   const updateGroupImageMutation = useUpdateGroupImageMutation(id);
 
   const inviteLink = useMemo(() => {
@@ -163,6 +166,24 @@ function RouteComponent() {
     } catch (error) {
       setShareMessage(
         error instanceof Error ? error.message : 'No se pudo eliminar el grupo',
+      );
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    const memberId = groupQuery.data?.myMembership?.id;
+
+    if (!memberId) {
+      setShareMessage('No se pudo salir del grupo');
+      return;
+    }
+
+    try {
+      await unlinkMemberMutation.mutateAsync({ memberId });
+      void navigate({ to: '/groups', replace: true });
+    } catch (error) {
+      setShareMessage(
+        error instanceof Error ? error.message : 'No se pudo salir del grupo',
       );
     }
   };
@@ -301,6 +322,8 @@ function RouteComponent() {
             onClick={() => {
               if (isOwner) {
                 setShowDeleteGroupDrawer(true);
+              } else {
+                setShowLeaveGroupDrawer(true);
               }
             }}
           >
@@ -440,6 +463,39 @@ function RouteComponent() {
               {deleteGroupMutation.isPending
                 ? 'Eliminando...'
                 : 'Sí, eliminar'}
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer
+        open={showLeaveGroupDrawer}
+        onOpenChange={setShowLeaveGroupDrawer}
+      >
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Salir del grupo</DrawerTitle>
+            <DrawerDescription>
+              Esta acción te sacará del grupo.
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <DrawerFooter className="flex-row gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 flex-1 rounded-full"
+              onClick={() => setShowLeaveGroupDrawer(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="h-11 flex-1 rounded-full bg-primary text-white hover:bg-primary/90"
+              onClick={handleLeaveGroup}
+              disabled={unlinkMemberMutation.isPending}
+            >
+              {unlinkMemberMutation.isPending ? 'Saliendo...' : 'Sí, salir'}
             </Button>
           </DrawerFooter>
         </DrawerContent>

@@ -7,6 +7,7 @@ import { createGroupListService } from './list.service';
 import { createGroupMembersService } from './members.service';
 import { createGroupReportsService } from './reports.service';
 import { createGroupSummaryService } from './summary.service';
+import { createGroupUpdateService } from './update-group.service';
 import type { GroupsService } from './types';
 
 export function createGroupsService(): GroupsService {
@@ -15,6 +16,7 @@ export function createGroupsService(): GroupsService {
     ...createGroupDeleteService(),
     ...createGroupListService(),
     ...createGroupSummaryService(),
+    ...createGroupUpdateService(),
     ...createGroupImageService(),
     ...createGroupExpensesService(),
     ...createGroupMembersService(),

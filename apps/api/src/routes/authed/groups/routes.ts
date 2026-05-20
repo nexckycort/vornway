@@ -17,6 +17,7 @@ import {
   listGroupsQuerySchema,
   searchGroupMembersQuerySchema,
   settleGroupDebtSchema,
+  updateGroupSchema,
 } from './groups.validators';
 
 const groupsService = createGroupsService();
@@ -86,6 +87,40 @@ const groups = new Hono<AppContext>()
       throw error;
     }
   })
+  .patch(
+    '/:id',
+    zValidator('param', groupParamsSchema),
+    zValidator('json', updateGroupSchema),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      const data = c.req.valid('json');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.updateGroup({
+          userId,
+          groupId: id,
+          name: data.name,
+          type: data.type,
+          description: data.description,
+          image: data.image,
+        });
+
+        return c.json(result);
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message === 'Grupo no encontrado') {
+            return c.json({ error: error.message }, 404);
+          }
+          if (error.message === 'Solo el creador puede editar el grupo') {
+            return c.json({ error: error.message }, 403);
+          }
+        }
+
+        throw error;
+      }
+    },
+  )
   .patch(
     '/:id/image',
     zValidator('param', groupParamsSchema),

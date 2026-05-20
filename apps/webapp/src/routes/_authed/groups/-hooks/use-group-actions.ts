@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
 const updateExpenseEndpoint =
   client.api.groups[':id'].expenses[':expenseId'].$put;
+const updateGroupEndpoint = client.api.groups[':id'].$patch;
 const deleteGroupEndpoint = client.api.groups[':id'].$delete;
 const settleDebtEndpoint = client.api.groups[':id'].settlements.$post;
 const addMemberEndpoint = client.api.groups[':id'].members.$post;
@@ -14,6 +15,8 @@ const removeMemberEndpoint =
 type CreateExpenseRequest = InferRequestType<typeof createExpenseEndpoint>;
 type UpdateExpenseRequest = InferRequestType<typeof updateExpenseEndpoint>;
 type UpdateExpenseResponse = InferResponseType<typeof updateExpenseEndpoint>;
+type UpdateGroupRequest = InferRequestType<typeof updateGroupEndpoint>;
+type UpdateGroupResponse = InferResponseType<typeof updateGroupEndpoint>;
 type DeleteGroupResponse = InferResponseType<typeof deleteGroupEndpoint>;
 type SettleDebtRequest = InferRequestType<typeof settleDebtEndpoint>;
 type SettleDebtResponse = InferResponseType<typeof settleDebtEndpoint>;
@@ -88,6 +91,29 @@ export function useUpdateGroupImageMutation(groupId: string) {
       }
 
       return (await response.json()) as UpdateGroupImageResponse;
+    },
+    onSuccess: async () => {
+      await invalidateGroup(queryClient, groupId);
+    },
+  });
+}
+
+export function useUpdateGroupMutation(groupId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (json: UpdateGroupRequest['json']) => {
+      const response = await updateGroupEndpoint({
+        param: { id: groupId },
+        json,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudo actualizar el grupo');
+      }
+
+      return (await response.json()) as UpdateGroupResponse;
     },
     onSuccess: async () => {
       await invalidateGroup(queryClient, groupId);

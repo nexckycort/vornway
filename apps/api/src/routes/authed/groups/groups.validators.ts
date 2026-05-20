@@ -84,4 +84,11 @@ export const createGroupSchema = z.object({
     .optional(),
 });
 
+export const updateGroupSchema = z.object({
+  name: z.string().min(1).max(120),
+  type: z.string().min(1).max(60),
+  description: z.string().max(400).optional(),
+  image: groupImageSchema.optional(),
+});
+
 export type ListGroupsQuery = z.infer<typeof listGroupsQuerySchema>;

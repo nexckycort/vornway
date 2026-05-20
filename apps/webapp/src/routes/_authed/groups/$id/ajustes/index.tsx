@@ -11,7 +11,6 @@ import {
 import {
   useDeleteGroupMutation,
   useUnlinkMemberMutation,
-  useUpdateGroupImageMutation,
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
@@ -26,7 +25,6 @@ import {
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { compressGroupImageFile } from '../../new/-lib/group-create-draft';
 
 export const Route = createFileRoute('/_authed/groups/$id/ajustes/')({
   component: RouteComponent,
@@ -35,7 +33,6 @@ export const Route = createFileRoute('/_authed/groups/$id/ajustes/')({
 function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [showQrDrawer, setShowQrDrawer] = useState(false);
   const [showShareDrawer, setShowShareDrawer] = useState(false);
   const [showDeleteGroupDrawer, setShowDeleteGroupDrawer] = useState(false);
@@ -43,7 +40,6 @@ function RouteComponent() {
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
   const [groupQrCode, setGroupQrCode] = useState<string | null>(null);
-  const [isUpdatingGroupImage, setIsUpdatingGroupImage] = useState(false);
   const copiedResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -51,7 +47,6 @@ function RouteComponent() {
   const groupQuery = useGroupSummaryQuery(id);
   const deleteGroupMutation = useDeleteGroupMutation(id);
   const unlinkMemberMutation = useUnlinkMemberMutation(id);
-  const updateGroupImageMutation = useUpdateGroupImageMutation(id);
 
   const inviteLink = useMemo(() => {
     if (!groupQuery.data?.inviteCode || typeof window === 'undefined')
@@ -128,30 +123,6 @@ function RouteComponent() {
       await copyText(inviteLink, 'Enlace');
     } catch {
       setShareMessage('No se pudo compartir');
-    }
-  };
-
-  const handleSelectGroupImage = async (file: File | null) => {
-    if (!file) return;
-
-    setShareMessage(null);
-    setIsUpdatingGroupImage(true);
-
-    try {
-      const dataUrl = await compressGroupImageFile(file);
-      await updateGroupImageMutation.mutateAsync({
-        dataUrl,
-        ...(file.name ? { fileName: file.name } : {}),
-      });
-      setShareMessage('Imagen del grupo actualizada');
-    } catch (error) {
-      setShareMessage(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo actualizar la imagen',
-      );
-    } finally {
-      setIsUpdatingGroupImage(false);
     }
   };
 
@@ -250,15 +221,18 @@ function RouteComponent() {
               </p>
             </div>
 
-            <button
-              type="button"
-              className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] text-[#475569]"
-              onClick={() => imageInputRef.current?.click()}
-              aria-label="Actualizar imagen"
-              disabled={isUpdatingGroupImage}
-            >
-              <Pencil className="size-4" />
-            </button>
+            {isOwner ? (
+              <button
+                type="button"
+                className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] text-[#475569]"
+                onClick={() =>
+                  navigate({ to: '/groups/$id/edit', params: { id } })
+                }
+                aria-label="Editar grupo"
+              >
+                <Pencil className="size-4" />
+              </button>
+            ) : null}
           </div>
         </section>
 
@@ -341,17 +315,6 @@ function RouteComponent() {
             {shareMessage}
           </div>
         ) : null}
-
-        <input
-          ref={imageInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={async (event) => {
-            await handleSelectGroupImage(event.target.files?.[0] ?? null);
-            event.currentTarget.value = '';
-          }}
-        />
       </div>
 
       <Drawer open={showQrDrawer} onOpenChange={setShowQrDrawer}>
@@ -460,9 +423,7 @@ function RouteComponent() {
               onClick={handleConfirmDeleteGroup}
               disabled={deleteGroupMutation.isPending}
             >
-              {deleteGroupMutation.isPending
-                ? 'Eliminando...'
-                : 'Sí, eliminar'}
+              {deleteGroupMutation.isPending ? 'Eliminando...' : 'Sí, eliminar'}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -476,7 +437,8 @@ function RouteComponent() {
           <DrawerHeader>
             <DrawerTitle>Salir del grupo</DrawerTitle>
             <DrawerDescription>
-              Esta acción te sacará del grupo.
+              Dejarás de tener acceso a los gastos, balances y actividad de este
+              Grupo y el grupo se eliminará de tu cuenta.
             </DrawerDescription>
           </DrawerHeader>
 

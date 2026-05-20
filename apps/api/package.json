@@ -9,7 +9,7 @@
     "db:generate": "DATABASE_URL=dummy prisma generate",
     "db:migrate:dev": "prisma migrate dev --name init",
     "db:migrate": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:deploy": "bun --env-file=.env prisma migrate deploy",
     "typecheck": "tsgo --noEmit",
     "test": "bun test",
     "module:new": "bash scripts/create-module.sh"

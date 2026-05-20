@@ -1,3 +1,4 @@
+import '#/lib/pwa-install-global';
 import './index.css';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

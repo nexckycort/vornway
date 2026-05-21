@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { TripCard } from '#/routes/_authed/(home)/-components/trip-card';
 import type { Trip } from '#/routes/_authed/(home)/-hooks/use-home-query';
+import { GroupsSkeleton } from './-components/groups-skeleton';
 import { useGroupsInfiniteQuery } from '#/routes/_authed/groups/-hooks/use-groups-infinite-query';
 
 type GroupFilter = 'all' | 'theyOweYou' | 'youOweThem' | 'noDebt';
@@ -149,6 +150,8 @@ function RouteComponent() {
             </p>
           </div>
         </header>
+
+        {groupsQuery.isLoading ? <GroupsSkeleton /> : null}
 
         {groupsQuery.isError ? (
           <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

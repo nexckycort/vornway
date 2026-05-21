@@ -113,7 +113,7 @@ const groups = new Hono<AppContext>()
           if (error.message === 'Grupo no encontrado') {
             return c.json({ error: error.message }, 404);
           }
-          if (error.message === 'Solo el creador puede editar el grupo') {
+          if (error.message === 'No tienes permiso para editar el grupo') {
             return c.json({ error: error.message }, 403);
           }
         }

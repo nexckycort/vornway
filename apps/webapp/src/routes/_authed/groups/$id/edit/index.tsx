@@ -153,26 +153,6 @@ function RouteComponent() {
     );
   }
 
-  if (!groupQuery.data.isOwner) {
-    return (
-      <MobilePageLayout title="Editar grupo" onBack={goBack}>
-        <div className="flex flex-1 flex-col justify-center gap-4">
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            Solo el creador puede editar el grupo.
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 rounded-full"
-            onClick={goBack}
-          >
-            Volver
-          </Button>
-        </div>
-      </MobilePageLayout>
-    );
-  }
-
   return (
     <MobilePageLayout title="Editar grupo" onBack={goBack}>
       <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 pb-4">

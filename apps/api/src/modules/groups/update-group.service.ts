@@ -27,16 +27,11 @@ export function createGroupUpdateService() {
         select: {
           id: true,
           imageUrl: true,
-          ownerId: true,
         },
       });
 
       if (!group) {
         throw new Error('Grupo no encontrado');
-      }
-
-      if (group.ownerId !== userId) {
-        throw new Error('Solo el creador puede editar el grupo');
       }
 
       const normalizedName = name.trim();

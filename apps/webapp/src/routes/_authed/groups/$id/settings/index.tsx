@@ -215,18 +215,16 @@ function RouteComponent() {
               </p>
             </div>
 
-            {isOwner ? (
-              <button
-                type="button"
-                className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] text-[#475569]"
-                onClick={() =>
-                  navigate({ to: '/groups/$id/edit', params: { id } })
-                }
-                aria-label="Editar grupo"
-              >
-                <Pencil className="size-4" />
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] text-[#475569]"
+              onClick={() =>
+                navigate({ to: '/groups/$id/edit', params: { id } })
+              }
+              aria-label="Editar grupo"
+            >
+              <Pencil className="size-4" />
+            </button>
           </div>
         </section>
 

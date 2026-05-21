@@ -160,16 +160,6 @@ function RouteComponent() {
   const creditEntries = Object.entries(
     sumByCurrency(group.directCredits),
   ).filter(([, amount]) => amount > 0);
-  const balanceLabel = creditEntries[0]
-    ? `Te deben ${formatMoney(creditEntries[0][0], creditEntries[0][1])}`
-    : debtEntries[0]
-      ? `Debes ${formatMoney(debtEntries[0][0], debtEntries[0][1])}`
-      : 'Sin saldos pendientes';
-  const balanceTone = creditEntries[0]
-    ? 'text-emerald-300'
-    : debtEntries[0]
-      ? 'text-rose-300'
-      : 'text-white/70';
 
   const copyText = async (value: string, label: string) => {
     try {
@@ -279,19 +269,19 @@ function RouteComponent() {
           groupId={id}
           groupName={group.name}
           description={group.description}
-        imageUrl={group.imageUrl}
-        totalsEntries={totalsEntries}
-        primaryTotal={primaryTotal}
-        balanceLabel={balanceLabel}
-        balanceTone={balanceTone}
-        onOpenQr={() => setShowQrDrawer(true)}
-        onOpenSettings={() =>
-          void navigate({ to: '/groups/$id/settings', params: { id } })
-        }
-        onOpenReports={() =>
-          void navigate({
-            to: '/groups/$id/reports',
-            params: { id },
+          imageUrl={group.imageUrl}
+          totalsEntries={totalsEntries}
+          primaryTotal={primaryTotal}
+          creditEntries={creditEntries}
+          debtEntries={debtEntries}
+          onOpenQr={() => setShowQrDrawer(true)}
+          onOpenSettings={() =>
+            void navigate({ to: '/groups/$id/settings', params: { id } })
+          }
+          onOpenReports={() =>
+            void navigate({
+              to: '/groups/$id/reports',
+              params: { id },
               search: { tab: 'balance' },
             })
           }

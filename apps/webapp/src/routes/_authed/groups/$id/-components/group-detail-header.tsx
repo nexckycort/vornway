@@ -26,8 +26,8 @@ type GroupDetailHeaderProps = {
   imageUrl: string | null;
   totalsEntries: Array<[string, number]>;
   primaryTotal: [string, number] | undefined;
-  balanceLabel: string;
-  balanceTone: string;
+  creditEntries: Array<[string, number]>;
+  debtEntries: Array<[string, number]>;
   onOpenQr: () => void;
   onOpenSettings: () => void;
   onOpenReports: () => void;
@@ -40,8 +40,8 @@ export function GroupDetailHeader({
   imageUrl,
   totalsEntries,
   primaryTotal,
-  balanceLabel,
-  balanceTone,
+  creditEntries,
+  debtEntries,
   onOpenQr,
   onOpenSettings,
   onOpenReports,
@@ -111,25 +111,64 @@ export function GroupDetailHeader({
             : formatMoney('COP', 0)}
         </h2>
 
-        <p className={`mt-2 text-sm font-medium ${balanceTone}`}>
-          {balanceLabel}
-        </p>
+        <div className="mt-3 space-y-3">
+          {totalsEntries.length > 1 ? (
+            <div>
+              <p className="text-xs font-medium text-white/55">Totales por moneda</p>
+              <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                {totalsEntries.map(([currency, amount]) => (
+                  <span
+                    key={currency}
+                    className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-white/80"
+                  >
+                    <span>{getCurrencyMeta(currency).flag}</span>
+                    <span>{getCurrencyMeta(currency).label}</span>
+                    <span className="text-white/45">·</span>
+                    <span>{formatMoney(currency, Math.abs(amount))}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
-        {totalsEntries.length > 1 ? (
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {totalsEntries.map(([currency, amount]) => (
-              <span
-                key={currency}
-                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-white/80"
-              >
-                <span>{getCurrencyMeta(currency).flag}</span>
-                <span>{getCurrencyMeta(currency).label}</span>
-                <span className="text-white/45">·</span>
-                <span>{formatMoney(currency, Math.abs(amount))}</span>
-              </span>
-            ))}
-          </div>
-        ) : null}
+          {creditEntries.length > 0 ? (
+            <div>
+              <p className="text-xs font-medium text-emerald-200">Te deben</p>
+              <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                {creditEntries.map(([currency, amount]) => (
+                  <span
+                    key={`credit-${currency}`}
+                    className="inline-flex shrink-0 items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-medium text-emerald-200"
+                  >
+                    <span>{getCurrencyMeta(currency).flag}</span>
+                    <span>{getCurrencyMeta(currency).label}</span>
+                    <span className="text-emerald-100/60">·</span>
+                    <span>{formatMoney(currency, Math.abs(amount))}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {debtEntries.length > 0 ? (
+            <div>
+              <p className="text-xs font-medium text-rose-200">Debes</p>
+              <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                {debtEntries.map(([currency, amount]) => (
+                  <span
+                    key={`debt-${currency}`}
+                    className="inline-flex shrink-0 items-center gap-2 rounded-full bg-rose-500/15 px-3 py-1 text-[11px] font-medium text-rose-200"
+                  >
+                    <span>{getCurrencyMeta(currency).flag}</span>
+                    <span>{getCurrencyMeta(currency).label}</span>
+                    <span className="text-rose-100/60">·</span>
+                    <span>{formatMoney(currency, Math.abs(amount))}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
       </section>
 
       <div className="mt-4 grid grid-cols-4 gap-2">

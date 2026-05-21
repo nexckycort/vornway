@@ -21,6 +21,16 @@ export type CreateGroupFormValues = {
   }>;
 };
 
+export type CreatedGroupPayload = {
+  id: string;
+  name: string;
+  type: string;
+  description: string | null;
+  imageUrl: string | null;
+  inviteCode: string;
+  createdAt: string;
+};
+
 async function createGroup(values: CreateGroupFormValues): Promise<CreateGroupResponse> {
   const payload: CreateGroupRequest = {
     json: {

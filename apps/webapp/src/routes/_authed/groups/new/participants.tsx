@@ -1,5 +1,12 @@
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
 import { useCreateGroupMutation } from '#/routes/_authed/groups/-hooks/use-create-group';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
 import {
@@ -8,7 +15,7 @@ import {
   loadGroupDraft,
 } from '#/routes/_authed/groups/new/-lib/group-create-draft';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { PlusCircle, UserPlus, X } from 'lucide-react';
+import { Copy, PlusCircle, Share2, UserPlus, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 export const Route = createFileRoute('/_authed/groups/new/participants')({
@@ -42,6 +49,13 @@ function RouteComponent() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [participants, setParticipants] = useState<DraftParticipant[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccessDrawer, setShowSuccessDrawer] = useState(false);
+  const [isLinkCopied, setIsLinkCopied] = useState(false);
+  const [createdGroup, setCreatedGroup] = useState<{
+    id: string;
+    name: string;
+    inviteCode: string;
+  } | null>(null);
 
   const isSubmitting = createGroupMutation.isPending;
   const isValidGroupData = name.trim().length > 0 && type.trim().length > 0;
@@ -56,6 +70,21 @@ function RouteComponent() {
     if (participants.length === 1) return '1 participante agregado';
     return `${participants.length} participantes agregados`;
   }, [participants.length]);
+
+  const createdInviteLink = useMemo(() => {
+    if (!createdGroup) return '';
+    return `https://join.vornway.com/${createdGroup.inviteCode}`;
+  }, [createdGroup]);
+
+  useEffect(() => {
+    if (!isLinkCopied) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      setIsLinkCopied(false);
+    }, 1400);
+
+    return () => window.clearTimeout(timeout);
+  }, [isLinkCopied]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -135,7 +164,7 @@ function RouteComponent() {
     setError(null);
 
     try {
-      await createGroupMutation.mutateAsync({
+      const result = await createGroupMutation.mutateAsync({
         name: draft?.name ?? name,
         type: draft?.type ?? type,
         description: draft?.description ?? description,
@@ -157,7 +186,12 @@ function RouteComponent() {
       if (draftId) {
         clearGroupDraft(draftId);
       }
-      await navigate({ to: '/groups', replace: true });
+      setCreatedGroup({
+        id: result.id,
+        name: result.name,
+        inviteCode: result.inviteCode,
+      });
+      setShowSuccessDrawer(true);
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -370,6 +404,149 @@ function RouteComponent() {
           </div>
         </div>
       </div>
+
+      <Drawer
+        open={showSuccessDrawer}
+        onOpenChange={(open) => {
+          setShowSuccessDrawer(open);
+          if (!open) {
+            setIsLinkCopied(false);
+          }
+          if (!open) {
+            void navigate({ to: '/groups', replace: true });
+          }
+        }}
+      >
+        <DrawerContent>
+          <DrawerHeader className="px-4">
+            <DrawerTitle className="text-[2rem] leading-tight tracking-tight">
+              ¡{createdGroup?.name ?? 'Grupo'} creado!
+            </DrawerTitle>
+            <DrawerDescription>
+              Ya puedes compartir el enlace e invitar a más personas.
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="space-y-5 px-4 pb-4">
+            <div className="flex items-center justify-center pt-1">
+              <div className="relative h-24 w-32">
+                <div className="absolute right-1 top-1 h-[4.5rem] w-[4.5rem] rounded-[30px] bg-primary" />
+                <div className="absolute left-2 top-2 h-[4.75rem] w-[4.75rem] overflow-hidden rounded-[28px] border-[3px] border-white bg-[#f8fafc] shadow-[0_14px_28px_rgba(15,23,42,0.14)]">
+                  {draft?.image?.dataUrl ? (
+                    <img
+                      src={draft.image.dataUrl}
+                      alt={createdGroup?.name ?? 'Grupo creado'}
+                      className="h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[#fff4f7] text-primary">
+                      <UserPlus className="size-7" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[1.05rem] font-semibold text-[#0f172a]">
+                Comparte el enlace del grupo
+              </p>
+
+              <div className="mt-3 flex items-center gap-3">
+                <input
+                  readOnly
+                  value={createdInviteLink}
+                  className="h-12 min-w-0 flex-1 rounded-full border border-[#e2e8f0] bg-[#fafafa] px-4 text-sm text-[#334155] outline-none"
+                />
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={`h-12 shrink-0 rounded-full px-4 transition-all ${
+                    isLinkCopied
+                      ? 'scale-105 border-primary bg-primary/10 text-primary'
+                      : ''
+                  }`}
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(createdInviteLink);
+                    setIsLinkCopied(true);
+                  }}
+                >
+                  <Copy
+                    className={`size-4 transition-transform ${
+                      isLinkCopied ? 'scale-110' : ''
+                    }`}
+                  />
+                </Button>
+              </div>
+
+              <Button
+                type="button"
+                variant="ghost"
+                className="mt-3 h-11 w-full rounded-full border border-[#e2e8f0] text-[#334155]"
+                onClick={async () => {
+                  if (navigator.share) {
+                    await navigator.share({
+                      title: createdGroup?.name ?? 'Grupo',
+                      text: `Únete a ${createdGroup?.name ?? 'mi grupo'}`,
+                      url: createdInviteLink,
+                    });
+                    return;
+                  }
+
+                  await navigator.clipboard.writeText(createdInviteLink);
+                }}
+              >
+                <Share2 className="mr-2 size-4" />
+                Compartir enlace
+              </Button>
+            </div>
+
+            <div className="rounded-[26px] bg-white px-4 py-4">
+              <p className="text-lg font-semibold text-[#0f172a]">
+                ¿Qué puedes hacer ahora?
+              </p>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-[#334155]">
+                <li>
+                  <span className="font-semibold text-[#0f172a]">Invita</span>{' '}
+                  a más personas cuando quieras
+                </li>
+                <li>
+                  Comienza a{' '}
+                  <span className="font-semibold text-[#0f172a]">
+                    registrar gastos
+                  </span>{' '}
+                  compartidos
+                </li>
+                <li>
+                  <span className="font-semibold text-[#0f172a]">
+                    Revisa los balances
+                  </span>{' '}
+                  en tiempo real
+                </li>
+              </ul>
+            </div>
+
+            <Button
+              type="button"
+              className="h-12 w-full rounded-full bg-primary text-base font-medium text-white"
+              onClick={() => {
+                setShowSuccessDrawer(false);
+                if (!createdGroup) return;
+                void navigate({
+                  to: '/groups/$id',
+                  params: { id: createdGroup.id },
+                  replace: true,
+                });
+              }}
+              disabled={!createdGroup}
+            >
+              Ir al grupo
+            </Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </MobilePageLayout>
   );
 }

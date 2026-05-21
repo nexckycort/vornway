@@ -136,82 +136,113 @@ function RouteComponent() {
               </h2>
             </section>
 
-            <section className="space-y-2 px-1">
-              <h3 className="text-[1.1rem] font-semibold text-[#0f172a]">
-                ¿Ya estás en este grupo?
-              </h3>
-              <p className="text-sm leading-6 text-[#64748b]">
-                Encontramos participantes creados previamente que podrían ser
-                tú.
-              </p>
-            </section>
+            {unregisteredMembers.length > 0 ? (
+              <>
+                <section className="space-y-2 px-1">
+                  <h3 className="text-[1.1rem] font-semibold text-[#0f172a]">
+                    ¿Ya estás en este grupo?
+                  </h3>
+                  <p className="text-sm leading-6 text-[#64748b]">
+                    Encontramos participantes creados previamente que podrían
+                    ser tú.
+                  </p>
+                </section>
 
-            <section className="space-y-3">
-              {unregisteredMembers.map((member) => (
-                <MemberRow
-                  key={member.id}
-                  title={member.name}
-                  email="Sin correo asignado"
-                  selected={selection === member.id}
-                  onClick={() => setSelection(member.id)}
-                  actionLabel="Soy yo"
-                  icon={<MemberInitials name={member.name} />}
-                />
-              ))}
+                <section className="space-y-3">
+                  {unregisteredMembers.map((member) => (
+                    <MemberRow
+                      key={member.id}
+                      title={member.name}
+                      email="Sin correo asignado"
+                      selected={selection === member.id}
+                      onClick={() => setSelection(member.id)}
+                      actionLabel="Soy yo"
+                      icon={<MemberInitials name={member.name} />}
+                    />
+                  ))}
+                </section>
 
-              {unregisteredMembers.length === 0 ? (
-                <div className="rounded-[22px] border border-dashed border-[#cbd5e1] bg-white px-4 py-5 text-sm text-[#64748b]">
-                  No hay personas sin correo asignado. Puedes continuar como
-                  nuevo participante.
-                </div>
-              ) : null}
-            </section>
+                <section className="mt-auto space-y-3 pt-1">
+                  {submitError ? (
+                    <div className="rounded-[20px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {submitError}
+                    </div>
+                  ) : null}
 
-            <section className="mt-auto space-y-3 pt-1">
-              {submitError ? (
-                <div className="rounded-[20px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {submitError}
-                </div>
-              ) : null}
+                  <Button
+                    type="button"
+                    onClick={() => void handleAccept('linked')}
+                    disabled={!selectedMember || acceptMutation.isPending}
+                    className="h-12 w-full rounded-full bg-primary text-base font-medium text-white"
+                  >
+                    {acceptMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        Vinculando...
+                      </>
+                    ) : (
+                      'Vincular cuenta'
+                    )}
+                  </Button>
 
-              <Button
-                type="button"
-                onClick={() => void handleAccept('linked')}
-                disabled={!selectedMember || acceptMutation.isPending}
-                className="h-12 w-full rounded-full bg-primary text-base font-medium text-white"
-              >
-                {acceptMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                    Vinculando...
-                  </>
-                ) : (
-                  'Vincular cuenta'
-                )}
-              </Button>
+                  <div className="flex items-center gap-3 px-1">
+                    <div className="h-px flex-1 bg-[#e2e8f0]" />
+                    <span className="text-xs text-[#94a3b8]">o</span>
+                    <div className="h-px flex-1 bg-[#e2e8f0]" />
+                  </div>
 
-              <div className="flex items-center gap-3 px-1">
-                <div className="h-px flex-1 bg-[#e2e8f0]" />
-                <span className="text-xs text-[#94a3b8]">o</span>
-                <div className="h-px flex-1 bg-[#e2e8f0]" />
-              </div>
+                  <Button
+                    type="button"
+                    onClick={() => void handleAccept('new')}
+                    disabled={acceptMutation.isPending}
+                    className="h-12 w-full rounded-full bg-[#0b0b0b] text-base font-medium text-white hover:bg-black/90"
+                  >
+                    {acceptMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        Continuando...
+                      </>
+                    ) : (
+                      'Continuar como nuevo participante'
+                    )}
+                  </Button>
+                </section>
+              </>
+            ) : (
+              <section className="mt-auto space-y-3 pt-1">
+                <section className="space-y-2 px-1">
+                  <h3 className="text-[1.1rem] font-semibold text-[#0f172a]">
+                    Continúa como nuevo participante
+                  </h3>
+                  <p className="text-sm leading-6 text-[#64748b]">
+                    No hay un registro previo para tu cuenta. Puedes crear tu
+                    acceso ahora.
+                  </p>
+                </section>
 
-              <Button
-                type="button"
-                onClick={() => void handleAccept('new')}
-                disabled={acceptMutation.isPending}
-                className="h-12 w-full rounded-full bg-[#0b0b0b] text-base font-medium text-white hover:bg-black/90"
-              >
-                {acceptMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                    Continuando...
-                  </>
-                ) : (
-                  'Continuar como nuevo participante'
-                )}
-              </Button>
-            </section>
+                {submitError ? (
+                  <div className="rounded-[20px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {submitError}
+                  </div>
+                ) : null}
+
+                <Button
+                  type="button"
+                  onClick={() => void handleAccept('new')}
+                  disabled={acceptMutation.isPending}
+                  className="h-12 w-full rounded-full bg-primary text-base font-medium text-white"
+                >
+                  {acceptMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      Continuando...
+                    </>
+                  ) : (
+                    'Continuar como nuevo participante'
+                  )}
+                </Button>
+              </section>
+            )}
           </>
         ) : null}
       </div>

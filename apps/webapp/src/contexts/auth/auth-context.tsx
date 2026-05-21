@@ -30,9 +30,10 @@ export const AuthContext = createContext<AuthContextProps | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+  const [forcedLoggedOut, setForcedLoggedOut] = useState(false);
   const { data, isPending } = useSession();
 
-  const isAuthenticated = data !== null;
+  const isAuthenticated = !forcedLoggedOut && data !== null;
 
   const login = useCallback(async (email: string, otp: string) => {
     const result = await signIn.emailOtp({
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    setForcedLoggedOut(true);
     setLoading(true);
     await signOut();
     setCurrentUser(null);
@@ -53,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (data) {
+      setForcedLoggedOut(false);
       setCurrentUser({
         id: data?.user.id ?? '',
         name: data?.user.name ?? '',
@@ -63,6 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ),
         updatedAt: data?.user.updatedAt ?? '',
       });
+      return;
+    }
+
+    if (!data) {
+      setCurrentUser(null);
     }
   }, [data]);
 

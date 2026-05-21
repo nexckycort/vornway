@@ -10,6 +10,7 @@ export type InvitePreviewResponse = {
     name: string;
     type: string;
     description: string | null;
+    imageUrl: string | null;
     inviteCode: string;
     ownerName: string | null;
     memberCount: number;

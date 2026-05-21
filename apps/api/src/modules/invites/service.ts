@@ -1,4 +1,5 @@
 import { db } from '~/infrastructure/database/connection';
+import { getVersionedGroupImageUrl } from '~/modules/groups/group-image.service';
 import type {
   AcceptInviteInput,
   AcceptInviteResult,
@@ -29,6 +30,8 @@ export function createInvitesService(): InvitesService {
           name: true,
           type: true,
           description: true,
+          imageUrl: true,
+          updatedAt: true,
           inviteCode: true,
           owner: {
             select: {
@@ -60,6 +63,10 @@ export function createInvitesService(): InvitesService {
           name: group.name,
           type: group.type,
           description: group.description,
+          imageUrl: getVersionedGroupImageUrl(
+            group.imageUrl,
+            group.updatedAt,
+          ),
           inviteCode: group.inviteCode,
           ownerName: group.owner?.name ?? null,
           memberCount: group.GroupMember.length,

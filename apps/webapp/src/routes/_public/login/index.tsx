@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import { Button } from '#/components/ui/button';
 import { Input } from '#/components/ui/input';
@@ -41,7 +41,6 @@ function RouteComponent() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
-  const [slideIndex, setSlideIndex] = useState(0);
   const redirect =
     typeof window !== 'undefined'
       ? (new URLSearchParams(window.location.search).get('redirect') ?? '/')
@@ -59,21 +58,6 @@ function RouteComponent() {
   const isEmailStep = step === 'email';
   const isNameStep = step === 'name';
   const isOtpStep = step === 'otp';
-  const activeSlide = LOGIN_SLIDES[slideIndex] ?? LOGIN_SLIDES[0];
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setSlideIndex((current) => (current + 1) % LOGIN_SLIDES.length);
-    }, 4500);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!auth.isAuthenticated) return;
-
-    setSlideIndex(0);
-  }, [auth.isAuthenticated]);
 
   async function handleGoogleSignIn() {
     setSyncError(null);
@@ -120,79 +104,23 @@ function RouteComponent() {
   }
 
   return (
-    <main className="h-dvh overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.96),_rgba(244,246,251,0.98)_42%,_rgba(223,231,255,0.92)_100%)]">
-      <div className="mx-auto grid h-full w-full max-w-6xl grid-rows-[1.15fr_0.95fr] gap-3 p-3 sm:p-4 lg:grid-cols-[1.08fr_0.92fr] lg:grid-rows-1 lg:gap-6 lg:p-6">
-        <section className="relative min-h-0 overflow-hidden rounded-[28px] border border-white/70 bg-[#0d1430] text-white shadow-[0_30px_90px_rgba(15,23,42,0.22)]">
-          <div className="absolute inset-0">
-            <img
-              src={activeSlide.image}
-              alt={activeSlide.title}
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,9,20,0.18)_0%,rgba(6,9,20,0.3)_35%,rgba(6,9,20,0.86)_100%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.1),_transparent_48%)]" />
-          </div>
-
-          <div className="relative z-10 flex h-full flex-col justify-between p-4 sm:p-5 lg:p-6">
-            <div className="flex items-center gap-3">
-              <VornwayLogo className="h-11 w-11 rounded-2xl bg-white/10 ring-1 ring-white/15" />
-              <div>
-                <p className="text-base font-semibold leading-5 text-white">
-                  Vornway
-                </p>
-                <p className="text-xs text-white/70">Gastos, metas y viajes</p>
-              </div>
-            </div>
-
-            <div className="max-w-xl space-y-3 pb-2">
-              <p className="text-[11px] uppercase tracking-[0.26em] text-white/70">
-                Login mobile first
+    <main className="min-h-dvh bg-[radial-gradient(circle_at_top,_rgba(251,242,246,1)_0%,_rgba(255,255,255,1)_36%,_rgba(245,247,251,1)_100%)] px-4 py-6">
+      <div className="mx-auto flex min-h-[calc(100dvh-3rem)] w-full max-w-md items-center">
+        <section className="w-full space-y-5">
+          <div className="flex items-center gap-3 px-1">
+            <VornwayLogo className="h-12 w-12 rounded-2xl bg-white ring-1 ring-border/70 shadow-sm" />
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
+                Vornway
               </p>
-              <h1 className="text-3xl font-semibold leading-tight tracking-tight text-balance sm:text-4xl lg:text-5xl">
-                {activeSlide.title}
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                Entra a tu app
               </h1>
-              <p className="max-w-lg text-sm leading-6 text-white/80 sm:text-base">
-                {activeSlide.description}
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-white/55">
-                <span>{activeSlide.kicker}</span>
-                <span>{slideIndex + 1}/3</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {LOGIN_SLIDES.map((slide, index) => (
-                  <button
-                    key={slide.title}
-                    type="button"
-                    onClick={() => setSlideIndex(index)}
-                    aria-label={`Ver slide ${index + 1}`}
-                    className={`h-1.5 rounded-full transition-all ${
-                      index === slideIndex
-                        ? 'w-8 bg-white'
-                        : 'w-2.5 bg-white/45'
-                    }`}
-                  />
-                ))}
-              </div>
             </div>
           </div>
-        </section>
 
-        <section className="min-h-0 overflow-hidden rounded-[28px] border border-white/70 bg-white/90 p-4 shadow-[0_28px_70px_rgba(15,23,42,0.16)] backdrop-blur-xl sm:p-5 lg:flex lg:items-center lg:p-6">
-          <div className="w-full">
-            <div className="flex items-center gap-3">
-              <VornwayLogo className="h-11 w-11 rounded-2xl bg-background ring-1 ring-border/60" />
-              <div>
-                <p className="text-base font-semibold leading-5 text-foreground">
-                  Iniciar sesión
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-4">
+          <div className="rounded-[32px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
+            <div className="space-y-4">
               <Button
                 type="button"
                 variant="outline"
@@ -205,16 +133,19 @@ function RouteComponent() {
                 {isGoogleLoading ? 'Redirigiendo...' : 'Continuar con Google'}
               </Button>
 
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
                 <span className="h-px flex-1 bg-border" />o con correo
                 <span className="h-px flex-1 bg-border" />
               </div>
 
               {isEmailStep ? (
-                <div className="space-y-4">
+                <StepCard
+                  title="Tu correo"
+                  copy="Solo necesitamos tu correo electrónico para continuar."
+                >
                   <Input
                     type="email"
-                    placeholder="Tu correo"
+                    placeholder="tu@correo.com"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     className="h-12 rounded-2xl border-border bg-background px-4 text-base placeholder:text-muted-foreground"
@@ -224,20 +155,18 @@ function RouteComponent() {
                     type="button"
                     onClick={submitEmail}
                     disabled={!canSubmitEmail}
-                    className="h-12 w-full rounded-full bg-primary text-base font-medium text-primary-foreground shadow-[0_10px_30px_rgba(222,3,77,0.2)] hover:bg-primary/90"
+                    className="h-12 w-full rounded-full bg-primary text-base font-medium text-primary-foreground shadow-[0_10px_30px_rgba(222,3,77,0.16)] hover:bg-primary/90"
                   >
                     {isSubmitting ? 'Enviando...' : 'Continuar'}
                   </Button>
-                </div>
+                </StepCard>
               ) : null}
 
               {isNameStep ? (
-                <div className="space-y-4">
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    No encontramos tu cuenta. Ingresa tu nombre para crearla y
-                    enviarte el código.
-                  </p>
-
+                <StepCard
+                  title="Tu nombre"
+                  copy={`No encontramos una cuenta para ${email}.`}
+                >
                   <Input
                     type="text"
                     placeholder="Tu nombre"
@@ -250,20 +179,27 @@ function RouteComponent() {
                     type="button"
                     onClick={submitName}
                     disabled={!canSubmitName}
-                    className="h-12 w-full rounded-full bg-primary text-base font-medium text-primary-foreground shadow-[0_10px_30px_rgba(222,3,77,0.2)] hover:bg-primary/90"
+                    className="h-12 w-full rounded-full bg-primary text-base font-medium text-primary-foreground shadow-[0_10px_30px_rgba(222,3,77,0.16)] hover:bg-primary/90"
                   >
                     {isSubmitting ? 'Enviando...' : 'Continuar'}
                   </Button>
-                </div>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={goBackToEmail}
+                    className="h-11 w-full rounded-full text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                  >
+                    Volver
+                  </Button>
+                </StepCard>
               ) : null}
 
               {isOtpStep ? (
-                <div className="space-y-4">
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    Ingresa el código enviado a{' '}
-                    <span className="font-medium text-foreground">{email}</span>
-                  </p>
-
+                <StepCard
+                  title="Verifica tu acceso"
+                  copy={`Enviamos un código a ${email}`}
+                >
                   <div className="mx-auto">
                     <InputOTP
                       maxLength={6}
@@ -286,7 +222,7 @@ function RouteComponent() {
                     type="button"
                     onClick={submitOtpWithAuth}
                     disabled={!canSubmitOtp || isAuthSubmitting}
-                    className="h-12 w-full rounded-full bg-primary text-base font-medium text-primary-foreground shadow-[0_10px_30px_rgba(222,3,77,0.2)] hover:bg-primary/90"
+                    className="h-12 w-full rounded-full bg-primary text-base font-medium text-primary-foreground shadow-[0_10px_30px_rgba(222,3,77,0.16)] hover:bg-primary/90"
                   >
                     {isAuthSubmitting ? 'Verificando...' : 'Verificar código'}
                   </Button>
@@ -307,17 +243,17 @@ function RouteComponent() {
                       Reenviar código
                     </button>
                   </div>
-                </div>
+                </StepCard>
               ) : null}
 
               {syncError || error ? (
-                <p className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700">
+                <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700">
                   {syncError || error}
                 </p>
               ) : null}
             </div>
 
-            <p className="mt-4 text-center text-xs leading-5 text-muted-foreground">
+            <p className="mt-5 text-center text-xs leading-5 text-muted-foreground">
               Al continuar aceptas el uso de tu cuenta para iniciar sesión en
               Vornway.
             </p>
@@ -328,29 +264,28 @@ function RouteComponent() {
   );
 }
 
-const LOGIN_SLIDES = [
-  {
-    kicker: 'Organiza viajes',
-    image: '/images/login/slide-1.webp',
-    title: 'Todo el viaje en un solo lugar',
-    description:
-      'Planifica itinerarios, comparte el contexto del grupo y evita perder detalles entre chats.',
-  },
-  {
-    kicker: 'Divide gastos',
-    image: '/images/login/slide-2.webp',
-    title: 'Cuentas claras aunque cambies de moneda',
-    description:
-      'Registra gastos, divide por persona y sigue el balance sin hacer cuentas manuales.',
-  },
-  {
-    kicker: 'Ahorra para metas',
-    image: '/images/login/slide-3.webp',
-    title: 'Metas que empujan tu próximo destino',
-    description:
-      'Define objetivos, revisa el progreso y llega al viaje con todo bajo control.',
-  },
-] as const;
+function StepCard({
+  title,
+  copy,
+  children,
+}: {
+  title: string;
+  copy: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-[28px] border border-[#e8edf4] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+      <div className="mb-4 space-y-1">
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">
+          {title}
+        </h2>
+        <p className="text-sm leading-6 text-muted-foreground">{copy}</p>
+      </div>
+
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
 
 function GoogleIcon({ className }: { className?: string }) {
   return (

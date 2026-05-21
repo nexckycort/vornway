@@ -22,10 +22,6 @@ async function sendOtp(payload: SendOtpRequest): Promise<SendOtpResponse> {
   const response = await publicClient.api.login['send-otp'].$post({ json: payload });
   const data = (await response.json()) as SendOtpResponse;
 
-  if (!response.ok) {
-    throw data;
-  }
-
   return data;
 }
 

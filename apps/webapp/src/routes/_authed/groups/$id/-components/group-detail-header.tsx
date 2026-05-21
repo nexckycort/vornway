@@ -10,6 +10,15 @@ import {
 
 import { formatMoney } from './group-detail.utils';
 
+const currencyMeta: Record<string, { flag: string; label: string }> = {
+  COP: { flag: '🇨🇴', label: 'COP' },
+  USD: { flag: '🇺🇸', label: 'USD' },
+  EUR: { flag: '🇪🇺', label: 'EUR' },
+  GBP: { flag: '🇬🇧', label: 'GBP' },
+  MXN: { flag: '🇲🇽', label: 'MXN' },
+  BRL: { flag: '🇧🇷', label: 'BRL' },
+};
+
 type GroupDetailHeaderProps = {
   groupId: string;
   groupName: string;
@@ -42,6 +51,9 @@ export function GroupDetailHeader({
   const goBack = () => {
     router.history.back();
   };
+
+  const getCurrencyMeta = (currency: string) =>
+    currencyMeta[currency] ?? { flag: '💱', label: currency };
 
   return (
     <header className="px-4 pb-6 pt-6 text-white">
@@ -86,8 +98,9 @@ export function GroupDetailHeader({
 
       <section className="rounded-[28px] bg-[#1f1f1f] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.25)]">
         <div className="flex items-center gap-2">
-          <span className="inline-flex rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/75">
-            {primaryTotal ? primaryTotal[0] : 'COP'}
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/85">
+            <span>{getCurrencyMeta(primaryTotal?.[0] ?? 'COP').flag}</span>
+            <span>{getCurrencyMeta(primaryTotal?.[0] ?? 'COP').label}</span>
           </span>
           <span className="text-xs text-white/45">Total del grupo</span>
         </div>
@@ -103,13 +116,16 @@ export function GroupDetailHeader({
         </p>
 
         {totalsEntries.length > 1 ? (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
             {totalsEntries.map(([currency, amount]) => (
               <span
                 key={currency}
-                className="inline-flex rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-white/70"
+                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-white/80"
               >
-                {formatMoney(currency, Math.abs(amount))}
+                <span>{getCurrencyMeta(currency).flag}</span>
+                <span>{getCurrencyMeta(currency).label}</span>
+                <span className="text-white/45">·</span>
+                <span>{formatMoney(currency, Math.abs(amount))}</span>
               </span>
             ))}
           </div>

@@ -11,6 +11,7 @@ export const Route = createFileRoute('/_authed/goals/')({
 });
 
 function RouteComponent() {
+  const isProduction = import.meta.env.PROD;
   const navigate = useNavigate();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
@@ -45,7 +46,7 @@ function RouteComponent() {
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa]">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa]">
         <div className="flex-1 overflow-y-auto px-4 pb-32 pt-6">
           <header>
             <h1 className="text-3xl font-semibold leading-9 text-[#0f172a]">
@@ -134,6 +135,23 @@ function RouteComponent() {
             ) : null}
           </section>
         </div>
+
+        {isProduction ? (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/55 backdrop-blur-sm px-6">
+            <div className="w-full max-w-[320px] rounded-3xl border border-white/70 bg-white/80 px-6 py-7 text-center shadow-[0_16px_40px_rgba(15,23,42,0.16)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+                Próximamente
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#0f172a]">
+                Metas en construcción
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[#64748b]">
+                Estamos mejorando esta sección. La experiencia puede cambiar y
+                tener comportamientos inestables por ahora.
+              </p>
+            </div>
+          </div>
+        ) : null}
       </div>
     </main>
   );

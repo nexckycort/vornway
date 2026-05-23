@@ -5,7 +5,9 @@ import { client, type InferRequestType } from '#/lib/hc';
 
 const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
 
-type CreateExpensePayload = InferRequestType<typeof createExpenseEndpoint>['json'];
+type CreateExpensePayload = InferRequestType<
+  typeof createExpenseEndpoint
+>['json'];
 
 type PendingExpense = {
   id: string;
@@ -24,7 +26,7 @@ let cachedPendingExpenses: PendingExpense[] = EMPTY_PENDING_EXPENSES;
 const cachedPendingExpensesByGroup = new Map<string, PendingExpense[]>();
 
 function readPendingExpenses(): PendingExpense[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') return EMPTY_PENDING_EXPENSES;
 
   try {
     const raw = window.localStorage.getItem(OFFLINE_EXPENSES_STORAGE_KEY);
@@ -58,10 +60,12 @@ function readPendingExpenses(): PendingExpense[] {
 
 function writePendingExpenses(next: PendingExpense[]) {
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(
-    OFFLINE_EXPENSES_STORAGE_KEY,
-    JSON.stringify(next),
-  );
+
+  const raw = JSON.stringify(next);
+  window.localStorage.setItem(OFFLINE_EXPENSES_STORAGE_KEY, raw);
+  cachedRawPendingExpenses = raw;
+  cachedPendingExpenses = next.length > 0 ? next : EMPTY_PENDING_EXPENSES;
+  cachedPendingExpensesByGroup.clear();
   window.dispatchEvent(new CustomEvent(OFFLINE_EXPENSES_EVENT));
 }
 
@@ -120,16 +124,16 @@ export const pendingExpensesCollection = createCollection(
     getKey: (item) => item.id,
     onInsert: async ({ transaction }) => {
       const current = readPendingExpenses();
-      const additions = (transaction.mutations as Array<{ modified: PendingExpense }>).map(
-        (mutation) => mutation.modified,
-      );
+      const additions = (
+        transaction.mutations as Array<{ modified: PendingExpense }>
+      ).map((mutation) => mutation.modified);
       writePendingExpenses([...current, ...additions]);
       return { refetch: false };
     },
     onDelete: async ({ transaction }) => {
       const deletions = new Set(
-        (transaction.mutations as Array<{ key: string }>).map(
-          (mutation) => String(mutation.key),
+        (transaction.mutations as Array<{ key: string }>).map((mutation) =>
+          String(mutation.key),
         ),
       );
       writePendingExpenses(
@@ -143,7 +147,10 @@ export const pendingExpensesCollection = createCollection(
 let isSyncingQueue = false;
 let isSyncListenerRegistered = false;
 
-async function postExpenseToApi(groupId: string, payload: CreateExpensePayload) {
+async function postExpenseToApi(
+  groupId: string,
+  payload: CreateExpensePayload,
+) {
   const request = createExpenseEndpoint({
     param: { id: groupId },
     json: payload,
@@ -205,9 +212,7 @@ export function initOfflineExpenseQueueSync() {
   void syncPendingExpensesQueue();
 }
 
-export function subscribePendingExpenses(
-  callback: () => void,
-): () => void {
+export function subscribePendingExpenses(callback: () => void): () => void {
   if (typeof window === 'undefined') {
     return () => undefined;
   }

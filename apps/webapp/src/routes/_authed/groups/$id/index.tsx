@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Pencil, Trash2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -63,9 +64,13 @@ function RouteComponent() {
 
   const groupQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
+  const getPendingExpensesSnapshot = useCallback(
+    () => getPendingExpensesForGroup(id),
+    [id],
+  );
   const pendingExpenses = useSyncExternalStore(
     subscribePendingExpenses,
-    () => getPendingExpensesForGroup(id),
+    getPendingExpensesSnapshot,
     getEmptyPendingExpenses,
   );
   const deleteExpenseMutation = useDeleteExpenseMutation(id);
@@ -150,7 +155,11 @@ function RouteComponent() {
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [expensesQuery]);
+  }, [
+    expensesQuery.fetchNextPage,
+    expensesQuery.hasNextPage,
+    expensesQuery.isFetching,
+  ]);
 
   useEffect(() => {
     let active = true;

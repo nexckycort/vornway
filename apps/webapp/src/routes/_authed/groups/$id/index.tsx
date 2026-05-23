@@ -535,28 +535,28 @@ function RouteComponent() {
                 </div>
               </div>
 
-              <DrawerFooter>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  className="h-11 rounded-full"
-                  onClick={handleConfirmDeleteExpense}
-                  disabled={deleteExpenseMutation.isPending}
-                >
-                  {deleteExpenseMutation.isPending
-                    ? 'Eliminando...'
-                    : 'Sí, eliminar gasto'}
-                </Button>
+              <DrawerFooter className="flex-row gap-3">
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-11 rounded-full"
+                  className="h-11 flex-1 rounded-full"
                   onClick={() => {
                     setShowDeleteExpenseDrawer(false);
                     setExpenseToDelete(null);
                   }}
                 >
                   Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="h-11 flex-1 rounded-full"
+                  onClick={handleConfirmDeleteExpense}
+                  disabled={deleteExpenseMutation.isPending}
+                >
+                  {deleteExpenseMutation.isPending
+                    ? 'Eliminando...'
+                    : 'Sí, eliminar gasto'}
                 </Button>
               </DrawerFooter>
             </>

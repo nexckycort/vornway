@@ -123,6 +123,10 @@ export function useGroupSummaryQuery(groupId: string) {
 
   return useQuery({
     queryKey: ['group-summary', groupId],
+    initialData: () => {
+      const localGroup = getLocalGroupById(groupId);
+      return localGroup ? buildPendingGroupSummary(localGroup) : undefined;
+    },
     queryFn: async () => {
       const localGroup = getLocalGroupById(groupId);
       if (localGroup && typeof navigator !== 'undefined' && !navigator.onLine) {

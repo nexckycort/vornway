@@ -1,3 +1,14 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Pencil, Trash2 } from 'lucide-react';
+import QRCode from 'qrcode';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
+import { Button } from '#/components/ui/button';
 import {
   Drawer,
   DrawerContent,
@@ -6,29 +17,24 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
-import { Button } from '#/components/ui/button';
 import { usePinnedExpenseIds } from '#/lib/expense-pins';
-import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-delete-expense';
-import { useRemoveMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import {
   getEmptyPendingExpenses,
   getPendingExpensesForGroup,
   subscribePendingExpenses,
 } from '#/lib/offline-expense-query-collection';
+import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-delete-expense';
+import { useRemoveMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import {
   useGroupExpensesInfiniteQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Pencil, Trash2 } from 'lucide-react';
-import QRCode from 'qrcode';
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { GroupDetailHeader } from './-components/group-detail-header';
 import { formatMoney, sumByCurrency } from './-components/group-detail.utils';
+import { GroupDetailHeader } from './-components/group-detail-header';
+import { GroupDetailSkeleton } from './-components/group-detail-skeleton';
 import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
 import { GroupParticipantsStrip } from './-components/group-participants-strip';
-import { GroupDetailSkeleton } from './-components/group-detail-skeleton';
 import type { ExpenseItem, GroupSummary } from './-types/group-detail.types';
 
 export const Route = createFileRoute('/_authed/groups/$id/')({
@@ -68,9 +74,13 @@ function RouteComponent() {
   const pinnedExpenseIds = usePinnedExpenseIds(id);
 
   const expenses = useMemo(() => {
-    const serverExpenses = expensesQuery.data?.pages.flatMap((page) => page.data) ?? [];
+    const serverExpenses =
+      expensesQuery.data?.pages.flatMap((page) => page.data) ?? [];
     const membersById = new Map(
-      (groupQuery.data?.members ?? []).map((member) => [member.id, member.name]),
+      (groupQuery.data?.members ?? []).map((member) => [
+        member.id,
+        member.name,
+      ]),
     );
     const categoriesById = new Map(
       (groupQuery.data?.categories ?? []).map((category) => [
@@ -110,7 +120,12 @@ function RouteComponent() {
       const rightDate = new Date(right.date).getTime();
       return rightDate - leftDate;
     });
-  }, [expensesQuery.data, groupQuery.data?.categories, groupQuery.data?.members, pendingExpenses]);
+  }, [
+    expensesQuery.data,
+    groupQuery.data?.categories,
+    groupQuery.data?.members,
+    pendingExpenses,
+  ]);
   const inviteLink =
     groupQuery.data?.inviteCode && typeof window !== 'undefined'
       ? `https://join.vornway.com/${groupQuery.data.inviteCode}`
@@ -174,7 +189,7 @@ function RouteComponent() {
     return <GroupDetailSkeleton />;
   }
 
-  if (groupQuery.isError || !groupQuery.data) {
+  if (!groupQuery.data) {
     return (
       <main className="min-h-screen bg-[#efefef] text-foreground">
         <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col justify-center bg-[#fafafa] px-4">

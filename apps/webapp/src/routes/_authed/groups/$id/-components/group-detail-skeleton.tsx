@@ -2,8 +2,8 @@ export function GroupDetailSkeleton() {
   return (
     <main className="min-h-screen bg-[#111111] text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#111111]">
-        <header className="px-4 pb-6 pt-6 text-white">
-          <div className="mb-5 flex items-start gap-3">
+        <header className="px-4 pb-4 pt-5 text-white">
+          <div className="mb-3 flex items-start gap-3">
             <div className="size-9 shrink-0 rounded-full bg-white/10" />
             <div className="min-w-0 flex-1 space-y-2 pt-1">
               <div className="h-5 w-40 rounded-full bg-white/10" />
@@ -11,28 +11,28 @@ export function GroupDetailSkeleton() {
             </div>
           </div>
 
-          <section className="rounded-[28px] bg-[#1f1f1f] p-4">
+          <section className="rounded-[24px] bg-[#1f1f1f] p-3">
             <div className="h-4 w-28 rounded-full bg-white/10" />
-            <div className="-mx-1 mt-3 flex gap-3 overflow-hidden px-1 pb-1">
-              <div className="min-w-[calc(100%-1rem)] rounded-[22px] bg-white/[0.07] p-4">
+            <div className="-mx-1 mt-2 flex gap-3 overflow-hidden px-1 pb-1">
+              <div className="min-w-[calc(100%-1rem)] rounded-[20px] bg-white/[0.07] p-3">
                 <div className="h-5 w-20 rounded-full bg-white/10" />
-                <div className="mt-3 h-8 w-44 rounded-full bg-white/10" />
+                <div className="mt-2 h-7 w-44 rounded-full bg-white/10" />
               </div>
-              <div className="min-w-[calc(100%-1rem)] rounded-[22px] bg-white/[0.07] p-4">
+              <div className="min-w-[calc(100%-1rem)] rounded-[20px] bg-white/[0.07] p-3">
                 <div className="h-5 w-20 rounded-full bg-white/10" />
-                <div className="mt-3 h-8 w-44 rounded-full bg-white/10" />
+                <div className="mt-2 h-7 w-44 rounded-full bg-white/10" />
               </div>
             </div>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-3 flex gap-2">
               <div className="h-7 w-20 rounded-full bg-white/10" />
               <div className="h-7 w-20 rounded-full bg-white/10" />
             </div>
           </section>
 
-          <div className="mt-4 grid grid-cols-4 gap-2">
+          <div className="mt-2.5 grid grid-cols-4 gap-2">
             {Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="flex flex-col items-center gap-2">
-                <div className="size-14 rounded-2xl bg-white/10" />
+              <div key={index} className="flex min-w-0 flex-col items-center gap-1">
+                <div className="h-9 w-full rounded-xl bg-white/10" />
                 <div className="h-3 w-10 rounded-full bg-white/10" />
               </div>
             ))}

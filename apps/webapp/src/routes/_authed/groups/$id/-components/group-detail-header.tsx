@@ -57,8 +57,8 @@ export function GroupDetailHeader({
     currencyMeta[currency] ?? { flag: '💱', label: currency };
 
   return (
-    <header className="px-4 pb-6 pt-6 text-white">
-      <div className="mb-5 flex items-start gap-3">
+    <header className="px-4 pb-4 pt-5 text-white">
+      <div className="mb-3 flex items-start gap-3">
         <button
           type="button"
           onClick={goBack}
@@ -97,7 +97,7 @@ export function GroupDetailHeader({
         </button>
       </div>
 
-      <section className="rounded-[28px] bg-[#1f1f1f] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.25)]">
+      <section className="rounded-[24px] bg-[#1f1f1f] p-3 shadow-[0_12px_30px_rgba(0,0,0,0.25)]">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/85">
             {hasMultipleTotals ? (
@@ -115,7 +115,7 @@ export function GroupDetailHeader({
         </div>
 
         {hasMultipleTotals ? (
-          <div className="-mx-1 mt-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-1 mt-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex snap-x snap-mandatory gap-3 px-1">
               {totalsEntries.map(([currency, amount]) => {
                 const meta = getCurrencyMeta(currency);
@@ -123,7 +123,7 @@ export function GroupDetailHeader({
                 return (
                   <article
                     key={currency}
-                    className="min-w-[calc(100%-1rem)] snap-start rounded-[22px] bg-white/[0.07] p-4"
+                    className="min-w-[calc(100%-1rem)] snap-start rounded-[20px] bg-white/[0.07] p-3"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/85">
@@ -134,7 +134,7 @@ export function GroupDetailHeader({
                         Moneda usada
                       </span>
                     </div>
-                    <h2 className="mt-3 whitespace-nowrap text-3xl font-bold tracking-tight text-white">
+                    <h2 className="mt-2 whitespace-nowrap text-2xl font-bold tracking-tight text-white">
                       {formatMoney(currency, Math.abs(amount))}
                     </h2>
                     <p className="mt-1 text-xs font-medium text-white/50">
@@ -146,14 +146,14 @@ export function GroupDetailHeader({
             </div>
           </div>
         ) : (
-          <h2 className="mt-2 text-4xl font-bold tracking-tight text-white">
+          <h2 className="mt-2 text-3xl font-bold tracking-tight text-white">
             {primaryTotal
               ? formatMoney(primaryTotal[0], Math.abs(primaryTotal[1]))
               : formatMoney('COP', 0)}
           </h2>
         )}
 
-        <div className="mt-3 space-y-3">
+        <div className="mt-2 space-y-2">
           {creditEntries.length > 0 ? (
             <div>
               <p className="text-xs font-medium text-emerald-200">Te deben</p>
@@ -194,16 +194,16 @@ export function GroupDetailHeader({
         </div>
       </section>
 
-      <div className="mt-4 grid grid-cols-4 gap-2">
+      <div className="mt-2.5 grid grid-cols-4 gap-2">
         <Link
           to="/groups/$id/add-expense"
           params={{ id: groupId }}
-          className="flex flex-col items-center gap-2"
+          className="flex min-w-0 flex-col items-center gap-1"
         >
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-[#ff4d6a] text-white shadow-[0_8px_18px_rgba(255,77,106,0.35)]">
-            <Plus className="size-6" />
+          <span className="flex h-9 w-full items-center justify-center rounded-xl bg-[#ff4d6a] text-white shadow-[0_8px_18px_rgba(255,77,106,0.35)]">
+            <Plus className="size-5" />
           </span>
-          <span className="text-center text-[11px] font-medium text-white/85">
+          <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
             Crear gasto
           </span>
         </Link>
@@ -211,12 +211,12 @@ export function GroupDetailHeader({
         <Link
           to="/groups/$id/settle"
           params={{ id: groupId }}
-          className="flex flex-col items-center gap-2"
+          className="flex min-w-0 flex-col items-center gap-1"
         >
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-white/10 text-white">
-            <ArrowUpRight className="size-6" />
+          <span className="flex h-9 w-full items-center justify-center rounded-xl bg-white/10 text-white">
+            <ArrowUpRight className="size-5" />
           </span>
-          <span className="text-center text-[11px] font-medium text-white/85">
+          <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
             Liquidar
           </span>
         </Link>
@@ -224,12 +224,12 @@ export function GroupDetailHeader({
         <button
           type="button"
           onClick={onOpenReports}
-          className="flex flex-col items-center gap-2"
+          className="flex min-w-0 flex-col items-center gap-1"
         >
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-white/10 text-white">
-            <BarChart3 className="size-6" />
+          <span className="flex h-9 w-full items-center justify-center rounded-xl bg-white/10 text-white">
+            <BarChart3 className="size-5" />
           </span>
-          <span className="text-center text-[11px] font-medium text-white/85">
+          <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
             Reportes
           </span>
         </button>
@@ -237,12 +237,12 @@ export function GroupDetailHeader({
         <button
           type="button"
           onClick={onOpenSettings}
-          className="flex flex-col items-center gap-2"
+          className="flex min-w-0 flex-col items-center gap-1"
         >
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-white/10 text-white">
-            <MoreHorizontal className="size-6" />
+          <span className="flex h-9 w-full items-center justify-center rounded-xl bg-white/10 text-white">
+            <MoreHorizontal className="size-5" />
           </span>
-          <span className="text-center text-[11px] font-medium text-white/85">
+          <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
             Ajustes
           </span>
         </button>

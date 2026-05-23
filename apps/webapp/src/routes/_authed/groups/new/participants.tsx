@@ -228,7 +228,7 @@ function RouteComponent() {
 
   return (
     <MobilePageLayout title="Agregar participantes" onBack={goBack}>
-      <div className="flex min-h-full flex-col">
+      <div className="flex min-h-full min-w-0 flex-col">
         <section className="mb-3 rounded-2xl border border-[#e2e8f0] bg-white p-4">
           <div className="flex items-center gap-3">
             {draft?.image?.dataUrl ? (
@@ -238,7 +238,7 @@ function RouteComponent() {
                 className="size-12 rounded-2xl object-cover"
               />
             ) : null}
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="truncate text-base font-semibold text-[#0f172a]">
                 {draft?.name ?? name}
               </p>
@@ -255,7 +255,7 @@ function RouteComponent() {
         >
           Nombre o correo
         </label>
-        <div className="mt-2 flex gap-2">
+        <div className="mt-2 flex min-w-0 gap-2">
           <input
             ref={inputRef}
             id="participant-name"
@@ -268,7 +268,7 @@ function RouteComponent() {
               }
             }}
             placeholder="Ej: Ana Pérez o ana@correo.com"
-            className="h-12 flex-1 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none transition-colors focus:border-primary"
+            className="h-12 min-w-0 flex-1 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none transition-colors focus:border-primary"
             maxLength={120}
           />
           <Button
@@ -326,8 +326,8 @@ function RouteComponent() {
                     : 'border-[#e2e8f0] bg-white hover:border-primary/40 hover:bg-primary/5'
                 }`}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
+                <div className="flex min-w-0 items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-[#132238]">
                       {candidate.name}
                     </p>
@@ -358,9 +358,9 @@ function RouteComponent() {
           {participants.map((participant, index) => (
             <div
               key={`${participant.userId ?? participant.name}-${index}`}
-              className="flex items-center justify-between rounded-2xl border border-[#e2e8f0] bg-white px-4 py-3"
+              className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-3"
             >
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-[#0f172a]">
                   {participant.name}
                 </p>
@@ -377,7 +377,7 @@ function RouteComponent() {
               <button
                 type="button"
                 onClick={() => removeParticipant(index)}
-                className="inline-flex size-8 items-center justify-center rounded-full text-[#64748b]"
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[#64748b]"
                 aria-label={`Eliminar a ${participant.name}`}
               >
                 <X className="size-4" />
@@ -393,11 +393,11 @@ function RouteComponent() {
         ) : null}
 
         <div className="-mx-4 mt-auto border-t border-[#e2e8f0] bg-[#fafafa] px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid min-w-0 grid-cols-2 gap-3">
             <Button
               type="button"
               variant="outline"
-              className="h-11 rounded-full"
+              className="h-11 min-w-0 rounded-full px-3"
               onClick={handleCreate}
               disabled={isSubmitting}
             >
@@ -405,7 +405,7 @@ function RouteComponent() {
             </Button>
             <Button
               type="button"
-              className="h-11 rounded-full"
+              className="h-11 min-w-0 rounded-full px-3"
               onClick={handleCreate}
               disabled={isSubmitting}
             >

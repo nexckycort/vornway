@@ -87,6 +87,8 @@ export function createGroupExpensesService() {
             currency: true,
             date: true,
             notes: true,
+            status: true,
+            deletedAt: true,
             category: {
               select: {
                 id: true,
@@ -158,7 +160,7 @@ export function createGroupExpensesService() {
               amount: row.amount,
               currency: row.currency,
               date: row.date,
-              isDeleted: Boolean(row.notes?.includes('[DELETED]')),
+              isDeleted: row.status === 'DELETED' || Boolean(row.deletedAt),
               isSettlement,
               isPersonal,
             expenseType: 'standard' as const,
@@ -213,6 +215,8 @@ export function createGroupExpensesService() {
           currency: true,
           date: true,
           notes: true,
+          status: true,
+          deletedAt: true,
           metadata: true,
           category: {
             select: {
@@ -251,7 +255,8 @@ export function createGroupExpensesService() {
         amount: expense.amount,
         currency: expense.currency,
         date: expense.date,
-        isDeleted: Boolean(expense.notes?.includes('[DELETED]')),
+        isDeleted:
+          expense.status === 'DELETED' || Boolean(expense.deletedAt),
         isSettlement: Boolean(expense.notes?.includes('[SETTLEMENT:')),
         splitMethod: readSplitMethod(expense.metadata, expense.participants),
         category: expense.category,
@@ -520,6 +525,8 @@ export function createGroupExpensesService() {
             currency: true,
             description: true,
             notes: true,
+            status: true,
+            deletedAt: true,
           },
         });
 
@@ -527,7 +534,11 @@ export function createGroupExpensesService() {
           throw new Error('Gasto no encontrado');
         }
 
-        if (existingExpense.notes?.includes('[DELETED]')) {
+        if (
+          existingExpense.status === 'DELETED' ||
+          existingExpense.deletedAt ||
+          existingExpense.notes?.includes('[DELETED]')
+        ) {
           throw new Error('No puedes editar un gasto eliminado');
         }
 
@@ -640,6 +651,8 @@ export function createGroupExpensesService() {
           currency: true,
           description: true,
           notes: true,
+          status: true,
+          deletedAt: true,
         },
       });
 
@@ -647,17 +660,25 @@ export function createGroupExpensesService() {
         throw new Error('Gasto no encontrado');
       }
 
-      if (expense.notes?.includes('[DELETED]')) {
+      if (
+        expense.status === 'DELETED' ||
+        expense.deletedAt ||
+        expense.notes?.includes('[DELETED]')
+      ) {
         return { id: expense.id };
       }
 
+      const deletedAt = new Date();
       await db.$transaction(async (tx) => {
         await tx.expense.update({
           where: { id: expense.id },
           data: {
+            status: 'DELETED',
+            deletedAt,
+            deletedById: userId,
             notes: expense.notes
-              ? `${expense.notes} [DELETED:${new Date().toISOString()}]`
-              : `[DELETED:${new Date().toISOString()}]`,
+              ? `${expense.notes} [DELETED:${deletedAt.toISOString()}]`
+              : `[DELETED:${deletedAt.toISOString()}]`,
           },
         });
 

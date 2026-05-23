@@ -245,6 +245,8 @@ export function createHomeService(): HomeService {
           },
           Expense: {
             where: {
+              status: 'ACTIVE',
+              deletedAt: null,
               OR: [
                 { notes: null },
                 {

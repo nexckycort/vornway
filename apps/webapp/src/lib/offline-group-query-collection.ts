@@ -168,6 +168,15 @@ export function getEmptyPendingGroups(): PendingGroup[] {
   return EMPTY_PENDING_GROUPS;
 }
 
+export function enqueueGroupOffline(payload: CreateGroupPayload): {
+  id: string;
+  name: string;
+  queued: true;
+} {
+  const localId = enqueuePendingGroup(payload);
+  return { id: localId, name: payload.name, queued: true };
+}
+
 export function subscribePendingGroups(callback: () => void): () => void {
   if (typeof window === 'undefined') {
     return () => undefined;
@@ -248,16 +257,14 @@ export async function createGroupOfflineFirst(
   }
 
   if (!navigator.onLine) {
-    const localId = enqueuePendingGroup(payload);
-    return { id: localId, name: payload.name, queued: true };
+    return enqueueGroupOffline(payload);
   }
 
   let response: Awaited<ReturnType<typeof postGroupToApi>>;
   try {
     response = await postGroupToApi(payload);
   } catch {
-    const localId = enqueuePendingGroup(payload);
-    return { id: localId, name: payload.name, queued: true };
+    return enqueueGroupOffline(payload);
   }
 
   if (response.ok) {
@@ -266,8 +273,7 @@ export async function createGroupOfflineFirst(
   }
 
   if (response.status >= 500) {
-    const localId = enqueuePendingGroup(payload);
-    return { id: localId, name: payload.name, queued: true };
+    return enqueueGroupOffline(payload);
   }
 
   const payloadError = (await response.json()) as { error?: string };

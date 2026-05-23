@@ -1,4 +1,5 @@
 import { client } from '#/lib/hc';
+import type { InfiniteData } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const deleteExpenseEndpoint =
@@ -8,6 +9,15 @@ type DeleteExpenseInput = {
   groupId: string;
   expenseId: string;
 };
+
+type GroupExpensesInfiniteData = InfiniteData<{
+  data: Array<{ id: string }>;
+  pagination: {
+    limit: number;
+    total: number;
+    nextCursor: string | null;
+  };
+}>;
 
 async function deleteExpense({ groupId, expenseId }: DeleteExpenseInput) {
   const response = await deleteExpenseEndpoint({
@@ -32,7 +42,34 @@ export function useDeleteExpenseMutation(groupId: string) {
 
   return useMutation({
     mutationFn: deleteExpense,
-    onSuccess: async () => {
+    onSuccess: async ({ id: deletedExpenseId }) => {
+      queryClient.setQueryData<GroupExpensesInfiniteData>(
+        ['group-expenses', groupId],
+        (current) => {
+          if (!current) return current;
+
+          const wasDeleted = current.pages.some((page) =>
+            page.data.some((expense) => expense.id === deletedExpenseId),
+          );
+
+          return {
+            ...current,
+            pages: current.pages.map((page) => ({
+              ...page,
+              data: page.data.filter(
+                (expense) => expense.id !== deletedExpenseId,
+              ),
+              pagination: {
+                ...page.pagination,
+                total: wasDeleted
+                  ? Math.max(0, page.pagination.total - 1)
+                  : page.pagination.total,
+              },
+            })),
+          };
+        },
+      );
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
         queryClient.invalidateQueries({ queryKey: ['group-expenses', groupId] }),

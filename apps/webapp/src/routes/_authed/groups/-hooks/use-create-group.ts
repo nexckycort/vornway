@@ -35,33 +35,35 @@ export type CreatedGroupPayload = {
   createdAt: string;
 };
 
+export function buildCreateGroupPayload(values: CreateGroupFormValues) {
+  return {
+    name: values.name.trim(),
+    type: values.type.trim(),
+    ...(values.description.trim()
+      ? { description: values.description.trim() }
+      : {}),
+    ...(values.participants && values.participants.length > 0
+      ? { participants: values.participants }
+      : {}),
+    ...(values.image
+      ? {
+          image: {
+            dataUrl: values.image.dataUrl,
+            ...(values.image.fileName
+              ? { fileName: values.image.fileName }
+              : {}),
+          },
+        }
+      : {}),
+  } satisfies CreateGroupRequest['json'];
+}
+
 async function createGroup(
   values: CreateGroupFormValues,
 ): Promise<CreateGroupResponse | CreateGroupOfflineFirstResult> {
-  const payload: CreateGroupRequest = {
-    json: {
-      name: values.name.trim(),
-      type: values.type.trim(),
-      ...(values.description.trim()
-        ? { description: values.description.trim() }
-        : {}),
-      ...(values.participants && values.participants.length > 0
-        ? { participants: values.participants }
-        : {}),
-      ...(values.image
-        ? {
-            image: {
-              dataUrl: values.image.dataUrl,
-              ...(values.image.fileName
-                ? { fileName: values.image.fileName }
-                : {}),
-            },
-          }
-        : {}),
-    },
-  };
+  const payload = buildCreateGroupPayload(values);
 
-  return createGroupOfflineFirst(payload.json);
+  return createGroupOfflineFirst(payload);
 }
 
 export function useCreateGroupMutation() {

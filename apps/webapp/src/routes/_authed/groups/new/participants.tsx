@@ -1,3 +1,6 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Copy, PlusCircle, Share2, UserPlus, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import {
@@ -7,16 +10,22 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
-import { useCreateGroupMutation } from '#/routes/_authed/groups/-hooks/use-create-group';
+import { useNetworkState } from '#/hooks/use-network-state';
+import {
+  enqueueGroupOffline,
+  syncPendingGroupsQueue,
+} from '#/lib/offline-group-query-collection';
+import {
+  buildCreateGroupPayload,
+  type CreateGroupFormValues,
+  useCreateGroupMutation,
+} from '#/routes/_authed/groups/-hooks/use-create-group';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
 import {
   clearGroupDraft,
   type GroupCreateDraft,
   loadGroupDraft,
 } from '#/routes/_authed/groups/new/-lib/group-create-draft';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Copy, PlusCircle, Share2, UserPlus, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
 
 export const Route = createFileRoute('/_authed/groups/new/participants')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -43,6 +52,7 @@ function RouteComponent() {
   const navigate = useNavigate();
   const { name, type, description, draftId } = Route.useSearch();
   const createGroupMutation = useCreateGroupMutation();
+  const network = useNetworkState();
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<GroupCreateDraft | null>(null);
@@ -52,13 +62,14 @@ function RouteComponent() {
   const [error, setError] = useState<string | null>(null);
   const [showSuccessDrawer, setShowSuccessDrawer] = useState(false);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
+  const [isSavingOffline, setIsSavingOffline] = useState(false);
   const [createdGroup, setCreatedGroup] = useState<{
     id: string;
     name: string;
     inviteCode: string;
   } | null>(null);
 
-  const isSubmitting = createGroupMutation.isPending;
+  const isSubmitting = createGroupMutation.isPending || isSavingOffline;
   const isValidGroupData = name.trim().length > 0 && type.trim().length > 0;
 
   const searchQuery = useUserSearchQuery(debouncedSearch);
@@ -166,26 +177,48 @@ function RouteComponent() {
 
     setError(null);
 
+    const groupValues: CreateGroupFormValues = {
+      name: draft?.name ?? name,
+      type: draft?.type ?? type,
+      description: draft?.description ?? description,
+      ...(draft?.image
+        ? {
+            image: {
+              dataUrl: draft.image.dataUrl,
+              ...(draft.image.fileName
+                ? { fileName: draft.image.fileName }
+                : {}),
+            },
+          }
+        : {}),
+      participants: participants.map((participant) => ({
+        name: participant.name,
+        ...(participant.userId ? { userId: participant.userId } : {}),
+      })),
+    };
+
+    if (!network.online) {
+      setIsSavingOffline(true);
+      try {
+        enqueueGroupOffline(buildCreateGroupPayload(groupValues));
+        if (draftId) {
+          clearGroupDraft(draftId);
+        }
+        void syncPendingGroupsQueue();
+        await navigate({ to: '/groups', replace: true });
+      } catch (offlineError) {
+        setError(
+          offlineError instanceof Error
+            ? offlineError.message
+            : 'No se pudo guardar el grupo sin conexión',
+        );
+        setIsSavingOffline(false);
+      }
+      return;
+    }
+
     try {
-      const result = await createGroupMutation.mutateAsync({
-        name: draft?.name ?? name,
-        type: draft?.type ?? type,
-        description: draft?.description ?? description,
-        ...(draft?.image
-          ? {
-              image: {
-                dataUrl: draft.image.dataUrl,
-                ...(draft.image.fileName
-                  ? { fileName: draft.image.fileName }
-                  : {}),
-              },
-            }
-          : {}),
-        participants: participants.map((participant) => ({
-          name: participant.name,
-          ...(participant.userId ? { userId: participant.userId } : {}),
-        })),
-      });
+      const result = await createGroupMutation.mutateAsync(groupValues);
       if (draftId) {
         clearGroupDraft(draftId);
       }

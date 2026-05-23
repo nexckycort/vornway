@@ -31,6 +31,8 @@ export function buildActiveGroupMemberWhere(userId: string, groupId?: string) {
 
 export function buildDeletedExpenseWhere(): Prisma.ExpenseWhereInput {
   return {
+    status: 'ACTIVE',
+    deletedAt: null,
     OR: [
       { notes: null },
       {
@@ -59,6 +61,7 @@ export function buildReportExpenseWhere(input: {
 }) {
   return {
     ...(input.groupId ? { groupId: input.groupId } : {}),
+    ...buildDeletedExpenseWhere(),
     ...(input.range === 'all'
       ? {}
       : {

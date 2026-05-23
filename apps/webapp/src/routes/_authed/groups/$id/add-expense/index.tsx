@@ -1,13 +1,8 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Check, ChevronDown, Minus, Plus } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
-import { enqueueExpenseOffline } from '#/lib/offline-expense-query-collection';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from '#/components/ui/drawer';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +10,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
+import { enqueueExpenseOffline } from '#/lib/offline-expense-query-collection';
 import {
   useCreateCategoryMutation,
   useCreateExpenseMutation,
@@ -24,9 +27,6 @@ import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Check, ChevronDown, Minus, Plus } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatMoney, getInitials } from '../-components/group-detail.utils';
 
 type SplitMethod = 'equal' | 'percentage' | 'exact';
@@ -62,6 +62,35 @@ function getCurrencySymbol(currency: string) {
     default:
       return '$';
   }
+}
+
+function ParticipantAvatar({
+  name,
+  image,
+  sizeClassName,
+}: {
+  name: string;
+  image: string | null;
+  sizeClassName: string;
+}) {
+  if (image) {
+    return (
+      <img
+        src={image}
+        alt={name}
+        className={`${sizeClassName} rounded-full object-cover`}
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${sizeClassName} flex items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-600`}
+    >
+      {getInitials(name)}
+    </div>
+  );
 }
 
 export const Route = createFileRoute('/_authed/groups/$id/add-expense/')({
@@ -133,6 +162,9 @@ function RouteComponent() {
   }, []);
 
   useEffect(() => {
+    void amount;
+    void currency;
+
     if (!didMountAmountRef.current) {
       didMountAmountRef.current = true;
       return;
@@ -508,7 +540,6 @@ function RouteComponent() {
           <div className="flex gap-3 overflow-x-auto pb-1">
             {members.map((member) => {
               const selected = paidById === member.id;
-              const initials = getInitials(member.name);
 
               return (
                 <button
@@ -522,9 +553,11 @@ function RouteComponent() {
                       selected ? 'border-rose-500' : 'border-transparent'
                     }`}
                   >
-                    <div className="flex size-full items-center justify-center bg-gray-200 text-sm font-medium text-gray-600">
-                      {initials}
-                    </div>
+                    <ParticipantAvatar
+                      name={member.name}
+                      image={member.image}
+                      sizeClassName="size-full"
+                    />
                   </div>
                   <span className="mt-1.5 max-w-[60px] truncate text-xs text-gray-600">
                     {member.isCurrentUser ? 'Tú' : member.name}
@@ -575,7 +608,6 @@ function RouteComponent() {
           <div className="mt-4 space-y-3">
             {members.map((member) => {
               const selected = participantIds.includes(member.id);
-              const initials = getInitials(member.name);
               const computedAmount = participantComputedAmounts[member.id] ?? 0;
 
               return (
@@ -599,9 +631,11 @@ function RouteComponent() {
                         <Plus className="size-4 text-white" />
                       )}
                     </div>
-                    <div className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-sm font-medium text-gray-600">
-                      {initials}
-                    </div>
+                    <ParticipantAvatar
+                      name={member.name}
+                      image={member.image}
+                      sizeClassName="size-9 shrink-0"
+                    />
                     <div className="min-w-0 flex-1">
                       <span className="block truncate text-sm text-gray-900">
                         {member.name}

@@ -132,3 +132,15 @@ export function upsertGroupListItems(items: GroupListItem[]) {
     groupsListCollection.utils.writeUpsert(items);
   });
 }
+
+export function removeCachedGroupListItem(groupId: string) {
+  const nextItems = readCachedGroupListItems().filter(
+    (item) => item.id !== groupId,
+  );
+
+  writeCachedGroupListItems(nextItems);
+
+  void groupsListCollection.preload().then(() => {
+    groupsListCollection.utils.writeDelete([groupId]);
+  });
+}

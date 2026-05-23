@@ -1,7 +1,9 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { removeCachedGroupListItem } from '#/lib/groups-list-query-collection';
 import type { InferRequestType, InferResponseType } from '#/lib/hc';
 import { client } from '#/lib/hc';
 import { createExpenseOfflineFirst } from '#/lib/offline-expense-query-collection';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { removeLocalGroupFallback } from '#/lib/offline-group-query-collection';
 
 const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
 const updateExpenseEndpoint =
@@ -143,7 +145,12 @@ export function useDeleteGroupMutation(groupId: string) {
       return (await response.json()) as DeleteGroupResponse;
     },
     onSuccess: async () => {
+      removeCachedGroupListItem(groupId);
+      removeLocalGroupFallback(groupId);
+
       await Promise.all([
+        queryClient.removeQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.removeQueries({ queryKey: ['group-expenses', groupId] }),
         queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);

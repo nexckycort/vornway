@@ -4,7 +4,11 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { GROUPS_LIST_REFRESH_EVENT } from '#/lib/groups-list-query-collection';
+import {
+  GROUPS_LIST_REFRESH_EVENT,
+  getCachedGroupSummary,
+  upsertCachedGroupSummary,
+} from '#/lib/groups-list-query-collection';
 import type { InferResponseType } from '#/lib/hc';
 import { client } from '#/lib/hc';
 import {
@@ -125,12 +129,25 @@ export function useGroupSummaryQuery(groupId: string) {
     queryKey: ['group-summary', groupId],
     initialData: () => {
       const localGroup = getLocalGroupById(groupId);
-      return localGroup ? buildPendingGroupSummary(localGroup) : undefined;
+      if (localGroup) {
+        return buildPendingGroupSummary(localGroup);
+      }
+
+      return getCachedGroupSummary(groupId) ?? undefined;
     },
     queryFn: async () => {
       const localGroup = getLocalGroupById(groupId);
+      const cachedGroup = getCachedGroupSummary(groupId);
       if (localGroup && typeof navigator !== 'undefined' && !navigator.onLine) {
         return buildPendingGroupSummary(localGroup);
+      }
+
+      if (
+        cachedGroup &&
+        typeof navigator !== 'undefined' &&
+        !navigator.onLine
+      ) {
+        return cachedGroup;
       }
 
       let response: Awaited<ReturnType<typeof groupSummaryEndpoint>>;
@@ -143,6 +160,10 @@ export function useGroupSummaryQuery(groupId: string) {
           return buildPendingGroupSummary(localGroup);
         }
 
+        if (cachedGroup) {
+          return cachedGroup;
+        }
+
         throw new Error('No se pudo cargar el grupo');
       }
 
@@ -151,11 +172,16 @@ export function useGroupSummaryQuery(groupId: string) {
           return buildPendingGroupSummary(localGroup);
         }
 
+        if (cachedGroup) {
+          return cachedGroup;
+        }
+
         throw new Error('No se pudo cargar el grupo');
       }
 
       const group = (await response.json()) as unknown as GroupSummary;
       removeLocalGroupFallback(groupId);
+      upsertCachedGroupSummary(group);
       return group;
     },
   });
@@ -166,16 +192,27 @@ export function useGroupExpensesInfiniteQuery(groupId: string) {
     queryKey: ['group-expenses', groupId],
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
-      const response = await groupExpensesEndpoint({
-        param: { id: groupId },
-        query: {
-          limit: String(PAGE_LIMIT),
-          ...(pageParam ? { cursor: pageParam } : {}),
-        },
-      });
+      let response: Awaited<ReturnType<typeof groupExpensesEndpoint>>;
+      try {
+        response = await groupExpensesEndpoint({
+          param: { id: groupId },
+          query: {
+            limit: String(PAGE_LIMIT),
+            ...(pageParam ? { cursor: pageParam } : {}),
+          },
+        });
+      } catch {
+        return {
+          data: [],
+          pagination: { limit: PAGE_LIMIT, total: 0, nextCursor: null },
+        } as GroupExpensesPageSuccess;
+      }
 
       if (!response.ok) {
-        throw new Error('No se pudieron cargar los gastos');
+        return {
+          data: [],
+          pagination: { limit: PAGE_LIMIT, total: 0, nextCursor: null },
+        } as GroupExpensesPageSuccess;
       }
 
       return (await response.json()) as GroupExpensesPageSuccess;

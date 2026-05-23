@@ -47,6 +47,7 @@ export function GroupDetailHeader({
   onOpenReports,
 }: GroupDetailHeaderProps) {
   const router = useRouter();
+  const hasMultipleTotals = totalsEntries.length > 1;
 
   const goBack = () => {
     router.history.back();
@@ -99,38 +100,60 @@ export function GroupDetailHeader({
       <section className="rounded-[28px] bg-[#1f1f1f] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.25)]">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/85">
-            <span>{getCurrencyMeta(primaryTotal?.[0] ?? 'COP').flag}</span>
-            <span>{getCurrencyMeta(primaryTotal?.[0] ?? 'COP').label}</span>
+            {hasMultipleTotals ? (
+              <span>Gastos separados</span>
+            ) : (
+              <>
+                <span>{getCurrencyMeta(primaryTotal?.[0] ?? 'COP').flag}</span>
+                <span>{getCurrencyMeta(primaryTotal?.[0] ?? 'COP').label}</span>
+              </>
+            )}
           </span>
-          <span className="text-xs text-white/45">Total del grupo</span>
+          <span className="text-xs text-white/45">
+            {hasMultipleTotals ? 'Gastado por moneda' : 'Total del grupo'}
+          </span>
         </div>
 
-        <h2 className="mt-2 text-4xl font-bold tracking-tight text-white">
-          {primaryTotal
-            ? formatMoney(primaryTotal[0], Math.abs(primaryTotal[1]))
-            : formatMoney('COP', 0)}
-        </h2>
+        {hasMultipleTotals ? (
+          <div className="-mx-1 mt-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex snap-x snap-mandatory gap-3 px-1">
+              {totalsEntries.map(([currency, amount]) => {
+                const meta = getCurrencyMeta(currency);
+
+                return (
+                  <article
+                    key={currency}
+                    className="min-w-[calc(100%-1rem)] snap-start rounded-[22px] bg-white/[0.07] p-4"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/85">
+                        <span>{meta.flag}</span>
+                        <span>{meta.label}</span>
+                      </span>
+                      <span className="text-[11px] font-medium text-white/45">
+                        Moneda usada
+                      </span>
+                    </div>
+                    <h2 className="mt-3 whitespace-nowrap text-3xl font-bold tracking-tight text-white">
+                      {formatMoney(currency, Math.abs(amount))}
+                    </h2>
+                    <p className="mt-1 text-xs font-medium text-white/50">
+                      Gastado en {currency}
+                    </p>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <h2 className="mt-2 text-4xl font-bold tracking-tight text-white">
+            {primaryTotal
+              ? formatMoney(primaryTotal[0], Math.abs(primaryTotal[1]))
+              : formatMoney('COP', 0)}
+          </h2>
+        )}
 
         <div className="mt-3 space-y-3">
-          {totalsEntries.length > 1 ? (
-            <div>
-              <p className="text-xs font-medium text-white/55">Totales por moneda</p>
-              <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-                {totalsEntries.map(([currency, amount]) => (
-                  <span
-                    key={currency}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-white/80"
-                  >
-                    <span>{getCurrencyMeta(currency).flag}</span>
-                    <span>{getCurrencyMeta(currency).label}</span>
-                    <span className="text-white/45">·</span>
-                    <span>{formatMoney(currency, Math.abs(amount))}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
           {creditEntries.length > 0 ? (
             <div>
               <p className="text-xs font-medium text-emerald-200">Te deben</p>

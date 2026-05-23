@@ -1,16 +1,83 @@
-import { client } from '#/lib/hc';
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { GROUPS_LIST_REFRESH_EVENT } from '#/lib/groups-list-query-collection';
 import type { InferResponseType } from '#/lib/hc';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { client } from '#/lib/hc';
+import {
+  getPendingGroupById,
+  type PendingGroup,
+} from '#/lib/offline-group-query-collection';
 import type { GroupSummary } from '../$id/-types/group-detail.types';
 
 const PAGE_LIMIT = 20;
 
 const groupSummaryEndpoint = client.api.groups[':id'].$get;
 const groupExpensesEndpoint = client.api.groups[':id'].expenses.$get;
-const groupExpenseEndpoint = client.api.groups[':id'].expenses[':expenseId'].$get;
+const groupExpenseEndpoint =
+  client.api.groups[':id'].expenses[':expenseId'].$get;
 const groupReportsTotalsEndpoint = client.api.groups[':id'].reports.totals.$get;
 
-type GroupExpensesPageResponse = InferResponseType<typeof groupExpensesEndpoint>;
+function buildPendingGroupSummary(group: PendingGroup): GroupSummary {
+  const ownerMemberId = `${group.id}:owner`;
+  const participantMembers = (group.payload.participants ?? []).map(
+    (participant, index) => ({
+      id: `${group.id}:participant:${index}`,
+      name: participant.name,
+      email: null,
+      image: null,
+      role: 'member',
+      userId: participant.userId ?? null,
+      isCurrentUser: false,
+      expenseCount: 0,
+    }),
+  );
+
+  return {
+    id: group.id,
+    name: group.payload.name,
+    type: group.payload.type,
+    description: group.payload.description ?? null,
+    imageUrl: null,
+    inviteCode: '',
+    ownerId: '',
+    createdAt: group.createdAt,
+    updatedAt: group.createdAt,
+    participantCount: participantMembers.length + 1,
+    totals: {},
+    categories: [],
+    members: [
+      {
+        id: ownerMemberId,
+        name: 'Tú',
+        email: null,
+        image: null,
+        role: 'admin',
+        userId: null,
+        isCurrentUser: true,
+        expenseCount: 0,
+      },
+      ...participantMembers,
+    ],
+    directDebts: [],
+    directCredits: [],
+    memberBalances: [],
+    settlementDebts: [],
+    myMembership: {
+      id: ownerMemberId,
+      name: 'Tú',
+      role: 'admin',
+    },
+    isOwner: true,
+  };
+}
+
+type GroupExpensesPageResponse = InferResponseType<
+  typeof groupExpensesEndpoint
+>;
 type GroupExpenseResponse = InferResponseType<typeof groupExpenseEndpoint>;
 type GroupExpensesPageSuccess = Extract<
   GroupExpensesPageResponse,
@@ -35,14 +102,41 @@ type GroupReportsTotalsSuccess = {
 };
 
 export function useGroupSummaryQuery(groupId: string) {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      void queryClient.invalidateQueries({
+        queryKey: ['group-summary', groupId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['group-expenses', groupId],
+      });
+    };
+
+    window.addEventListener(GROUPS_LIST_REFRESH_EVENT, handleRefresh);
+    return () => {
+      window.removeEventListener(GROUPS_LIST_REFRESH_EVENT, handleRefresh);
+    };
+  }, [groupId, queryClient]);
+
   return useQuery({
     queryKey: ['group-summary', groupId],
     queryFn: async () => {
+      const pendingGroup = getPendingGroupById(groupId);
+      if (pendingGroup) {
+        return buildPendingGroupSummary(pendingGroup);
+      }
+
       const response = await groupSummaryEndpoint({
         param: { id: groupId },
       });
 
       if (!response.ok) {
+        if (pendingGroup) {
+          return buildPendingGroupSummary(pendingGroup);
+        }
+
         throw new Error('No se pudo cargar el grupo');
       }
 
@@ -74,7 +168,10 @@ export function useGroupExpensesInfiniteQuery(groupId: string) {
   });
 }
 
-export function useGroupExpenseQuery(groupId: string, expenseId: string | undefined) {
+export function useGroupExpenseQuery(
+  groupId: string,
+  expenseId: string | undefined,
+) {
   return useQuery({
     queryKey: ['group-expense', groupId, expenseId],
     enabled: Boolean(expenseId),

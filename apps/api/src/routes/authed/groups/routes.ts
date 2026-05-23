@@ -8,10 +8,10 @@ import {
   createGroupExpenseSchema,
   createGroupSchema,
   groupCategorySchema,
-  groupImageSchema,
   groupExpenseParamsSchema,
-  groupMemberParamsSchema,
+  groupImageSchema,
   groupMemberActionQuerySchema,
+  groupMemberParamsSchema,
   groupParamsSchema,
   groupReportsTotalsQuerySchema,
   listGroupExpensesQuerySchema,
@@ -29,6 +29,7 @@ const groups = new Hono<AppContext>()
     const { id: userId, name, email } = c.get('user');
 
     const group = await groupsService.createGroup({
+      id: data.id,
       userId,
       ownerName: name?.trim() || email || 'Usuario',
       name: data.name,
@@ -245,10 +246,7 @@ const groups = new Hono<AppContext>()
         const result = await groupsService.getGroupReportsTotals({
           userId,
           groupId: id,
-          range:
-            query.range === 'all'
-              ? 'all'
-              : (query.range as 7 | 15 | 30),
+          range: query.range === 'all' ? 'all' : (query.range as 7 | 15 | 30),
         });
 
         return c.json(result);

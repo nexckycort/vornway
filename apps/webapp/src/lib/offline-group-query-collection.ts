@@ -85,15 +85,18 @@ function writePendingGroups(next: PendingGroup[]) {
 
 function buildLocalGroupId() {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return `local-group-${crypto.randomUUID()}`;
+    return crypto.randomUUID();
   }
 
-  return `local-group-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function enqueuePendingGroup(payload: CreateGroupPayload) {
-  const localId = buildLocalGroupId();
-  const offlinePayload = stripUnsupportedOfflineFields(payload);
+  const localId = payload.id ?? buildLocalGroupId();
+  const offlinePayload = stripUnsupportedOfflineFields({
+    ...payload,
+    id: localId,
+  });
 
   writePendingGroups([
     ...readPendingGroups(),
@@ -162,6 +165,10 @@ export function getPendingGroups(): PendingGroup[] {
 
 export function getPendingGroupsCount(): number {
   return readPendingGroups().length;
+}
+
+export function getPendingGroupById(groupId: string): PendingGroup | null {
+  return readPendingGroups().find((group) => group.id === groupId) ?? null;
 }
 
 export function getEmptyPendingGroups(): PendingGroup[] {

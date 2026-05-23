@@ -71,6 +71,7 @@ export type UnlinkGroupMemberInput = {
 };
 
 export type CreateGroupInput = {
+  id?: string;
   userId: string;
   ownerName: string;
   name: string;

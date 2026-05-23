@@ -200,12 +200,18 @@ function RouteComponent() {
     if (!network.online) {
       setIsSavingOffline(true);
       try {
-        enqueueGroupOffline(buildCreateGroupPayload(groupValues));
+        const queuedGroup = enqueueGroupOffline(
+          buildCreateGroupPayload(groupValues),
+        );
         if (draftId) {
           clearGroupDraft(draftId);
         }
         void syncPendingGroupsQueue();
-        await navigate({ to: '/groups', replace: true });
+        await navigate({
+          to: '/groups/$id',
+          params: { id: queuedGroup.id },
+          replace: true,
+        });
       } catch (offlineError) {
         setError(
           offlineError instanceof Error
@@ -223,7 +229,11 @@ function RouteComponent() {
         clearGroupDraft(draftId);
       }
       if ('queued' in result && result.queued) {
-        await navigate({ to: '/groups', replace: true });
+        await navigate({
+          to: '/groups/$id',
+          params: { id: result.id },
+          replace: true,
+        });
         return;
       }
       setCreatedGroup({

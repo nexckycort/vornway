@@ -27,10 +27,15 @@ export const listGroupExpensesQuerySchema = z.object({
 });
 
 export const groupReportsTotalsQuerySchema = z.object({
-  range: z.union([
-    z.literal('all'),
-    z.coerce.number().int().refine((value) => [7, 15, 30].includes(value)),
-  ]).default('all'),
+  range: z
+    .union([
+      z.literal('all'),
+      z.coerce
+        .number()
+        .int()
+        .refine((value) => [7, 15, 30].includes(value)),
+    ])
+    .default('all'),
 });
 
 export const createGroupExpenseSchema = z.object({
@@ -74,6 +79,7 @@ export const groupCategorySchema = z.object({
 });
 
 export const createGroupSchema = z.object({
+  id: z.string().uuid().optional(),
   name: z.string().min(1).max(120),
   type: z.string().min(1).max(60),
   description: z.string().max(400).optional(),

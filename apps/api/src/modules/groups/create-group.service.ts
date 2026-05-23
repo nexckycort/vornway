@@ -24,6 +24,7 @@ async function generateInviteCode(): Promise<string> {
 export function createGroupCreateService() {
   return {
     createGroup: async ({
+      id,
       userId,
       ownerName,
       name,
@@ -34,7 +35,7 @@ export function createGroupCreateService() {
     }: CreateGroupInput): Promise<CreateGroupResult> => {
       const now = new Date();
       const inviteCode = await generateInviteCode();
-      const groupId = crypto.randomUUID();
+      const groupId = id?.trim() || crypto.randomUUID();
       const normalizedName = name.trim();
       const normalizedType = type.trim();
       const normalizedDescription = description?.trim() || null;

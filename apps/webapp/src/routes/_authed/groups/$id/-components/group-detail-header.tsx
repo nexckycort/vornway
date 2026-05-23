@@ -97,9 +97,9 @@ export function GroupDetailHeader({
         </button>
       </div>
 
-      <section className="rounded-[24px] bg-[#1f1f1f] p-3 shadow-[0_12px_30px_rgba(0,0,0,0.25)]">
+      <section className="rounded-[24px] bg-[#151515] p-3 shadow-[0_12px_30px_rgba(0,0,0,0.25)]">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/85">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] font-medium text-white/85">
             {hasMultipleTotals ? (
               <span>Gastos separados</span>
             ) : (
@@ -123,10 +123,10 @@ export function GroupDetailHeader({
                 return (
                   <article
                     key={currency}
-                    className="min-w-[calc(100%-1rem)] snap-start rounded-[20px] bg-white/[0.07] p-3"
+                    className="min-w-[calc(100%-1rem)] snap-start rounded-[20px] border border-white/10 bg-[#151515] p-3"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/85">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] font-medium text-white/85">
                         <span>{meta.flag}</span>
                         <span>{meta.label}</span>
                       </span>

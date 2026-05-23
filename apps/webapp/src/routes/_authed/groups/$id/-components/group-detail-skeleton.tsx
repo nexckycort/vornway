@@ -11,16 +11,16 @@ export function GroupDetailSkeleton() {
             </div>
           </div>
 
-          <section className="rounded-[24px] bg-[#1f1f1f] p-3">
-            <div className="h-4 w-28 rounded-full bg-white/10" />
+          <section className="rounded-[24px] bg-[#151515] p-3">
+            <div className="h-4 w-28 rounded-full bg-white/[0.06]" />
             <div className="-mx-1 mt-2 flex gap-3 overflow-hidden px-1 pb-1">
-              <div className="min-w-[calc(100%-1rem)] rounded-[20px] bg-white/[0.07] p-3">
-                <div className="h-5 w-20 rounded-full bg-white/10" />
-                <div className="mt-2 h-7 w-44 rounded-full bg-white/10" />
+              <div className="min-w-[calc(100%-1rem)] rounded-[20px] border border-white/10 bg-[#151515] p-3">
+                <div className="h-5 w-20 rounded-full bg-white/[0.06]" />
+                <div className="mt-2 h-7 w-44 rounded-full bg-white/[0.06]" />
               </div>
-              <div className="min-w-[calc(100%-1rem)] rounded-[20px] bg-white/[0.07] p-3">
-                <div className="h-5 w-20 rounded-full bg-white/10" />
-                <div className="mt-2 h-7 w-44 rounded-full bg-white/10" />
+              <div className="min-w-[calc(100%-1rem)] rounded-[20px] border border-white/10 bg-[#151515] p-3">
+                <div className="h-5 w-20 rounded-full bg-white/[0.06]" />
+                <div className="mt-2 h-7 w-44 rounded-full bg-white/[0.06]" />
               </div>
             </div>
             <div className="mt-3 flex gap-2">

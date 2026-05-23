@@ -17,18 +17,42 @@ type PendingExpense = {
 const OFFLINE_EXPENSES_STORAGE_KEY = 'vornway.offline.pending-expenses';
 const OFFLINE_EXPENSES_EVENT = 'vornway:offline-expenses:changed';
 const offlineQueueQueryClient = new QueryClient();
+const EMPTY_PENDING_EXPENSES: PendingExpense[] = [];
+
+let cachedRawPendingExpenses: string | null = null;
+let cachedPendingExpenses: PendingExpense[] = EMPTY_PENDING_EXPENSES;
+const cachedPendingExpensesByGroup = new Map<string, PendingExpense[]>();
 
 function readPendingExpenses(): PendingExpense[] {
   if (typeof window === 'undefined') return [];
 
   try {
     const raw = window.localStorage.getItem(OFFLINE_EXPENSES_STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      cachedRawPendingExpenses = null;
+      cachedPendingExpenses = EMPTY_PENDING_EXPENSES;
+      cachedPendingExpensesByGroup.clear();
+      return EMPTY_PENDING_EXPENSES;
+    }
+
+    if (raw === cachedRawPendingExpenses) {
+      return cachedPendingExpenses;
+    }
+
     const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed as PendingExpense[];
+    if (!Array.isArray(parsed)) {
+      cachedRawPendingExpenses = raw;
+      cachedPendingExpenses = EMPTY_PENDING_EXPENSES;
+      cachedPendingExpensesByGroup.clear();
+      return EMPTY_PENDING_EXPENSES;
+    }
+
+    cachedRawPendingExpenses = raw;
+    cachedPendingExpenses = parsed as PendingExpense[];
+    cachedPendingExpensesByGroup.clear();
+    return cachedPendingExpenses;
   } catch {
-    return [];
+    return EMPTY_PENDING_EXPENSES;
   }
 }
 
@@ -46,7 +70,20 @@ export function getPendingExpensesCount(): number {
 }
 
 export function getPendingExpensesForGroup(groupId: string): PendingExpense[] {
-  return readPendingExpenses().filter((expense) => expense.groupId === groupId);
+  readPendingExpenses();
+
+  const cached = cachedPendingExpensesByGroup.get(groupId);
+  if (cached) return cached;
+
+  const next = cachedPendingExpenses.filter(
+    (expense) => expense.groupId === groupId,
+  );
+  cachedPendingExpensesByGroup.set(groupId, next);
+  return next;
+}
+
+export function getEmptyPendingExpenses(): PendingExpense[] {
+  return EMPTY_PENDING_EXPENSES;
 }
 
 function buildLocalExpenseId() {

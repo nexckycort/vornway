@@ -11,6 +11,7 @@ import { usePinnedExpenseIds } from '#/lib/expense-pins';
 import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-delete-expense';
 import { useRemoveMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import {
+  getEmptyPendingExpenses,
   getPendingExpensesForGroup,
   subscribePendingExpenses,
 } from '#/lib/offline-expense-query-collection';
@@ -59,7 +60,7 @@ function RouteComponent() {
   const pendingExpenses = useSyncExternalStore(
     subscribePendingExpenses,
     () => getPendingExpensesForGroup(id),
-    () => [],
+    getEmptyPendingExpenses,
   );
   const deleteExpenseMutation = useDeleteExpenseMutation(id);
   const removeMemberMutation = useRemoveMemberMutation(id);

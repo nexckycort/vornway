@@ -8,6 +8,13 @@ import {
   useSyncExternalStore,
 } from 'react';
 import {
+  type GroupListFilter,
+  type GroupListItem,
+  getCachedGroupListItems,
+  getEmptyGroupListItems,
+  subscribeGroupListItems,
+} from '#/lib/groups-list-query-collection';
+import {
   getEmptyPendingGroups,
   getPendingGroups,
   subscribePendingGroups,
@@ -17,8 +24,6 @@ import type { Trip } from '#/routes/_authed/(home)/-hooks/use-home-query';
 import { useGroupsInfiniteQuery } from '#/routes/_authed/groups/-hooks/use-groups-infinite-query';
 import { GroupsSkeleton } from './-components/groups-skeleton';
 
-type GroupFilter = 'all' | 'theyOweYou' | 'youOweThem' | 'noDebt';
-
 export const Route = createFileRoute('/_authed/groups/')({
   component: RouteComponent,
 });
@@ -26,7 +31,12 @@ export const Route = createFileRoute('/_authed/groups/')({
 function RouteComponent() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<GroupFilter>('all');
+  const [filter, setFilter] = useState<GroupListFilter>('all');
+  const cachedGroups = useSyncExternalStore(
+    subscribeGroupListItems,
+    getCachedGroupListItems,
+    getEmptyGroupListItems,
+  );
   const pendingGroups = useSyncExternalStore(
     subscribePendingGroups,
     getPendingGroups,
@@ -37,10 +47,15 @@ function RouteComponent() {
     filter,
   });
 
-  const groups = useMemo(
+  const serverGroups = useMemo(
     () => groupsQuery.data?.pages.flatMap((page) => page.data) ?? [],
     [groupsQuery.data],
   );
+
+  const groups = useMemo(() => {
+    if (groupsQuery.data) return serverGroups;
+    return filterCachedGroups(cachedGroups, search, filter);
+  }, [cachedGroups, filter, groupsQuery.data, search, serverGroups]);
 
   useEffect(() => {
     const node = loadMoreRef.current;
@@ -116,7 +131,7 @@ function RouteComponent() {
     });
   }, [filter, pendingGroups, search]);
 
-  const total = groupsQuery.data?.pages[0]?.pagination.total ?? 0;
+  const total = groupsQuery.data?.pages[0]?.pagination.total ?? groups.length;
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
@@ -178,7 +193,9 @@ function RouteComponent() {
           </div>
         </header>
 
-        {groupsQuery.isLoading ? <GroupsSkeleton /> : null}
+        {groupsQuery.isLoading && groups.length === 0 ? (
+          <GroupsSkeleton />
+        ) : null}
 
         {groupsQuery.isError ? (
           <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -279,12 +296,36 @@ function RouteComponent() {
   );
 }
 
-const filters: Array<{ value: GroupFilter; label: string }> = [
+const filters: Array<{ value: GroupListFilter; label: string }> = [
   { value: 'all', label: 'Todos' },
   { value: 'theyOweYou', label: 'Te deben' },
   { value: 'youOweThem', label: 'Debo' },
   { value: 'noDebt', label: 'Sin deuda' },
 ];
+
+function filterCachedGroups(
+  groups: GroupListItem[],
+  search: string,
+  filter: GroupListFilter,
+) {
+  const normalizedSearch = search.trim().toLocaleLowerCase('es-CO');
+
+  return groups.filter((group) => {
+    if (
+      normalizedSearch &&
+      !group.name.toLocaleLowerCase('es-CO').includes(normalizedSearch)
+    ) {
+      return false;
+    }
+
+    if (filter === 'all') return true;
+    if (filter === 'noDebt') return group.participantBalances.length === 0;
+
+    return group.participantBalances.some(
+      (balance) => balance.direction === filter,
+    );
+  });
+}
 
 function mapMembersToAvatars(
   members: Array<{ name: string; image: string | null }>,

@@ -1,13 +1,16 @@
-import type { InferResponseType } from '#/lib/hc';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import {
+  GROUPS_LIST_REFRESH_EVENT,
+  type GroupListFilter,
+  type GroupsPage,
+  upsertGroupListItems,
+} from '#/lib/groups-list-query-collection';
 import { client } from '#/lib/hc';
-import { useInfiniteQuery } from '@tanstack/react-query';
 
 const PAGE_LIMIT = 20;
 
-const listGroupsEndpoint = client.api.groups.$get;
-export type GroupsPage = InferResponseType<typeof listGroupsEndpoint>;
 export type GroupListItem = GroupsPage['data'][number];
-export type GroupListFilter = 'all' | 'theyOweYou' | 'youOweThem' | 'noDebt';
 
 async function fetchGroupsPage({
   pageParam,
@@ -31,7 +34,9 @@ async function fetchGroupsPage({
     throw new Error('No se pudieron cargar los grupos');
   }
 
-  return (await response.json()) as GroupsPage;
+  const page = (await response.json()) as GroupsPage;
+  upsertGroupListItems(page.data);
+  return page;
 }
 
 export function useGroupsInfiniteQuery(input: {
@@ -39,6 +44,18 @@ export function useGroupsInfiniteQuery(input: {
   filter: GroupListFilter;
 }) {
   const search = input.search.trim();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      void queryClient.invalidateQueries({ queryKey: ['groups-list'] });
+    };
+
+    window.addEventListener(GROUPS_LIST_REFRESH_EVENT, handleRefresh);
+    return () => {
+      window.removeEventListener(GROUPS_LIST_REFRESH_EVENT, handleRefresh);
+    };
+  }, [queryClient]);
 
   return useInfiniteQuery({
     queryKey: ['groups-list', search, input.filter],

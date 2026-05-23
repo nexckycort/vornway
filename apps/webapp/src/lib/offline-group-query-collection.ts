@@ -1,6 +1,7 @@
 import { createCollection } from '@tanstack/db';
 import { QueryClient } from '@tanstack/query-core';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
+import { GROUPS_LIST_REFRESH_EVENT } from '#/lib/groups-list-query-collection';
 import { client, type InferRequestType } from '#/lib/hc';
 
 const createGroupEndpoint = client.api.groups.$post;
@@ -204,6 +205,7 @@ export async function syncPendingGroupsQueue() {
 
         if (response.ok) {
           removePendingGroup(item.id);
+          window.dispatchEvent(new CustomEvent(GROUPS_LIST_REFRESH_EVENT));
           continue;
         }
 

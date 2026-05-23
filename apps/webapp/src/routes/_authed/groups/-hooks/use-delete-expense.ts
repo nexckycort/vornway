@@ -1,16 +1,8 @@
 import { client } from '#/lib/hc';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-const deleteExpenseEndpoint = (
-  client.api.groups[':id'].expenses as unknown as {
-    ':expenseId': (input: {
-      param: {
-        id: string;
-        expenseId: string;
-      };
-    }) => Promise<Response>;
-  }
-)[':expenseId'];
+const deleteExpenseEndpoint =
+  client.api.groups[':id'].expenses[':expenseId'].$delete;
 
 type DeleteExpenseInput = {
   groupId: string;

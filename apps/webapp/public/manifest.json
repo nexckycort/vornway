@@ -155,6 +155,13 @@
       "label": "Detalle de grupo con gastos compartidos"
     },
     {
+      "src": "/screenshots/reports.webp",
+      "sizes": "1220x2712",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Reportes y balance del grupo"
+    },
+    {
       "src": "/screenshots/wide.webp",
       "sizes": "1920x1080",
       "type": "image/webp",

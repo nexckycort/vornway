@@ -47,39 +47,51 @@ self.addEventListener('install', (event) => {
 
   event.waitUntil(
     (async () => {
-      const cache = await caches.open(CACHE_NAME);
-
-      await cache.addAll(['/', '/index.html', '/logo.webp', '/favicon.ico']);
+      const coreAssets = ['/', '/index.html', '/logo.webp', '/favicon.ico'];
+      let assets = [];
 
       try {
         const response = await fetch('/asset-manifest.json', {
           cache: 'no-store',
         });
 
-        if (!response.ok) {
-          return;
-        }
+        if (response.ok) {
+          const manifest = await response.json();
+          assets = Array.isArray(manifest?.allFiles)
+            ? manifest.allFiles
+                .filter(
+                  (asset) => typeof asset === 'string' && asset.length > 0,
+                )
+                .map((asset) => new URL(asset, self.location.origin).href)
+            : [];
 
-        const manifest = await response.json();
-        const assets = Array.isArray(manifest?.allFiles)
-          ? manifest.allFiles
-              .filter((asset) => typeof asset === 'string' && asset.length > 0)
-              .map((asset) => new URL(asset, self.location.origin).href)
-          : [];
-
-        if (assets.length > 0) {
-          const manifestSignature = hashString(
-            JSON.stringify(manifest.allFiles),
-          );
-          CACHE_NAME = `vornway-app-shell-${buildVersion}-${manifestSignature}`;
-        }
-
-        if (assets.length > 0) {
-          await cache.addAll(assets);
+          if (assets.length > 0) {
+            const manifestSignature = hashString(
+              JSON.stringify(manifest.allFiles),
+            );
+            CACHE_NAME = `vornway-app-shell-${buildVersion}-${manifestSignature}`;
+          }
         }
       } catch (_error) {
-        return;
+        assets = [];
       }
+
+      const cache = await caches.open(CACHE_NAME);
+      const urlsToCache = Array.from(
+        new Set([
+          ...coreAssets.map((asset) => new URL(asset, self.location.origin).href),
+          ...assets,
+        ]),
+      );
+
+      await Promise.allSettled(
+        urlsToCache.map(async (url) => {
+          const response = await fetch(url, { cache: 'reload' });
+          if (response?.ok) {
+            await cache.put(url, response);
+          }
+        }),
+      );
     })(),
   );
 });

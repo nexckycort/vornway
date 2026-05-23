@@ -70,6 +70,15 @@ function RouteComponent() {
     if (!file) return;
 
     setImageError(null);
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setImageDataUrl(null);
+      setImageFileName(null);
+      setImageError(
+        'Sin conexión no es posible subir la imagen. Puedes subirla después.',
+      );
+      return;
+    }
+
     setIsCompressingImage(true);
     try {
       const dataUrl = await compressGroupImageFile(file);
@@ -227,11 +236,11 @@ function RouteComponent() {
                 {isCompressingImage ? 'Procesando...' : 'Subir imagen'}
               </Button>
               {imageDataUrl ? (
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-11 rounded-full px-4 text-[#64748b]"
-                onClick={() => {
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-11 rounded-full px-4 text-[#64748b]"
+                  onClick={() => {
                     setImageDataUrl(null);
                     setImageFileName(null);
                     setImageError(null);
@@ -244,8 +253,8 @@ function RouteComponent() {
                   }}
                 >
                   <X className="size-4" />
-              </Button>
-            ) : null}
+                </Button>
+              ) : null}
             </div>
             {imageError ? (
               <p className="mt-3 text-xs text-red-600">{imageError}</p>

@@ -15,6 +15,7 @@ import {
 } from './contexts/auth/auth-context';
 import { useAuth } from './contexts/auth/use-auth';
 import { initOfflineExpenseQueueSync } from './lib/offline-expense-query-collection';
+import { initOfflineGroupQueueSync } from './lib/offline-group-query-collection';
 import { registerPushServiceWorker } from './lib/push-notifications';
 
 // Import the generated route tree
@@ -43,6 +44,7 @@ function App() {
   React.useEffect(() => {
     void registerPushServiceWorker();
     initOfflineExpenseQueueSync();
+    initOfflineGroupQueueSync();
   }, []);
 
   if (auth.loading) return <FullscreenLoader />;

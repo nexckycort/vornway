@@ -1,11 +1,21 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Search, Users } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-
+import { Search, Users, WifiOff } from 'lucide-react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
+import {
+  getEmptyPendingGroups,
+  getPendingGroups,
+  subscribePendingGroups,
+} from '#/lib/offline-group-query-collection';
 import { TripCard } from '#/routes/_authed/(home)/-components/trip-card';
 import type { Trip } from '#/routes/_authed/(home)/-hooks/use-home-query';
-import { GroupsSkeleton } from './-components/groups-skeleton';
 import { useGroupsInfiniteQuery } from '#/routes/_authed/groups/-hooks/use-groups-infinite-query';
+import { GroupsSkeleton } from './-components/groups-skeleton';
 
 type GroupFilter = 'all' | 'theyOweYou' | 'youOweThem' | 'noDebt';
 
@@ -17,6 +27,11 @@ function RouteComponent() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<GroupFilter>('all');
+  const pendingGroups = useSyncExternalStore(
+    subscribePendingGroups,
+    getPendingGroups,
+    getEmptyPendingGroups,
+  );
   const groupsQuery = useGroupsInfiniteQuery({
     search,
     filter,
@@ -89,6 +104,18 @@ function RouteComponent() {
     [groupTrips],
   );
 
+  const visiblePendingGroups = useMemo(() => {
+    const normalizedSearch = search.trim().toLocaleLowerCase('es-CO');
+    if (filter !== 'all' && filter !== 'noDebt') return [];
+
+    return pendingGroups.filter((group) => {
+      if (!normalizedSearch) return true;
+      return group.payload.name
+        .toLocaleLowerCase('es-CO')
+        .includes(normalizedSearch);
+    });
+  }, [filter, pendingGroups, search]);
+
   const total = groupsQuery.data?.pages[0]?.pagination.total ?? 0;
 
   return (
@@ -159,7 +186,9 @@ function RouteComponent() {
           </div>
         ) : null}
 
-        {!groupsQuery.isLoading && groupTrips.length === 0 ? (
+        {!groupsQuery.isLoading &&
+        groupTrips.length === 0 &&
+        visiblePendingGroups.length === 0 ? (
           <div className="mt-5 rounded-[28px] border border-[#e2e8f0] bg-white px-5 py-8 text-center shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
             <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-[#eef2ff]">
               <Users className="size-7 text-primary" />
@@ -186,6 +215,40 @@ function RouteComponent() {
         ) : null}
 
         <div className="mt-5 flex flex-col gap-5">
+          {visiblePendingGroups.length > 0 ? (
+            <section className="flex flex-col gap-4">
+              <h2 className="text-sm font-medium text-[#475569]">
+                Pendientes por sincronizar
+              </h2>
+              <div className="flex flex-col gap-4">
+                {visiblePendingGroups.map((group) => (
+                  <div
+                    key={group.id}
+                    className="rounded-[24px] border border-dashed border-primary/35 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate text-lg font-semibold leading-7">
+                          {group.payload.name}
+                        </h3>
+                        <p className="text-xs leading-4 text-[#64748b]">
+                          Creado sin conexión
+                        </p>
+                      </div>
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+                        <WifiOff className="size-3" />
+                        Pendiente
+                      </span>
+                    </div>
+                    <p className="mt-4 text-sm leading-5 text-[#64748b]">
+                      Se creará automáticamente cuando vuelva la conexión.
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           {groupedTrips.map((section) => (
             <section key={section.title} className="flex flex-col gap-4">
               <h2 className="text-sm font-medium text-[#475569]">

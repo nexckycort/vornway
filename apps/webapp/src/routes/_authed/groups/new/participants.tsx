@@ -22,7 +22,8 @@ export const Route = createFileRoute('/_authed/groups/new/participants')({
   validateSearch: (search: Record<string, unknown>) => ({
     name: typeof search.name === 'string' ? search.name : '',
     type: typeof search.type === 'string' ? search.type : '',
-    description: typeof search.description === 'string' ? search.description : '',
+    description:
+      typeof search.description === 'string' ? search.description : '',
     draftId: typeof search.draftId === 'string' ? search.draftId : '',
   }),
   component: RouteComponent,
@@ -155,7 +156,9 @@ function RouteComponent() {
   };
 
   const removeParticipant = (index: number) => {
-    setParticipants((previous) => previous.filter((_, current) => current !== index));
+    setParticipants((previous) =>
+      previous.filter((_, current) => current !== index),
+    );
   };
 
   const handleCreate = async () => {
@@ -185,6 +188,10 @@ function RouteComponent() {
       });
       if (draftId) {
         clearGroupDraft(draftId);
+      }
+      if ('queued' in result && result.queued) {
+        await navigate({ to: '/groups', replace: true });
+        return;
       }
       setCreatedGroup({
         id: result.id,
@@ -282,10 +289,14 @@ function RouteComponent() {
         </p>
 
         {searchQuery.isFetching && debouncedSearch ? (
-          <p className="mt-3 text-sm text-[#64748b]">Buscando coincidencias...</p>
+          <p className="mt-3 text-sm text-[#64748b]">
+            Buscando coincidencias...
+          </p>
         ) : null}
 
-        {debouncedSearch && !searchQuery.isFetching && searchResults.length === 0 ? (
+        {debouncedSearch &&
+        !searchQuery.isFetching &&
+        searchResults.length === 0 ? (
           <p className="mt-3 text-sm text-[#64748b]">
             No encontramos coincidencias. Puedes crearlo manualmente.
           </p>
@@ -509,8 +520,8 @@ function RouteComponent() {
               </p>
               <ul className="mt-3 space-y-2 text-sm leading-6 text-[#334155]">
                 <li>
-                  <span className="font-semibold text-[#0f172a]">Invita</span>{' '}
-                  a más personas cuando quieras
+                  <span className="font-semibold text-[#0f172a]">Invita</span> a
+                  más personas cuando quieras
                 </li>
                 <li>
                   Comienza a{' '}

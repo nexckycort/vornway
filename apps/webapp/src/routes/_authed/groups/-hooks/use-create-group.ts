@@ -1,6 +1,10 @@
-import { client } from '#/lib/hc';
-import type { InferRequestType, InferResponseType } from '#/lib/hc';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { InferRequestType, InferResponseType } from '#/lib/hc';
+import { client } from '#/lib/hc';
+import {
+  type CreateGroupOfflineFirstResult,
+  createGroupOfflineFirst,
+} from '#/lib/offline-group-query-collection';
 
 const createGroupEndpoint = client.api.groups.$post;
 
@@ -31,7 +35,9 @@ export type CreatedGroupPayload = {
   createdAt: string;
 };
 
-async function createGroup(values: CreateGroupFormValues): Promise<CreateGroupResponse> {
+async function createGroup(
+  values: CreateGroupFormValues,
+): Promise<CreateGroupResponse | CreateGroupOfflineFirstResult> {
   const payload: CreateGroupRequest = {
     json: {
       name: values.name.trim(),
@@ -46,20 +52,16 @@ async function createGroup(values: CreateGroupFormValues): Promise<CreateGroupRe
         ? {
             image: {
               dataUrl: values.image.dataUrl,
-              ...(values.image.fileName ? { fileName: values.image.fileName } : {}),
+              ...(values.image.fileName
+                ? { fileName: values.image.fileName }
+                : {}),
             },
           }
         : {}),
     },
   };
 
-  const response = await createGroupEndpoint(payload);
-
-  if (!response.ok) {
-    throw new Error('No se pudo crear el grupo');
-  }
-
-  return (await response.json()) as CreateGroupResponse;
+  return createGroupOfflineFirst(payload.json);
 }
 
 export function useCreateGroupMutation() {
@@ -67,11 +69,9 @@ export function useCreateGroupMutation() {
 
   return useMutation({
     mutationFn: createGroup,
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['groups-list'] });
+      void queryClient.invalidateQueries({ queryKey: ['home-summary'] });
     },
   });
 }

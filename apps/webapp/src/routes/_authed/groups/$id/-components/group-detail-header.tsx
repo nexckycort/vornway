@@ -101,7 +101,7 @@ export function GroupDetailHeader({
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] font-medium text-white/85">
             {hasMultipleTotals ? (
-              <span>Gastos separados</span>
+              <span>Por moneda</span>
             ) : (
               <>
                 <span>{getCurrencyMeta(primaryTotal?.[0] ?? 'COP').flag}</span>
@@ -110,7 +110,9 @@ export function GroupDetailHeader({
             )}
           </span>
           <span className="text-xs text-white/45">
-            {hasMultipleTotals ? 'Gastado por moneda' : 'Total del grupo'}
+            {hasMultipleTotals
+              ? 'Cada monto es independiente'
+              : 'Total del grupo'}
           </span>
         </div>
 

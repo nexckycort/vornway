@@ -15,11 +15,6 @@ export function createHttpApp(): Hono {
   app.use(secureHeaders());
 
   app.get('/', (c) => c.json({ service: 'vornway-api', status: 'ok' }));
-  app.get('/version', (c) =>
-    c.json({
-      version: process.env.VORNWAY_APP_VERSION ?? 'unknown',
-    }),
-  );
 
   app.use(
     cors({
@@ -31,6 +26,12 @@ export function createHttpApp(): Hono {
       exposeHeaders: ['Content-Length'],
       maxAge: 600,
       credentials: true,
+    }),
+  );
+
+  app.get('/version', (c) =>
+    c.json({
+      version: process.env.VORNWAY_APP_VERSION ?? 'unknown',
     }),
   );
 

@@ -17,14 +17,11 @@ type GroupExpenseRowProps = {
 };
 
 const tagToneClass = {
-  emerald:
-    'border-emerald-200/70 bg-emerald-50 text-emerald-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]',
-  rose: 'border-rose-200/70 bg-rose-50 text-rose-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]',
-  blue: 'border-blue-200/70 bg-blue-50 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]',
-  amber:
-    'border-amber-200/70 bg-amber-50 text-amber-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]',
-  slate:
-    'border-slate-200/70 bg-slate-50 text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]',
+  emerald: 'bg-emerald-50 text-emerald-700',
+  rose: 'bg-rose-50 text-rose-600',
+  blue: 'bg-blue-50 text-blue-700',
+  amber: 'bg-amber-50 text-amber-700',
+  slate: 'bg-slate-50 text-slate-700',
 };
 
 export function GroupExpenseRow({
@@ -179,16 +176,16 @@ export function GroupExpenseRow({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-[28px] border shadow-[0_14px_34px_rgba(15,23,42,0.07)] ${
+      className={`relative overflow-hidden rounded-[24px] border shadow-[0_1px_2px_rgba(15,23,42,0.05)] ${
         isSettlement
-          ? 'border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-white'
-          : isPendingSync
-            ? 'border-amber-100 bg-gradient-to-br from-amber-50 via-white to-white'
-            : 'border-white bg-white'
+          ? 'border-emerald-100 bg-emerald-50'
+        : isPendingSync
+          ? 'border-amber-100 bg-amber-50'
+          : 'border-[#e8ecf3] bg-white shadow-[0_8px_22px_rgba(15,23,42,0.06)]'
       }`}
     >
       {showDeleteAction ? (
-        <div className="absolute inset-y-0 right-0 z-0 flex w-[88px] items-center justify-center bg-gradient-to-b from-[#ff4d6a] to-[#e11d48]">
+        <div className="absolute inset-y-0 right-0 z-0 flex w-[88px] items-center justify-center bg-primary">
           <button
             type="button"
             onClick={handleDelete}
@@ -217,9 +214,9 @@ export function GroupExpenseRow({
         }}
         className={`native-tap relative z-10 flex w-full items-start gap-3 px-4 py-4 text-left transition-transform duration-200 ${
           isSettlement
-            ? 'bg-gradient-to-br from-emerald-50 via-white to-white'
+            ? 'bg-emerald-50'
             : isPendingSync
-              ? 'bg-gradient-to-br from-amber-50 via-white to-white'
+              ? 'bg-amber-50'
               : 'bg-white'
         }`}
         style={{ transform: `translateX(${translateX}px)` }}
@@ -228,30 +225,29 @@ export function GroupExpenseRow({
           <span className="absolute inset-y-5 left-0 w-1 rounded-r-full bg-emerald-400" />
         ) : null}
         {isPinned ? (
-          <span className="absolute right-4 top-0 h-8 w-5 rounded-b-full bg-amber-400 shadow-[0_8px_18px_rgba(245,158,11,0.24)]" />
+          <span className="absolute right-4 top-0 h-7 w-4 rounded-b-full bg-amber-400" />
         ) : null}
         <div
-          className={`relative flex size-12 shrink-0 items-center justify-center overflow-hidden ${
+          className={`flex size-11 shrink-0 items-center justify-center ${
             isSettlement
-              ? 'rounded-[20px] bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-[0_12px_24px_rgba(5,150,105,0.24)]'
+              ? 'rounded-2xl bg-emerald-600 text-white shadow-[0_8px_18px_rgba(5,150,105,0.18)]'
               : expense.expenseType === 'composite'
-                ? 'rounded-[20px] bg-gradient-to-br from-sky-100 to-blue-100 text-blue-700'
-                : 'rounded-[20px] bg-gradient-to-br from-[#f8fafc] to-[#e2e8f0] text-[#0f172a] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]'
+                ? 'rounded-2xl border border-blue-100 bg-blue-50 text-blue-700 shadow-[0_6px_14px_rgba(37,99,235,0.10)]'
+                : 'rounded-2xl bg-[#f4f6f8] text-[#0f172a]'
           }`}
         >
-          <span className="absolute inset-x-2 top-1 h-3 rounded-full bg-white/45 blur-sm" />
           {isSettlement ? (
-            <HandCoins className="relative size-5" />
+            <HandCoins className="size-5" />
           ) : (
-            <span className="relative text-lg">{getExpenseEmoji(expense)}</span>
+            <span className="text-base">{getExpenseEmoji(expense)}</span>
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 pr-4">
+          <div className="flex items-center gap-2">
             {isPinned ? (
               <Pin className="size-3.5 shrink-0 fill-current text-amber-500" />
             ) : null}
-            <p className="min-w-0 truncate text-[15px] font-semibold leading-5 tracking-[-0.01em] text-[#132238]">
+            <p className="min-w-0 truncate text-sm font-semibold text-[#132238]">
               {expense.description}
             </p>
           </div>
@@ -264,41 +260,44 @@ export function GroupExpenseRow({
               </span>
             </div>
           ) : (
-            <p className="mt-1 text-xs leading-5 text-[#64748b]">
-              Pagado por {expense.paidBy.name}
+            <p className="mt-1 truncate text-xs leading-5 text-[#64748b]">
+              Pagó {expense.paidBy.name}
+              {expense.participantCount > 0
+                ? ` · ${expense.participantCount} persona${expense.participantCount === 1 ? '' : 's'}`
+                : ''}
             </p>
           )}
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {expense.category && !isSettlement ? (
-              <span className="inline-flex rounded-full border border-[#e2e8f0] bg-[#f8fafc] px-2.5 py-1 text-[11px] font-medium text-[#64748b]">
+              <span className="inline-flex rounded-full border border-[#edf2f7] bg-white px-3 py-1 text-[11px] font-semibold text-[#64748b]">
                 {expense.category.name}
               </span>
             ) : null}
             {tag && !isSettlement ? (
               <span
-                className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${tagToneClass[tag.tone]}`}
+                className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ${tagToneClass[tag.tone]}`}
               >
                 {tag.label}
               </span>
             ) : null}
             {isPendingSync ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/70 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold text-amber-700">
                 <Clock3 className="size-3" />
                 Pendiente
               </span>
             ) : null}
           </div>
         </div>
-        <div className="ml-1 shrink-0 text-right">
+        <div className="ml-1 max-w-[132px] shrink-0 text-right">
           <p
-            className={`truncate text-[15px] font-bold tracking-[-0.01em] ${
+            className={`truncate text-base font-bold ${
               isSettlement ? 'text-emerald-700' : 'text-[#132238]'
             }`}
           >
             {formatMoney(expense.currency, expense.amount)}
           </p>
           <p
-            className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+            className={`truncate text-xs ${
               isSettlement ? 'font-medium text-emerald-600' : 'text-[#94a3b8]'
             }`}
           >

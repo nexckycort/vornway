@@ -43,20 +43,20 @@ export function GroupExpensesTimeline({
       ) : null}
 
       {!isLoading && groupedExpenses.length === 0 ? (
-        <div className="rounded-[32px] border border-white bg-gradient-to-b from-white to-[#f8fafc] px-6 py-14 text-center shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-          <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-[26px] bg-[#0f172a] text-2xl shadow-[0_14px_32px_rgba(15,23,42,0.18)]">
+        <div className="rounded-[28px] border border-dashed border-[#e5e7eb] bg-[#fafafa] px-6 py-14 text-center">
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-[#f3f4f6] text-2xl">
             💸
           </div>
-          <h3 className="text-lg font-semibold tracking-tight text-[#132238]">
+          <h3 className="text-base font-semibold text-[#132238]">
             No tienes gastos aún
           </h3>
-          <p className="mx-auto mt-2 max-w-[260px] text-sm leading-6 text-[#64748b]">
+          <p className="mt-2 text-sm text-[#64748b]">
             Crea tu primer gasto y empieza a organizar este grupo.
           </p>
         </div>
       ) : null}
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {groupedExpenses.map((dayGroup) => (
           <div key={dayGroup.label}>
             <div className="mb-3 flex items-center gap-3">

@@ -30,15 +30,16 @@ function readPendingExpenses(): PendingExpense[] {
 
   try {
     const raw = window.localStorage.getItem(OFFLINE_EXPENSES_STORAGE_KEY);
+
+    if (raw === cachedRawPendingExpenses) {
+      return cachedPendingExpenses;
+    }
+
     if (!raw) {
       cachedRawPendingExpenses = null;
       cachedPendingExpenses = EMPTY_PENDING_EXPENSES;
       cachedPendingExpensesByGroup.clear();
       return EMPTY_PENDING_EXPENSES;
-    }
-
-    if (raw === cachedRawPendingExpenses) {
-      return cachedPendingExpenses;
     }
 
     const parsed = JSON.parse(raw) as unknown;

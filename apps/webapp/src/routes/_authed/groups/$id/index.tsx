@@ -43,10 +43,6 @@ export const Route = createFileRoute('/_authed/groups/$id/')({
 });
 
 function RouteComponent() {
-  const renderCount = useRef(0);
-  renderCount.current += 1;
-  console.log('[GroupDetail] Render', { count: renderCount.current });
-
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -83,7 +79,6 @@ function RouteComponent() {
   const pinnedExpenseIds = usePinnedExpenseIds(id);
 
   const expenses = useMemo(() => {
-    console.log('[GroupDetail] expenses recomputed');
     const serverExpenses =
       expensesQuery.data?.pages.flatMap((page) => page.data) ?? [];
     const membersById = new Map(
@@ -149,25 +144,14 @@ function RouteComponent() {
   fetchNextPageRef.current = expensesQuery.fetchNextPage;
 
   useEffect(() => {
-    console.log('[GroupDetail] IntersectionObserver effect setup', {
-      hasNextPage: hasNextPageRef.current,
-      isFetching: isFetchingRef.current,
-    });
-
     const node = loadMoreRef.current;
     if (!node) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const first = entries[0];
-        console.log('[GroupDetail] IntersectionObserver callback', {
-          isIntersecting: first?.isIntersecting,
-          hasNextPage: hasNextPageRef.current,
-          isFetching: isFetchingRef.current,
-        });
         if (!first?.isIntersecting) return;
         if (!hasNextPageRef.current || isFetchingRef.current) return;
-        console.log('[GroupDetail] Fetching next page');
         void fetchNextPageRef.current();
       },
       {
@@ -178,10 +162,7 @@ function RouteComponent() {
     );
 
     observer.observe(node);
-    return () => {
-      console.log('[GroupDetail] IntersectionObserver cleanup');
-      observer.disconnect();
-    };
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {

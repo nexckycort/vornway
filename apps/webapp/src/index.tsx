@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { AppUpdateBanner } from './components/app-update-banner';
 import { FullscreenLoader } from './components/fullscreen-loader';
 import { NetworkOfflineBanner } from './components/network-offline-banner';
 import { Toaster } from './components/ui/sonner';
@@ -60,6 +61,7 @@ if (rootEl) {
           <QueryClientProvider client={queryClient}>
             <App />
             <NetworkOfflineBanner />
+            <AppUpdateBanner />
             <Toaster richColors />
           </QueryClientProvider>
         </AuthProvider>

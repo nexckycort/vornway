@@ -15,6 +15,11 @@ export function createHttpApp(): Hono {
   app.use(secureHeaders());
 
   app.get('/', (c) => c.json({ service: 'vornway-api', status: 'ok' }));
+  app.get('/version', (c) =>
+    c.json({
+      version: process.env.VORNWAY_APP_VERSION,
+    }),
+  );
 
   app.use(
     cors({

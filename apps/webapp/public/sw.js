@@ -1,5 +1,7 @@
 const buildVersion = new URL(self.location.href).searchParams.get('v') || 'v1';
 let CACHE_NAME = `vornway-app-shell-${buildVersion}`;
+const APP_CACHE_PREFIX = 'vornway-app-shell-';
+const MAX_APP_CACHES = 3;
 
 function hashString(value) {
   let hash = 0;
@@ -23,6 +25,21 @@ async function matchFromAnyCache(request) {
   }
 
   return null;
+}
+
+async function pruneOldAppCaches() {
+  const cacheNames = await caches.keys();
+  const appCaches = cacheNames
+    .filter((cacheName) => cacheName.startsWith(APP_CACHE_PREFIX))
+    .sort();
+  const cachesToDelete = appCaches.slice(
+    0,
+    Math.max(0, appCaches.length - MAX_APP_CACHES),
+  );
+
+  await Promise.all(
+    cachesToDelete.map((cacheName) => caches.delete(cacheName)),
+  );
 }
 
 self.addEventListener('install', (event) => {
@@ -51,7 +68,9 @@ self.addEventListener('install', (event) => {
           : [];
 
         if (assets.length > 0) {
-          const manifestSignature = hashString(JSON.stringify(manifest.allFiles));
+          const manifestSignature = hashString(
+            JSON.stringify(manifest.allFiles),
+          );
           CACHE_NAME = `vornway-app-shell-${buildVersion}-${manifestSignature}`;
         }
 
@@ -68,9 +87,16 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
+      await pruneOldAppCaches();
       await clients.claim();
     })(),
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {

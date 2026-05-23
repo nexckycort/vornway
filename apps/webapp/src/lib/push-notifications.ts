@@ -34,9 +34,13 @@ export async function registerPushServiceWorker(): Promise<ServiceWorkerRegistra
     return null;
   }
 
-  return navigator.serviceWorker.register('/sw.js', {
+  const registration = await navigator.serviceWorker.register('/sw.js', {
     scope: '/',
   });
+
+  void registration.update();
+
+  return registration;
 }
 
 export async function getPushNotificationStatus(): Promise<PushPermissionStatus> {

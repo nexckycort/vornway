@@ -7,4 +7,7 @@ await Bun.build({
   minify: true,
   sourcemap: 'linked',
   bytecode: true,
+  define: {
+    'process.env.VORNWAY_APP_VERSION': JSON.stringify(Bun.randomUUIDv7()),
+  },
 });

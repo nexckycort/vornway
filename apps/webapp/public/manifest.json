@@ -141,18 +141,25 @@
   "lang": "es",
   "screenshots": [
     {
-      "src": "screenshots/home.webp",
+      "src": "/screenshots/home.webp",
       "sizes": "892x1983",
       "type": "image/webp",
       "form_factor": "narrow",
-      "label": "Pantalla de inicio de Vornway con resumen y lista de grupos"
+      "label": "Inicio de Vornway con resumen de gastos y grupos"
     },
     {
-      "src": "screenshots/home.webp",
+      "src": "/screenshots/group-details.webp",
       "sizes": "892x1983",
       "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Detalle de grupo con gastos compartidos"
+    },
+    {
+      "src": "/screenshots/wide.webp",
+      "sizes": "1920x1080",
+      "type": "image/webp",
       "form_factor": "wide",
-      "label": "Pantalla de inicio de Vornway con resumen y lista de grupos"
+      "label": "Vista previa de Vornway para escritorio"
     }
   ]
 }

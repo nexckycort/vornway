@@ -6,6 +6,7 @@ import { createRouter, RouterProvider } from '@tanstack/react-router';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { FullscreenLoader } from './components/fullscreen-loader';
+import { NetworkOfflineBanner } from './components/network-offline-banner';
 import { Toaster } from './components/ui/sonner';
 import { ThemeProvider } from './components/ui/theme-provider';
 import {
@@ -56,6 +57,7 @@ if (rootEl) {
         <AuthProvider>
           <QueryClientProvider client={queryClient}>
             <App />
+            <NetworkOfflineBanner />
             <Toaster richColors />
           </QueryClientProvider>
         </AuthProvider>

@@ -1,4 +1,8 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router';
 import { ArrowLeft, ImagePlus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -30,6 +34,7 @@ const groupTypes = [
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const router = useRouter();
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const {
@@ -65,6 +70,20 @@ function RouteComponent() {
     setImageDataUrl(draft.image?.dataUrl ?? null);
     setImageFileName(draft.image?.fileName ?? null);
   }, [draftId]);
+
+  useEffect(() => {
+    if (!isValid) return;
+
+    void router.preloadRoute({
+      to: '/groups/new/participants',
+      search: {
+        draftId: draftId || '',
+        name: name.trim(),
+        type: type.trim(),
+        description: description.trim(),
+      },
+    });
+  }, [description, draftId, isValid, name, router, type]);
 
   const handleImageSelect = async (file: File | null) => {
     if (!file) return;

@@ -1,6 +1,29 @@
-self.__VORNWAY_SW_CACHE_NAME = 'vornway-app-shell-v1';
+const buildVersion = new URL(self.location.href).searchParams.get('v') || 'v1';
+let CACHE_NAME = `vornway-app-shell-${buildVersion}`;
 
-const CACHE_NAME = self.__VORNWAY_SW_CACHE_NAME;
+function hashString(value) {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) | 0;
+  }
+
+  return Math.abs(hash).toString(36);
+}
+
+async function matchFromAnyCache(request) {
+  const cacheNames = await caches.keys();
+
+  for (const cacheName of cacheNames) {
+    const cache = await caches.open(cacheName);
+    const cached = await cache.match(request);
+    if (cached) {
+      return cached;
+    }
+  }
+
+  return null;
+}
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -28,6 +51,11 @@ self.addEventListener('install', (event) => {
           : [];
 
         if (assets.length > 0) {
+          const manifestSignature = hashString(JSON.stringify(manifest.allFiles));
+          CACHE_NAME = `vornway-app-shell-${buildVersion}-${manifestSignature}`;
+        }
+
+        if (assets.length > 0) {
           await cache.addAll(assets);
         }
       } catch (_error) {
@@ -40,17 +68,6 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      const cacheNames = await caches.keys();
-      await Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName === CACHE_NAME) {
-            return Promise.resolve();
-          }
-
-          return caches.delete(cacheName);
-        }),
-      );
-
       await clients.claim();
     })(),
   );
@@ -90,12 +107,22 @@ self.addEventListener('fetch', (event) => {
           }
         }
 
+        const cachedNavigation = await matchFromAnyCache('/index.html');
+        if (cachedNavigation) {
+          return cachedNavigation;
+        }
+
         return fetch(request);
       }
 
       const cached = await cache.match(request);
       if (cached) {
         return cached;
+      }
+
+      const cachedFromAnyCache = await matchFromAnyCache(request);
+      if (cachedFromAnyCache) {
+        return cachedFromAnyCache;
       }
 
       try {

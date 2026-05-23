@@ -53,7 +53,25 @@ function buildLocalExpenseId() {
   return `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-const pendingExpensesCollection = createCollection(
+function enqueuePendingExpense(groupId: string, payload: CreateExpensePayload) {
+  const localId = buildLocalExpenseId();
+  writePendingExpenses([
+    ...readPendingExpenses(),
+    {
+      id: localId,
+      groupId,
+      payload,
+      createdAt: new Date().toISOString(),
+    },
+  ]);
+  return localId;
+}
+
+function removePendingExpense(id: string) {
+  writePendingExpenses(readPendingExpenses().filter((item) => item.id !== id));
+}
+
+export const pendingExpensesCollection = createCollection(
   queryCollectionOptions<PendingExpense>({
     queryKey: ['offline-pending-expenses'],
     queryClient: offlineQueueQueryClient,
@@ -85,12 +103,19 @@ let isSyncingQueue = false;
 let isSyncListenerRegistered = false;
 
 async function postExpenseToApi(groupId: string, payload: CreateExpensePayload) {
-  const response = await createExpenseEndpoint({
+  const request = createExpenseEndpoint({
     param: { id: groupId },
     json: payload,
   });
 
-  return response;
+  const timeout = new Promise<never>((_, reject) => {
+    const timer = globalThis.setTimeout(() => {
+      clearTimeout(timer);
+      reject(new Error('REQUEST_TIMEOUT'));
+    }, 1500);
+  });
+
+  return Promise.race([request, timeout]);
 }
 
 export async function syncPendingExpensesQueue() {
@@ -109,13 +134,13 @@ export async function syncPendingExpensesQueue() {
         const response = await postExpenseToApi(item.groupId, item.payload);
 
         if (response.ok) {
-          pendingExpensesCollection.delete(item.id);
+          removePendingExpense(item.id);
           continue;
         }
 
         // 4xx tends to be non-retriable for queued payloads
         if (response.status >= 400 && response.status < 500) {
-          pendingExpensesCollection.delete(item.id);
+          removePendingExpense(item.id);
         }
       } catch {
         break;
@@ -179,13 +204,7 @@ export async function createExpenseOfflineFirst(
   }
 
   if (!navigator.onLine) {
-    const localId = buildLocalExpenseId();
-    pendingExpensesCollection.insert({
-      id: localId,
-      groupId,
-      payload,
-      createdAt: new Date().toISOString(),
-    });
+    const localId = enqueuePendingExpense(groupId, payload);
     return { id: localId, queued: true };
   }
 
@@ -198,26 +217,24 @@ export async function createExpenseOfflineFirst(
     }
 
     if (response.status >= 500) {
-      const localId = buildLocalExpenseId();
-      pendingExpensesCollection.insert({
-        id: localId,
-        groupId,
-        payload,
-        createdAt: new Date().toISOString(),
-      });
+      const localId = enqueuePendingExpense(groupId, payload);
       return { id: localId, queued: true };
     }
 
     const payloadError = (await response.json()) as { error?: string };
     throw new Error(payloadError.error ?? 'No se pudo crear el gasto');
   } catch {
-    const localId = buildLocalExpenseId();
-    pendingExpensesCollection.insert({
-      id: localId,
-      groupId,
-      payload,
-      createdAt: new Date().toISOString(),
-    });
+    const localId = enqueuePendingExpense(groupId, payload);
     return { id: localId, queued: true };
   }
+}
+
+export function enqueueExpenseOffline(
+  groupId: string,
+  payload: CreateExpensePayload,
+): { id: string; queued: true } {
+  return {
+    id: enqueuePendingExpense(groupId, payload),
+    queued: true,
+  };
 }

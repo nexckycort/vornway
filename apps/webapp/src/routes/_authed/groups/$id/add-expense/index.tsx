@@ -1,5 +1,6 @@
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
+import { enqueueExpenseOffline } from '#/lib/offline-expense-query-collection';
 import {
   Drawer,
   DrawerContent,
@@ -355,11 +356,13 @@ function RouteComponent() {
     try {
       if (isEditMode && expenseId) {
         await updateExpenseMutation.mutateAsync(payload);
+      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        enqueueExpenseOffline(id, payload);
       } else {
         await createExpenseMutation.mutateAsync(payload);
       }
 
-      await navigate({ to: '/groups/$id', params: { id }, replace: true });
+      void navigate({ to: '/groups/$id', params: { id }, replace: true });
     } catch (submitError) {
       setError(
         submitError instanceof Error

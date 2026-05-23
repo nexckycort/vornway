@@ -1,5 +1,5 @@
 import { useRef, useState, type MouseEvent, type TouchEvent } from 'react';
-import { Pin, Trash2 } from 'lucide-react';
+import { ArrowRight, HandCoins, Pin, Trash2 } from 'lucide-react';
 
 import type { ExpenseItem } from '../-types/group-detail.types';
 import { formatMoney, getExpenseEmoji, getExpenseRowTag } from './group-detail.utils';
@@ -33,6 +33,7 @@ export function GroupExpenseRow({
 
   const isPendingSync = expense.syncStatus === 'pending';
   const showDeleteAction = !expense.isDeleted && translateX < -2;
+  const isSettlement = expense.isSettlement;
 
   const clearLongPressTimeout = () => {
     if (longPressTimeoutRef.current) {
@@ -160,7 +161,13 @@ export function GroupExpenseRow({
   const tag = getExpenseRowTag(expense, isPinned);
 
   return (
-    <div className="relative mb-3 overflow-hidden rounded-3xl border border-[#e5e7eb] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.05)] last:mb-0">
+    <div
+      className={`relative mb-3 overflow-hidden rounded-3xl border shadow-[0_1px_2px_rgba(15,23,42,0.05)] last:mb-0 ${
+        isSettlement
+          ? 'border-emerald-200 bg-emerald-50'
+          : 'border-[#e5e7eb] bg-white'
+      }`}
+    >
       {showDeleteAction ? (
         <div className="absolute inset-y-0 right-0 z-0 flex w-[88px] items-center justify-center bg-[#ff4d6a]">
           <button
@@ -189,19 +196,28 @@ export function GroupExpenseRow({
           if (isPendingSync) return;
           onOpenOptions(expense);
         }}
-        className="native-tap relative z-10 flex w-full items-start gap-3 bg-white px-4 py-4 text-left transition-transform duration-200"
+        className={`native-tap relative z-10 flex w-full items-start gap-3 px-4 py-4 text-left transition-transform duration-200 ${
+          isSettlement ? 'bg-emerald-50' : 'bg-white'
+        }`}
         style={{ transform: `translateX(${translateX}px)` }}
       >
+        {isSettlement ? (
+          <span className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-emerald-400" />
+        ) : null}
         <div
-          className={`flex size-11 shrink-0 items-center justify-center rounded-full ${
-            expense.isSettlement
-              ? 'bg-emerald-100'
+          className={`flex size-11 shrink-0 items-center justify-center ${
+            isSettlement
+              ? 'rounded-2xl bg-emerald-600 text-white shadow-[0_8px_18px_rgba(5,150,105,0.22)]'
               : expense.expenseType === 'composite'
-                ? 'bg-blue-100'
-                : 'bg-[#f3f4f6]'
+                ? 'rounded-full bg-blue-100'
+                : 'rounded-full bg-[#f3f4f6]'
           }`}
         >
-          <span className="text-base">{getExpenseEmoji(expense)}</span>
+          {isSettlement ? (
+            <HandCoins className="size-5" />
+          ) : (
+            <span className="text-base">{getExpenseEmoji(expense)}</span>
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -212,18 +228,26 @@ export function GroupExpenseRow({
               {expense.description}
             </p>
           </div>
-          <p className="mt-1 text-xs text-[#64748b]">
-            {expense.isSettlement
-              ? `Pagado por ${expense.paidBy.name} · ${expense.settlementToName ?? 'otro miembro'}`
-              : `Pagado por ${expense.paidBy.name}`}
-          </p>
+          {isSettlement ? (
+            <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs font-medium text-emerald-700">
+              <span className="truncate">{expense.paidBy.name}</span>
+              <ArrowRight className="size-3 shrink-0" />
+              <span className="truncate">
+                {expense.settlementToName ?? 'otro miembro'}
+              </span>
+            </div>
+          ) : (
+            <p className="mt-1 text-xs text-[#64748b]">
+              Pagado por {expense.paidBy.name}
+            </p>
+          )}
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            {expense.category ? (
+            {expense.category && !isSettlement ? (
               <span className="inline-flex rounded-full bg-[#f8fafc] px-3 py-1 text-[11px] font-medium text-[#64748b]">
                 {expense.category.name}
               </span>
             ) : null}
-            {tag ? (
+            {tag && !isSettlement ? (
               <span
                 className={
                   tag.tone === 'emerald'
@@ -248,11 +272,19 @@ export function GroupExpenseRow({
           </div>
         </div>
         <div className="ml-1 shrink-0 text-right">
-          <p className="truncate text-base font-bold text-[#132238]">
+          <p
+            className={`truncate text-base font-bold ${
+              isSettlement ? 'text-emerald-700' : 'text-[#132238]'
+            }`}
+          >
             {formatMoney(expense.currency, expense.amount)}
           </p>
-          <p className="truncate text-xs text-[#94a3b8]">
-            {expense.isSettlement ? 'Liquidación' : expense.currency}
+          <p
+            className={`truncate text-xs ${
+              isSettlement ? 'font-medium text-emerald-600' : 'text-[#94a3b8]'
+            }`}
+          >
+            {isSettlement ? 'Saldo pagado' : expense.currency}
           </p>
         </div>
       </button>

@@ -8,8 +8,9 @@ import { GROUPS_LIST_REFRESH_EVENT } from '#/lib/groups-list-query-collection';
 import type { InferResponseType } from '#/lib/hc';
 import { client } from '#/lib/hc';
 import {
-  getPendingGroupById,
+  getLocalGroupById,
   type PendingGroup,
+  removeLocalGroupFallback,
 } from '#/lib/offline-group-query-collection';
 import type { GroupSummary } from '../$id/-types/group-detail.types';
 
@@ -123,24 +124,35 @@ export function useGroupSummaryQuery(groupId: string) {
   return useQuery({
     queryKey: ['group-summary', groupId],
     queryFn: async () => {
-      const pendingGroup = getPendingGroupById(groupId);
-      if (pendingGroup) {
-        return buildPendingGroupSummary(pendingGroup);
+      const localGroup = getLocalGroupById(groupId);
+      if (localGroup && typeof navigator !== 'undefined' && !navigator.onLine) {
+        return buildPendingGroupSummary(localGroup);
       }
 
-      const response = await groupSummaryEndpoint({
-        param: { id: groupId },
-      });
-
-      if (!response.ok) {
-        if (pendingGroup) {
-          return buildPendingGroupSummary(pendingGroup);
+      let response: Awaited<ReturnType<typeof groupSummaryEndpoint>>;
+      try {
+        response = await groupSummaryEndpoint({
+          param: { id: groupId },
+        });
+      } catch {
+        if (localGroup) {
+          return buildPendingGroupSummary(localGroup);
         }
 
         throw new Error('No se pudo cargar el grupo');
       }
 
-      return (await response.json()) as unknown as GroupSummary;
+      if (!response.ok) {
+        if (localGroup) {
+          return buildPendingGroupSummary(localGroup);
+        }
+
+        throw new Error('No se pudo cargar el grupo');
+      }
+
+      const group = (await response.json()) as unknown as GroupSummary;
+      removeLocalGroupFallback(groupId);
+      return group;
     },
   });
 }

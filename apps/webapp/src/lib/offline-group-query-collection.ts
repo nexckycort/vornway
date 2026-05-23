@@ -16,6 +16,10 @@ export type PendingGroup = {
   createdAt: string;
 };
 
+type LocalGroupFallback = PendingGroup & {
+  retainedAt: string;
+};
+
 export type CreateGroupOfflineFirstResult =
   | {
       id: string;
@@ -30,12 +34,18 @@ export type CreateGroupOfflineFirstResult =
     };
 
 const OFFLINE_GROUPS_STORAGE_KEY = 'vornway.offline.pending-groups';
+const OFFLINE_GROUP_FALLBACKS_STORAGE_KEY = 'vornway.offline.group-fallbacks';
 const OFFLINE_GROUPS_EVENT = 'vornway:offline-groups:changed';
+const LOCAL_GROUP_FALLBACK_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const offlineGroupsQueryClient = new QueryClient();
 const EMPTY_PENDING_GROUPS: PendingGroup[] = [];
+const EMPTY_LOCAL_GROUP_FALLBACKS: LocalGroupFallback[] = [];
 
 let cachedRawPendingGroups: string | null = null;
 let cachedPendingGroups: PendingGroup[] = EMPTY_PENDING_GROUPS;
+let cachedRawLocalGroupFallbacks: string | null = null;
+let cachedLocalGroupFallbacks: LocalGroupFallback[] =
+  EMPTY_LOCAL_GROUP_FALLBACKS;
 
 function stripUnsupportedOfflineFields(
   payload: CreateGroupPayload,
@@ -77,10 +87,77 @@ function readPendingGroups(): PendingGroup[] {
 function writePendingGroups(next: PendingGroup[]) {
   if (typeof window === 'undefined') return;
 
-  window.localStorage.setItem(OFFLINE_GROUPS_STORAGE_KEY, JSON.stringify(next));
-  cachedRawPendingGroups = JSON.stringify(next);
+  const raw = JSON.stringify(next);
+  window.localStorage.setItem(OFFLINE_GROUPS_STORAGE_KEY, raw);
+  cachedRawPendingGroups = raw;
   cachedPendingGroups = next.length > 0 ? next : EMPTY_PENDING_GROUPS;
   window.dispatchEvent(new CustomEvent(OFFLINE_GROUPS_EVENT));
+}
+
+function readLocalGroupFallbacks(): LocalGroupFallback[] {
+  if (typeof window === 'undefined') return EMPTY_LOCAL_GROUP_FALLBACKS;
+
+  try {
+    const raw = window.localStorage.getItem(
+      OFFLINE_GROUP_FALLBACKS_STORAGE_KEY,
+    );
+    if (!raw) {
+      cachedRawLocalGroupFallbacks = null;
+      cachedLocalGroupFallbacks = EMPTY_LOCAL_GROUP_FALLBACKS;
+      return EMPTY_LOCAL_GROUP_FALLBACKS;
+    }
+
+    if (raw === cachedRawLocalGroupFallbacks) {
+      return cachedLocalGroupFallbacks;
+    }
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      cachedRawLocalGroupFallbacks = raw;
+      cachedLocalGroupFallbacks = EMPTY_LOCAL_GROUP_FALLBACKS;
+      return EMPTY_LOCAL_GROUP_FALLBACKS;
+    }
+
+    cachedRawLocalGroupFallbacks = raw;
+    cachedLocalGroupFallbacks = parsed as LocalGroupFallback[];
+    return cachedLocalGroupFallbacks;
+  } catch {
+    return EMPTY_LOCAL_GROUP_FALLBACKS;
+  }
+}
+
+function writeLocalGroupFallbacks(next: LocalGroupFallback[]) {
+  if (typeof window === 'undefined') return;
+
+  const raw = JSON.stringify(next);
+  window.localStorage.setItem(OFFLINE_GROUP_FALLBACKS_STORAGE_KEY, raw);
+  cachedRawLocalGroupFallbacks = raw;
+  cachedLocalGroupFallbacks =
+    next.length > 0 ? next : EMPTY_LOCAL_GROUP_FALLBACKS;
+}
+
+function pruneLocalGroupFallbacks(groups: LocalGroupFallback[]) {
+  const now = Date.now();
+  return groups.filter((group) => {
+    const retainedAt = new Date(group.retainedAt).getTime();
+    if (Number.isNaN(retainedAt)) return false;
+    return now - retainedAt <= LOCAL_GROUP_FALLBACK_MAX_AGE_MS;
+  });
+}
+
+function upsertLocalGroupFallback(group: PendingGroup) {
+  const retainedAt = new Date().toISOString();
+  const existing = pruneLocalGroupFallbacks(readLocalGroupFallbacks()).filter(
+    (item) => item.id !== group.id,
+  );
+
+  writeLocalGroupFallbacks([
+    ...existing,
+    {
+      ...group,
+      retainedAt,
+    },
+  ]);
 }
 
 function buildLocalGroupId() {
@@ -98,14 +175,14 @@ function enqueuePendingGroup(payload: CreateGroupPayload) {
     id: localId,
   });
 
-  writePendingGroups([
-    ...readPendingGroups(),
-    {
-      id: localId,
-      payload: offlinePayload,
-      createdAt: new Date().toISOString(),
-    },
-  ]);
+  const pendingGroup = {
+    id: localId,
+    payload: offlinePayload,
+    createdAt: new Date().toISOString(),
+  };
+
+  writePendingGroups([...readPendingGroups(), pendingGroup]);
+  upsertLocalGroupFallback(pendingGroup);
 
   return localId;
 }
@@ -169,6 +246,22 @@ export function getPendingGroupsCount(): number {
 
 export function getPendingGroupById(groupId: string): PendingGroup | null {
   return readPendingGroups().find((group) => group.id === groupId) ?? null;
+}
+
+export function getLocalGroupById(groupId: string): PendingGroup | null {
+  return (
+    getPendingGroupById(groupId) ??
+    pruneLocalGroupFallbacks(readLocalGroupFallbacks()).find(
+      (group) => group.id === groupId,
+    ) ??
+    null
+  );
+}
+
+export function removeLocalGroupFallback(groupId: string) {
+  writeLocalGroupFallbacks(
+    readLocalGroupFallbacks().filter((group) => group.id !== groupId),
+  );
 }
 
 export function getEmptyPendingGroups(): PendingGroup[] {

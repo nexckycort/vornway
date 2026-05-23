@@ -132,6 +132,7 @@ function RouteComponent() {
   }, [filter, pendingGroups, search]);
 
   const total = groupsQuery.data?.pages[0]?.pagination.total ?? groups.length;
+  const hasLocalGroups = groups.length > 0 || visiblePendingGroups.length > 0;
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
@@ -197,7 +198,7 @@ function RouteComponent() {
           <GroupsSkeleton />
         ) : null}
 
-        {groupsQuery.isError ? (
+        {groupsQuery.isError && !hasLocalGroups ? (
           <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {(groupsQuery.error as Error).message}
           </div>
@@ -239,8 +240,10 @@ function RouteComponent() {
               </h2>
               <div className="flex flex-col gap-4">
                 {visiblePendingGroups.map((group) => (
-                  <div
+                  <Link
                     key={group.id}
+                    to="/groups/$id"
+                    params={{ id: group.id }}
                     className="rounded-[24px] border border-dashed border-primary/35 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -260,7 +263,7 @@ function RouteComponent() {
                     <p className="mt-4 text-sm leading-5 text-[#64748b]">
                       Se creará automáticamente cuando vuelva la conexión.
                     </p>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </section>
@@ -286,7 +289,7 @@ function RouteComponent() {
           <p className="text-center text-sm text-[#64748b]">Cargando más...</p>
         ) : null}
 
-        {!groupsQuery.hasNextPage && groups.length > 0 ? (
+        {groupsQuery.data && !groupsQuery.hasNextPage && groups.length > 0 ? (
           <p className="text-center text-sm text-[#94a3b8]">
             No hay más grupos por cargar.
           </p>

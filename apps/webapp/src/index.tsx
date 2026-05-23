@@ -14,6 +14,7 @@ import {
   AuthProvider,
 } from './contexts/auth/auth-context';
 import { useAuth } from './contexts/auth/use-auth';
+import { initOfflineExpenseQueueSync } from './lib/offline-expense-query-collection';
 import { registerPushServiceWorker } from './lib/push-notifications';
 
 // Import the generated route tree
@@ -41,6 +42,7 @@ function App() {
 
   React.useEffect(() => {
     void registerPushServiceWorker();
+    initOfflineExpenseQueueSync();
   }, []);
 
   if (auth.loading) return <FullscreenLoader />;

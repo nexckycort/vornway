@@ -1,6 +1,11 @@
 import { client, type InferResponseType } from '#/lib/hc';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { ArrowLeftRight, ChevronLeft, RefreshCw } from 'lucide-react';
+import {
+  ArrowLeftRight,
+  ChevronLeft,
+  ChevronsUpDown,
+  RefreshCw,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
@@ -10,6 +15,15 @@ type ConverterApiResponse = Extract<
   { currencies: unknown }
 >;
 type SupportedCurrency = ConverterApiResponse['currencies'][number];
+
+const CURRENCY_META: Record<string, { flag: string; name: string }> = {
+  COP: { flag: '🇨🇴', name: 'Peso colombiano' },
+  USD: { flag: '🇺🇸', name: 'Dólar estadounidense' },
+  EUR: { flag: '🇪🇺', name: 'Euro' },
+  GBP: { flag: '🇬🇧', name: 'Libra esterlina' },
+  MXN: { flag: '🇲🇽', name: 'Peso mexicano' },
+  BRL: { flag: '🇧🇷', name: 'Real brasileño' },
+};
 
 export const Route = createFileRoute('/_authed/converter')({
   component: RouteComponent,
@@ -108,7 +122,7 @@ function RouteComponent() {
     : null;
 
   return (
-    <main className="min-h-screen bg-[#f4f6fb]">
+    <main className="min-h-screen bg-[#f5f7fb]">
       <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col px-4 pb-6 pt-5">
         <header className="mb-4">
           <button
@@ -122,7 +136,7 @@ function RouteComponent() {
 
           <div className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white px-4 py-4 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="flex size-11 items-center justify-center rounded-2xl bg-[#fff0f2] text-primary">
+              <div className="flex size-11 items-center justify-center rounded-2xl bg-[#fff1f5] text-primary">
                 <ArrowLeftRight className="size-5" />
               </div>
               <div className="min-w-0">
@@ -133,7 +147,7 @@ function RouteComponent() {
                   Monedas
                 </h1>
                 <p className="mt-1 text-sm text-[#64748b]">
-                  EUR, USD y COP con tasas aproximadas actualizadas cada 6 horas.
+                  Convierte entre monedas con tasas de referencia actualizadas.
                 </p>
               </div>
             </div>
@@ -156,7 +170,7 @@ function RouteComponent() {
             </span>
           </div>
 
-          <div className="mt-4 rounded-[24px] bg-[#f8fafc] p-4">
+          <div className="mt-4 rounded-[24px] border border-[#e2e8f0] bg-[#f8fafc] p-4">
             <label
               htmlFor="converter-amount"
               className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]"
@@ -181,19 +195,25 @@ function RouteComponent() {
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]">
                 Desde
               </label>
-              <select
-                value={fromCurrency}
-                onChange={(event) =>
-                  setFromCurrency(event.target.value as SupportedCurrency)
-                }
-                className="w-full appearance-none border-0 bg-transparent text-lg font-semibold text-[#0f172a] outline-none"
-              >
-                {currencies.map((currency) => (
-                  <option key={`from-${currency}`} value={currency}>
-                    {currency}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={fromCurrency}
+                  onChange={(event) =>
+                    setFromCurrency(event.target.value as SupportedCurrency)
+                  }
+                  className="w-full appearance-none border-0 bg-transparent pr-7 text-lg font-semibold text-[#0f172a] outline-none"
+                >
+                  {currencies.map((currency) => (
+                    <option key={`from-${currency}`} value={currency}>
+                      {`${CURRENCY_META[currency]?.flag ?? '💱'} ${currency}`}
+                    </option>
+                  ))}
+                </select>
+                <ChevronsUpDown className="pointer-events-none absolute right-0 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
+              </div>
+              <p className="mt-1 truncate text-xs text-[#64748b]">
+                {CURRENCY_META[fromCurrency]?.name ?? 'Moneda origen'}
+              </p>
             </div>
 
             <button
@@ -211,27 +231,33 @@ function RouteComponent() {
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]">
                 Hacia
               </label>
-              <select
-                value={toCurrency}
-                onChange={(event) =>
-                  setToCurrency(event.target.value as SupportedCurrency)
-                }
-                className="w-full appearance-none border-0 bg-transparent text-lg font-semibold text-[#0f172a] outline-none"
-              >
-                {currencies.map((currency) => (
-                  <option key={`to-${currency}`} value={currency}>
-                    {currency}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={toCurrency}
+                  onChange={(event) =>
+                    setToCurrency(event.target.value as SupportedCurrency)
+                  }
+                  className="w-full appearance-none border-0 bg-transparent pr-7 text-lg font-semibold text-[#0f172a] outline-none"
+                >
+                  {currencies.map((currency) => (
+                    <option key={`to-${currency}`} value={currency}>
+                      {`${CURRENCY_META[currency]?.flag ?? '💱'} ${currency}`}
+                    </option>
+                  ))}
+                </select>
+                <ChevronsUpDown className="pointer-events-none absolute right-0 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
+              </div>
+              <p className="mt-1 truncate text-xs text-[#64748b]">
+                {CURRENCY_META[toCurrency]?.name ?? 'Moneda destino'}
+              </p>
             </div>
           </div>
 
-          <div className="mt-4 rounded-[24px] bg-[#0f172a] px-4 py-4 text-white">
+          <div className="mt-4 rounded-[24px] bg-[#0f172a] px-4 py-5 text-white">
             <p className="text-xs uppercase tracking-[0.18em] text-white/60">
               Resultado
             </p>
-            <p className="mt-2 text-3xl font-semibold">
+            <p className="mt-2 text-3xl font-semibold leading-tight">
               {convertedAmount !== null
                 ? formatMoney(convertedAmount, toCurrency)
                 : 'Sin tasa disponible'}
@@ -246,7 +272,9 @@ function RouteComponent() {
           </div>
         </section>
 
-        <p className="mt-4 px-1 text-sm leading-6 text-[#64748b]">{disclaimer}</p>
+        <p className="mt-4 px-1 text-sm leading-6 text-[#64748b]">
+          {disclaimer}
+        </p>
       </div>
     </main>
   );

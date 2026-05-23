@@ -45,6 +45,10 @@ export function getPendingExpensesCount(): number {
   return readPendingExpenses().length;
 }
 
+export function getPendingExpensesForGroup(groupId: string): PendingExpense[] {
+  return readPendingExpenses().filter((expense) => expense.groupId === groupId);
+}
+
 function buildLocalExpenseId() {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return `local-${crypto.randomUUID()}`;

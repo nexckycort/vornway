@@ -11,6 +11,10 @@ import { usePinnedExpenseIds } from '#/lib/expense-pins';
 import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-delete-expense';
 import { useRemoveMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import {
+  getPendingExpensesForGroup,
+  subscribePendingExpenses,
+} from '#/lib/offline-expense-query-collection';
+import {
   useGroupExpensesInfiniteQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
@@ -18,7 +22,7 @@ import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Pencil, Trash2 } from 'lucide-react';
 import QRCode from 'qrcode';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { GroupDetailHeader } from './-components/group-detail-header';
 import { formatMoney, sumByCurrency } from './-components/group-detail.utils';
 import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
@@ -52,6 +56,11 @@ function RouteComponent() {
 
   const groupQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
+  const pendingExpenses = useSyncExternalStore(
+    subscribePendingExpenses,
+    () => getPendingExpensesForGroup(id),
+    () => [],
+  );
   const deleteExpenseMutation = useDeleteExpenseMutation(id);
   const removeMemberMutation = useRemoveMemberMutation(id);
   const toggleExpensePinMutation = useToggleExpensePinMutation();
@@ -59,13 +68,48 @@ function RouteComponent() {
 
   const expenses = useMemo(() => {
     const serverExpenses = expensesQuery.data?.pages.flatMap((page) => page.data) ?? [];
+    const membersById = new Map(
+      (groupQuery.data?.members ?? []).map((member) => [member.id, member.name]),
+    );
+    const categoriesById = new Map(
+      (groupQuery.data?.categories ?? []).map((category) => [
+        category.id,
+        category.name,
+      ]),
+    );
+    const localExpenses: ExpenseItem[] = pendingExpenses.map((expense) => ({
+      id: expense.id,
+      category: expense.payload.categoryId
+        ? {
+            id: expense.payload.categoryId,
+            name: categoriesById.get(expense.payload.categoryId) ?? 'Categoría',
+          }
+        : null,
+      description: expense.payload.description,
+      amount: expense.payload.amount,
+      currency: expense.payload.currency,
+      date: expense.createdAt,
+      isDeleted: false,
+      isSettlement: false,
+      isPersonal: false,
+      expenseType: 'standard',
+      subExpenseCount: 0,
+      settlementToName: null,
+      paidBy: {
+        id: expense.payload.paidById,
+        name: membersById.get(expense.payload.paidById) ?? 'Miembro',
+      },
+      participantCount: expense.payload.participantIds?.length ?? 0,
+      currentUserBalance: null,
+      syncStatus: 'pending',
+    }));
 
-    return [...serverExpenses].sort((left, right) => {
+    return [...localExpenses, ...serverExpenses].sort((left, right) => {
       const leftDate = new Date(left.date).getTime();
       const rightDate = new Date(right.date).getTime();
       return rightDate - leftDate;
     });
-  }, [expensesQuery.data]);
+  }, [expensesQuery.data, groupQuery.data?.categories, groupQuery.data?.members, pendingExpenses]);
   const inviteLink =
     groupQuery.data?.inviteCode && typeof window !== 'undefined'
       ? `https://join.vornway.com/${groupQuery.data.inviteCode}`

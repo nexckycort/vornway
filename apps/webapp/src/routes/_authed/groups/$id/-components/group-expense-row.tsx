@@ -31,6 +31,7 @@ export function GroupExpenseRow({
   const [didLongPress, setDidLongPress] = useState(false);
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const isPendingSync = expense.syncStatus === 'pending';
   const showDeleteAction = !expense.isDeleted && translateX < -2;
 
   const clearLongPressTimeout = () => {
@@ -41,6 +42,7 @@ export function GroupExpenseRow({
   };
 
   const startLongPressTimeout = () => {
+    if (isPendingSync) return;
     clearLongPressTimeout();
     longPressTimeoutRef.current = setTimeout(() => {
       setDidLongPress(true);
@@ -51,7 +53,7 @@ export function GroupExpenseRow({
   };
 
   const handleTouchStart = (event: TouchEvent<HTMLButtonElement>) => {
-    if (expense.isDeleted) return;
+    if (expense.isDeleted || isPendingSync) return;
     const touch = event.touches[0];
     setStartX(touch.clientX);
     setStartY(touch.clientY);
@@ -66,7 +68,8 @@ export function GroupExpenseRow({
       !isDragging ||
       startX === null ||
       startY === null ||
-      expense.isDeleted
+      expense.isDeleted ||
+      isPendingSync
     ) {
       return;
     }
@@ -90,7 +93,7 @@ export function GroupExpenseRow({
 
   const handleTouchEnd = () => {
     clearLongPressTimeout();
-    if (!isDragging || expense.isDeleted) return;
+    if (!isDragging || expense.isDeleted || isPendingSync) return;
 
     if (didLongPress) {
       setIsDragging(false);
@@ -118,7 +121,7 @@ export function GroupExpenseRow({
   };
 
   const handleMouseDown = () => {
-    if (expense.isDeleted) return;
+    if (expense.isDeleted || isPendingSync) return;
     setDidLongPress(false);
     startLongPressTimeout();
   };
@@ -132,6 +135,8 @@ export function GroupExpenseRow({
       setDidSwipe(false);
       return;
     }
+
+    if (isPendingSync) return;
 
     if (didLongPress) {
       setDidLongPress(false);
@@ -181,6 +186,7 @@ export function GroupExpenseRow({
         onMouseLeave={handleMouseUp}
         onContextMenu={(event) => {
           event.preventDefault();
+          if (isPendingSync) return;
           onOpenOptions(expense);
         }}
         className="native-tap relative z-10 flex w-full items-start gap-3 bg-white px-4 py-4 text-left transition-transform duration-200"
@@ -232,6 +238,11 @@ export function GroupExpenseRow({
                 }
               >
                 {tag.label}
+              </span>
+            ) : null}
+            {isPendingSync ? (
+              <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold text-amber-700">
+                Pendiente por sincronizar
               </span>
             ) : null}
           </div>

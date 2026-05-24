@@ -23,7 +23,7 @@ const groupTypes = [
 function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const { flowState } = useGroupFlowNavigation(id);
+  const { flowState, navigateToGroupRoot } = useGroupFlowNavigation(id);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const groupQuery = useGroupSummaryQuery(id);
@@ -110,12 +110,7 @@ function RouteComponent() {
           : {}),
       });
 
-      void navigate({
-        to: '/groups/$id/settings',
-        params: { id },
-        replace: true,
-        state: flowState,
-      });
+      void navigateToGroupRoot(true);
     } catch (error) {
       setFormError(
         error instanceof Error

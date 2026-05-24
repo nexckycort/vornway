@@ -1,4 +1,4 @@
-import { Link, useRouter } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -7,6 +7,7 @@ import {
   Plus,
   QrCode,
 } from 'lucide-react';
+import type { keepGroupFlowState } from '#/lib/group-flow-navigation';
 
 import { formatMoney } from './group-detail.utils';
 
@@ -29,8 +30,10 @@ type GroupDetailHeaderProps = {
   creditEntries: Array<[string, number]>;
   debtEntries: Array<[string, number]>;
   onOpenQr: () => void;
+  onBack: () => void;
   onOpenSettings: () => void;
   onOpenReports: () => void;
+  flowState: ReturnType<typeof keepGroupFlowState>;
 };
 
 export function GroupDetailHeader({
@@ -43,15 +46,12 @@ export function GroupDetailHeader({
   creditEntries,
   debtEntries,
   onOpenQr,
+  onBack,
   onOpenSettings,
   onOpenReports,
+  flowState,
 }: GroupDetailHeaderProps) {
-  const router = useRouter();
   const hasMultipleTotals = totalsEntries.length > 1;
-
-  const goBack = () => {
-    router.history.back();
-  };
 
   const getCurrencyMeta = (currency: string) =>
     currencyMeta[currency] ?? { flag: '💱', label: currency };
@@ -61,7 +61,7 @@ export function GroupDetailHeader({
       <div className="mb-3 flex items-start gap-3">
         <button
           type="button"
-          onClick={goBack}
+          onClick={onBack}
           className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
           aria-label="Atrás"
         >
@@ -200,6 +200,7 @@ export function GroupDetailHeader({
         <Link
           to="/groups/$id/add-expense"
           params={{ id: groupId }}
+          state={flowState}
           className="flex min-w-0 flex-col items-center gap-1"
         >
           <span className="flex h-9 w-full items-center justify-center rounded-xl bg-[#ff4d6a] text-white shadow-[0_8px_18px_rgba(255,77,106,0.35)]">
@@ -213,6 +214,7 @@ export function GroupDetailHeader({
         <Link
           to="/groups/$id/settle"
           params={{ id: groupId }}
+          state={flowState}
           className="flex min-w-0 flex-col items-center gap-1"
         >
           <span className="flex h-9 w-full items-center justify-center rounded-xl bg-white/10 text-white">

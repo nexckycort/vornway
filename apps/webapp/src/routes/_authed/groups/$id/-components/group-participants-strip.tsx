@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { ChevronRight, Plus } from 'lucide-react';
+import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 
 import type { GroupMemberIdentity } from '../-types/group-detail.types';
 import { getInitials } from './group-detail.utils';
@@ -15,12 +16,15 @@ export function GroupParticipantsStrip({
   members,
   participantCount,
 }: GroupParticipantsStripProps) {
+  const { flowState } = useGroupFlowNavigation(groupId);
+
   return (
     <section className="mb-6">
       <div className="mb-4 flex items-center justify-between gap-3">
         <Link
           to="/groups/$id/participants"
           params={{ id: groupId }}
+          state={flowState}
           className="inline-flex items-center gap-1 text-sm font-semibold text-[#132238]"
         >
           Participantes
@@ -35,6 +39,7 @@ export function GroupParticipantsStrip({
         <Link
           to="/groups/$id/participants"
           params={{ id: groupId }}
+          state={flowState}
           className="flex min-w-[62px] flex-col items-center gap-1"
         >
           <span className="flex size-12 items-center justify-center rounded-full border-2 border-dashed border-[#d1d5db] bg-white text-[#94a3b8]">

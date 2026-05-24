@@ -19,6 +19,7 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer';
 import { usePinnedExpenseIds } from '#/lib/expense-pins';
+import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import {
   getEmptyPendingExpenses,
   getPendingExpensesForGroup,
@@ -45,6 +46,7 @@ export const Route = createFileRoute('/_authed/groups/$id/')({
 function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { flowState, navigateToFlowBack } = useGroupFlowNavigation(id);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [showQrDrawer, setShowQrDrawer] = useState(false);
   const [showExpenseOptionsDrawer, setShowExpenseOptionsDrawer] =
@@ -262,6 +264,7 @@ function RouteComponent() {
     void navigate({
       to: '/groups/$id/expense/$expenseId',
       params: { id, expenseId },
+      state: flowState,
     });
   };
 
@@ -275,6 +278,7 @@ function RouteComponent() {
       to: '/groups/$id/add-expense',
       params: { id },
       search: { expenseId: expense.id },
+      state: flowState,
     });
   };
 
@@ -348,14 +352,21 @@ function RouteComponent() {
           creditEntries={creditEntries}
           debtEntries={debtEntries}
           onOpenQr={() => setShowQrDrawer(true)}
+          onBack={navigateToFlowBack}
+          flowState={flowState}
           onOpenSettings={() =>
-            void navigate({ to: '/groups/$id/settings', params: { id } })
+            void navigate({
+              to: '/groups/$id/settings',
+              params: { id },
+              state: flowState,
+            })
           }
           onOpenReports={() =>
             void navigate({
               to: '/groups/$id/reports',
               params: { id },
               search: { tab: 'balance' },
+              state: flowState,
             })
           }
         />

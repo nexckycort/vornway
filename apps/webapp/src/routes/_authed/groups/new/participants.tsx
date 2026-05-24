@@ -11,6 +11,7 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer';
 import { useNetworkState } from '#/hooks/use-network-state';
+import { getGroupFlowEntryState } from '#/lib/group-flow-navigation';
 import {
   enqueueGroupOffline,
   syncPendingGroupsQueue,
@@ -211,6 +212,7 @@ function RouteComponent() {
           to: '/groups/$id',
           params: { id: queuedGroup.id },
           replace: true,
+          state: getGroupFlowEntryState('/groups'),
         });
       } catch (offlineError) {
         setError(
@@ -233,6 +235,7 @@ function RouteComponent() {
           to: '/groups/$id',
           params: { id: result.id },
           replace: true,
+          state: getGroupFlowEntryState('/groups'),
         });
         return;
       }
@@ -592,6 +595,7 @@ function RouteComponent() {
                   to: '/groups/$id',
                   params: { id: createdGroup.id },
                   replace: true,
+                  state: getGroupFlowEntryState('/groups'),
                 });
               }}
               disabled={!createdGroup}

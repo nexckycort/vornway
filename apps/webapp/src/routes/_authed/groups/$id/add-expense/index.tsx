@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { Check, ChevronDown, Minus, Plus } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
@@ -17,6 +17,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
+import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { enqueueExpenseOffline } from '#/lib/offline-expense-query-collection';
 import {
   useCreateCategoryMutation,
@@ -113,7 +114,7 @@ function RouteComponent() {
   const { id } = Route.useParams();
   const { expenseId } = Route.useSearch();
   const isEditMode = Boolean(expenseId);
-  const navigate = useNavigate();
+  const { navigateToGroupRoot } = useGroupFlowNavigation(id);
 
   const groupQuery = useGroupSummaryQuery(id);
   const expenseQuery = useGroupExpenseQuery(id, expenseId);
@@ -394,7 +395,7 @@ function RouteComponent() {
         await createExpenseMutation.mutateAsync(payload);
       }
 
-      void navigate({ to: '/groups/$id', params: { id }, replace: true });
+      void navigateToGroupRoot(true);
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -410,9 +411,7 @@ function RouteComponent() {
     return (
       <MobilePageLayout
         title={isEditMode ? 'Editar gasto' : 'Nuevo gasto'}
-        onBack={() =>
-          navigate({ to: '/groups/$id', params: { id }, replace: true })
-        }
+        onBack={() => navigateToGroupRoot(true)}
       >
         <div className="flex flex-1 items-center justify-center">
           <p className="text-sm text-gray-500">
@@ -434,9 +433,7 @@ function RouteComponent() {
     return (
       <MobilePageLayout
         title={isEditMode ? 'Editar gasto' : 'Nuevo gasto'}
-        onBack={() =>
-          navigate({ to: '/groups/$id', params: { id }, replace: true })
-        }
+        onBack={() => navigateToGroupRoot(true)}
       >
         <div className="flex flex-1 flex-col justify-center bg-white px-4">
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -444,9 +441,7 @@ function RouteComponent() {
           </div>
           <button
             type="button"
-            onClick={() =>
-              navigate({ to: '/groups/$id', params: { id }, replace: true })
-            }
+            onClick={() => navigateToGroupRoot(true)}
             className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"
           >
             Volver al grupo
@@ -459,9 +454,7 @@ function RouteComponent() {
   return (
     <MobilePageLayout
       title={isEditMode ? 'Editar gasto' : 'Nuevo gasto'}
-      onBack={() =>
-        navigate({ to: '/groups/$id', params: { id }, replace: true })
-      }
+      onBack={() => navigateToGroupRoot(true)}
     >
       <div className="px-2 pb-6">
         <div className="flex items-baseline justify-between gap-4">

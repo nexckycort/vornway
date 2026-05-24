@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useLocation } from '@tanstack/react-router';
 import { Search, Users, WifiOff } from 'lucide-react';
 import {
   useEffect,
@@ -7,6 +7,10 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
+import {
+  getGroupFlowEntryState,
+  getLocationHref,
+} from '#/lib/group-flow-navigation';
 import {
   type GroupListFilter,
   type GroupListItem,
@@ -29,6 +33,7 @@ export const Route = createFileRoute('/_authed/groups/')({
 });
 
 function RouteComponent() {
+  const location = useLocation();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<GroupListFilter>('all');
@@ -133,6 +138,7 @@ function RouteComponent() {
 
   const total = groupsQuery.data?.pages[0]?.pagination.total ?? groups.length;
   const hasLocalGroups = groups.length > 0 || visiblePendingGroups.length > 0;
+  const flowReturnTo = getLocationHref(location);
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
@@ -244,6 +250,7 @@ function RouteComponent() {
                     key={group.id}
                     to="/groups/$id"
                     params={{ id: group.id }}
+                    state={getGroupFlowEntryState(flowReturnTo)}
                     className="rounded-[24px] border border-dashed border-primary/35 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
                   >
                     <div className="flex items-start justify-between gap-3">

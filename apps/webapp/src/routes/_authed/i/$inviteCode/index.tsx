@@ -1,14 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Check, Loader2, Users } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
+import { getGroupFlowEntryState } from '#/lib/group-flow-navigation';
 import { useAcceptInvite } from '#/routes/_authed/i/-hooks/use-accept-invite';
 import {
-  useInvitePreviewQuery,
   type InvitePreviewResponse,
+  useInvitePreviewQuery,
 } from '#/routes/_authed/i/-hooks/use-invite-preview-query';
 
 export const Route = createFileRoute('/_authed/i/$inviteCode/')({
@@ -54,10 +55,20 @@ function RouteComponent() {
     await queryClient.invalidateQueries({ queryKey: ['groups-list'] });
     await queryClient.invalidateQueries({ queryKey: ['home-summary'] });
 
+    if (groupType === 'meta') {
+      await navigate({
+        to: '/goals/$id',
+        params: { id: groupId },
+        replace: true,
+      });
+      return;
+    }
+
     await navigate({
-      to: groupType === 'meta' ? '/goals/$id' : '/groups/$id',
+      to: '/groups/$id',
       params: { id: groupId },
       replace: true,
+      state: getGroupFlowEntryState('/groups'),
     });
   };
 
@@ -131,8 +142,8 @@ function RouteComponent() {
               </div>
 
               <h2 className="mt-3 text-center text-[1.7rem] font-semibold leading-tight text-[#0f172a]">
-                ¡Bienvenid@ a{' '}
-                <span className="text-primary">{group.name}</span>!
+                ¡Bienvenid@ a <span className="text-primary">{group.name}</span>
+                !
               </h2>
             </section>
 
@@ -281,9 +292,7 @@ function MemberRow({
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-[#0f172a]">
-          {title}
-        </p>
+        <p className="truncate text-sm font-medium text-[#0f172a]">{title}</p>
         <p className="truncate text-xs text-[#94a3b8]">{email}</p>
       </div>
 
@@ -337,10 +346,7 @@ function InviteSkeleton() {
 
       <section className="space-y-3">
         {Array.from({ length: 3 }).map((_, index) => (
-          <div
-            key={index}
-            className="h-[72px] rounded-[20px] bg-[#e2e8f0]"
-          />
+          <div key={index} className="h-[72px] rounded-[20px] bg-[#e2e8f0]" />
         ))}
       </section>
 

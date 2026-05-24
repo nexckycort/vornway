@@ -1,15 +1,23 @@
+import { Link, useLocation } from '@tanstack/react-router';
+import {
+  getGroupFlowEntryState,
+  getLocationHref,
+} from '#/lib/group-flow-navigation';
 import type { Trip } from '#/routes/_authed/(home)/-hooks/use-home-query';
-import { Link } from '@tanstack/react-router';
 
 type TripCardProps = {
   trip: Trip;
 };
 
 export function TripCard({ trip }: TripCardProps) {
+  const location = useLocation();
+  const returnTo = getLocationHref(location);
+
   return (
     <Link
       to="/groups/$id"
       params={{ id: trip.id }}
+      state={getGroupFlowEntryState(returnTo)}
       className="block rounded-[24px] bg-white px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-transform active:translate-y-px"
     >
       <div className="flex items-start justify-between gap-3">

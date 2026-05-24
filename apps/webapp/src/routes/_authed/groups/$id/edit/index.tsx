@@ -1,10 +1,11 @@
-import { MobilePageLayout } from '#/components/mobile-page-layout';
-import { Button } from '#/components/ui/button';
-import { useUpdateGroupMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
-import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { ImagePlus, X } from 'lucide-react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { MobilePageLayout } from '#/components/mobile-page-layout';
+import { Button } from '#/components/ui/button';
+import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
+import { useUpdateGroupMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
+import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 
 import { compressGroupImageFile } from '#/routes/_authed/groups/new/-lib/group-create-draft';
 
@@ -22,6 +23,7 @@ const groupTypes = [
 function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { flowState } = useGroupFlowNavigation(id);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const groupQuery = useGroupSummaryQuery(id);
@@ -60,6 +62,7 @@ function RouteComponent() {
       to: '/groups/$id/settings',
       params: { id },
       replace: true,
+      state: flowState,
     });
   };
 
@@ -111,6 +114,7 @@ function RouteComponent() {
         to: '/groups/$id/settings',
         params: { id },
         replace: true,
+        state: flowState,
       });
     } catch (error) {
       setFormError(

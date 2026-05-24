@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { type ComponentType, useMemo } from 'react';
 import { usePinnedExpenseIds } from '#/lib/expense-pins';
+import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import {
   useGroupExpenseQuery,
   useGroupExpensesInfiniteQuery,
@@ -97,6 +98,7 @@ function normalizeExpense(
 function RouteComponent() {
   const { id, expenseId } = Route.useParams();
   const navigate = useNavigate();
+  const { flowState, navigateToGroupRoot } = useGroupFlowNavigation(id);
   const groupSummaryQuery = useGroupSummaryQuery(id);
   const expenseQuery = useGroupExpenseQuery(id, expenseId);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
@@ -115,7 +117,7 @@ function RouteComponent() {
   const isSettlement = expense?.isSettlement ?? false;
 
   const handleBack = () => {
-    void navigate({ to: '/groups/$id', params: { id }, replace: true });
+    void navigateToGroupRoot(true);
   };
 
   const handleEditExpense = () => {
@@ -125,6 +127,7 @@ function RouteComponent() {
       to: '/groups/$id/add-expense',
       params: { id },
       search: { expenseId: expense.id },
+      state: flowState,
     });
   };
 

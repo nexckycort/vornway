@@ -1,15 +1,8 @@
-import { MobilePageLayout } from '#/components/mobile-page-layout';
-import { Button } from '#/components/ui/button';
-import {
-  useAddMemberMutation,
-  useRemoveMemberMutation,
-  useUnlinkMemberMutation,
-} from '#/routes/_authed/groups/-hooks/use-group-actions';
-import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { useGroupMemberSearchQuery } from '#/routes/_authed/groups/-hooks/use-group-member-search-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { Crown, Link2Off, Share2, Trash2, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { MobilePageLayout } from '#/components/mobile-page-layout';
+import { Button } from '#/components/ui/button';
 import {
   Drawer,
   DrawerContent,
@@ -18,6 +11,14 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
+import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
+import {
+  useAddMemberMutation,
+  useRemoveMemberMutation,
+  useUnlinkMemberMutation,
+} from '#/routes/_authed/groups/-hooks/use-group-actions';
+import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { useGroupMemberSearchQuery } from '#/routes/_authed/groups/-hooks/use-group-member-search-query';
 
 export const Route = createFileRoute('/_authed/groups/$id/participants')({
   component: RouteComponent,
@@ -25,7 +26,7 @@ export const Route = createFileRoute('/_authed/groups/$id/participants')({
 
 function RouteComponent() {
   const { id } = Route.useParams();
-  const navigate = useNavigate();
+  const { navigateToGroupRoot } = useGroupFlowNavigation(id);
   const groupQuery = useGroupSummaryQuery(id);
   const addMemberMutation = useAddMemberMutation(id);
   const removeMemberMutation = useRemoveMemberMutation(id);
@@ -133,9 +134,7 @@ function RouteComponent() {
   return (
     <MobilePageLayout
       title="Agregar participantes"
-      onBack={() =>
-        navigate({ to: '/groups/$id', params: { id }, replace: true })
-      }
+      onBack={() => navigateToGroupRoot(true)}
     >
       <section className="mb-5 rounded-2xl border border-[#e2e8f0] bg-white p-4">
         <p className="mb-2 text-sm font-medium text-[#132238]">

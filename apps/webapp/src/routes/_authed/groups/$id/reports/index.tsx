@@ -6,14 +6,12 @@ import { Pie, PieChart } from 'recharts';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import { ChartContainer } from '#/components/ui/chart';
+import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import {
   useGroupReportsTotalsQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import {
-  formatMoney,
-  getInitials,
-} from '../-components/group-detail.utils';
+import { formatMoney, getInitials } from '../-components/group-detail.utils';
 
 export const Route = createFileRoute('/_authed/groups/$id/reports/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -46,7 +44,8 @@ const CURRENCY_META: Record<string, { flag: string; label: string }> = {
 function RouteComponent() {
   const { id } = Route.useParams();
   const { tab } = Route.useSearch();
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const { flowState, navigateToGroupRoot } = useGroupFlowNavigation(id);
   const groupQuery = useGroupSummaryQuery(id);
   const [selectedCurrency, setSelectedCurrency] = useState<string>('COP');
   const [selectedRange, setSelectedRange] = useState<TotalsRange>('all');
@@ -86,16 +85,15 @@ function RouteComponent() {
     reportsTotalsQuery.data?.currentUserSpentByCurrency[selectedCurrency] ?? 0;
   const chartConfig = useMemo(
     () =>
-      categoryBreakdown.reduce<Record<string, { label: string; color: string }>>(
-        (accumulator, entry) => {
-          accumulator[entry.name] = {
-            label: entry.name,
-            color: entry.fill,
-          };
-          return accumulator;
-        },
-        {},
-      ),
+      categoryBreakdown.reduce<
+        Record<string, { label: string; color: string }>
+      >((accumulator, entry) => {
+        accumulator[entry.name] = {
+          label: entry.name,
+          color: entry.fill,
+        };
+        return accumulator;
+      }, {}),
     [categoryBreakdown],
   );
   useEffect(() => {
@@ -130,12 +128,7 @@ function RouteComponent() {
   }
 
   return (
-    <MobilePageLayout
-      title="Reportes"
-      onBack={() =>
-        navigate({ to: '/groups/$id', params: { id }, replace: true })
-      }
-    >
+    <MobilePageLayout title="Reportes" onBack={() => navigateToGroupRoot(true)}>
       <div className="flex flex-1 flex-col pb-28">
         <section className="rounded-[28px] border border-[#e2e8f0] bg-white p-2 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
           <div className="grid grid-cols-2 gap-1 rounded-[20px] bg-[#eef2f7] p-1">
@@ -143,8 +136,12 @@ function RouteComponent() {
               type="button"
               onClick={() =>
                 void navigate({
-                  search: { tab: 'balance' } as any,
+                  search: (current) => ({
+                    ...current,
+                    tab: 'balance',
+                  }),
                   replace: true,
+                  state: flowState,
                 })
               }
               className={[
@@ -160,8 +157,12 @@ function RouteComponent() {
               type="button"
               onClick={() =>
                 void navigate({
-                  search: { tab: 'totales' } as any,
+                  search: (current) => ({
+                    ...current,
+                    tab: 'totales',
+                  }),
                   replace: true,
+                  state: flowState,
                 })
               }
               className={[
@@ -293,6 +294,7 @@ function RouteComponent() {
                   void navigate({
                     to: '/groups/$id/settle',
                     params: { id },
+                    state: flowState,
                   })
                 }
               >
@@ -318,7 +320,11 @@ function RouteComponent() {
                 type="button"
                 className="inline-flex items-center gap-1 text-sm font-medium text-primary"
                 onClick={() =>
-                  void navigate({ to: '/groups/$id', params: { id } })
+                  void navigate({
+                    to: '/groups/$id',
+                    params: { id },
+                    state: flowState,
+                  })
                 }
               >
                 Ver todo
@@ -433,7 +439,9 @@ function RouteComponent() {
 
             <section className="mt-4 grid grid-cols-2 gap-3">
               <div className="rounded-[24px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
-                <p className="text-xs font-medium text-[#64748b]">Total grupo</p>
+                <p className="text-xs font-medium text-[#64748b]">
+                  Total grupo
+                </p>
                 {reportsTotalsQuery.isLoading ? (
                   <p className="mt-1 text-2xl font-semibold text-[#132238]">
                     —
@@ -532,7 +540,6 @@ function RouteComponent() {
                 })}
               </div>
             </section>
-
           </>
         )}
       </div>

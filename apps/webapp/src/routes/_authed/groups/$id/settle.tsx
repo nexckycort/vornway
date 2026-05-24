@@ -1,9 +1,10 @@
+import { createFileRoute } from '@tanstack/react-router';
+import { useEffect, useMemo, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
+import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { useSettleDebtMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useEffect, useMemo, useState } from 'react';
 
 export const Route = createFileRoute('/_authed/groups/$id/settle')({
   component: RouteComponent,
@@ -15,7 +16,7 @@ function formatAmount(currency: string, amount: number): string {
 
 function RouteComponent() {
   const { id } = Route.useParams();
-  const navigate = useNavigate();
+  const { navigateToGroupRoot } = useGroupFlowNavigation(id);
   const groupQuery = useGroupSummaryQuery(id);
   const settleMutation = useSettleDebtMutation(id);
 
@@ -54,7 +55,7 @@ function RouteComponent() {
         amount: Math.min(value, selected.amount),
         currency: selected.currency,
       });
-      await navigate({ to: '/groups/$id', params: { id }, replace: true });
+      await navigateToGroupRoot(true);
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -67,9 +68,7 @@ function RouteComponent() {
   return (
     <MobilePageLayout
       title="Liquidar deudas"
-      onBack={() =>
-        navigate({ to: '/groups/$id', params: { id }, replace: true })
-      }
+      onBack={() => navigateToGroupRoot(true)}
     >
       <div className="flex flex-1 flex-col gap-5">
         {options.length === 0 ? (

@@ -1,3 +1,7 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Copy, LogOut, Pencil, QrCode, Share2, Trash2 } from 'lucide-react';
+import QRCode from 'qrcode';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import {
@@ -8,15 +12,12 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
+import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import {
   useDeleteGroupMutation,
   useUnlinkMemberMutation,
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Copy, LogOut, Pencil, QrCode, Share2, Trash2 } from 'lucide-react';
-import QRCode from 'qrcode';
-import { useEffect, useMemo, useRef, useState } from 'react';
 
 export const Route = createFileRoute('/_authed/groups/$id/settings/')({
   component: RouteComponent,
@@ -25,6 +26,7 @@ export const Route = createFileRoute('/_authed/groups/$id/settings/')({
 function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { flowState, navigateToGroupRoot } = useGroupFlowNavigation(id);
   const [showQrDrawer, setShowQrDrawer] = useState(false);
   const [showShareDrawer, setShowShareDrawer] = useState(false);
   const [showDeleteGroupDrawer, setShowDeleteGroupDrawer] = useState(false);
@@ -119,7 +121,7 @@ function RouteComponent() {
   };
 
   const goBack = () => {
-    void navigate({ to: '/groups/$id', params: { id }, replace: true });
+    void navigateToGroupRoot(true);
   };
 
   const handleConfirmDeleteGroup = async () => {
@@ -219,7 +221,11 @@ function RouteComponent() {
               type="button"
               className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] text-[#475569]"
               onClick={() =>
-                navigate({ to: '/groups/$id/edit', params: { id } })
+                navigate({
+                  to: '/groups/$id/edit',
+                  params: { id },
+                  state: flowState,
+                })
               }
               aria-label="Editar grupo"
             >

@@ -20,9 +20,14 @@ export function getLocationHref(location: LocationLike) {
   return `${location.pathname}${search}${location.hash ?? ''}`;
 }
 
-export function getGroupFlowReturnTo(state: GroupFlowState | undefined) {
+export function getGroupFlowReturnTo(
+  state: GroupFlowState | undefined,
+  groupId?: string,
+) {
   const returnTo = state?.returnTo;
-  return returnTo?.startsWith('/') ? returnTo : undefined;
+  if (!returnTo?.startsWith('/')) return undefined;
+  if (groupId && isGroupFlowPath(returnTo, groupId)) return undefined;
+  return returnTo;
 }
 
 export function getGroupFlowEntryState(returnTo: string): never {
@@ -40,7 +45,7 @@ export function useGroupFlowNavigation(groupId: string) {
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo =
-    getGroupFlowReturnTo(location.state as GroupFlowState) ??
+    getGroupFlowReturnTo(location.state as GroupFlowState, groupId) ??
     GROUP_FLOW_FALLBACK;
   const flowState = useMemo(() => keepGroupFlowState(returnTo), [returnTo]);
 
@@ -70,4 +75,9 @@ export function useGroupFlowNavigation(groupId: string) {
     navigateToGroupRoot,
     returnTo,
   };
+}
+
+function isGroupFlowPath(path: string, groupId: string) {
+  const groupRoot = `/groups/${groupId}`;
+  return path === groupRoot || path.startsWith(`${groupRoot}/`);
 }

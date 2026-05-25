@@ -1,0 +1,14 @@
+pre-commit:
+  parallel: true
+  commands:
+    typecheck-webapp:
+      root: apps/webapp
+      glob: "*.{js,ts,jsx,tsx}"
+      run: bun typecheck
+      fail_text: "TypeScript type checking failed for webapp"
+    biome-webapp:
+      root: apps/webapp
+      glob: "*.{js,ts,jsx,tsx}"
+      run: bun check {staged_files}
+      stage_fixed: true
+      fail_text: "Biome linting/formatting failed for webapp"

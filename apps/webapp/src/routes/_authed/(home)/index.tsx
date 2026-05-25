@@ -27,7 +27,7 @@ function RouteComponent() {
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
-      <div className="relative mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa]">
+      <div className="relative flex min-h-screen w-full flex-col bg-[#fafafa]">
         <div className="flex-1 overflow-y-auto px-4 pb-32 pt-6">
           {homeQuery.isLoading ? (
             <HomeSkeleton />

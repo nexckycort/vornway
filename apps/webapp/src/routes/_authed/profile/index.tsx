@@ -284,7 +284,7 @@ function RouteComponent() {
   return (
     <>
       <main className="min-h-screen bg-[#fafafa] text-foreground">
-        <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col px-4 pb-28 pt-6">
+        <div className="flex min-h-screen w-full flex-col px-4 pb-28 pt-6">
           <header className="mb-5">
             <h1 className="mt-2 text-3xl font-semibold leading-9 text-[#0f172a]">
               Mi perfil

@@ -1,7 +1,7 @@
 export function GroupDetailSkeleton() {
   return (
     <main className="min-h-screen bg-[#111111] text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#111111]">
+      <div className="flex min-h-screen w-full flex-col bg-[#111111]">
         <header className="px-4 pb-4 pt-5 text-white">
           <div className="mb-3 flex items-start gap-3">
             <div className="size-9 shrink-0 rounded-full bg-white/10" />

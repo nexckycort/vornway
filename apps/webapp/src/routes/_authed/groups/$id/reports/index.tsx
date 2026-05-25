@@ -106,7 +106,7 @@ function RouteComponent() {
   if (groupQuery.isLoading) {
     return (
       <main className="min-h-screen bg-[#fafafa] text-foreground">
-        <div className="mx-auto flex min-h-screen w-full max-w-[412px] items-center justify-center bg-[#fafafa] px-4">
+        <div className="mx-auto flex min-h-screen w-full max-w-[412px] md:max-w-5xl items-center justify-center bg-[#fafafa] px-4">
           <p className="text-sm text-[#64748b]">Cargando reportes...</p>
         </div>
       </main>
@@ -116,7 +116,7 @@ function RouteComponent() {
   if (groupQuery.isError || !group) {
     return (
       <main className="min-h-screen bg-[#fafafa] text-foreground">
-        <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col justify-center bg-[#fafafa] px-4">
+        <div className="mx-auto flex min-h-screen w-full max-w-[412px] md:max-w-5xl flex-col justify-center bg-[#fafafa] px-4">
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {groupQuery.error instanceof Error
               ? groupQuery.error.message
@@ -286,7 +286,7 @@ function RouteComponent() {
               })}
             </section>
 
-            <div className="fixed inset-x-0 bottom-0 z-10 mx-auto w-full max-w-[412px] border-t border-[#e2e8f0] bg-gradient-to-t from-white via-white to-white/90 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4">
+            <div className="fixed inset-x-0 bottom-0 z-10 mx-auto w-full max-w-[412px] md:max-w-5xl border-t border-[#e2e8f0] bg-gradient-to-t from-white via-white to-white/90 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4">
               <Button
                 type="button"
                 className="h-12 w-full rounded-full bg-black text-base font-medium text-white hover:bg-black/90"

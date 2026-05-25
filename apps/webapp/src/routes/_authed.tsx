@@ -41,8 +41,10 @@ function AuthedLayout() {
 
   return (
     <div className="mobile-shell">
-      <Outlet />
-      {showBottomBar ? <BottomAppBar /> : null}
+      <div className="mobile-shell-frame">
+        <Outlet />
+        {showBottomBar ? <BottomAppBar /> : null}
+      </div>
     </div>
   );
 }

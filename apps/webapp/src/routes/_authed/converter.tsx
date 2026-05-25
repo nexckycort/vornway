@@ -78,7 +78,7 @@ function RouteComponent() {
   if (converterQuery.isLoading) {
     return (
       <main className="min-h-screen bg-[#f4f6fb]">
-        <div className="mx-auto flex min-h-screen w-full max-w-[412px] items-center justify-center px-4">
+        <div className="mx-auto flex min-h-screen w-full max-w-[412px] md:max-w-5xl items-center justify-center px-4">
           <p className="text-sm text-[#64748b]">Cargando convertidor...</p>
         </div>
       </main>
@@ -88,7 +88,7 @@ function RouteComponent() {
   if (converterQuery.isError || !converterQuery.data) {
     return (
       <main className="min-h-screen bg-[#f4f6fb]">
-        <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col justify-center px-4">
+        <div className="mx-auto flex min-h-screen w-full max-w-[412px] md:max-w-5xl flex-col justify-center px-4">
           <div className="rounded-[28px] border border-[#e2e8f0] bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-[#0f172a]">
               No se pudo cargar el convertidor
@@ -123,7 +123,7 @@ function RouteComponent() {
 
   return (
     <main className="min-h-screen bg-[#f5f7fb]">
-      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col px-4 pb-6 pt-5">
+      <div className="mx-auto flex min-h-screen w-full max-w-[412px] md:max-w-5xl flex-col px-4 pb-6 pt-5">
         <header className="mb-4">
           <button
             type="button"

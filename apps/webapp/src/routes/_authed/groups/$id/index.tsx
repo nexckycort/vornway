@@ -207,7 +207,7 @@ function RouteComponent() {
   if (!groupQuery.data) {
     return (
       <main className="min-h-screen bg-[#efefef] text-foreground">
-        <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col justify-center bg-[#fafafa] px-4">
+        <div className="flex min-h-screen w-full flex-col justify-center bg-[#fafafa] px-4">
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {groupQuery.error instanceof Error
               ? groupQuery.error.message
@@ -341,7 +341,7 @@ function RouteComponent() {
 
   return (
     <main className="min-h-screen bg-[#111111] text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#111111]">
+      <div className="flex min-h-screen w-full flex-col bg-[#111111]">
         <GroupDetailHeader
           groupId={id}
           groupName={group.name}
@@ -394,7 +394,7 @@ function RouteComponent() {
       </div>
 
       {shareMessage ? (
-        <div className="mx-auto mt-3 w-full max-w-[412px] px-4">
+        <div className="mt-3 w-full px-4">
           <div className="rounded-2xl border border-[#e2e8f0] bg-white px-4 py-3 text-sm text-[#64748b] shadow-[0_8px_20px_rgba(15,23,42,0.06)]">
             {shareMessage}
           </div>

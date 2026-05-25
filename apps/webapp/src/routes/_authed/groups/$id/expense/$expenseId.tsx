@@ -133,7 +133,7 @@ function RouteComponent() {
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa] px-4 pb-8 pt-6">
+      <div className="mx-auto flex min-h-screen w-full max-w-[412px] md:max-w-5xl flex-col bg-[#fafafa] px-4 pb-8 pt-6">
         <header className="mb-5 flex items-center justify-between gap-3">
           <button
             type="button"

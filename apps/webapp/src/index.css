@@ -145,6 +145,10 @@
     -webkit-touch-callout: none;
   }
 
+  .mobile-shell-frame {
+    min-height: 100dvh;
+  }
+
   .mobile-shell input,
   .mobile-shell textarea,
   .mobile-shell select,
@@ -161,6 +165,39 @@
     textarea,
     select {
       font-size: 16px !important;
+    }
+  }
+
+  @media (min-width: 768px) {
+    body {
+      background:
+        radial-gradient(
+          80rem 40rem at 50% -18rem,
+          color-mix(in oklch, var(--primary) 18%, transparent),
+          transparent 72%
+        ),
+        #eef2f7;
+    }
+
+    .mobile-shell {
+      min-height: 100dvh;
+      padding: 1.25rem clamp(1rem, 3vw, 2.25rem);
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .mobile-shell-frame {
+      width: 100%;
+      max-width: 1240px;
+      min-height: calc(100dvh - 2.5rem);
+      border-radius: 20px;
+      overflow: clip;
+      box-shadow: 0 20px 48px rgba(15, 23, 42, 0.1);
+      border: 1px solid rgba(15, 23, 42, 0.05);
+      background: #f8fafd;
+      position: relative;
+      isolation: isolate;
     }
   }
 }

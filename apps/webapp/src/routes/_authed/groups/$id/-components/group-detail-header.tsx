@@ -69,6 +69,8 @@ export function GroupDetailHeader({
   const getEntryAmount = (entries: Array<[string, number]>, currency: string) =>
     entries.find(([entryCurrency]) => entryCurrency === currency)?.[1] ?? 0;
 
+  const hasMultipleCurrencies = balanceCurrencies.length > 1;
+
   return (
     <header className="relative px-4 pb-4 pt-5 text-white">
       {isRefreshing ? (
@@ -117,59 +119,85 @@ export function GroupDetailHeader({
       </div>
 
       <section className="-mx-1 overflow-hidden">
-        <div className="overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex snap-x snap-mandatory gap-3 px-1">
+        <div
+          className={
+            hasMultipleCurrencies
+              ? 'overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+              : 'pb-2'
+          }
+        >
+          <div
+            className={
+              hasMultipleCurrencies
+                ? 'flex snap-x snap-mandatory gap-3 px-1'
+                : 'px-1'
+            }
+          >
             {balanceCurrencies.map((currency) => {
               const meta = getCurrencyMeta(currency);
               const totalAmount = getEntryAmount(totalsEntries, currency);
               const creditAmount = getEntryAmount(creditEntries, currency);
               const debtAmount = getEntryAmount(debtEntries, currency);
+              const hasCredit = Math.abs(creditAmount) > 0;
+              const hasDebt = Math.abs(debtAmount) > 0;
 
               return (
                 <article
                   key={currency}
-                  className="min-w-[calc(100%-2rem)] snap-start rounded-[24px] bg-[#2c2226] px-5 py-5 shadow-[0_18px_35px_rgba(0,0,0,0.18)]"
+                  className={`min-w-[calc(100%-2rem)] snap-start rounded-[24px] bg-[#2c2226] px-5 py-5 shadow-[0_18px_35px_rgba(0,0,0,0.18)] ${
+                    hasCredit || hasDebt
+                      ? ''
+                      : 'flex min-h-[158px] flex-col justify-center'
+                  } ${hasMultipleCurrencies ? '' : 'w-full min-w-0'}`}
                 >
                   <div className="flex items-center gap-2 text-sm font-medium text-white/85">
-                    <span className="flex size-6 items-center justify-center rounded-full bg-white shadow-sm">
-                      <span className="text-base leading-none">
-                        {meta.flag}
-                      </span>
-                    </span>
+                    <span className="text-base leading-none">{meta.flag}</span>
                     <span>{meta.label}</span>
                   </div>
 
-                  <p className="mt-5 text-xs font-light text-white/80">
+                  <p
+                    className={`text-xs font-light text-white/80 ${
+                      hasCredit || hasDebt ? 'mt-5' : 'mt-5'
+                    }`}
+                  >
                     Total gastado
                   </p>
                   <h2 className="mt-2 whitespace-nowrap text-2xl font-bold tracking-tight text-white">
                     {formatMoney(currency, Math.abs(totalAmount))}
                   </h2>
 
-                  <div className="mt-6 flex items-center justify-between gap-4">
-                    <p className="min-w-0 text-xs font-light text-white/85">
-                      Te deben{' '}
-                      <span className="font-semibold text-emerald-400">
-                        {formatMoney(currency, Math.abs(creditAmount))}
-                      </span>
-                    </p>
-                    <p className="min-w-0 text-right text-xs font-light text-white/85">
-                      Debes{' '}
-                      <span className="font-semibold text-[#ff4d6a]">
-                        {formatMoney(currency, Math.abs(debtAmount))}
-                      </span>
-                    </p>
-                  </div>
+                  {hasCredit || hasDebt ? (
+                    <div className="mt-6 flex items-center justify-between gap-4">
+                      {hasCredit ? (
+                        <p className="min-w-0 text-xs font-light text-white/85">
+                          Te deben{' '}
+                          <span className="font-semibold text-emerald-400">
+                            {formatMoney(currency, Math.abs(creditAmount))}
+                          </span>
+                        </p>
+                      ) : null}
+                      {hasDebt ? (
+                        <p className="min-w-0 text-right text-xs font-light text-white/85">
+                          Debes{' '}
+                          <span className="font-semibold text-[#ff4d6a]">
+                            {formatMoney(currency, Math.abs(debtAmount))}
+                          </span>
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </article>
               );
             })}
           </div>
         </div>
 
-        <p className="mt-1 flex items-center gap-2 px-1 text-xs font-light text-white/85">
-          <span>Cada moneda tiene sus propios gastos, deudas y balances</span>
-          <Info className="size-4 shrink-0 text-white" />
-        </p>
+        {hasMultipleCurrencies ? (
+          <p className="mt-1 mb-2 flex items-center gap-2 px-1 text-[11px] font-light text-white/85">
+            <span>Cada moneda tiene sus propios gastos, deudas y balances</span>
+            <Info className="size-4 shrink-0 text-white" />
+          </p>
+        ) : null}
       </section>
 
       <div className="mt-2.5 grid grid-cols-4 gap-2">

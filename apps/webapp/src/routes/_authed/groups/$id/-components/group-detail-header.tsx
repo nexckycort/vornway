@@ -193,7 +193,7 @@ export function GroupDetailHeader({
         </div>
 
         {hasMultipleCurrencies ? (
-          <p className="mt-1 mb-2 flex items-center gap-2 px-1 text-[11px] font-light text-white/85">
+          <p className="mt-1 mb-2 flex items-center gap-2 px-1 text-[10px] font-light text-white/85">
             <span>Cada moneda tiene sus propios gastos, deudas y balances</span>
             <Info className="size-4 shrink-0 text-white" />
           </p>

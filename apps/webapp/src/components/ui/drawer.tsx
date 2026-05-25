@@ -1,52 +1,69 @@
 'use client';
 
-import { cn } from '#/lib/utils';
 import type * as React from 'react';
 import { useEffect, useRef } from 'react';
 import { Drawer as DrawerPrimitive } from 'vaul';
+import { cn } from '#/lib/utils';
 
 function Drawer({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
-  const lastOpen = useRef(props.open);
+  const lastOpen = useRef(Boolean(props.open));
   const openedAtLocationKey = useRef<string | null>(null);
+  const didPushHistory = useRef(false);
+  const closingFromPopState = useRef(false);
   const closeBackTimeout = useRef<number | null>(null);
 
   const getLocationKey = () =>
     `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: overlay history is managed manually
   useEffect(() => {
     if (!lastOpen.current && props.open) {
       if (closeBackTimeout.current !== null) {
         window.clearTimeout(closeBackTimeout.current);
         closeBackTimeout.current = null;
       }
-      window.history.pushState({ drawer: true }, '');
+
+      window.history.pushState(
+        {
+          ...(window.history.state ?? {}),
+          drawer: true,
+        },
+        '',
+      );
       openedAtLocationKey.current = getLocationKey();
+      didPushHistory.current = true;
+      closingFromPopState.current = false;
     }
 
     if (lastOpen.current && !props.open) {
-      if (window.history.state?.drawer) {
-        closeBackTimeout.current = window.setTimeout(() => {
-          const sameLocation = openedAtLocationKey.current === getLocationKey();
+      if (didPushHistory.current && !closingFromPopState.current) {
+        const openedLocationKey = openedAtLocationKey.current;
 
-          if (!props.open && sameLocation && window.history.state?.drawer) {
+        closeBackTimeout.current = window.setTimeout(() => {
+          const sameLocation = openedLocationKey === getLocationKey();
+
+          if (!props.open && sameLocation) {
             window.history.back();
           }
 
           closeBackTimeout.current = null;
         }, 0);
       }
+
       openedAtLocationKey.current = null;
+      didPushHistory.current = false;
+      closingFromPopState.current = false;
     }
 
-    lastOpen.current = props.open;
+    lastOpen.current = Boolean(props.open);
   }, [props.open]);
 
   useEffect(() => {
     const handlePopState = () => {
-      if (props.open) {
+      if (lastOpen.current) {
+        closingFromPopState.current = true;
         props.onOpenChange?.(false);
       }
     };
@@ -55,7 +72,7 @@ function Drawer({
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [props.open, props.onOpenChange]);
+  }, [props.onOpenChange]);
 
   useEffect(() => {
     return () => {

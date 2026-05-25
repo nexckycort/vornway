@@ -1,5 +1,5 @@
 import { CalendarDays } from 'lucide-react';
-import type { RefObject } from 'react';
+import { useMemo, type RefObject } from 'react';
 
 import type { ExpenseItem } from '../-types/group-detail.types';
 import { groupExpensesByDate } from './group-detail.utils';
@@ -30,7 +30,25 @@ export function GroupExpensesTimeline({
   onOpenOptions,
   onDeleteExpense,
 }: GroupExpensesTimelineProps) {
-  const groupedExpenses = groupExpensesByDate(expenses);
+  const sortedExpenses = useMemo(() => {
+    const pinnedSet = new Set(pinnedExpenseIds);
+
+    return [...expenses].sort((left, right) => {
+      const leftPinned = pinnedSet.has(left.id);
+      const rightPinned = pinnedSet.has(right.id);
+
+      if (leftPinned !== rightPinned) {
+        return leftPinned ? -1 : 1;
+      }
+
+      const leftDate = new Date(left.date).getTime();
+      const rightDate = new Date(right.date).getTime();
+
+      return rightDate - leftDate;
+    });
+  }, [expenses, pinnedExpenseIds]);
+
+  const groupedExpenses = groupExpensesByDate(sortedExpenses);
 
   return (
     <section className="mb-7">

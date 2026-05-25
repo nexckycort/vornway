@@ -41,9 +41,15 @@ function RouteComponent() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
-  const redirect =
+  const redirect = normalizeRedirect(
     typeof window !== 'undefined'
-      ? (new URLSearchParams(window.location.search).get('redirect') ?? '/')
+      ? new URLSearchParams(window.location.search).get('redirect')
+      : null,
+  );
+
+  const callbackURL =
+    typeof window !== 'undefined'
+      ? new URL(redirect, window.location.origin).toString()
       : '/';
 
   useEffect(() => {
@@ -66,7 +72,7 @@ function RouteComponent() {
     try {
       await signIn.social({
         provider: 'google',
-        callbackURL: 'https://app.vornway.com/',
+        callbackURL,
       });
     } catch (rawError) {
       console.error('Error en login con Google:', rawError);
@@ -262,6 +268,12 @@ function RouteComponent() {
       </div>
     </main>
   );
+}
+
+function normalizeRedirect(value: string | null): string {
+  if (!value?.startsWith('/')) return '/';
+  if (value.startsWith('//')) return '/';
+  return value;
 }
 
 function StepCard({

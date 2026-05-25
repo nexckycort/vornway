@@ -17,6 +17,7 @@ import {
   groupReportsTotalsQuerySchema,
   listGroupExpensesQuerySchema,
   listGroupsQuerySchema,
+  moveGroupCategoryExpensesSchema,
   searchGroupMembersQuerySchema,
   settleGroupDebtSchema,
   updateGroupCategorySchema,
@@ -250,6 +251,44 @@ const groups = new Hono<AppContext>()
           }
           if (error.message === 'La categoría tiene gastos asociados') {
             return c.json({ error: error.message }, 409);
+          }
+        }
+
+        throw error;
+      }
+    },
+  )
+  .post(
+    '/:id/categories/:categoryId/move-expenses',
+    zValidator('param', groupCategoryParamsSchema),
+    zValidator('json', moveGroupCategoryExpensesSchema),
+    async (c) => {
+      const { id, categoryId } = c.req.valid('param');
+      const data = c.req.valid('json');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.moveCategoryExpenses({
+          userId,
+          groupId: id,
+          categoryId,
+          targetCategoryId: data.targetCategoryId,
+        });
+
+        return c.json(result);
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message === 'Grupo no encontrado') {
+            return c.json({ error: error.message }, 404);
+          }
+          if (error.message === 'Categoría no encontrada') {
+            return c.json({ error: error.message }, 404);
+          }
+          if (error.message === 'Categoría destino no encontrada') {
+            return c.json({ error: error.message }, 404);
+          }
+          if (error.message === 'La categoría destino debe ser diferente') {
+            return c.json({ error: error.message }, 400);
           }
         }
 

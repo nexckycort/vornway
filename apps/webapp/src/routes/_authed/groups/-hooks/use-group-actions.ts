@@ -17,6 +17,8 @@ const updateCategoryEndpoint =
   client.api.groups[':id'].categories[':categoryId'].$patch;
 const deleteCategoryEndpoint =
   client.api.groups[':id'].categories[':categoryId'].$delete;
+const moveCategoryExpensesEndpoint =
+  client.api.groups[':id'].categories[':categoryId']['move-expenses'].$post;
 const removeMemberEndpoint =
   client.api.groups[':id'].members[':memberId'].$delete;
 
@@ -37,6 +39,12 @@ type UpdateCategoryRequest = InferRequestType<typeof updateCategoryEndpoint>;
 type UpdateCategoryResponse = InferResponseType<typeof updateCategoryEndpoint>;
 type UpdateCategorySuccess = Extract<UpdateCategoryResponse, { id: string }>;
 type DeleteCategoryResponse = InferResponseType<typeof deleteCategoryEndpoint>;
+type MoveCategoryExpensesRequest = InferRequestType<
+  typeof moveCategoryExpensesEndpoint
+>;
+type MoveCategoryExpensesResponse = InferResponseType<
+  typeof moveCategoryExpensesEndpoint
+>;
 type RemoveMemberResponse = InferResponseType<typeof removeMemberEndpoint>;
 
 type UpdateGroupImageRequest = {
@@ -310,6 +318,32 @@ export function useDeleteCategoryMutation(groupId: string) {
       }
 
       return (await response.json()) as DeleteCategoryResponse;
+    },
+    onSuccess: async () => {
+      await invalidateGroup(queryClient, groupId);
+    },
+  });
+}
+
+export function useMoveCategoryExpensesMutation(
+  groupId: string,
+  categoryId: string,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (json: MoveCategoryExpensesRequest['json']) => {
+      const response = await moveCategoryExpensesEndpoint({
+        param: { id: groupId, categoryId },
+        json,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudieron mover los gastos');
+      }
+
+      return (await response.json()) as MoveCategoryExpensesResponse;
     },
     onSuccess: async () => {
       await invalidateGroup(queryClient, groupId);

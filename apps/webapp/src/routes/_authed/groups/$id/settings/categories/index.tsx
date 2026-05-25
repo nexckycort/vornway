@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { MobilePageLayout } from '#/components/mobile-page-layout';
@@ -15,6 +15,7 @@ import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import {
   useCreateCategoryMutation,
   useDeleteCategoryMutation,
+  useMoveCategoryExpensesMutation,
   useUpdateCategoryMutation,
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
@@ -62,12 +63,17 @@ function RouteComponent() {
     selectedCategoryId ?? '',
   );
   const deleteCategoryMutation = useDeleteCategoryMutation(id);
+  const moveCategoryExpensesMutation = useMoveCategoryExpensesMutation(
+    id,
+    selectedCategoryId ?? '',
+  );
   const [categoryName, setCategoryName] = useState('');
   const [categoryIcon, setCategoryIcon] = useState(categoryIconOptions[0].id);
   const [categoryCustomIcon, setCategoryCustomIcon] = useState('');
   const [categoryColor, setCategoryColor] = useState<string>(
     categoryColorOptions[0],
   );
+  const [showMoveDrawer, setShowMoveDrawer] = useState(false);
   const iconInputRef = useRef<HTMLInputElement | null>(null);
 
   const categories = groupQuery.data?.categories ?? [];
@@ -77,6 +83,10 @@ function RouteComponent() {
   const trimmedCategoryName = categoryName.trim();
   const isCustomIcon = categoryIcon === customCategoryIconId;
   const customIconValue = categoryCustomIcon.trim();
+  const categoryExpenseCount = selectedCategory?.expenseCount ?? 0;
+  const movableCategories = categories.filter(
+    (category) => category.id !== selectedCategoryId,
+  );
 
   useEffect(() => {
     if (!showEditorDrawer || !isCustomIcon) return;
@@ -122,6 +132,24 @@ function RouteComponent() {
 
   const closeEditorDrawer = () => {
     setShowEditorDrawer(false);
+    setShowMoveDrawer(false);
+  };
+
+  const openMoveDrawer = () => {
+    setShowMoveDrawer(true);
+  };
+
+  const handleMoveExpenses = async (targetCategoryId: string | null) => {
+    if (!selectedCategoryId || moveCategoryExpensesMutation.isPending) return;
+
+    try {
+      await moveCategoryExpensesMutation.mutateAsync({
+        targetCategoryId,
+      });
+      setShowMoveDrawer(false);
+    } catch {
+      void 0;
+    }
   };
 
   const handleSaveCategory = async () => {
@@ -440,16 +468,24 @@ function RouteComponent() {
               </Button>
             ) : null}
 
-            {editorMode === 'edit' &&
-            (selectedCategory?.expenseCount ?? 0) > 0 ? (
-              <p className="px-2 text-xs leading-5 text-[#64748b]">
-                Esta categoría tiene {selectedCategory?.expenseCount ?? 0} gasto
-                {selectedCategory && selectedCategory.expenseCount === 1
-                  ? ''
-                  : 's'}
-                . No se puede eliminar hasta que no quede asociada a ningún
-                gasto.
-              </p>
+            {editorMode === 'edit' && categoryExpenseCount > 0 ? (
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 w-full rounded-full border-[#dbe4f0] text-[#132238]"
+                  onClick={openMoveDrawer}
+                >
+                  <ArrowRightLeft className="mr-2 size-4" />
+                  Mover gastos
+                </Button>
+                <p className="px-2 text-xs leading-5 text-[#64748b]">
+                  Esta categoría tiene {categoryExpenseCount} gasto
+                  {categoryExpenseCount === 1 ? '' : 's'}. Primero mueve esos
+                  gastos a otra categoría o déjalos sin categoría para poder
+                  eliminarla.
+                </p>
+              </div>
             ) : null}
 
             <Button
@@ -470,6 +506,85 @@ function RouteComponent() {
                   ? 'Guardando...'
                   : 'Guardar cambios'}
             </Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={showMoveDrawer} onOpenChange={setShowMoveDrawer}>
+        <DrawerContent className="max-h-[88dvh]">
+          <div className="mx-auto flex h-full w-full max-w-md flex-col overflow-hidden px-4 pb-4">
+            <DrawerHeader className="px-0 pb-4">
+              <DrawerTitle className="text-left text-2xl font-semibold text-[#132238]">
+                Mover gastos
+              </DrawerTitle>
+              <DrawerDescription className="text-left text-sm text-[#64748b]">
+                Elige una categoría destino para vaciar esta categoría.
+              </DrawerDescription>
+            </DrawerHeader>
+
+            <div className="flex-1 space-y-3 overflow-y-auto pb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  void handleMoveExpenses(null);
+                }}
+                className="flex w-full items-center justify-between rounded-[24px] border border-[#e5e7eb] bg-white px-4 py-4 text-left shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-transform active:scale-[0.99]"
+              >
+                <div>
+                  <p className="text-sm font-medium text-[#132238]">
+                    Sin categoría
+                  </p>
+                  <p className="mt-1 text-xs text-[#64748b]">
+                    Los gastos quedarán sin una categoría asignada.
+                  </p>
+                </div>
+                <ChevronRight className="size-4 text-[#94a3b8]" />
+              </button>
+
+              {movableCategories.map((category) => (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => {
+                    void handleMoveExpenses(category.id);
+                  }}
+                  className="flex w-full items-center justify-between rounded-[24px] border border-[#e5e7eb] bg-white px-4 py-4 text-left shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-transform active:scale-[0.99]"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span
+                      className="flex size-11 shrink-0 items-center justify-center rounded-full"
+                      style={{
+                        backgroundColor: `${category.color ?? '#f43f5e'}18`,
+                        color: category.color ?? '#f43f5e',
+                      }}
+                    >
+                      <CategoryIcon
+                        icon={category.icon}
+                        color={category.color}
+                        fallback={<Plus className="size-4" />}
+                        className="size-5"
+                      />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-[#132238]">
+                        {category.name}
+                      </p>
+                      <p className="mt-1 text-xs text-[#64748b]">
+                        Mueve los gastos a esta categoría
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="size-4 shrink-0 text-[#94a3b8]" />
+                </button>
+              ))}
+
+              {movableCategories.length === 0 ? (
+                <div className="rounded-[24px] border border-[#e5e7eb] bg-white px-4 py-6 text-sm text-[#64748b]">
+                  No hay otra categoría disponible. Puedes dejar los gastos sin
+                  categoría.
+                </div>
+              ) : null}
+            </div>
           </div>
         </DrawerContent>
       </Drawer>

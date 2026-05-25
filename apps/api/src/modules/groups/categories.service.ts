@@ -5,6 +5,8 @@ import type {
   CreateGroupCategoryResult,
   DeleteGroupCategoryInput,
   DeleteGroupCategoryResult,
+  MoveGroupCategoryExpensesInput,
+  MoveGroupCategoryExpensesResult,
   UpdateGroupCategoryInput,
   UpdateGroupCategoryResult,
 } from './types';
@@ -215,6 +217,74 @@ export function createGroupCategoriesService() {
       });
 
       return { id: categoryId };
+    },
+    moveCategoryExpenses: async ({
+      userId,
+      groupId,
+      categoryId,
+      targetCategoryId,
+    }: MoveGroupCategoryExpensesInput): Promise<MoveGroupCategoryExpensesResult> => {
+      const group = await db.group.findFirst({
+        where: {
+          ...buildGroupAccessWhere(userId, groupId),
+          type: {
+            not: 'meta',
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!group) {
+        throw new Error('Grupo no encontrado');
+      }
+
+      const sourceCategory = await db.expenseCategory.findFirst({
+        where: {
+          id: categoryId,
+          groupId,
+        },
+        select: { id: true },
+      });
+
+      if (!sourceCategory) {
+        throw new Error('Categoría no encontrada');
+      }
+
+      if (targetCategoryId === categoryId) {
+        throw new Error('La categoría destino debe ser diferente');
+      }
+
+      if (targetCategoryId) {
+        const targetCategory = await db.expenseCategory.findFirst({
+          where: {
+            id: targetCategoryId,
+            groupId,
+          },
+          select: { id: true },
+        });
+
+        if (!targetCategory) {
+          throw new Error('Categoría destino no encontrada');
+        }
+      }
+
+      const result = await db.expense.updateMany({
+        where: {
+          groupId,
+          categoryId,
+        },
+        data: {
+          categoryId: targetCategoryId ?? null,
+        },
+      });
+
+      return {
+        categoryId,
+        targetCategoryId: targetCategoryId ?? null,
+        movedExpenseCount: result.count,
+      };
     },
   };
 }

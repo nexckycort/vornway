@@ -108,6 +108,10 @@ export const updateGroupCategorySchema = z
     },
   );
 
+export const moveGroupCategoryExpensesSchema = z.object({
+  targetCategoryId: z.string().min(1).nullable().optional(),
+});
+
 export const createGroupSchema = z.object({
   id: z.string().uuid().optional(),
   name: z.string().min(1).max(120),

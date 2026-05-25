@@ -163,6 +163,19 @@ export type DeleteGroupCategoryResult = {
   id: string;
 };
 
+export type MoveGroupCategoryExpensesInput = {
+  userId: string;
+  groupId: string;
+  categoryId: string;
+  targetCategoryId?: string | null;
+};
+
+export type MoveGroupCategoryExpensesResult = {
+  categoryId: string;
+  targetCategoryId: string | null;
+  movedExpenseCount: number;
+};
+
 export type GroupDeleteResult = {
   id: string;
 };
@@ -226,6 +239,9 @@ export type GroupsService = {
   deleteCategory: (
     input: DeleteGroupCategoryInput,
   ) => Promise<DeleteGroupCategoryResult>;
+  moveCategoryExpenses: (
+    input: MoveGroupCategoryExpensesInput,
+  ) => Promise<MoveGroupCategoryExpensesResult>;
   updateGroupImage: (
     input: UpdateGroupImageInput,
   ) => Promise<{ imageUrl: string | null }>;

@@ -1,10 +1,81 @@
-import { Button } from '#/components/ui/button';
-import { cn } from '#/lib/utils';
+'use client';
+
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { XIcon } from 'lucide-react';
 import * as React from 'react';
+import { Button } from '#/components/ui/button';
+import { cn } from '#/lib/utils';
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
+  const lastOpen = React.useRef(props.open);
+  const openedAtLocationKey = React.useRef<string | null>(null);
+  const closeBackTimeout = React.useRef<number | null>(null);
+
+  const getLocationKey = () =>
+    `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mirrors Drawer behavior and only reacts to open transitions
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (!lastOpen.current && props.open) {
+      if (closeBackTimeout.current !== null) {
+        window.clearTimeout(closeBackTimeout.current);
+        closeBackTimeout.current = null;
+      }
+
+      window.history.pushState({ dialog: true }, '');
+      openedAtLocationKey.current = getLocationKey();
+    }
+
+    if (lastOpen.current && !props.open) {
+      if (window.history.state?.dialog) {
+        closeBackTimeout.current = window.setTimeout(() => {
+          const sameLocation = openedAtLocationKey.current === getLocationKey();
+
+          if (!props.open && sameLocation && window.history.state?.dialog) {
+            window.history.back();
+          }
+
+          closeBackTimeout.current = null;
+        }, 0);
+      }
+
+      openedAtLocationKey.current = null;
+    }
+
+    lastOpen.current = props.open;
+  }, [props.open]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handlePopState = () => {
+      if (props.open) {
+        props.onOpenChange?.(
+          false,
+          {} as DialogPrimitive.Root.ChangeEventDetails,
+        );
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [props.open, props.onOpenChange]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    return () => {
+      if (closeBackTimeout.current !== null) {
+        window.clearTimeout(closeBackTimeout.current);
+      }
+    };
+  }, []);
+
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 

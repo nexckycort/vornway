@@ -12,7 +12,10 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
-import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
+import {
+  keepGroupFlowState,
+  useGroupFlowNavigation,
+} from '#/lib/group-flow-navigation';
 import {
   useDeleteGroupMutation,
   useUnlinkMemberMutation,
@@ -26,7 +29,11 @@ export const Route = createFileRoute('/_authed/groups/$id/settings/')({
 function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const { flowState, navigateToGroupRoot } = useGroupFlowNavigation(id);
+  const { navigateToGroupRoot, returnTo } = useGroupFlowNavigation(id);
+  const editFlowState = useMemo(
+    () => keepGroupFlowState(returnTo, { groupEditReturn: 'history-back' }),
+    [returnTo],
+  );
   const [showQrDrawer, setShowQrDrawer] = useState(false);
   const [showShareDrawer, setShowShareDrawer] = useState(false);
   const [showDeleteGroupDrawer, setShowDeleteGroupDrawer] = useState(false);
@@ -225,7 +232,7 @@ function RouteComponent() {
                   to: '/groups/$id/edit',
                   params: { id },
                   replace: true,
-                  state: flowState,
+                  state: editFlowState,
                 })
               }
               aria-label="Editar grupo"

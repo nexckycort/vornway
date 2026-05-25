@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react';
 export const GROUP_FLOW_FALLBACK = '/groups';
 
 export type GroupFlowState = {
+  groupEditReturn?: 'history-back';
   returnTo?: string;
 };
 
@@ -34,10 +35,14 @@ export function getGroupFlowEntryState(returnTo: string): never {
   return { returnTo } as never;
 }
 
-export function keepGroupFlowState(returnTo: string) {
+export function keepGroupFlowState(
+  returnTo: string,
+  extraState?: Omit<GroupFlowState, 'returnTo'>,
+) {
   return ((state: object): GroupFlowState => ({
     ...state,
     returnTo,
+    ...extraState,
   })) as never;
 }
 

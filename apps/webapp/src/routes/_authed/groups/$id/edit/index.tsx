@@ -1,9 +1,17 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  useLocation,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router';
 import { ImagePlus, X } from 'lucide-react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
-import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
+import {
+  type GroupFlowState,
+  useGroupFlowNavigation,
+} from '#/lib/group-flow-navigation';
 import { useUpdateGroupMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 
@@ -23,7 +31,10 @@ const groupTypes = [
 function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const router = useRouter();
+  const location = useLocation();
   const { flowState, navigateToGroupRoot } = useGroupFlowNavigation(id);
+  const groupFlowState = location.state as GroupFlowState;
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const groupQuery = useGroupSummaryQuery(id);
@@ -109,6 +120,11 @@ function RouteComponent() {
             }
           : {}),
       });
+
+      if (groupFlowState.groupEditReturn === 'history-back') {
+        router.history.back();
+        return;
+      }
 
       void navigateToGroupRoot(true);
     } catch (error) {

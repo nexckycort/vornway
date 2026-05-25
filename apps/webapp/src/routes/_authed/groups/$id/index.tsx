@@ -29,6 +29,7 @@ import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-del
 import { useRemoveMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import {
   useGroupExpensesInfiniteQuery,
+  usePinnedGroupExpensesQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
@@ -79,6 +80,7 @@ function RouteComponent() {
   const removeMemberMutation = useRemoveMemberMutation(id);
   const toggleExpensePinMutation = useToggleExpensePinMutation();
   const pinnedExpenseIds = usePinnedExpenseIds(id);
+  const pinnedExpensesQuery = usePinnedGroupExpensesQuery(id, pinnedExpenseIds);
 
   const expenses = useMemo(() => {
     const serverExpenses =
@@ -122,7 +124,19 @@ function RouteComponent() {
       syncStatus: 'pending',
     }));
 
-    return [...localExpenses, ...serverExpenses].sort((left, right) => {
+    const expensesById = new Map<string, ExpenseItem>();
+
+    for (const expense of [...localExpenses, ...serverExpenses]) {
+      expensesById.set(expense.id, expense);
+    }
+
+    for (const pinnedExpense of pinnedExpensesQuery.data ?? []) {
+      if (!expensesById.has(pinnedExpense.id)) {
+        expensesById.set(pinnedExpense.id, pinnedExpense);
+      }
+    }
+
+    return [...expensesById.values()].sort((left, right) => {
       const leftDate = new Date(left.date).getTime();
       const rightDate = new Date(right.date).getTime();
       return rightDate - leftDate;
@@ -131,12 +145,16 @@ function RouteComponent() {
     expensesQuery.data,
     groupQuery.data?.categories,
     groupQuery.data?.members,
+    pinnedExpensesQuery.data,
     pendingExpenses,
   ]);
   const inviteLink =
     groupQuery.data?.inviteCode && typeof window !== 'undefined'
       ? `https://join.vornway.com/${groupQuery.data.inviteCode}`
       : '';
+  const isExpensesSectionLoading =
+    expensesQuery.isPending ||
+    (!expensesQuery.data && expensesQuery.isFetching);
 
   const hasNextPageRef = useRef(expensesQuery.hasNextPage);
   const isFetchingRef = useRef(expensesQuery.isFetching);
@@ -200,7 +218,7 @@ function RouteComponent() {
     };
   }, [inviteLink]);
 
-  if (groupQuery.isLoading) {
+  if (groupQuery.isPending || (!groupQuery.data && groupQuery.isFetching)) {
     return <GroupDetailSkeleton />;
   }
 
@@ -354,6 +372,7 @@ function RouteComponent() {
           onOpenQr={() => setShowQrDrawer(true)}
           onBack={navigateToFlowBack}
           flowState={flowState}
+          isRefreshing={groupQuery.isFetching && Boolean(groupQuery.data)}
           onOpenSettings={() =>
             void navigate({
               to: '/groups/$id/settings',
@@ -380,7 +399,7 @@ function RouteComponent() {
 
           <GroupExpensesTimeline
             expenses={expenses}
-            isLoading={expensesQuery.isLoading}
+            isLoading={isExpensesSectionLoading}
             isError={expensesQuery.isError}
             error={expensesQuery.error}
             isFetchingNextPage={expensesQuery.isFetchingNextPage}

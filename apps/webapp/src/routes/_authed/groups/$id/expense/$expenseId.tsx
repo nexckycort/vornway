@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   ArrowRight,
@@ -16,7 +17,6 @@ import { usePinnedExpenseIds } from '#/lib/expense-pins';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import {
   useGroupExpenseQuery,
-  useGroupExpensesInfiniteQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { getExpenseEmoji } from '../-components/group-detail.utils';
@@ -98,16 +98,19 @@ function normalizeExpense(
 function RouteComponent() {
   const { id, expenseId } = Route.useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { flowState, navigateToGroupRoot } = useGroupFlowNavigation(id);
   const groupSummaryQuery = useGroupSummaryQuery(id);
   const expenseQuery = useGroupExpenseQuery(id, expenseId);
-  const expensesQuery = useGroupExpensesInfiniteQuery(id);
   const pinnedExpenseIds = usePinnedExpenseIds(id);
 
   const fallbackExpense = useMemo(() => {
-    const items = expensesQuery.data?.pages.flatMap((page) => page.data) ?? [];
+    const cachedExpenses = queryClient.getQueryData<{
+      pages?: Array<{ data?: ExpenseItem[] }>;
+    }>(['group-expenses', id]);
+    const items = cachedExpenses?.pages?.flatMap((page) => page.data ?? []) ?? [];
     return items.find((item) => item.id === expenseId) ?? null;
-  }, [expenseId, expensesQuery.data]);
+  }, [expenseId, id, queryClient]);
   const expense = useMemo(
     () => normalizeExpense(expenseQuery.data, fallbackExpense),
     [expenseQuery.data, fallbackExpense],

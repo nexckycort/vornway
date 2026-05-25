@@ -16,6 +16,7 @@ import {
   type PendingGroup,
   removeLocalGroupFallback,
 } from '#/lib/offline-group-query-collection';
+import type { ExpenseItem } from '../$id/-types/group-detail.types';
 import type { GroupSummary } from '../$id/-types/group-detail.types';
 
 const PAGE_LIMIT = 20;
@@ -105,6 +106,28 @@ type GroupReportsTotalsSuccess = {
     }>
   >;
 };
+
+function mapExpenseDetailToExpenseItem(
+  expense: GroupExpenseSuccess,
+): ExpenseItem {
+  return {
+    id: expense.id,
+    description: expense.description,
+    amount: expense.amount,
+    currency: expense.currency,
+    date: expense.date,
+    isDeleted: expense.isDeleted ?? false,
+    isSettlement: expense.isSettlement ?? false,
+    isPersonal: false,
+    expenseType: 'standard',
+    subExpenseCount: 0,
+    settlementToName: null,
+    paidBy: expense.paidBy,
+    category: expense.category ?? null,
+    participantCount: expense.participants?.length ?? 0,
+    currentUserBalance: null,
+  };
+}
 
 export function useGroupSummaryQuery(groupId: string) {
   const queryClient = useQueryClient();
@@ -244,6 +267,43 @@ export function useGroupExpenseQuery(
 
       return (await response.json()) as GroupExpenseSuccess;
     },
+  });
+}
+
+export function usePinnedGroupExpensesQuery(
+  groupId: string,
+  pinnedExpenseIds: string[],
+) {
+  const stableIds = [...new Set(pinnedExpenseIds)].sort();
+
+  return useQuery({
+    queryKey: ['group-pinned-expenses', groupId, stableIds],
+    enabled: stableIds.length > 0,
+    queryFn: async () => {
+      const results = await Promise.allSettled(
+        stableIds.map(async (expenseId) => {
+          const response = await groupExpenseEndpoint({
+            param: { id: groupId, expenseId },
+          });
+
+          if (!response.ok) return null;
+
+          const payload = (await response.json()) as GroupExpenseSuccess;
+          return mapExpenseDetailToExpenseItem(payload);
+        }),
+      );
+
+      return results
+        .filter(
+          (
+            result,
+          ): result is PromiseFulfilledResult<ExpenseItem | null> =>
+            result.status === 'fulfilled',
+        )
+        .map((result) => result.value)
+        .filter((expense): expense is ExpenseItem => expense !== null);
+    },
+    staleTime: 30_000,
   });
 }
 

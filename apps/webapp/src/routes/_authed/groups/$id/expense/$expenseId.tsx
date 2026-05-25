@@ -2,25 +2,27 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
-  ArrowRight,
-  CalendarDays,
-  CheckCircle2,
   HandCoins,
-  Pencil,
-  ReceiptText,
-  Tag,
-  UserRound,
-  UsersRound,
+  Trash2,
 } from 'lucide-react';
-import { type ComponentType, useMemo } from 'react';
-import { usePinnedExpenseIds } from '#/lib/expense-pins';
+import { useMemo, useState } from 'react';
+import { Button } from '#/components/ui/button';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
+import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-delete-expense';
 import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { getExpenseEmoji } from '../-components/group-detail.utils';
-import type { ExpenseItem } from '../-types/group-detail.types';
+import type { ExpenseItem, GroupSummary } from '../-types/group-detail.types';
 
 export const Route = createFileRoute('/_authed/groups/$id/expense/$expenseId')({
   component: RouteComponent,
@@ -41,21 +43,40 @@ function formatAmount(currency: string, amount: number): string {
 function formatDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('es-CO', {
+  return new Intl.DateTimeFormat('en-US', {
     day: 'numeric',
-    month: 'long',
+    month: 'short',
     year: 'numeric',
   }).format(date);
 }
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
+}
+
+type ExpenseParticipant = {
+  memberId: string;
+  name: string;
+  share: number;
+};
+
 function normalizeExpense(
   candidate: unknown,
   fallback: ExpenseItem | null,
-): ExpenseItem | null {
-  if (!candidate || typeof candidate !== 'object') return fallback;
+): (ExpenseItem & { participants: ExpenseParticipant[] }) | null {
+  const fallbackWithParticipants = fallback
+    ? { ...fallback, participants: [] }
+    : null;
+
+  if (!candidate || typeof candidate !== 'object') {
+    return fallbackWithParticipants;
+  }
 
   const expense = candidate as Partial<ExpenseItem> & {
-    participants?: Array<unknown>;
+    participants?: ExpenseParticipant[];
   };
 
   if (
@@ -66,7 +87,7 @@ function normalizeExpense(
     !expense.date ||
     !expense.paidBy
   ) {
-    return fallback;
+    return fallbackWithParticipants;
   }
 
   return {
@@ -92,7 +113,15 @@ function normalizeExpense(
     currentUserBalance:
       expense.currentUserBalance ?? fallback?.currentUserBalance ?? null,
     syncStatus: fallback?.syncStatus,
+    participants: expense.participants ?? [],
   };
+}
+
+function getMemberMeta(
+  memberId: string,
+  members: GroupSummary['members'] | undefined,
+) {
+  return members?.find((member) => member.id === memberId) ?? null;
 }
 
 function RouteComponent() {
@@ -102,7 +131,8 @@ function RouteComponent() {
   const { flowState, navigateToGroupRoot } = useGroupFlowNavigation(id);
   const groupSummaryQuery = useGroupSummaryQuery(id);
   const expenseQuery = useGroupExpenseQuery(id, expenseId);
-  const pinnedExpenseIds = usePinnedExpenseIds(id);
+  const deleteExpenseMutation = useDeleteExpenseMutation(id);
+  const [showDeleteDrawer, setShowDeleteDrawer] = useState(false);
 
   const fallbackExpense = useMemo(() => {
     const cachedExpenses = queryClient.getQueryData<{
@@ -116,8 +146,11 @@ function RouteComponent() {
     [expenseQuery.data, fallbackExpense],
   );
 
-  const isPinned = expense ? pinnedExpenseIds.includes(expense.id) : false;
   const isSettlement = expense?.isSettlement ?? false;
+  const paidByMember = expense
+    ? getMemberMeta(expense.paidBy.id, groupSummaryQuery.data?.members)
+    : null;
+  const participants = expense?.participants ?? [];
 
   const handleBack = () => {
     void navigateToGroupRoot(true);
@@ -134,10 +167,21 @@ function RouteComponent() {
     });
   };
 
+  const handleConfirmDeleteExpense = async () => {
+    if (!expense) return;
+
+    await deleteExpenseMutation.mutateAsync({
+      groupId: id,
+      expenseId: expense.id,
+    });
+    setShowDeleteDrawer(false);
+    void navigateToGroupRoot(true);
+  };
+
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-[412px] md:max-w-5xl flex-col bg-[#fafafa] px-4 pb-8 pt-6">
-        <header className="mb-5 flex items-center justify-between gap-3">
+      <div className="mx-auto flex min-h-screen w-full max-w-[412px] md:max-w-5xl flex-col bg-[#ececec] px-4 pb-8 pt-6">
+        <header className="mb-5 grid grid-cols-[2.25rem_1fr_2.25rem] items-center gap-3">
           <button
             type="button"
             onClick={handleBack}
@@ -146,26 +190,12 @@ function RouteComponent() {
           >
             <ArrowLeft className="size-4" />
           </button>
-          <div className="min-w-0 flex-1 text-center">
+          <div className="min-w-0 text-center">
             <h1 className="truncate text-base font-semibold text-[#0f172a]">
-              {isSettlement ? 'Liquidación' : 'Detalle del gasto'}
+              Detalle
             </h1>
-            <p className="truncate text-xs text-[#64748b]">
-              {groupSummaryQuery.data?.name ?? 'Grupo'}
-            </p>
           </div>
-          {!isSettlement && expense ? (
-            <button
-              type="button"
-              onClick={handleEditExpense}
-              className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[#334155] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
-              aria-label="Editar gasto"
-            >
-              <Pencil className="size-4" />
-            </button>
-          ) : (
-            <span className="size-9 shrink-0" />
-          )}
+          <span className="size-9" />
         </header>
 
         {expenseQuery.isLoading && !fallbackExpense ? (
@@ -181,149 +211,157 @@ function RouteComponent() {
 
         {expense ? (
           <section className="flex flex-1 flex-col">
-            <div
-              className={`relative overflow-hidden rounded-[32px] border p-5 shadow-[0_14px_34px_rgba(15,23,42,0.07)] ${
-                isSettlement
-                  ? 'border-emerald-100 bg-emerald-50'
-                  : 'border-white bg-white'
-              }`}
-            >
-              <div className="flex flex-col items-center text-center">
-                <div
-                  className={`mb-4 flex size-16 items-center justify-center rounded-[26px] ${
-                    isSettlement
-                      ? 'bg-emerald-600 text-white shadow-[0_10px_24px_rgba(5,150,105,0.22)]'
-                      : 'bg-primary/10 text-primary'
-                  }`}
-                >
+            <div className="relative flex flex-1 flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_18px_42px_rgba(15,23,42,0.06)]">
+              <div className="px-5 pb-4 pt-4 text-center">
+                <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-teal-50 text-teal-600">
                   {isSettlement ? (
-                    <HandCoins className="size-7" />
+                    <HandCoins className="size-6" />
                   ) : (
-                    <span className="text-3xl">{getExpenseEmoji(expense)}</span>
+                    <span className="text-2xl">{getExpenseEmoji(expense)}</span>
                   )}
                 </div>
-
-                <p className="max-w-full truncate text-sm font-medium text-[#64748b]">
-                  {formatDate(expense.date)}
-                </p>
-                <h2 className="mt-1 max-w-full truncate text-2xl font-semibold tracking-tight text-[#0f172a]">
+                <h2 className="truncate text-base font-medium text-[#444444]">
                   {expense.description}
                 </h2>
-                <p
-                  className={`shrink-0 text-3xl font-bold ${
-                    isSettlement ? 'text-emerald-700' : 'text-primary'
-                  }`}
-                >
+                <p className="mt-1 text-2xl font-semibold tracking-tight text-[#202124]">
                   {formatAmount(expense.currency, expense.amount)}
                 </p>
-                {isSettlement ? (
-                  <div className="mt-3 flex max-w-full items-center gap-1.5 text-sm font-semibold text-emerald-700">
-                    <span className="truncate">{expense.paidBy.name}</span>
-                    <ArrowRight className="size-4 shrink-0" />
-                    <span className="truncate">
-                      {expense.settlementToName ?? 'otro miembro'}
-                    </span>
-                  </div>
+                <p className="mt-3 text-xs text-[#202124]">
+                  <span>{formatDate(expense.date)}</span>
+                  <span className="mx-1 text-[#9ca3af]">•</span>
+                  <span className="font-semibold">{expense.paidBy.name}</span>
+                  {paidByMember?.isCurrentUser ? (
+                    <span className="font-semibold"> (Tu)</span>
+                  ) : null}
+                </p>
+              </div>
+
+              <div className="relative border-t border-dashed border-[#e2e8f0] px-5 pb-6 pt-5 before:absolute before:-left-3 before:-top-3 before:size-6 before:rounded-full before:bg-[#ececec] after:absolute after:-right-3 after:-top-3 after:size-6 after:rounded-full after:bg-[#ececec]">
+                <p className="mb-4 text-xs font-medium text-[#444444]">
+                  Pagado por
+                </p>
+                <MemberLine
+                  image={paidByMember?.image ?? null}
+                  name={`${expense.paidBy.name}${paidByMember?.isCurrentUser ? ' (Tu)' : ''}`}
+                />
+
+                {!isSettlement ? (
+                  <>
+                    <p className="mb-4 mt-7 text-xs font-medium text-[#444444]">
+                      Se divide con
+                    </p>
+                    <div className="space-y-5">
+                      {participants.map((participant) => {
+                        const member = getMemberMeta(
+                          participant.memberId,
+                          groupSummaryQuery.data?.members,
+                        );
+
+                        return (
+                          <MemberLine
+                            key={participant.memberId}
+                            image={member?.image ?? null}
+                            name={`${participant.name}${member?.isCurrentUser ? ' (Tu)' : ''}`}
+                            amount={formatAmount(
+                              expense.currency,
+                              participant.share,
+                            )}
+                          />
+                        );
+                      })}
+                    </div>
+                  </>
                 ) : null}
               </div>
 
-              {!isSettlement ? (
+              <div className="mt-auto flex items-center gap-3 px-5 pb-4 pt-6">
+                {!isSettlement ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteDrawer(true)}
+                    className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#202124] shadow-[0_4px_12px_rgba(15,23,42,0.05)]"
+                    aria-label="Eliminar gasto"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={handleEditExpense}
-                  className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-white shadow-[0_10px_24px_rgba(222,3,77,0.18)]"
+                  disabled={isSettlement}
+                  className="flex h-12 flex-1 items-center justify-center rounded-full bg-[#080202] text-sm font-semibold text-white disabled:opacity-50"
                 >
-                  <Pencil className="size-4" />
                   Editar gasto
                 </button>
-              ) : null}
-            </div>
-
-            <div className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white px-4 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-              <DetailRow
-                icon={UserRound}
-                label={isSettlement ? 'Pagó' : 'Pagado por'}
-                value={expense.paidBy.name}
-              />
-              {isSettlement ? (
-                <DetailRow
-                  icon={ArrowRight}
-                  label="Recibió"
-                  value={expense.settlementToName ?? 'otro miembro'}
-                />
-              ) : (
-                <>
-                  <DetailRow
-                    icon={UsersRound}
-                    label="Participantes"
-                    value={`${expense.participantCount} persona${expense.participantCount === 1 ? '' : 's'}`}
-                  />
-                  <DetailRow
-                    icon={Tag}
-                    label="Categoría"
-                    value={expense.category?.name ?? 'Sin categoría'}
-                  />
-                  <DetailRow
-                    icon={ReceiptText}
-                    label="Tipo"
-                    value={
-                      expense.expenseType === 'composite'
-                        ? 'Gasto compuesto'
-                        : 'Gasto simple'
-                    }
-                  />
-                </>
-              )}
-              <DetailRow
-                icon={CheckCircle2}
-                label="Estado"
-                value={expense.isDeleted ? 'Eliminado' : 'Activo'}
-              />
-              <DetailRow
-                icon={CalendarDays}
-                label="Fecha"
-                value={formatDate(expense.date)}
-              />
-              {isSettlement ? (
-                <DetailRow
-                  icon={HandCoins}
-                  label="Tipo"
-                  value="Liquidación de saldo"
-                />
-              ) : null}
-              {isPinned ? (
-                <DetailRow
-                  icon={ReceiptText}
-                  label="Fijado"
-                  value="Solo en este dispositivo"
-                />
-              ) : null}
+              </div>
             </div>
           </section>
         ) : null}
       </div>
+
+      <Drawer open={showDeleteDrawer} onOpenChange={setShowDeleteDrawer}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Eliminar gasto</DrawerTitle>
+            <DrawerDescription>
+              Esta acción eliminará el gasto del grupo.
+            </DrawerDescription>
+          </DrawerHeader>
+          <DrawerFooter className="grid grid-cols-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-full"
+              onClick={() => setShowDeleteDrawer(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="h-11 rounded-full"
+              onClick={() => void handleConfirmDeleteExpense()}
+              disabled={deleteExpenseMutation.isPending}
+            >
+              {deleteExpenseMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </main>
   );
 }
 
-function DetailRow({
-  icon: Icon,
-  label,
-  value,
+function MemberLine({
+  image,
+  name,
+  amount,
 }: {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
+  image: string | null;
+  name: string;
+  amount?: string;
 }) {
   return (
-    <div className="flex items-center gap-3 border-b border-[#f1f5f9] py-3 last:border-b-0">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#f8fafc] text-[#64748b]">
-        <Icon className="size-4" />
+    <div className="flex items-center gap-3">
+      {image ? (
+        <img
+          src={image}
+          alt={name}
+          className="size-9 rounded-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        <span className="flex size-9 items-center justify-center rounded-full bg-[#eeeeee] text-sm font-medium text-[#555555]">
+          {getInitials(name)}
+        </span>
+      )}
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#202124]">
+        {name}
       </span>
-      <span className="min-w-0 flex-1 text-sm text-[#64748b]">{label}</span>
-      <span className="max-w-[52%] truncate text-right text-sm font-semibold text-[#0f172a]">
-        {value}
-      </span>
+      {amount ? (
+        <span className="shrink-0 text-sm font-semibold text-[#202124]">
+          {amount}
+        </span>
+      ) : null}
     </div>
   );
 }

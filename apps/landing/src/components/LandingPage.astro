@@ -1,7 +1,4 @@
 ---
-const apiBaseUrl =
-  (import.meta.env.PUBLIC_API_BASE_URL as string | undefined) ??
-  "https://api.vornway.com";
 ---
 
 <main class="vw-page">
@@ -23,105 +20,12 @@ const apiBaseUrl =
         </div>
       </div>
 
-      <button class="vw-button" type="button" data-waitlist-toggle>
-        Join waitlist
-      </button>
-
-      <form
-        class="vw-waitlist-form"
-        data-waitlist-form
-        hidden
-        data-api-base={apiBaseUrl}
-      >
-        <input
-          name="name"
-          type="text"
-          placeholder="Name"
-          aria-label="Name"
-          autocomplete="name"
-          required
-        />
-        <input
-          name="email"
-          type="email"
-          placeholder="Email"
-          aria-label="Email"
-          autocomplete="email"
-          required
-        />
-        <button class="vw-submit" type="submit">Join waitlist</button>
-      </form>
-
-      <p class="vw-status" data-waitlist-success hidden>You are in.</p>
-      <p class="vw-status is-error" data-waitlist-error hidden></p>
+      <a class="vw-button" href="https://app.vornway.com">
+        Open app
+      </a>
     </div>
   </section>
 </main>
-
-<script is:inline>
-  const toggle = document.querySelector("[data-waitlist-toggle]");
-  const form = document.querySelector("[data-waitlist-form]");
-  const success = document.querySelector("[data-waitlist-success]");
-  const error = document.querySelector("[data-waitlist-error]");
-  const apiBase = form?.dataset.apiBase ?? "https://api.vornway.com";
-  const endpoint = `${apiBase}/api/waitlist`;
-
-  toggle?.addEventListener("click", () => {
-    form?.removeAttribute("hidden");
-    if (form instanceof HTMLElement) {
-      form.querySelector("input")?.focus();
-    }
-  });
-
-  form?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    success?.setAttribute("hidden", "");
-    error?.setAttribute("hidden", "");
-
-    const formData = new FormData(form);
-    const name = String(formData.get("name") ?? "").trim();
-    const email = String(formData.get("email") ?? "")
-      .trim()
-      .toLowerCase();
-    const submitButton = form.querySelector('button[type="submit"]');
-
-    if (submitButton) submitButton.setAttribute("disabled", "true");
-
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
-      });
-
-      if (response.ok) {
-        success?.removeAttribute("hidden");
-        form.reset();
-        return;
-      }
-
-      if (response.status === 409) {
-        if (error) {
-          error.textContent = "This email is already on the waitlist.";
-          error.removeAttribute("hidden");
-        }
-        return;
-      }
-
-      if (error) {
-        error.textContent = "We could not register you right now.";
-        error.removeAttribute("hidden");
-      }
-    } catch {
-      if (error) {
-        error.textContent = "Connection error. Try again.";
-        error.removeAttribute("hidden");
-      }
-    } finally {
-      if (submitButton) submitButton.removeAttribute("disabled");
-    }
-  });
-</script>
 
 <style>
   .vw-page {
@@ -194,8 +98,7 @@ const apiBaseUrl =
     object-fit: cover;
   }
 
-  .vw-button,
-  .vw-submit {
+  .vw-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -208,58 +111,13 @@ const apiBaseUrl =
       transform 160ms ease,
       border-color 160ms ease,
       background-color 160ms ease;
-  }
-
-  .vw-button {
     background: #de034d;
     color: #fff;
+    text-decoration: none;
   }
 
-  .vw-button:hover,
-  .vw-submit:hover {
+  .vw-button:hover {
     transform: translateY(-1px);
   }
 
-  .vw-waitlist-form {
-    width: min(100%, 28rem);
-    display: grid;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-  }
-
-  .vw-waitlist-form input {
-    width: 100%;
-    min-height: 3rem;
-    padding: 0 0.95rem;
-    border: 1px solid rgba(245, 245, 245, 0.08);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.02);
-    color: #f5f5f5;
-    outline: none;
-  }
-
-  .vw-waitlist-form input::placeholder {
-    color: rgba(245, 245, 245, 0.34);
-  }
-
-  .vw-submit {
-    background: #de034d;
-    color: #fff;
-  }
-
-  .vw-submit:disabled {
-    opacity: 0.75;
-    cursor: wait;
-  }
-
-  .vw-status {
-    margin: 0;
-    color: rgba(245, 245, 245, 0.68);
-    font-size: 0.92rem;
-    line-height: 1.6;
-  }
-
-  .vw-status.is-error {
-    color: #f5c2ce;
-  }
 </style>

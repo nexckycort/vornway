@@ -71,6 +71,9 @@ function RouteComponent() {
   const iconInputRef = useRef<HTMLInputElement | null>(null);
 
   const categories = groupQuery.data?.categories ?? [];
+  const selectedCategory = categories.find(
+    (category) => category.id === selectedCategoryId,
+  );
   const trimmedCategoryName = categoryName.trim();
   const isCustomIcon = categoryIcon === customCategoryIconId;
   const customIconValue = categoryCustomIcon.trim();
@@ -103,16 +106,16 @@ function RouteComponent() {
     setEditorMode('edit');
     setSelectedCategoryId(category.id);
     setCategoryName(category.name);
-    setCategoryIcon(
-      category.icon && categoryIconById.has(category.icon)
-        ? category.icon
-        : customCategoryIconId,
-    );
-    setCategoryCustomIcon(
-      category.icon && !categoryIconById.has(category.icon)
-        ? category.icon
-        : '',
-    );
+    if (category.icon && categoryIconById.has(category.icon)) {
+      setCategoryIcon(category.icon);
+      setCategoryCustomIcon('');
+    } else if (category.icon) {
+      setCategoryIcon(customCategoryIconId);
+      setCategoryCustomIcon(category.icon);
+    } else {
+      setCategoryIcon(categoryIconOptions[0].id);
+      setCategoryCustomIcon('');
+    }
     setCategoryColor(category.color ?? categoryColorOptions[0]);
     setShowEditorDrawer(true);
   };
@@ -265,6 +268,9 @@ function RouteComponent() {
                       : category.icon
                         ? 'Emoji personalizado'
                         : 'Sin icono'}
+                    {category.expenseCount > 0
+                      ? ` · ${category.expenseCount} gasto${category.expenseCount === 1 ? '' : 's'}`
+                      : ''}
                   </p>
                 </div>
               </div>
@@ -413,19 +419,37 @@ function RouteComponent() {
               </div>
             </div>
 
-            {editorMode === 'edit' ? (
+            {editorMode === 'edit' &&
+            (selectedCategory?.expenseCount ?? 0) === 0 ? (
               <Button
                 type="button"
                 variant="outline"
                 className="h-11 w-full rounded-full border-[#fecaca] text-[#ef4444] hover:bg-[#fff1f2] hover:text-[#ef4444]"
                 onClick={handleDeleteCategory}
-                disabled={deleteCategoryMutation.isPending}
+                disabled={
+                  deleteCategoryMutation.isPending ||
+                  (selectedCategory?.expenseCount ?? 0) > 0
+                }
               >
                 <Trash2 className="mr-2 size-4" />
                 {deleteCategoryMutation.isPending
                   ? 'Eliminando...'
-                  : 'Eliminar categoría'}
+                  : (selectedCategory?.expenseCount ?? 0) > 0
+                    ? 'No se puede eliminar'
+                    : 'Eliminar categoría'}
               </Button>
+            ) : null}
+
+            {editorMode === 'edit' &&
+            (selectedCategory?.expenseCount ?? 0) > 0 ? (
+              <p className="px-2 text-xs leading-5 text-[#64748b]">
+                Esta categoría tiene {selectedCategory?.expenseCount ?? 0} gasto
+                {selectedCategory && selectedCategory.expenseCount === 1
+                  ? ''
+                  : 's'}
+                . No se puede eliminar hasta que no quede asociada a ningún
+                gasto.
+              </p>
             ) : null}
 
             <Button

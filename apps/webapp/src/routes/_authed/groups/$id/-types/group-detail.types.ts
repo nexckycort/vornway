@@ -60,6 +60,7 @@ export type GroupSummary = {
     name: string;
     icon: string | null;
     color: string | null;
+    expenseCount: number;
   }>;
   members: GroupMemberIdentity[];
   directDebts: Array<{

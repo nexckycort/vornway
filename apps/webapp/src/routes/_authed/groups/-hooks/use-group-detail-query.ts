@@ -102,6 +102,7 @@ type GroupReportsTotalsSuccess = {
     Array<{
       name: string;
       icon: string | null;
+      expenseCount: number;
       amount: number;
       fill: string;
     }>

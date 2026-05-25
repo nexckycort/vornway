@@ -199,6 +199,17 @@ export function createGroupCategoriesService() {
         throw new Error('Categoría no encontrada');
       }
 
+      const relatedExpenseCount = await db.expense.count({
+        where: {
+          categoryId,
+          groupId,
+        },
+      });
+
+      if (relatedExpenseCount > 0) {
+        throw new Error('La categoría tiene gastos asociados');
+      }
+
       await db.expenseCategory.delete({
         where: { id: categoryId },
       });

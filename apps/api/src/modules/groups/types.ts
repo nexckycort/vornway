@@ -294,6 +294,7 @@ export type GroupSummaryResult = {
     name: string;
     icon: string | null;
     color: string | null;
+    expenseCount: number;
   }>;
   members: GroupSummaryMember[];
   memberBalances: Array<{

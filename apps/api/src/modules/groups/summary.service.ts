@@ -83,6 +83,14 @@ export function createGroupSummaryService() {
 
       const myMembership =
         group.GroupMember.find((member) => member.userId === userId) ?? null;
+      const groupExpenses = await db.expense.findMany({
+        where: {
+          groupId,
+        },
+        select: {
+          categoryId: true,
+        },
+      });
       const memberNameById = new Map(
         group.GroupMember.map((member) => [member.id, member.name]),
       );
@@ -90,6 +98,15 @@ export function createGroupSummaryService() {
       const expenseCountByMember = new Map<string, number>();
       const directDebtByPair = new Map<string, number>();
       const allDebtByPair = new Map<string, number>();
+      const categoryExpenseCount = new Map<string, number>();
+
+      for (const expense of groupExpenses) {
+        if (!expense.categoryId) continue;
+        categoryExpenseCount.set(
+          expense.categoryId,
+          (categoryExpenseCount.get(expense.categoryId) ?? 0) + 1,
+        );
+      }
 
       for (const member of group.GroupMember) {
         balanceByMember.set(member.id, {});
@@ -229,6 +246,7 @@ export function createGroupSummaryService() {
           name: category.name,
           icon: category.icon,
           color: category.color,
+          expenseCount: categoryExpenseCount.get(category.id) ?? 0,
         })),
         members: group.GroupMember.map((member) => ({
           id: member.id,

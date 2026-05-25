@@ -248,6 +248,9 @@ const groups = new Hono<AppContext>()
           if (error.message === 'Categoría no encontrada') {
             return c.json({ error: error.message }, 404);
           }
+          if (error.message === 'La categoría tiene gastos asociados') {
+            return c.json({ error: error.message }, 409);
+          }
         }
 
         throw error;

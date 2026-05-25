@@ -38,6 +38,19 @@ export function BottomAppBar() {
     select: (state) => state.location.pathname,
   });
 
+  const navigateToTab = async (to: BottomAppBarItem['to']) => {
+    if (to === '/') {
+      await navigate({ to, replace: true });
+      return;
+    }
+
+    if (pathname !== '/') {
+      await navigate({ to: '/', replace: true });
+    }
+
+    await navigate({ to });
+  };
+
   return (
     <nav className="pointer-events-none fixed inset-x-0 bottom-[calc(0.85rem+env(safe-area-inset-bottom))] z-50 mx-auto w-[calc(100%-1.5rem)] max-w-[388px] rounded-[24px] border border-white/60 bg-white/90 px-4 pb-3 pt-2.5 shadow-[0_18px_42px_rgba(15,23,42,0.16)] backdrop-blur-xl">
       <div className="pointer-events-auto flex items-end justify-between">
@@ -51,10 +64,7 @@ export function BottomAppBar() {
               key={item.id}
               type="button"
               onClick={() => {
-                void navigate({
-                  to: item.to,
-                  replace: item.to === '/',
-                });
+                void navigateToTab(item.to);
               }}
               className={cn(
                 'flex w-[78px] flex-col items-center justify-end gap-0.5 rounded-2xl px-1.5 py-1 text-[11px] font-medium leading-4 text-[#94a3b8] transition-colors',

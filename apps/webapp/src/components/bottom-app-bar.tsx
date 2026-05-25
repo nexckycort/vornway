@@ -1,4 +1,9 @@
-import { useNavigate, useRouterState } from '@tanstack/react-router';
+import {
+  useLocation,
+  useNavigate,
+  useRouter,
+  useRouterState,
+} from '@tanstack/react-router';
 import {
   Compass,
   Home,
@@ -18,6 +23,10 @@ type BottomAppBarItem = {
   to: '/' | '/groups' | '/goals' | '/profile';
 };
 
+type BottomNavState = {
+  bottomNavRoot?: true;
+};
+
 const navIcons: Record<BottomAppBarIconName, LucideIcon> = {
   compass: Compass,
   home: Home,
@@ -34,13 +43,33 @@ const items: BottomAppBarItem[] = [
 
 export function BottomAppBar() {
   const navigate = useNavigate();
+  const router = useRouter();
+  const location = useLocation();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
+  const hasBottomNavRoot =
+    (location.state as BottomNavState).bottomNavRoot === true;
+  const bottomNavState = { bottomNavRoot: true } as never;
 
   const navigateToTab = async (to: BottomAppBarItem['to']) => {
     if (to === '/') {
-      await navigate({ to, replace: true });
+      if (pathname !== '/' && hasBottomNavRoot) {
+        router.history.back();
+        return;
+      }
+
+      await navigate({ to: '/', replace: true });
+      return;
+    }
+
+    if (pathname === '/') {
+      await navigate({ to, state: bottomNavState });
+      return;
+    }
+
+    if (hasBottomNavRoot) {
+      await navigate({ to, replace: true, state: bottomNavState });
       return;
     }
 
@@ -48,7 +77,7 @@ export function BottomAppBar() {
       await navigate({ to: '/', replace: true });
     }
 
-    await navigate({ to });
+    await navigate({ to, state: bottomNavState });
   };
 
   return (

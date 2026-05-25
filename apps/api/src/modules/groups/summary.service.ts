@@ -39,6 +39,8 @@ export function createGroupSummaryService() {
             select: {
               id: true,
               name: true,
+              icon: true,
+              color: true,
             },
             orderBy: [{ createdAt: 'asc' }, { name: 'asc' }],
           },
@@ -225,6 +227,8 @@ export function createGroupSummaryService() {
         categories: group.categories.map((category) => ({
           id: category.id,
           name: category.name,
+          icon: category.icon,
+          color: category.color,
         })),
         members: group.GroupMember.map((member) => ({
           id: member.id,

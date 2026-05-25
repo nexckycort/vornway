@@ -56,6 +56,8 @@ export function createGroupExpensesService() {
             select: {
               id: true,
               name: true,
+              icon: true,
+              color: true,
             },
             orderBy: [{ createdAt: 'asc' }, { name: 'asc' }],
           },
@@ -93,6 +95,8 @@ export function createGroupExpensesService() {
               select: {
                 id: true,
                 name: true,
+                icon: true,
+                color: true,
               },
             },
             paidBy: {
@@ -163,9 +167,9 @@ export function createGroupExpensesService() {
               isDeleted: row.status === 'DELETED' || Boolean(row.deletedAt),
               isSettlement,
               isPersonal,
-            expenseType: 'standard' as const,
-            subExpenseCount: 0,
-            settlementToName: isSettlement
+              expenseType: 'standard' as const,
+              subExpenseCount: 0,
+              settlementToName: isSettlement
                 ? (row.participants[0]?.member.name ?? null)
                 : null,
               paidBy: row.paidBy,
@@ -222,6 +226,8 @@ export function createGroupExpensesService() {
             select: {
               id: true,
               name: true,
+              icon: true,
+              color: true,
             },
           },
           paidBy: {
@@ -255,8 +261,7 @@ export function createGroupExpensesService() {
         amount: expense.amount,
         currency: expense.currency,
         date: expense.date,
-        isDeleted:
-          expense.status === 'DELETED' || Boolean(expense.deletedAt),
+        isDeleted: expense.status === 'DELETED' || Boolean(expense.deletedAt),
         isSettlement: Boolean(expense.notes?.includes('[SETTLEMENT:')),
         splitMethod: readSplitMethod(expense.metadata, expense.participants),
         category: expense.category,

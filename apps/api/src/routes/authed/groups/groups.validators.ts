@@ -76,6 +76,11 @@ export const groupImageSchema = z.object({
 
 export const groupCategorySchema = z.object({
   name: z.string().min(1).max(120),
+  icon: z.string().min(1).max(32).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
 });
 
 export const createGroupSchema = z.object({

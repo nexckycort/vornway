@@ -54,7 +54,10 @@ export function createGroupReportsService() {
           paidById: true,
           category: {
             select: {
+              id: true,
               name: true,
+              icon: true,
+              color: true,
             },
           },
         },
@@ -64,7 +67,18 @@ export function createGroupReportsService() {
       const currencyTotals = new Map<string, number>();
       const currencyExpenseCounts = new Map<string, number>();
       const currentUserSpentByCurrency = new Map<string, number>();
-      const currencyCategories = new Map<string, Map<string, number>>();
+      const currencyCategories = new Map<
+        string,
+        Map<
+          string,
+          {
+            name: string;
+            icon: string | null;
+            color: string | null;
+            amount: number;
+          }
+        >
+      >();
 
       const palette = [
         '#ff7fa3',
@@ -101,14 +115,27 @@ export function createGroupReportsService() {
         }
 
         const categoryName = expense.category?.name?.trim() || 'Sin categoría';
+        const categoryKey = expense.category?.id ?? categoryName;
         const categoryMap =
-          currencyCategories.get(expense.currency) ?? new Map<string, number>();
-        categoryMap.set(
-          categoryName,
-          normalizeAmount(
-            (categoryMap.get(categoryName) ?? 0) + expense.amount,
+          currencyCategories.get(expense.currency) ??
+          new Map<
+            string,
+            {
+              name: string;
+              icon: string | null;
+              color: string | null;
+              amount: number;
+            }
+          >();
+        const currentCategory = categoryMap.get(categoryKey);
+        categoryMap.set(categoryKey, {
+          name: categoryName,
+          icon: expense.category?.icon ?? null,
+          color: expense.category?.color ?? null,
+          amount: normalizeAmount(
+            (currentCategory?.amount ?? 0) + expense.amount,
           ),
-        );
+        });
         currencyCategories.set(expense.currency, categoryMap);
       }
 
@@ -124,11 +151,15 @@ export function createGroupReportsService() {
         categoriesByCurrency: Object.fromEntries(
           Array.from(currencyCategories.entries()).map(([currencyKey, map]) => [
             currencyKey,
-            Array.from(map.entries())
-              .map(([name, amount], index) => ({
-                name,
-                amount,
-                fill: palette[index % palette.length] ?? '#94a3b8',
+            Array.from(map.values())
+              .map((category, index) => ({
+                name: category.name,
+                icon: category.icon,
+                amount: category.amount,
+                fill:
+                  category.color ??
+                  palette[index % palette.length] ??
+                  '#94a3b8',
               }))
               .sort((left, right) => right.amount - left.amount),
           ]),

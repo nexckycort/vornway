@@ -163,6 +163,8 @@ const groups = new Hono<AppContext>()
           userId,
           groupId: id,
           name: data.name,
+          icon: data.icon,
+          color: data.color,
         });
 
         return c.json(result, 201);

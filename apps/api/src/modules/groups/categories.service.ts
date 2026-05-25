@@ -11,6 +11,8 @@ export function createGroupCategoriesService() {
       userId,
       groupId,
       name,
+      icon,
+      color,
     }: CreateGroupCategoryInput): Promise<CreateGroupCategoryResult> => {
       const group = await db.group.findFirst({
         where: {
@@ -34,6 +36,8 @@ export function createGroupCategoriesService() {
       }
 
       const normalizedName = name.trim();
+      const normalizedIcon = icon?.trim() || null;
+      const normalizedColor = color?.trim() || null;
 
       if (!normalizedName) {
         throw new Error('El nombre de la categoría es obligatorio');
@@ -47,7 +51,7 @@ export function createGroupCategoriesService() {
             mode: 'insensitive',
           },
         },
-        select: { id: true, name: true },
+        select: { id: true, name: true, icon: true, color: true },
       });
 
       if (existing) {
@@ -58,10 +62,14 @@ export function createGroupCategoriesService() {
         data: {
           groupId,
           name: normalizedName,
+          icon: normalizedIcon,
+          color: normalizedColor,
         },
         select: {
           id: true,
           name: true,
+          icon: true,
+          color: true,
         },
       });
 

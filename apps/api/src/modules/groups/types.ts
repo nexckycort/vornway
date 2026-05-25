@@ -131,11 +131,15 @@ export type CreateGroupCategoryInput = {
   userId: string;
   groupId: string;
   name: string;
+  icon?: string;
+  color?: string;
 };
 
 export type CreateGroupCategoryResult = {
   id: string;
   name: string;
+  icon: string | null;
+  color: string | null;
 };
 
 export type GroupDeleteResult = {
@@ -261,6 +265,8 @@ export type GroupSummaryResult = {
   categories: Array<{
     id: string;
     name: string;
+    icon: string | null;
+    color: string | null;
   }>;
   members: GroupSummaryMember[];
   memberBalances: Array<{
@@ -328,6 +334,8 @@ export type GroupExpenseListItem = {
   category: {
     id: string;
     name: string;
+    icon: string | null;
+    color: string | null;
   } | null;
   participantCount: number;
   currentUserBalance: number | null;
@@ -348,6 +356,7 @@ export type GroupReportsTotalsResult = {
     string,
     Array<{
       name: string;
+      icon: string | null;
       amount: number;
       fill: string;
     }>
@@ -372,6 +381,8 @@ export type GroupExpenseDetailResult = {
   category: {
     id: string;
     name: string;
+    icon: string | null;
+    color: string | null;
   } | null;
   paidBy: {
     id: string;

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { ArrowRightLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -11,7 +11,6 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
-import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import {
   useCreateCategoryMutation,
   useDeleteCategoryMutation,
@@ -50,7 +49,7 @@ function normalizeCategoryIconInput(value: string) {
 
 function RouteComponent() {
   const { id } = Route.useParams();
-  const { navigateToGroupRoot } = useGroupFlowNavigation(id);
+  const navigate = useNavigate();
   const groupQuery = useGroupSummaryQuery(id);
   const [showEditorDrawer, setShowEditorDrawer] = useState(false);
   const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create');
@@ -99,7 +98,11 @@ function RouteComponent() {
   }, [isCustomIcon, showEditorDrawer]);
 
   const goBack = () => {
-    void navigateToGroupRoot(true);
+    void navigate({
+      to: '/groups/$id/settings',
+      params: { id },
+      replace: true,
+    });
   };
 
   const openCreateDrawer = () => {

@@ -19,7 +19,7 @@ export function GroupParticipantsStrip({
   const { flowState } = useGroupFlowNavigation(groupId);
 
   return (
-    <section className="mb-6">
+    <section className="mt-2">
       <div className="mb-4 flex items-center justify-between gap-3">
         <Link
           to="/groups/$id/participants"

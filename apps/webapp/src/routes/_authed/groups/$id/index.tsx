@@ -29,8 +29,8 @@ import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-del
 import { useRemoveMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import {
   useGroupExpensesInfiniteQuery,
-  usePinnedGroupExpensesQuery,
   useGroupSummaryQuery,
+  usePinnedGroupExpensesQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
 import { formatMoney, sumByCurrency } from './-components/group-detail.utils';
@@ -390,12 +390,14 @@ function RouteComponent() {
           }
         />
 
-        <div className="flex-1 rounded-t-[32px] bg-white px-4 pb-8 pt-6 shadow-[0_-16px_40px_rgba(0,0,0,0.12)]">
-          <GroupParticipantsStrip
-            groupId={id}
-            members={group.members}
-            participantCount={group.participantCount}
-          />
+        <div className="flex-1 rounded-t-[32px] bg-[#fafafa] px-4 pb-8 pt-3 shadow-[0_-16px_40px_rgba(0,0,0,0.12)]">
+          <div className="-mx-4 mb-6 border-b border-[#e5e7eb] px-4 pb-5">
+            <GroupParticipantsStrip
+              groupId={id}
+              members={group.members}
+              participantCount={group.participantCount}
+            />
+          </div>
 
           <GroupExpensesTimeline
             expenses={expenses}

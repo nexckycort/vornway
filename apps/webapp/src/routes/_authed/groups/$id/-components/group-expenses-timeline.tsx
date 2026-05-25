@@ -1,5 +1,4 @@
-import { CalendarDays } from 'lucide-react';
-import { useMemo, type RefObject } from 'react';
+import { type RefObject, useMemo } from 'react';
 
 import type { ExpenseItem } from '../-types/group-detail.types';
 import { groupExpensesByDate } from './group-detail.utils';
@@ -112,23 +111,23 @@ export function GroupExpensesTimeline({
       <div className="space-y-5">
         {groupedExpenses.map((dayGroup) => (
           <div key={dayGroup.label}>
-            <div className="mb-3 flex items-center gap-3">
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#e2e8f0] bg-white px-3 py-1.5 text-xs font-semibold text-[#334155] shadow-[0_8px_18px_rgba(15,23,42,0.05)]">
-                <CalendarDays className="size-3.5 text-primary" />
-                {dayGroup.label}
-              </span>
-              <span className="h-px flex-1 bg-gradient-to-r from-[#e2e8f0] to-transparent" />
-            </div>
-            <div className="flex flex-col gap-3">
+            <p className="mb-5 text-sm font-medium text-[#555555]">
+              {dayGroup.label}
+            </p>
+            <div className="overflow-hidden rounded-[24px] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
               {dayGroup.items.map((expense) => (
-                <GroupExpenseRow
+                <div
                   key={expense.id}
-                  expense={expense}
-                  isPinned={pinnedExpenseIds.includes(expense.id)}
-                  onOpenExpense={onOpenExpense}
-                  onOpenOptions={onOpenOptions}
-                  onDeleteExpense={onDeleteExpense}
-                />
+                  className="border-b border-[#f2f2f2] last:border-b-0"
+                >
+                  <GroupExpenseRow
+                    expense={expense}
+                    isPinned={pinnedExpenseIds.includes(expense.id)}
+                    onOpenExpense={onOpenExpense}
+                    onOpenOptions={onOpenOptions}
+                    onDeleteExpense={onDeleteExpense}
+                  />
+                </div>
               ))}
             </div>
           </div>

@@ -51,7 +51,10 @@ export function BottomAppBar() {
               key={item.id}
               type="button"
               onClick={() => {
-                void navigate({ to: item.to });
+                void navigate({
+                  to: item.to,
+                  replace: item.to === '/',
+                });
               }}
               className={cn(
                 'flex w-[78px] flex-col items-center justify-end gap-0.5 rounded-2xl px-1.5 py-1 text-[11px] font-medium leading-4 text-[#94a3b8] transition-colors',

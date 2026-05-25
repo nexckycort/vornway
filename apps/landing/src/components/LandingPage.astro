@@ -4,25 +4,33 @@
 <main class="vw-page">
   <section class="vw-hero">
     <div class="shell vw-shell">
-      <p class="vw-badge">Built for travelers</p>
-      <h1>Group travel, done right.</h1>
+      <p class="vw-badge">Vornway is live</p>
+      <h1>Split travel expenses without friction.</h1>
       <p class="vw-lead">
-        Shared expenses, balances, routes, and coordination in one calm product.
+        Create groups, add expenses, track balances, and coordinate every trip
+        in one app.
       </p>
 
       <div class="vw-visual">
         <div class="vw-visual-frame">
           <img
             src="/illustrations/trips.webp"
-            alt="Travel companion mascot"
+            alt="Vornway app preview"
             loading="eager"
           />
         </div>
       </div>
 
-      <a class="vw-button" href="https://app.vornway.com">
-        Open app
-      </a>
+      <div class="vw-actions">
+        <a class="vw-button" href="https://app.vornway.com">Open app</a>
+        <p class="vw-helper">Web app + PWA for iOS and Android</p>
+      </div>
+
+      <div class="vw-features" aria-label="Main features">
+        <p>Shared expenses</p>
+        <p>Real-time balances</p>
+        <p>Invite by QR or link</p>
+      </div>
     </div>
   </section>
 </main>
@@ -30,7 +38,13 @@
 <style>
   .vw-page {
     min-height: 100vh;
-    background: #0f0f10;
+    background:
+      radial-gradient(
+        60rem 30rem at 50% -10rem,
+        rgba(222, 3, 77, 0.12),
+        transparent 70%
+      ),
+      #0f0f10;
     color: #f5f5f5;
   }
 
@@ -45,7 +59,7 @@
     width: min(760px, calc(100% - 2rem));
     display: grid;
     justify-items: center;
-    gap: 1rem;
+    gap: 1.1rem;
     text-align: center;
   }
 
@@ -63,19 +77,19 @@
 
   .vw-shell h1 {
     margin: 0;
-    max-width: 10ch;
-    font-size: clamp(3.8rem, 10vw, 7rem);
-    line-height: 0.92;
-    letter-spacing: -0.085em;
+    max-width: 13ch;
+    font-size: clamp(2.5rem, 7.5vw, 5.25rem);
+    line-height: 0.98;
+    letter-spacing: -0.04em;
     text-wrap: balance;
   }
 
   .vw-lead {
-    max-width: 34rem;
+    max-width: 38rem;
     margin: 0;
     color: rgba(245, 245, 245, 0.68);
-    font-size: clamp(1.02rem, 1.6vw, 1.15rem);
-    line-height: 1.8;
+    font-size: clamp(1rem, 1.8vw, 1.15rem);
+    line-height: 1.65;
     text-wrap: pretty;
   }
 
@@ -114,10 +128,52 @@
     background: #de034d;
     color: #fff;
     text-decoration: none;
+    box-shadow: 0 10px 28px rgba(222, 3, 77, 0.28);
   }
 
   .vw-button:hover {
     transform: translateY(-1px);
+  }
+
+  .vw-actions {
+    display: grid;
+    gap: 0.65rem;
+    justify-items: center;
+  }
+
+  .vw-helper {
+    margin: 0;
+    color: rgba(245, 245, 245, 0.55);
+    font-size: 0.86rem;
+  }
+
+  .vw-features {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.55rem;
+  }
+
+  .vw-features p {
+    margin: 0;
+    padding: 0.45rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(245, 245, 245, 0.1);
+    color: rgba(245, 245, 245, 0.72);
+    font-size: 0.82rem;
+    letter-spacing: 0.01em;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  @media (max-width: 640px) {
+    .vw-hero {
+      padding: 1.25rem 0;
+    }
+
+    .vw-shell {
+      gap: 1rem;
+    }
   }
 
 </style>

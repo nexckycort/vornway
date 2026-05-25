@@ -224,6 +224,7 @@ function RouteComponent() {
                 navigate({
                   to: '/groups/$id/edit',
                   params: { id },
+                  replace: true,
                   state: flowState,
                 })
               }

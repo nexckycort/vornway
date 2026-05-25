@@ -7,6 +7,7 @@ import {
   addGroupMemberSchema,
   createGroupExpenseSchema,
   createGroupSchema,
+  groupCategoryParamsSchema,
   groupCategorySchema,
   groupExpenseParamsSchema,
   groupImageSchema,
@@ -18,6 +19,7 @@ import {
   listGroupsQuerySchema,
   searchGroupMembersQuerySchema,
   settleGroupDebtSchema,
+  updateGroupCategorySchema,
   updateGroupSchema,
 } from './groups.validators';
 
@@ -177,6 +179,75 @@ const groups = new Hono<AppContext>()
             return c.json({ error: error.message }, 403);
           }
           return c.json({ error: error.message }, 400);
+        }
+
+        throw error;
+      }
+    },
+  )
+  .patch(
+    '/:id/categories/:categoryId',
+    zValidator('param', groupCategoryParamsSchema),
+    zValidator('json', updateGroupCategorySchema),
+    async (c) => {
+      const { id, categoryId } = c.req.valid('param');
+      const data = c.req.valid('json');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.updateCategory({
+          userId,
+          groupId: id,
+          categoryId,
+          name: data.name,
+          icon: data.icon,
+          color: data.color,
+        });
+
+        return c.json(result);
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message === 'Grupo no encontrado') {
+            return c.json({ error: error.message }, 404);
+          }
+          if (error.message === 'Categoría no encontrada') {
+            return c.json({ error: error.message }, 404);
+          }
+          if (error.message === 'El nombre de la categoría es obligatorio') {
+            return c.json({ error: error.message }, 400);
+          }
+          if (error.message === 'Ya existe una categoría con ese nombre') {
+            return c.json({ error: error.message }, 409);
+          }
+        }
+
+        throw error;
+      }
+    },
+  )
+  .delete(
+    '/:id/categories/:categoryId',
+    zValidator('param', groupCategoryParamsSchema),
+    async (c) => {
+      const { id, categoryId } = c.req.valid('param');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.deleteCategory({
+          userId,
+          groupId: id,
+          categoryId,
+        });
+
+        return c.json(result);
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message === 'Grupo no encontrado') {
+            return c.json({ error: error.message }, 404);
+          }
+          if (error.message === 'Categoría no encontrada') {
+            return c.json({ error: error.message }, 404);
+          }
         }
 
         throw error;

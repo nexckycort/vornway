@@ -13,6 +13,10 @@ const deleteGroupEndpoint = client.api.groups[':id'].$delete;
 const settleDebtEndpoint = client.api.groups[':id'].settlements.$post;
 const addMemberEndpoint = client.api.groups[':id'].members.$post;
 const createCategoryEndpoint = client.api.groups[':id'].categories.$post;
+const updateCategoryEndpoint =
+  client.api.groups[':id'].categories[':categoryId'].$patch;
+const deleteCategoryEndpoint =
+  client.api.groups[':id'].categories[':categoryId'].$delete;
 const removeMemberEndpoint =
   client.api.groups[':id'].members[':memberId'].$delete;
 
@@ -29,6 +33,10 @@ type AddMemberResponse = InferResponseType<typeof addMemberEndpoint>;
 type CreateCategoryRequest = InferRequestType<typeof createCategoryEndpoint>;
 type CreateCategoryResponse = InferResponseType<typeof createCategoryEndpoint>;
 type CreateCategorySuccess = Extract<CreateCategoryResponse, { id: string }>;
+type UpdateCategoryRequest = InferRequestType<typeof updateCategoryEndpoint>;
+type UpdateCategoryResponse = InferResponseType<typeof updateCategoryEndpoint>;
+type UpdateCategorySuccess = Extract<UpdateCategoryResponse, { id: string }>;
+type DeleteCategoryResponse = InferResponseType<typeof deleteCategoryEndpoint>;
 type RemoveMemberResponse = InferResponseType<typeof removeMemberEndpoint>;
 
 type UpdateGroupImageRequest = {
@@ -257,6 +265,51 @@ export function useCreateCategoryMutation(groupId: string) {
       }
 
       return (await response.json()) as CreateCategorySuccess;
+    },
+    onSuccess: async () => {
+      await invalidateGroup(queryClient, groupId);
+    },
+  });
+}
+
+export function useUpdateCategoryMutation(groupId: string, categoryId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (json: UpdateCategoryRequest['json']) => {
+      const response = await updateCategoryEndpoint({
+        param: { id: groupId, categoryId },
+        json,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudo actualizar la categoría');
+      }
+
+      return (await response.json()) as UpdateCategorySuccess;
+    },
+    onSuccess: async () => {
+      await invalidateGroup(queryClient, groupId);
+    },
+  });
+}
+
+export function useDeleteCategoryMutation(groupId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (categoryId: string) => {
+      const response = await deleteCategoryEndpoint({
+        param: { id: groupId, categoryId },
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? 'No se pudo eliminar la categoría');
+      }
+
+      return (await response.json()) as DeleteCategoryResponse;
     },
     onSuccess: async () => {
       await invalidateGroup(queryClient, groupId);

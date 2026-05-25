@@ -21,6 +21,11 @@ export const groupMemberParamsSchema = z.object({
   memberId: z.string().min(1),
 });
 
+export const groupCategoryParamsSchema = z.object({
+  id: z.string().min(1),
+  categoryId: z.string().min(1),
+});
+
 export const listGroupExpensesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   cursor: z.string().min(1).optional(),
@@ -82,6 +87,26 @@ export const groupCategorySchema = z.object({
     .regex(/^#[0-9a-fA-F]{6}$/)
     .optional(),
 });
+
+export const updateGroupCategorySchema = z
+  .object({
+    name: z.string().min(1).max(120).optional(),
+    icon: z.string().min(1).max(32).nullable().optional(),
+    color: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/)
+      .nullable()
+      .optional(),
+  })
+  .refine(
+    (data) =>
+      data.name !== undefined ||
+      data.icon !== undefined ||
+      data.color !== undefined,
+    {
+      message: 'Debes enviar al menos un campo',
+    },
+  );
 
 export const createGroupSchema = z.object({
   id: z.string().uuid().optional(),

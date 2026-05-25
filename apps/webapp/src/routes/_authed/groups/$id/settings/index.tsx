@@ -280,9 +280,12 @@ function RouteComponent() {
           <button
             type="button"
             className="flex w-full items-center gap-3 px-1 py-2 pb-4 text-left"
-            onClick={() => {
-              void 0;
-            }}
+            onClick={() =>
+              navigate({
+                to: '/groups/$id/settings/categories',
+                params: { id },
+              })
+            }
           >
             <span className="flex size-9 items-center justify-center text-[#132238]">
               <QrCode className="size-5" />

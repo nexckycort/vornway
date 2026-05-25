@@ -1,5 +1,21 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Check, ChevronDown, Minus, Plus } from 'lucide-react';
+import {
+  Bed,
+  BriefcaseBusiness,
+  Car,
+  Check,
+  ChevronDown,
+  Gift,
+  Landmark,
+  type LucideIcon,
+  Minus,
+  PartyPopper,
+  Plane,
+  Plus,
+  ShoppingBag,
+  TreePine,
+  Utensils,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
@@ -51,6 +67,34 @@ const currencyMeta: Record<
 };
 
 const currencyOptions = ['COP', 'EUR', 'USD', 'GBP', 'MXN', 'BRL'] as const;
+
+const categoryIconOptions: Array<{
+  id: string;
+  icon: LucideIcon;
+  label: string;
+}> = [
+  { id: 'food', icon: Utensils, label: 'Comida' },
+  { id: 'transport', icon: Car, label: 'Transporte' },
+  { id: 'hotel', icon: Bed, label: 'Alojamiento' },
+  { id: 'party', icon: PartyPopper, label: 'Entretenimiento' },
+  { id: 'activities', icon: TreePine, label: 'Actividades' },
+  { id: 'shopping', icon: ShoppingBag, label: 'Compras' },
+  { id: 'travel', icon: Plane, label: 'Viaje' },
+  { id: 'work', icon: BriefcaseBusiness, label: 'Trabajo' },
+  { id: 'bank', icon: Landmark, label: 'Banco' },
+  { id: 'gift', icon: Gift, label: 'Regalos' },
+];
+
+const categoryColorOptions = [
+  '#ff7fa3',
+  '#5bd9cc',
+  '#d978f4',
+  '#ffa0a0',
+  '#ffd741',
+  '#62d9aa',
+  '#9daef9',
+  '#ffc06d',
+] as const;
 
 function getCurrencySymbol(currency: string) {
   switch (currency) {
@@ -134,6 +178,12 @@ function RouteComponent() {
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
     useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryIcon, setNewCategoryIcon] = useState(
+    categoryIconOptions[1].id,
+  );
+  const [newCategoryColor, setNewCategoryColor] = useState<string>(
+    categoryColorOptions[0],
+  );
   const [showSplitDrawer, setShowSplitDrawer] = useState(false);
   const [participantValues, setParticipantValues] = useState<
     Record<string, string>
@@ -149,6 +199,10 @@ function RouteComponent() {
   const expense = expenseQuery.data;
   const currentCurrency = currencyMeta[currency] ?? currencyMeta.COP;
   const selectedCategory = categories.find((item) => item.id === categoryId);
+  const selectedNewCategoryIcon =
+    categoryIconOptions.find((item) => item.id === newCategoryIcon) ??
+    categoryIconOptions[0];
+  const SelectedNewCategoryIcon = selectedNewCategoryIcon.icon;
 
   useEffect(() => {
     const node = amountInputRef.current;
@@ -351,7 +405,10 @@ function RouteComponent() {
       });
       setCategoryId(created.id);
       setNewCategoryName('');
+      setNewCategoryIcon(categoryIconOptions[1].id);
+      setNewCategoryColor(categoryColorOptions[0]);
       setShowCreateCategoryDialog(false);
+      setShowCategoryDrawer(false);
     } catch (creationError) {
       setError(
         creationError instanceof Error
@@ -854,26 +911,101 @@ function RouteComponent() {
         open={showCreateCategoryDialog}
         onOpenChange={setShowCreateCategoryDialog}
       >
-        <DialogContent>
+        <DialogContent className="max-w-[calc(100%-2rem)] gap-0 rounded-[28px] p-0 sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Crear categoría</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="px-5 pt-5 text-left text-base">
+              Crear categoría
+            </DialogTitle>
+            <DialogDescription className="px-5 text-left">
               Agrega una nueva categoría para este grupo.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 px-1 pb-2">
+          <div className="space-y-5 px-5 pb-5 pt-4">
             <label className="flex flex-col gap-2">
-              <span className="text-xs font-medium text-gray-500">
+              <span className="text-sm font-medium text-gray-900">
                 Nombre de la categoría
               </span>
               <input
                 value={newCategoryName}
                 onChange={(event) => setNewCategoryName(event.target.value)}
-                placeholder="Ej: Comida"
-                className="h-11 rounded-xl border border-gray-200 px-4 text-sm outline-none focus:border-rose-500"
+                placeholder="Transporte"
+                className="h-12 rounded-full border border-gray-200 px-4 text-base shadow-[0_4px_12px_rgba(15,23,42,0.06)] outline-none focus:border-rose-500"
               />
             </label>
+
+            <section>
+              <p className="mb-3 text-sm font-medium text-gray-900">
+                Selecciona un icono
+              </p>
+              <div className="grid grid-cols-6 gap-3">
+                {categoryIconOptions.map((option) => {
+                  const Icon = option.icon;
+                  const active = newCategoryIcon === option.id;
+
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setNewCategoryIcon(option.id)}
+                      className={`flex size-9 items-center justify-center rounded-full border bg-white transition-colors ${
+                        active
+                          ? 'border-gray-900 text-gray-900'
+                          : 'border-gray-200 text-gray-500'
+                      }`}
+                      aria-label={option.label}
+                    >
+                      <Icon className="size-4" />
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section>
+              <p className="mb-3 text-sm font-medium text-gray-900">
+                Selecciona un color
+              </p>
+              <div className="flex flex-wrap gap-4">
+                {categoryColorOptions.map((color) => {
+                  const active = newCategoryColor === color;
+
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setNewCategoryColor(color)}
+                      className={`flex size-9 items-center justify-center rounded-full border transition-transform active:scale-95 ${
+                        active ? 'border-rose-500' : 'border-transparent'
+                      }`}
+                      aria-label={`Color ${color}`}
+                    >
+                      <span
+                        className="size-7 rounded-full"
+                        style={{ backgroundColor: color }}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <div className="rounded-[24px] border border-gray-200 bg-white p-4">
+              <div className="flex items-center gap-4">
+                <span
+                  className="flex size-11 items-center justify-center rounded-full"
+                  style={{
+                    backgroundColor: `${newCategoryColor}22`,
+                    color: newCategoryColor,
+                  }}
+                >
+                  <SelectedNewCategoryIcon className="size-5" />
+                </span>
+                <p className="min-w-0 truncate text-base font-semibold text-gray-900">
+                  {newCategoryName.trim() || 'Nueva categoría'}
+                </p>
+              </div>
+            </div>
 
             <Button
               type="button"

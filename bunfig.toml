@@ -1,6 +1,4 @@
 [install]
 minimumReleaseAge = 259200 # seconds
 
-minimumReleaseAgeExcludes = ["@typescript/native-preview", "@tanstack/react-query", "hono"]
-
 linker = "isolated"

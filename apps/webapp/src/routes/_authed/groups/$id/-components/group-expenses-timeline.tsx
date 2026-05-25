@@ -15,6 +15,7 @@ type GroupExpensesTimelineProps = {
   onOpenExpense: (expenseId: string) => void;
   onOpenOptions: (expense: ExpenseItem) => void;
   onDeleteExpense: (expense: ExpenseItem) => void;
+  onEditExpense: (expense: ExpenseItem) => void;
 };
 
 export function GroupExpensesTimeline({
@@ -28,6 +29,7 @@ export function GroupExpensesTimeline({
   onOpenExpense,
   onOpenOptions,
   onDeleteExpense,
+  onEditExpense,
 }: GroupExpensesTimelineProps) {
   const sortedExpenses = useMemo(() => {
     const pinnedSet = new Set(pinnedExpenseIds);
@@ -111,7 +113,7 @@ export function GroupExpensesTimeline({
       <div className="space-y-5">
         {groupedExpenses.map((dayGroup) => (
           <div key={dayGroup.label}>
-            <p className="mb-5 text-sm font-medium text-[#555555]">
+            <p className="mb-2 text-sm font-medium text-[#555555]">
               {dayGroup.label}
             </p>
             <div className="overflow-hidden rounded-[24px] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
@@ -126,6 +128,7 @@ export function GroupExpensesTimeline({
                     onOpenExpense={onOpenExpense}
                     onOpenOptions={onOpenOptions}
                     onDeleteExpense={onDeleteExpense}
+                    onEditExpense={onEditExpense}
                   />
                 </div>
               ))}

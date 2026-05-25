@@ -1,4 +1,11 @@
-import { ArrowRight, Clock3, HandCoins, Pin, Trash2 } from 'lucide-react';
+import {
+  ArrowRight,
+  Clock3,
+  HandCoins,
+  Pencil,
+  Pin,
+  Trash2,
+} from 'lucide-react';
 import { type MouseEvent, type TouchEvent, useRef, useState } from 'react';
 
 import type { ExpenseItem } from '../-types/group-detail.types';
@@ -14,6 +21,7 @@ type GroupExpenseRowProps = {
   onOpenExpense: (expenseId: string) => void;
   onOpenOptions: (expense: ExpenseItem) => void;
   onDeleteExpense: (expense: ExpenseItem) => void;
+  onEditExpense: (expense: ExpenseItem) => void;
 };
 
 const tagToneClass = {
@@ -36,6 +44,7 @@ export function GroupExpenseRow({
   onOpenExpense,
   onOpenOptions,
   onDeleteExpense,
+  onEditExpense,
 }: GroupExpenseRowProps) {
   const SWIPE_WIDTH = 88;
   const SWIPE_THRESHOLD = 44;
@@ -53,6 +62,8 @@ export function GroupExpenseRow({
 
   const isPendingSync = expense.syncStatus === 'pending';
   const showDeleteAction = !expense.isDeleted && translateX < -2;
+  const showEditAction =
+    !expense.isDeleted && !expense.isSettlement && translateX > 2;
   const isSettlement = expense.isSettlement;
 
   const clearLongPressTimeout = () => {
@@ -104,7 +115,11 @@ export function GroupExpenseRow({
       return;
     }
 
-    const nextTranslateX = Math.max(-SWIPE_WIDTH, Math.min(0, deltaX));
+    const maxRightSwipe = expense.isSettlement ? 0 : SWIPE_WIDTH;
+    const nextTranslateX = Math.max(
+      -SWIPE_WIDTH,
+      Math.min(maxRightSwipe, deltaX),
+    );
     if (Math.abs(nextTranslateX) > 6) {
       setDidSwipe(true);
       clearLongPressTimeout();
@@ -126,8 +141,13 @@ export function GroupExpenseRow({
 
     const shouldTriggerDelete = translateX <= -FULL_SWIPE_THRESHOLD;
     const shouldOpenActions = translateX <= -SWIPE_THRESHOLD;
+    const shouldTriggerEdit =
+      !expense.isSettlement && translateX >= FULL_SWIPE_THRESHOLD;
 
-    if (shouldTriggerDelete) {
+    if (shouldTriggerEdit) {
+      setTranslateX(0);
+      onEditExpense(expense);
+    } else if (shouldTriggerDelete) {
       setTranslateX(0);
       onDeleteExpense(expense);
     } else if (shouldOpenActions) {
@@ -169,6 +189,11 @@ export function GroupExpenseRow({
       return;
     }
 
+    if (translateX >= SWIPE_THRESHOLD) {
+      setTranslateX(0);
+      return;
+    }
+
     onOpenExpense(expense.id);
   };
 
@@ -205,6 +230,15 @@ export function GroupExpenseRow({
             <Trash2 className="mb-1 size-5" />
             <span className="text-xs font-medium">Borrar</span>
           </button>
+        </div>
+      ) : null}
+
+      {showEditAction ? (
+        <div className="absolute inset-y-0 left-0 z-0 flex w-[88px] items-center justify-center bg-[#0f172a]">
+          <div className="flex h-full w-full flex-col items-center justify-center text-white">
+            <Pencil className="mb-1 size-5" />
+            <span className="text-xs font-medium">Editar</span>
+          </div>
         </div>
       ) : null}
 

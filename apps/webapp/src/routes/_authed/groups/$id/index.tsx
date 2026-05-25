@@ -410,6 +410,7 @@ function RouteComponent() {
             onOpenExpense={handleOpenExpense}
             onOpenOptions={handleOpenExpenseOptions}
             onDeleteExpense={handleDeleteExpense}
+            onEditExpense={handleEditExpense}
           />
         </div>
       </div>

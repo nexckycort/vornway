@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowUpRight,
   BarChart3,
+  Info,
   MoreHorizontal,
   Plus,
   QrCode,
@@ -53,10 +54,20 @@ export function GroupDetailHeader({
   flowState,
   isRefreshing = false,
 }: GroupDetailHeaderProps) {
-  const hasMultipleTotals = totalsEntries.length > 1;
-
   const getCurrencyMeta = (currency: string) =>
     currencyMeta[currency] ?? { flag: '💱', label: currency };
+
+  const balanceCurrencies = Array.from(
+    new Set([
+      ...totalsEntries.map(([currency]) => currency),
+      ...creditEntries.map(([currency]) => currency),
+      ...debtEntries.map(([currency]) => currency),
+      primaryTotal?.[0] ?? 'COP',
+    ]),
+  );
+
+  const getEntryAmount = (entries: Array<[string, number]>, currency: string) =>
+    entries.find(([entryCurrency]) => entryCurrency === currency)?.[1] ?? 0;
 
   return (
     <header className="relative px-4 pb-4 pt-5 text-white">
@@ -105,103 +116,60 @@ export function GroupDetailHeader({
         </button>
       </div>
 
-      <section className="rounded-[24px] bg-[#151515] p-3 shadow-[0_12px_30px_rgba(0,0,0,0.25)]">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] font-medium text-white/85">
-            {hasMultipleTotals ? (
-              <span>Por moneda</span>
-            ) : (
-              <>
-                <span>{getCurrencyMeta(primaryTotal?.[0] ?? 'COP').flag}</span>
-                <span>{getCurrencyMeta(primaryTotal?.[0] ?? 'COP').label}</span>
-              </>
-            )}
-          </span>
-          <span className="text-xs text-white/45">
-            {hasMultipleTotals
-              ? 'Cada monto es independiente'
-              : 'Total del grupo'}
-          </span>
-        </div>
+      <section className="-mx-1 overflow-hidden">
+        <div className="overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex snap-x snap-mandatory gap-3 px-1">
+            {balanceCurrencies.map((currency) => {
+              const meta = getCurrencyMeta(currency);
+              const totalAmount = getEntryAmount(totalsEntries, currency);
+              const creditAmount = getEntryAmount(creditEntries, currency);
+              const debtAmount = getEntryAmount(debtEntries, currency);
 
-        {hasMultipleTotals ? (
-          <div className="-mx-1 mt-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex snap-x snap-mandatory gap-3 px-1">
-              {totalsEntries.map(([currency, amount]) => {
-                const meta = getCurrencyMeta(currency);
+              return (
+                <article
+                  key={currency}
+                  className="min-w-[calc(100%-2rem)] snap-start rounded-[24px] bg-[#2c2226] px-5 py-5 shadow-[0_18px_35px_rgba(0,0,0,0.18)]"
+                >
+                  <div className="flex items-center gap-2 text-sm font-medium text-white/85">
+                    <span className="flex size-6 items-center justify-center rounded-full bg-white shadow-sm">
+                      <span className="text-base leading-none">
+                        {meta.flag}
+                      </span>
+                    </span>
+                    <span>{meta.label}</span>
+                  </div>
 
-                return (
-                  <article
-                    key={currency}
-                    className="min-w-[calc(100%-1rem)] snap-start rounded-[20px] border border-white/10 bg-[#151515] p-3"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] font-medium text-white/85">
-                        <span>{meta.flag}</span>
-                        <span>{meta.label}</span>
+                  <p className="mt-5 text-xs font-light text-white/80">
+                    Total gastado
+                  </p>
+                  <h2 className="mt-2 whitespace-nowrap text-2xl font-bold tracking-tight text-white">
+                    {formatMoney(currency, Math.abs(totalAmount))}
+                  </h2>
+
+                  <div className="mt-6 flex items-center justify-between gap-4">
+                    <p className="min-w-0 text-xs font-light text-white/85">
+                      Te deben{' '}
+                      <span className="font-semibold text-emerald-400">
+                        {formatMoney(currency, Math.abs(creditAmount))}
                       </span>
-                      <span className="text-[11px] font-medium text-white/45">
-                        Moneda usada
-                      </span>
-                    </div>
-                    <h2 className="mt-2 whitespace-nowrap text-2xl font-bold tracking-tight text-white">
-                      {formatMoney(currency, Math.abs(amount))}
-                    </h2>
-                    <p className="mt-1 text-xs font-medium text-white/50">
-                      Gastado en {currency}
                     </p>
-                  </article>
-                );
-              })}
-            </div>
+                    <p className="min-w-0 text-right text-xs font-light text-white/85">
+                      Debes{' '}
+                      <span className="font-semibold text-[#ff4d6a]">
+                        {formatMoney(currency, Math.abs(debtAmount))}
+                      </span>
+                    </p>
+                  </div>
+                </article>
+              );
+            })}
           </div>
-        ) : (
-          <h2 className="mt-2 text-3xl font-bold tracking-tight text-white">
-            {primaryTotal
-              ? formatMoney(primaryTotal[0], Math.abs(primaryTotal[1]))
-              : formatMoney('COP', 0)}
-          </h2>
-        )}
-
-        <div className="mt-2 space-y-2">
-          {creditEntries.length > 0 ? (
-            <div>
-              <p className="text-xs font-medium text-emerald-200">Te deben</p>
-              <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-                {creditEntries.map(([currency, amount]) => (
-                  <span
-                    key={`credit-${currency}`}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-medium text-emerald-200"
-                  >
-                    <span>{getCurrencyMeta(currency).flag}</span>
-                    <span>{getCurrencyMeta(currency).label}</span>
-                    <span className="text-emerald-100/60">·</span>
-                    <span>{formatMoney(currency, Math.abs(amount))}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {debtEntries.length > 0 ? (
-            <div>
-              <p className="text-xs font-medium text-rose-200">Debes</p>
-              <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-                {debtEntries.map(([currency, amount]) => (
-                  <span
-                    key={`debt-${currency}`}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-full bg-rose-500/15 px-3 py-1 text-[11px] font-medium text-rose-200"
-                  >
-                    <span>{getCurrencyMeta(currency).flag}</span>
-                    <span>{getCurrencyMeta(currency).label}</span>
-                    <span className="text-rose-100/60">·</span>
-                    <span>{formatMoney(currency, Math.abs(amount))}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
         </div>
+
+        <p className="mt-1 flex items-center gap-2 px-1 text-xs font-light text-white/85">
+          <span>Cada moneda tiene sus propios gastos, deudas y balances</span>
+          <Info className="size-4 shrink-0 text-white" />
+        </p>
       </section>
 
       <div className="mt-2.5 grid grid-cols-4 gap-2">

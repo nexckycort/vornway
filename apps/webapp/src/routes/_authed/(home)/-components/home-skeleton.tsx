@@ -3,7 +3,7 @@ import { HomeSection } from './home-section';
 
 export function HomeSkeleton() {
   return (
-    <div className="flex-1 overflow-y-auto px-4 pb-32 pt-6">
+    <>
       <header className="flex items-center justify-between">
         <div className="space-y-2">
           <Skeleton className="h-5 w-44 rounded-full" />
@@ -34,7 +34,7 @@ export function HomeSkeleton() {
           </div>
         </div>
       </HomeSection>
-    </div>
+    </>
   );
 }
 

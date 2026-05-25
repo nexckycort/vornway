@@ -34,6 +34,7 @@ type GroupDetailHeaderProps = {
   onOpenSettings: () => void;
   onOpenReports: () => void;
   flowState: ReturnType<typeof keepGroupFlowState>;
+  isRefreshing?: boolean;
 };
 
 export function GroupDetailHeader({
@@ -50,6 +51,7 @@ export function GroupDetailHeader({
   onOpenSettings,
   onOpenReports,
   flowState,
+  isRefreshing = false,
 }: GroupDetailHeaderProps) {
   const hasMultipleTotals = totalsEntries.length > 1;
 
@@ -57,7 +59,13 @@ export function GroupDetailHeader({
     currencyMeta[currency] ?? { flag: '💱', label: currency };
 
   return (
-    <header className="px-4 pb-4 pt-5 text-white">
+    <header className="relative px-4 pb-4 pt-5 text-white">
+      {isRefreshing ? (
+        <div className="absolute inset-x-0 top-0 h-0.5 overflow-hidden bg-white/20">
+          <span className="block h-full w-1/3 animate-[sync-progress_1.1s_ease-in-out_infinite] bg-primary" />
+          <span className="sr-only">Sincronizando datos</span>
+        </div>
+      ) : null}
       <div className="mb-3 flex items-start gap-3">
         <button
           type="button"

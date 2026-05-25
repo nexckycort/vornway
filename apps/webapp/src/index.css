@@ -117,6 +117,15 @@
 }
 
 @layer base {
+  @keyframes sync-progress {
+    0% {
+      transform: translateX(-120%);
+    }
+    100% {
+      transform: translateX(320%);
+    }
+  }
+
   * {
     @apply border-border outline-ring/50;
   }

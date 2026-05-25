@@ -34,6 +34,41 @@ export function GroupExpensesTimeline({
 
   return (
     <section className="mb-7">
+      {isLoading ? (
+        <div className="space-y-5">
+          {Array.from({ length: 2 }).map((_, dayIndex) => (
+            <div key={`skeleton-day-${dayIndex}`}>
+              <div className="mb-3 flex items-center gap-3">
+                <span className="h-8 w-36 rounded-full border border-[#e2e8f0] bg-white" />
+                <span className="h-px flex-1 bg-gradient-to-r from-[#e2e8f0] to-transparent" />
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {Array.from({ length: 2 }).map((__, rowIndex) => (
+                  <article
+                    key={`skeleton-row-${dayIndex}-${rowIndex}`}
+                    className="rounded-[24px] border border-[#e2e8f0] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="size-11 rounded-full bg-[#f1f5f9]" />
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="h-4 w-40 rounded-full bg-[#e2e8f0]" />
+                        <div className="h-3 w-28 rounded-full bg-[#e2e8f0]" />
+                        <div className="h-3 w-24 rounded-full bg-[#e2e8f0]" />
+                      </div>
+                      <div className="space-y-2 text-right">
+                        <div className="ml-auto h-4 w-20 rounded-full bg-[#e2e8f0]" />
+                        <div className="ml-auto h-3 w-12 rounded-full bg-[#e2e8f0]" />
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       {isError ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error instanceof Error

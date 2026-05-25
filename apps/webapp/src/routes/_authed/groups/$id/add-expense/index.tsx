@@ -68,6 +68,8 @@ const currencyMeta: Record<
 
 const currencyOptions = ['COP', 'EUR', 'USD', 'GBP', 'MXN', 'BRL'] as const;
 
+const customCategoryIconId = 'custom';
+
 const categoryIconOptions: Array<{
   id: string;
   icon: LucideIcon;
@@ -107,6 +109,10 @@ function getCurrencySymbol(currency: string) {
     default:
       return '$';
   }
+}
+
+function normalizeCategoryIconInput(value: string) {
+  return Array.from(value.trim()).slice(0, 4).join('');
 }
 
 function ParticipantAvatar({
@@ -181,6 +187,7 @@ function RouteComponent() {
   const [newCategoryIcon, setNewCategoryIcon] = useState(
     categoryIconOptions[1].id,
   );
+  const [newCategoryCustomIcon, setNewCategoryCustomIcon] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState<string>(
     categoryColorOptions[0],
   );
@@ -192,6 +199,7 @@ function RouteComponent() {
   const [hasInitializedForm, setHasInitializedForm] = useState(false);
   const [isAmountAnimating, setIsAmountAnimating] = useState(false);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
+  const customCategoryIconInputRef = useRef<HTMLInputElement | null>(null);
   const didMountAmountRef = useRef(false);
 
   const members = groupQuery.data?.members ?? [];
@@ -203,6 +211,9 @@ function RouteComponent() {
     categoryIconOptions.find((item) => item.id === newCategoryIcon) ??
     categoryIconOptions[0];
   const SelectedNewCategoryIcon = selectedNewCategoryIcon.icon;
+  const isCustomCategoryIcon = newCategoryIcon === customCategoryIconId;
+  const customCategoryIcon = newCategoryCustomIcon.trim();
+  const trimmedNewCategoryName = newCategoryName.trim();
 
   useEffect(() => {
     const node = amountInputRef.current;
@@ -215,6 +226,16 @@ function RouteComponent() {
 
     return () => window.cancelAnimationFrame(frame);
   }, []);
+
+  useEffect(() => {
+    if (!isCustomCategoryIcon) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      customCategoryIconInputRef.current?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [isCustomCategoryIcon]);
 
   useEffect(() => {
     void amount;
@@ -396,16 +417,16 @@ function RouteComponent() {
   };
 
   const handleCreateCategory = async () => {
-    const trimmedName = newCategoryName.trim();
-    if (!trimmedName || createCategoryMutation.isPending) return;
+    if (!trimmedNewCategoryName || createCategoryMutation.isPending) return;
 
     try {
       const created = await createCategoryMutation.mutateAsync({
-        name: trimmedName,
+        name: trimmedNewCategoryName,
       });
       setCategoryId(created.id);
       setNewCategoryName('');
       setNewCategoryIcon(categoryIconOptions[1].id);
+      setNewCategoryCustomIcon('');
       setNewCategoryColor(categoryColorOptions[0]);
       setShowCreateCategoryDialog(false);
       setShowCategoryDrawer(false);
@@ -959,7 +980,40 @@ function RouteComponent() {
                     </button>
                   );
                 })}
+                <button
+                  type="button"
+                  onClick={() => setNewCategoryIcon(customCategoryIconId)}
+                  className={`flex size-9 items-center justify-center rounded-full border bg-white transition-colors ${
+                    isCustomCategoryIcon
+                      ? 'border-gray-900 text-gray-900'
+                      : 'border-gray-200 text-gray-500'
+                  }`}
+                  aria-label="Usar icono del teclado"
+                >
+                  <Plus className="size-4" />
+                </button>
               </div>
+
+              {isCustomCategoryIcon ? (
+                <label className="mt-3 flex items-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-2.5 shadow-[0_4px_12px_rgba(15,23,42,0.06)]">
+                  <span className="text-sm font-medium text-gray-700">
+                    Icono
+                  </span>
+                  <input
+                    ref={customCategoryIconInputRef}
+                    value={newCategoryCustomIcon}
+                    onChange={(event) =>
+                      setNewCategoryCustomIcon(
+                        normalizeCategoryIconInput(event.target.value),
+                      )
+                    }
+                    placeholder="🙂"
+                    inputMode="text"
+                    className="min-w-0 flex-1 bg-transparent text-xl outline-none"
+                    aria-label="Icono personalizado"
+                  />
+                </label>
+              ) : null}
             </section>
 
             <section>
@@ -999,7 +1053,13 @@ function RouteComponent() {
                     color: newCategoryColor,
                   }}
                 >
-                  <SelectedNewCategoryIcon className="size-5" />
+                  {isCustomCategoryIcon ? (
+                    <span className="text-xl leading-none">
+                      {customCategoryIcon || '+'}
+                    </span>
+                  ) : (
+                    <SelectedNewCategoryIcon className="size-5" />
+                  )}
                 </span>
                 <p className="min-w-0 truncate text-base font-semibold text-gray-900">
                   {newCategoryName.trim() || 'Nueva categoría'}
@@ -1011,7 +1071,9 @@ function RouteComponent() {
               type="button"
               className="h-11 w-full rounded-full bg-primary text-white hover:bg-primary/90"
               onClick={handleCreateCategory}
-              disabled={createCategoryMutation.isPending}
+              disabled={
+                !trimmedNewCategoryName || createCategoryMutation.isPending
+              }
             >
               {createCategoryMutation.isPending
                 ? 'Creando...'

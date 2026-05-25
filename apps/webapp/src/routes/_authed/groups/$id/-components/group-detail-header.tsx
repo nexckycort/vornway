@@ -144,7 +144,7 @@ export function GroupDetailHeader({
               return (
                 <article
                   key={currency}
-                  className={`min-w-[calc(100%-2rem)] snap-start rounded-[24px] bg-[#2c2226] px-5 py-5 shadow-[0_18px_35px_rgba(0,0,0,0.18)] ${
+                  className={`min-w-[calc(100%-2rem)] snap-start rounded-[24px] bg-[#2c2226] px-5 py-4 shadow-[0_18px_35px_rgba(0,0,0,0.18)] ${
                     hasCredit || hasDebt
                       ? ''
                       : 'flex min-h-[158px] flex-col justify-center'
@@ -157,7 +157,7 @@ export function GroupDetailHeader({
 
                   <p
                     className={`text-xs font-light text-white/80 ${
-                      hasCredit || hasDebt ? 'mt-5' : 'mt-5'
+                      hasCredit || hasDebt ? 'mt-3' : 'mt-3'
                     }`}
                   >
                     Total gastado
@@ -167,7 +167,7 @@ export function GroupDetailHeader({
                   </h2>
 
                   {hasCredit || hasDebt ? (
-                    <div className="mt-6 flex items-center justify-between gap-4">
+                    <div className="mt-4 flex items-center justify-between gap-4">
                       {hasCredit ? (
                         <p className="min-w-0 text-xs font-light text-white/85">
                           Te deben{' '}

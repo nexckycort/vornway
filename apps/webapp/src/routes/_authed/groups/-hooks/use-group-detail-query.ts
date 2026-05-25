@@ -16,8 +16,10 @@ import {
   type PendingGroup,
   removeLocalGroupFallback,
 } from '#/lib/offline-group-query-collection';
-import type { ExpenseItem } from '../$id/-types/group-detail.types';
-import type { GroupSummary } from '../$id/-types/group-detail.types';
+import type {
+  ExpenseItem,
+  GroupSummary,
+} from '../$id/-types/group-detail.types';
 
 const PAGE_LIMIT = 20;
 
@@ -89,9 +91,7 @@ type GroupExpensesPageSuccess = Extract<
   GroupExpensesPageResponse,
   { data: unknown[]; pagination: { nextCursor: string | null } }
 >;
-type GroupExpenseSuccess = Extract<GroupExpenseResponse, { id: string }> & {
-  category: { id: string; name: string } | null;
-};
+type GroupExpenseSuccess = Extract<GroupExpenseResponse, { id: string }>;
 type GroupReportsTotalsSuccess = {
   range: 'all' | 7 | 15 | 30;
   totalsByCurrency: Record<string, number>;
@@ -101,6 +101,7 @@ type GroupReportsTotalsSuccess = {
     string,
     Array<{
       name: string;
+      icon: string | null;
       amount: number;
       fill: string;
     }>
@@ -295,9 +296,7 @@ export function usePinnedGroupExpensesQuery(
 
       return results
         .filter(
-          (
-            result,
-          ): result is PromiseFulfilledResult<ExpenseItem | null> =>
+          (result): result is PromiseFulfilledResult<ExpenseItem | null> =>
             result.status === 'fulfilled',
         )
         .map((result) => result.value)

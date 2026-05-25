@@ -11,6 +11,7 @@ import {
   useGroupReportsTotalsQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { CategoryIcon } from '../-components/category-icon';
 import { formatMoney, getInitials } from '../-components/group-detail.utils';
 
 export const Route = createFileRoute('/_authed/groups/$id/reports/')({
@@ -425,9 +426,24 @@ function RouteComponent() {
                     className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-xs font-medium text-[#334155]"
                   >
                     <span
-                      className="size-2.5 rounded-full"
-                      style={{ backgroundColor: entry.fill }}
-                    />
+                      className="flex size-7 items-center justify-center rounded-full"
+                      style={{
+                        backgroundColor: `${entry.fill}1f`,
+                        color: entry.fill,
+                      }}
+                    >
+                      <CategoryIcon
+                        icon={entry.icon}
+                        color={entry.fill}
+                        fallback={
+                          <span
+                            className="size-2.5 rounded-full"
+                            style={{ backgroundColor: entry.fill }}
+                          />
+                        }
+                        className="size-3.5"
+                      />
+                    </span>
                     {entry.name}
                     <span className="text-[#64748b]">
                       {formatMoney(selectedCurrency, entry.amount)}

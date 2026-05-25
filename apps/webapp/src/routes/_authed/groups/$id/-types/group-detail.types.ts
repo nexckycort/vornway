@@ -3,6 +3,8 @@ export type ExpenseItem = {
   category: {
     id: string;
     name: string;
+    icon: string | null;
+    color: string | null;
   } | null;
   description: string;
   amount: number;
@@ -56,6 +58,8 @@ export type GroupSummary = {
   categories: Array<{
     id: string;
     name: string;
+    icon: string | null;
+    color: string | null;
   }>;
   members: GroupMemberIdentity[];
   directDebts: Array<{

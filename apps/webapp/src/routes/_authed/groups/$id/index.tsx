@@ -94,7 +94,7 @@ function RouteComponent() {
     const categoriesById = new Map(
       (groupQuery.data?.categories ?? []).map((category) => [
         category.id,
-        category.name,
+        category,
       ]),
     );
     const localExpenses: ExpenseItem[] = pendingExpenses.map((expense) => ({
@@ -102,7 +102,12 @@ function RouteComponent() {
       category: expense.payload.categoryId
         ? {
             id: expense.payload.categoryId,
-            name: categoriesById.get(expense.payload.categoryId) ?? 'Categoría',
+            name:
+              categoriesById.get(expense.payload.categoryId)?.name ??
+              'Categoría',
+            icon: categoriesById.get(expense.payload.categoryId)?.icon ?? null,
+            color:
+              categoriesById.get(expense.payload.categoryId)?.color ?? null,
           }
         : null,
       description: expense.payload.description,

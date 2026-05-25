@@ -1,21 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import {
-  Bed,
-  BriefcaseBusiness,
-  Car,
-  Check,
-  ChevronDown,
-  Gift,
-  Landmark,
-  type LucideIcon,
-  Minus,
-  PartyPopper,
-  Plane,
-  Plus,
-  ShoppingBag,
-  TreePine,
-  Utensils,
-} from 'lucide-react';
+import { Check, ChevronDown, Minus, Plus } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
@@ -44,6 +28,10 @@ import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import {
+  CategoryIcon,
+  categoryIconOptions,
+} from '../-components/category-icon';
 import { formatMoney, getInitials } from '../-components/group-detail.utils';
 
 type SplitMethod = 'equal' | 'percentage' | 'exact';
@@ -69,23 +57,6 @@ const currencyMeta: Record<
 const currencyOptions = ['COP', 'EUR', 'USD', 'GBP', 'MXN', 'BRL'] as const;
 
 const customCategoryIconId = 'custom';
-
-const categoryIconOptions: Array<{
-  id: string;
-  icon: LucideIcon;
-  label: string;
-}> = [
-  { id: 'food', icon: Utensils, label: 'Comida' },
-  { id: 'transport', icon: Car, label: 'Transporte' },
-  { id: 'hotel', icon: Bed, label: 'Alojamiento' },
-  { id: 'party', icon: PartyPopper, label: 'Entretenimiento' },
-  { id: 'activities', icon: TreePine, label: 'Actividades' },
-  { id: 'shopping', icon: ShoppingBag, label: 'Compras' },
-  { id: 'travel', icon: Plane, label: 'Viaje' },
-  { id: 'work', icon: BriefcaseBusiness, label: 'Trabajo' },
-  { id: 'bank', icon: Landmark, label: 'Banco' },
-  { id: 'gift', icon: Gift, label: 'Regalos' },
-];
 
 const categoryColorOptions = [
   '#ff7fa3',
@@ -207,10 +178,6 @@ function RouteComponent() {
   const expense = expenseQuery.data;
   const currentCurrency = currencyMeta[currency] ?? currencyMeta.COP;
   const selectedCategory = categories.find((item) => item.id === categoryId);
-  const selectedNewCategoryIcon =
-    categoryIconOptions.find((item) => item.id === newCategoryIcon) ??
-    categoryIconOptions[0];
-  const SelectedNewCategoryIcon = selectedNewCategoryIcon.icon;
   const isCustomCategoryIcon = newCategoryIcon === customCategoryIconId;
   const customCategoryIcon = newCategoryCustomIcon.trim();
   const trimmedNewCategoryName = newCategoryName.trim();
@@ -422,6 +389,10 @@ function RouteComponent() {
     try {
       const created = await createCategoryMutation.mutateAsync({
         name: trimmedNewCategoryName,
+        icon: isCustomCategoryIcon
+          ? customCategoryIcon || undefined
+          : newCategoryIcon,
+        color: newCategoryColor,
       });
       setCategoryId(created.id);
       setNewCategoryName('');
@@ -597,11 +568,26 @@ function RouteComponent() {
           onClick={() => setShowCategoryDrawer(true)}
           className="flex w-full items-center justify-between rounded-xl border border-gray-200 px-4 py-3.5 text-left"
         >
-          <div>
-            <p className="text-xs text-gray-500">Categoría</p>
-            <p className="text-sm font-medium text-gray-900">
-              {selectedCategory?.name ?? 'Sin categoría'}
-            </p>
+          <div className="flex min-w-0 items-center gap-3">
+            <span
+              className="flex size-10 shrink-0 items-center justify-center rounded-full"
+              style={{
+                backgroundColor: `${selectedCategory?.color ?? '#f43f5e'}18`,
+                color: selectedCategory?.color ?? '#f43f5e',
+              }}
+            >
+              <CategoryIcon
+                icon={selectedCategory?.icon}
+                color={selectedCategory?.color}
+                fallback={<Plus className="size-4" />}
+              />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500">Categoría</p>
+              <p className="text-sm font-medium text-gray-900">
+                {selectedCategory?.name ?? 'Sin categoría'}
+              </p>
+            </div>
           </div>
           <ChevronDown className="size-4 text-gray-400" />
         </button>
@@ -907,7 +893,20 @@ function RouteComponent() {
                   }}
                   className="flex w-full items-center justify-between rounded-2xl px-1 py-3 text-left"
                 >
-                  <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span
+                      className="flex size-10 shrink-0 items-center justify-center rounded-full"
+                      style={{
+                        backgroundColor: `${category.color ?? '#f43f5e'}18`,
+                        color: category.color ?? '#f43f5e',
+                      }}
+                    >
+                      <CategoryIcon
+                        icon={category.icon}
+                        color={category.color}
+                        fallback={<Plus className="size-4" />}
+                      />
+                    </span>
                     <p className="truncate text-base font-medium text-gray-900">
                       {category.name}
                     </p>
@@ -932,7 +931,7 @@ function RouteComponent() {
         open={showCreateCategoryDialog}
         onOpenChange={setShowCreateCategoryDialog}
       >
-        <DialogContent className="max-w-[calc(100%-2rem)] gap-0 rounded-[28px] p-0 sm:max-w-md">
+        <DialogContent className="max-h-[88dvh] max-w-[calc(100%-2rem)] gap-0 overflow-hidden rounded-[28px] p-0 sm:max-h-[85vh] sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="px-5 pt-5 text-left text-base">
               Crear categoría
@@ -942,7 +941,7 @@ function RouteComponent() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-5 px-5 pb-5 pt-4">
+          <div className="space-y-5 overflow-y-auto px-5 pb-5 pt-4">
             <label className="flex flex-col gap-2">
               <span className="text-sm font-medium text-gray-900">
                 Nombre de la categoría
@@ -1053,16 +1052,18 @@ function RouteComponent() {
                     color: newCategoryColor,
                   }}
                 >
-                  {isCustomCategoryIcon ? (
-                    <span className="text-xl leading-none">
-                      {customCategoryIcon || '+'}
-                    </span>
-                  ) : (
-                    <SelectedNewCategoryIcon className="size-5" />
-                  )}
+                  <CategoryIcon
+                    icon={
+                      isCustomCategoryIcon
+                        ? customCategoryIcon || null
+                        : newCategoryIcon
+                    }
+                    color={newCategoryColor}
+                    fallback={<Plus className="size-5" />}
+                  />
                 </span>
                 <p className="min-w-0 truncate text-base font-semibold text-gray-900">
-                  {newCategoryName.trim() || 'Nueva categoría'}
+                  {trimmedNewCategoryName}
                 </p>
               </div>
             </div>

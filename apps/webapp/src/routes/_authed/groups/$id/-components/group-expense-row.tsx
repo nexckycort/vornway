@@ -9,6 +9,7 @@ import {
 import { type MouseEvent, type TouchEvent, useRef, useState } from 'react';
 
 import type { ExpenseItem } from '../-types/group-detail.types';
+import { CategoryIcon } from './category-icon';
 import {
   formatMoney,
   getExpenseEmoji,
@@ -279,7 +280,13 @@ export function GroupExpenseRow({
             {isSettlement ? (
               <HandCoins className="size-5" />
             ) : (
-              <span className="text-2xl">{getExpenseEmoji(expense)}</span>
+              <CategoryIcon
+                icon={expense.category?.icon}
+                color={expense.category?.color}
+                fallback={
+                  <span className="text-2xl">{getExpenseEmoji(expense)}</span>
+                }
+              />
             )}
           </div>
           <div className="min-w-0 flex-1">

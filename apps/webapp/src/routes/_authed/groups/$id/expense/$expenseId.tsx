@@ -1,10 +1,6 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowLeft,
-  HandCoins,
-  Trash2,
-} from 'lucide-react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { ArrowLeft, HandCoins, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '#/components/ui/button';
 import {
@@ -21,6 +17,7 @@ import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { CategoryIcon } from '../-components/category-icon';
 import { getExpenseEmoji } from '../-components/group-detail.utils';
 import type { ExpenseItem, GroupSummary } from '../-types/group-detail.types';
 
@@ -138,7 +135,8 @@ function RouteComponent() {
     const cachedExpenses = queryClient.getQueryData<{
       pages?: Array<{ data?: ExpenseItem[] }>;
     }>(['group-expenses', id]);
-    const items = cachedExpenses?.pages?.flatMap((page) => page.data ?? []) ?? [];
+    const items =
+      cachedExpenses?.pages?.flatMap((page) => page.data ?? []) ?? [];
     return items.find((item) => item.id === expenseId) ?? null;
   }, [expenseId, id, queryClient]);
   const expense = useMemo(
@@ -217,7 +215,15 @@ function RouteComponent() {
                   {isSettlement ? (
                     <HandCoins className="size-6" />
                   ) : (
-                    <span className="text-2xl">{getExpenseEmoji(expense)}</span>
+                    <CategoryIcon
+                      icon={expense.category?.icon}
+                      color={expense.category?.color}
+                      fallback={
+                        <span className="text-2xl">
+                          {getExpenseEmoji(expense)}
+                        </span>
+                      }
+                    />
                   )}
                 </div>
                 <h2 className="truncate text-base font-medium text-[#444444]">

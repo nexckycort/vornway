@@ -1,5 +1,6 @@
 import { ChevronLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { getSharedComponentMessages } from './-messages';
 import { Button } from './ui/button';
 
 type MobilePageLayoutProps = {
@@ -13,6 +14,8 @@ export function MobilePageLayout({
   onBack,
   children,
 }: MobilePageLayoutProps) {
+  const t = getSharedComponentMessages();
+
   return (
     <main className="min-h-dvh bg-white">
       <div className="flex min-h-dvh w-full flex-col bg-white">
@@ -22,7 +25,7 @@ export function MobilePageLayout({
             variant="outline"
             onClick={onBack}
             className="flex size-8 items-center justify-center"
-            aria-label="Atrás"
+            aria-label={t.mobilePageLayout.backAria}
           >
             <ChevronLeft className="size-6 text-gray-800" />
           </Button>

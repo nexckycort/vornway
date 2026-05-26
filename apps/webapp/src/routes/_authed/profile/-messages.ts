@@ -3,6 +3,7 @@ import { m } from '#/paraglide/messages.js';
 export function getProfileMessages() {
   return {
     common: {
+      close: m['common.close'](),
       cancel: m['common.cancel'](),
       delete: m['common.delete'](),
       disable: m['common.disable'](),
@@ -56,5 +57,18 @@ export function getProfileMessages() {
     localeDrawerTitle: m['profile.localeDrawerTitle'](),
     localeDrawerCopy: m['profile.localeDrawerCopy'](),
     selectedLanguage: m['profile.selectedLanguage'](),
+    qrDialog: {
+      title: m['profile.qrDialog.title'](),
+      description: m['profile.qrDialog.description'](),
+      browserOnly: m['profile.qrDialog.browserOnly'](),
+      unsupported: m['profile.qrDialog.unsupported'](),
+      noCamera: m['profile.qrDialog.noCamera'](),
+      invalidQr: m['profile.qrDialog.invalidQr'](),
+      cameraStartFailed: m['profile.qrDialog.cameraStartFailed'](),
+      searching: m['profile.qrDialog.searching'](),
+      starting: m['profile.qrDialog.starting'](),
+      ready: m['profile.qrDialog.ready'](),
+      readyCopy: m['profile.qrDialog.readyCopy'](),
+    },
   };
 }

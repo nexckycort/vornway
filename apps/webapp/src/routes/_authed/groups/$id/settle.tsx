@@ -11,6 +11,7 @@ import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 
 export const Route = createFileRoute('/_authed/groups/$id/settle')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -98,6 +99,7 @@ function initialsFromName(name: string) {
 function RouteComponent() {
   const { id } = Route.useParams();
   const { settlementExpenseId } = Route.useSearch();
+  const t = getGroupDetailMessages();
   const { navigateToGroupRoot } = useGroupFlowNavigation(id);
   const groupQuery = useGroupSummaryQuery(id);
   const settleMutation = useSettleDebtMutation(id);
@@ -192,7 +194,7 @@ function RouteComponent() {
   useEffect(() => {
     if (!settlementExpenseId || didInitializeEditRef.current) return;
     const expense = settlementExpenseQuery.data;
-    if (!expense || !expense.isSettlement) return;
+    if (!expense?.isSettlement) return;
 
     const toMemberId = expense.participants[0]?.memberId;
     if (!toMemberId) return;
@@ -371,8 +373,8 @@ function RouteComponent() {
         submitError instanceof Error
           ? submitError.message
           : isEditingSettlement
-            ? 'No se pudo actualizar la liquidación'
-            : 'No se pudo liquidar la deuda',
+            ? t.settle.updateSettlementFailed
+            : t.settle.settleFailed,
       );
     }
   };
@@ -385,8 +387,8 @@ function RouteComponent() {
       <main className="min-h-dvh bg-white">
         <div className="flex min-h-dvh items-center justify-center px-6 text-sm text-[#64748b]">
           {isEditingSettlement
-            ? 'Cargando liquidación...'
-            : 'Cargando deudas...'}
+            ? t.settle.loadingSettlement
+            : t.settle.loadingDebts}
         </div>
       </main>
     );
@@ -409,8 +411,8 @@ function RouteComponent() {
               : settlementExpenseQuery.error instanceof Error
                 ? settlementExpenseQuery.error.message
                 : isEditingSettlement
-                  ? 'No se pudo cargar la liquidación'
-                  : 'No se pudo cargar el grupo'}
+                  ? t.settle.loadSettlementError
+                  : t.settle.loadGroupError}
           </div>
           <button
             type="button"
@@ -419,7 +421,7 @@ function RouteComponent() {
             }}
             className="h-12 rounded-full border border-[#e2e8f0] bg-white text-sm font-medium text-[#132238]"
           >
-            Volver
+            {t.common.back}
           </button>
         </div>
       </main>
@@ -437,17 +439,17 @@ function RouteComponent() {
                 void goBack();
               }}
               className="flex size-9 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#334155]"
-              aria-label="Atrás"
+              aria-label={t.common.back}
             >
               <ArrowLeft className="size-4" />
             </button>
 
             <div className="text-center">
               <p className="text-[11px] font-medium text-[#94a3b8]">
-                Paso {step} de 2
+                {t.settle.stepOf(step, 2)}
               </p>
               <h1 className="text-base font-semibold text-[#111827]">
-                Liquidar deuda
+                {t.settle.title}
               </h1>
             </div>
 
@@ -466,18 +468,17 @@ function RouteComponent() {
           <div className="flex flex-1 flex-col justify-center px-4">
             <div className="rounded-[28px] border border-[#e2e8f0] bg-white px-5 py-8 text-center shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
               <h2 className="text-base font-semibold text-[#132238]">
-                No hay deudas para liquidar
+                {t.settle.noDebtsTitle}
               </h2>
               <p className="mt-2 text-sm text-[#64748b]">
-                Cuando existan saldos entre participantes, podrás registrarlos
-                aquí.
+                {t.settle.noDebtsCopy}
               </p>
             </div>
           </div>
         ) : step === 1 ? (
           <div className="flex flex-1 flex-col px-4 pb-6 pt-4">
             <DebtSection
-              title="Debes a otros"
+              title={t.settle.oweOthers}
               items={debtsIOwe}
               membersById={membersById}
               myMembershipId={myMembershipId}
@@ -485,7 +486,7 @@ function RouteComponent() {
             />
 
             <DebtSection
-              title="Te deben a ti"
+              title={t.settle.owedToYou}
               items={debtsOwedToMe}
               membersById={membersById}
               myMembershipId={myMembershipId}
@@ -531,7 +532,7 @@ function RouteComponent() {
                     />
                     <div>
                       <p className="text-[11px] text-[#94a3b8]">
-                        Liquidar deuda con
+                        {t.settle.counterpartLabel}
                       </p>
                       <p className="text-sm font-semibold text-[#111827]">
                         {selectedCounterpart?.name ?? 'Participante'}
@@ -582,11 +583,11 @@ function RouteComponent() {
                 >
                   {isEditingSettlement
                     ? updateSettlementMutation.isPending
-                      ? 'Guardando...'
-                      : 'Guardar cambios'
+                      ? t.settle.saving
+                      : t.settle.save
                     : settleMutation.isPending
-                      ? 'Liquidando...'
-                      : 'Liquidar'}
+                      ? t.settle.settling
+                      : t.settle.settle}
                 </button>
               </>
             ) : null}
@@ -632,6 +633,7 @@ function DebtSection({
   onSelect: (key: string) => void;
   className?: string;
 }) {
+  const t = getGroupDetailMessages();
   if (items.length === 0) return null;
 
   return (
@@ -675,8 +677,13 @@ function DebtSection({
                     isDebtToMe ? 'text-[#10b981]' : 'text-[#ef4444]'
                   }`}
                 >
-                  {isDebtToMe ? 'Te debe ' : 'Le debes '}
-                  {formatCompactAmount(item.currency, item.amount)}
+                  {isDebtToMe
+                    ? t.settle.owesYou(
+                        formatCompactAmount(item.currency, item.amount),
+                      )
+                    : t.settle.youOwe(
+                        formatCompactAmount(item.currency, item.amount),
+                      )}
                 </p>
               </div>
             </button>

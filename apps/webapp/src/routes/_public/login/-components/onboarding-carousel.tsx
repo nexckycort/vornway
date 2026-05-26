@@ -7,29 +7,28 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '#/components/ui/carousel';
-
-const slides = [
-  {
-    image: '/images/login/slide-1.webp',
-    title: 'Organiza tu viaje sin estrés',
-    description:
-      'Desde el itinerario hasta los gastos, todo tu viaje en un solo lugar para que te enfoques en disfrutar.',
-  },
-  {
-    image: '/images/login/slide-2.webp',
-    title: 'Gastos en diferentes monedas',
-    description:
-      'Agrega gastos, divide como quieras y olvídate de las cuentas complicadas, incluso viajando entre países.',
-  },
-  {
-    image: '/images/login/slide-3.webp',
-    title: 'Haz realidad tus metas',
-    description:
-      'Crea metas de ahorro, haz seguimiento y llega preparado a tu próximo destino.',
-  },
-];
+import { getLoginMessages } from '#/routes/_public/login/-messages';
 
 export function OnboardingCarousel() {
+  const t = getLoginMessages();
+  const slides = [
+    {
+      image: '/images/login/slide-1.webp',
+      title: t.onboarding.travelTitle,
+      description: t.onboarding.travelDescription,
+    },
+    {
+      image: '/images/login/slide-2.webp',
+      title: t.onboarding.expensesTitle,
+      description: t.onboarding.expensesDescription,
+    },
+    {
+      image: '/images/login/slide-3.webp',
+      title: t.onboarding.goalsTitle,
+      description: t.onboarding.goalsDescription,
+    },
+  ];
+
   return (
     <Carousel className="h-full w-full">
       <CarouselContent className="-ml-0 h-full">

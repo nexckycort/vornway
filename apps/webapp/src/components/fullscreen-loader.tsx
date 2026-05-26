@@ -1,12 +1,14 @@
+import { getSharedComponentMessages } from './-messages';
 import { Spinner } from './ui/spinner';
 
 type FullscreenLoaderProps = {
   label?: string;
 };
 
-export function FullscreenLoader({
-  label = 'Cargando aplicación',
-}: FullscreenLoaderProps) {
+export function FullscreenLoader({ label }: FullscreenLoaderProps) {
+  const t = getSharedComponentMessages();
+  const resolvedLabel = label ?? t.fullscreenLoader.title;
+
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[radial-gradient(120%_80%_at_50%_0%,#ffe8f0_0%,#f8fafc_48%,#edf4ff_100%)] px-4">
       <div className="pointer-events-none absolute inset-0 opacity-60">
@@ -22,10 +24,10 @@ export function FullscreenLoader({
 
         <div className="space-y-1.5">
           <p className="text-sm font-semibold tracking-tight text-[#0f172a]">
-            {label}
+            {resolvedLabel}
           </p>
           <p className="text-sm leading-5 text-[#64748b]">
-            Estamos preparando tu sesión.
+            {t.fullscreenLoader.copy}
           </p>
         </div>
 

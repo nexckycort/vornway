@@ -1,4 +1,4 @@
-import { client, type InferResponseType } from '#/lib/hc';
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
   ArrowLeftRight,
@@ -7,7 +7,8 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { client, type InferResponseType } from '#/lib/hc';
+import { getConverterMessages } from '#/routes/_authed/converter/-messages';
 
 const converterEndpoint = client.api.converter.$get;
 type ConverterApiResponse = Extract<
@@ -31,6 +32,7 @@ export const Route = createFileRoute('/_authed/converter')({
 
 function RouteComponent() {
   const router = useRouter();
+  const t = getConverterMessages();
   const [amountInput, setAmountInput] = useState('1');
   const [fromCurrency, setFromCurrency] = useState<SupportedCurrency>('EUR');
   const [toCurrency, setToCurrency] = useState<SupportedCurrency>('COP');
@@ -41,7 +43,7 @@ function RouteComponent() {
       const response = await converterEndpoint();
 
       if (!response.ok) {
-        throw new Error('No se pudo cargar el convertidor');
+        throw new Error(t.loadErrorTitle);
       }
 
       return (await response.json()) as ConverterApiResponse;
@@ -79,7 +81,7 @@ function RouteComponent() {
     return (
       <main className="min-h-screen bg-[#f4f6fb]">
         <div className="mx-auto flex min-h-screen w-full max-w-[412px] md:max-w-5xl items-center justify-center px-4">
-          <p className="text-sm text-[#64748b]">Cargando convertidor...</p>
+          <p className="text-sm text-[#64748b]">{t.loading}</p>
         </div>
       </main>
     );
@@ -91,19 +93,19 @@ function RouteComponent() {
         <div className="mx-auto flex min-h-screen w-full max-w-[412px] md:max-w-5xl flex-col justify-center px-4">
           <div className="rounded-[28px] border border-[#e2e8f0] bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-[#0f172a]">
-              No se pudo cargar el convertidor
+              {t.loadErrorTitle}
             </p>
             <p className="mt-2 text-sm text-[#64748b]">
               {converterQuery.error instanceof Error
                 ? converterQuery.error.message
-                : 'Intenta de nuevo en unos segundos.'}
+                : t.loadErrorCopy}
             </p>
             <button
               type="button"
               onClick={() => router.history.back()}
               className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"
             >
-              Volver
+              {t.common.back}
             </button>
           </div>
         </div>
@@ -131,7 +133,7 @@ function RouteComponent() {
             className="inline-flex items-center gap-2 text-sm font-medium text-[#1f2937]"
           >
             <ChevronLeft className="size-5" />
-            Atrás
+            {t.common.back}
           </button>
 
           <div className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white px-4 py-4 shadow-sm">
@@ -141,14 +143,12 @@ function RouteComponent() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]">
-                  Convertidor
+                  {t.header}
                 </p>
                 <h1 className="text-2xl font-semibold leading-tight text-[#0f172a]">
-                  Monedas
+                  {t.title}
                 </h1>
-                <p className="mt-1 text-sm text-[#64748b]">
-                  Convierte entre monedas con tasas de referencia actualizadas.
-                </p>
+                <p className="mt-1 text-sm text-[#64748b]">{t.subtitle}</p>
               </div>
             </div>
           </div>
@@ -157,16 +157,18 @@ function RouteComponent() {
         <section className="rounded-[30px] border border-[#e2e8f0] bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-[#0f172a]">Conversión</p>
+              <p className="text-sm font-medium text-[#0f172a]">
+                {t.conversion}
+              </p>
               <p className="text-xs text-[#64748b]">
                 {formattedLastUpdatedAt
-                  ? `Última actualización ${formattedLastUpdatedAt}`
-                  : 'Sin actualizaciones recientes'}
+                  ? t.lastUpdated(formattedLastUpdatedAt)
+                  : t.noRecentUpdates}
               </p>
             </div>
             <span className="inline-flex items-center gap-1 rounded-full bg-[#f8fafc] px-3 py-1 text-xs font-medium text-[#475569]">
               <RefreshCw className="size-3.5" />
-              Aproximado
+              {t.approximate}
             </span>
           </div>
 
@@ -175,7 +177,7 @@ function RouteComponent() {
               htmlFor="converter-amount"
               className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]"
             >
-              Monto
+              {t.amount}
             </label>
             <input
               id="converter-amount"
@@ -193,7 +195,7 @@ function RouteComponent() {
           <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-end gap-3">
             <div className="rounded-[22px] border border-[#e2e8f0] bg-[#f8fafc] px-3 py-3">
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]">
-                Desde
+                {t.from}
               </label>
               <div className="relative">
                 <select
@@ -212,7 +214,7 @@ function RouteComponent() {
                 <ChevronsUpDown className="pointer-events-none absolute right-0 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
               </div>
               <p className="mt-1 truncate text-xs text-[#64748b]">
-                {CURRENCY_META[fromCurrency]?.name ?? 'Moneda origen'}
+                {CURRENCY_META[fromCurrency]?.name ?? t.fromFallback}
               </p>
             </div>
 
@@ -229,7 +231,7 @@ function RouteComponent() {
 
             <div className="rounded-[22px] border border-[#e2e8f0] bg-[#f8fafc] px-3 py-3">
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]">
-                Hacia
+                {t.to}
               </label>
               <div className="relative">
                 <select
@@ -248,26 +250,29 @@ function RouteComponent() {
                 <ChevronsUpDown className="pointer-events-none absolute right-0 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
               </div>
               <p className="mt-1 truncate text-xs text-[#64748b]">
-                {CURRENCY_META[toCurrency]?.name ?? 'Moneda destino'}
+                {CURRENCY_META[toCurrency]?.name ?? t.toFallback}
               </p>
             </div>
           </div>
 
           <div className="mt-4 rounded-[24px] bg-[#0f172a] px-4 py-5 text-white">
             <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-              Resultado
+              {t.result}
             </p>
             <p className="mt-2 text-3xl font-semibold leading-tight">
               {convertedAmount !== null
                 ? formatMoney(convertedAmount, toCurrency)
-                : 'Sin tasa disponible'}
+                : t.noRateAvailable}
             </p>
             <p className="mt-2 text-sm text-white/70">
               {fromCurrency === toCurrency
-                ? 'Misma moneda, no se aplica conversión.'
+                ? t.sameCurrency
                 : selectedRate
-                  ? `1 ${fromCurrency} = ${formatMoney(selectedRate.rate, toCurrency)}`
-                  : `No hay una tasa registrada para ${fromCurrency} -> ${toCurrency}.`}
+                  ? t.ratePair(
+                      fromCurrency,
+                      formatMoney(selectedRate.rate, toCurrency),
+                    )
+                  : t.missingRatePair(fromCurrency, toCurrency)}
             </p>
           </div>
         </section>

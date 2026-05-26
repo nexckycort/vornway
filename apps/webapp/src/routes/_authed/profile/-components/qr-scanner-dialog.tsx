@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-
+import { Button } from '#/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -7,8 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog';
-import { Button } from '#/components/ui/button';
 import { extractInviteCodeFromQrValue } from '#/lib/invite-code';
+import { getProfileMessages } from '#/routes/_authed/profile/-messages';
 
 type QrScannerDialogProps = {
   open: boolean;
@@ -28,6 +28,7 @@ export function QrScannerDialog({
   onOpenChange,
   onScanned,
 }: QrScannerDialogProps) {
+  const t = getProfileMessages();
   const scannerRef = useRef<Html5QrcodeInstance | null>(null);
   const resolvedRef = useRef(false);
   const [status, setStatus] = useState<ScannerStatus>('idle');
@@ -70,13 +71,11 @@ export function QrScannerDialog({
     void (async () => {
       try {
         if (typeof window === 'undefined') {
-          throw new Error('El escáner solo está disponible en el navegador.');
+          throw new Error(t.qrDialog.browserOnly);
         }
 
         if (!navigator.mediaDevices?.getUserMedia) {
-          throw new Error(
-            'Tu navegador no soporta lectura de cámara para escanear QR.',
-          );
+          throw new Error(t.qrDialog.unsupported);
         }
 
         const { Html5Qrcode } = await import('html5-qrcode');
@@ -85,7 +84,7 @@ export function QrScannerDialog({
         if (!active) return;
 
         if (cameras.length === 0) {
-          throw new Error('No se encontró ninguna cámara disponible.');
+          throw new Error(t.qrDialog.noCamera);
         }
 
         const scanner = new Html5Qrcode('profile-qr-scanner', {
@@ -106,9 +105,7 @@ export function QrScannerDialog({
 
             const inviteCode = extractInviteCodeFromQrValue(decodedText);
             if (!inviteCode) {
-              setErrorMessage(
-                'No se pudo leer un enlace válido desde este QR.',
-              );
+              setErrorMessage(t.qrDialog.invalidQr);
               return;
             }
 
@@ -133,9 +130,7 @@ export function QrScannerDialog({
 
         setStatus('error');
         setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : 'No se pudo iniciar la cámara.',
+          error instanceof Error ? error.message : t.qrDialog.cameraStartFailed,
         );
       }
     })();
@@ -162,10 +157,8 @@ export function QrScannerDialog({
     >
       <DialogContent className="flex max-h-[calc(100dvh-1.5rem)] max-w-[calc(100%-1rem)] flex-col overflow-hidden rounded-[28px] p-4 sm:max-w-md">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Escanear QR</DialogTitle>
-          <DialogDescription>
-            Apunta la cámara al QR del grupo para abrir su invitación.
-          </DialogDescription>
+          <DialogTitle>{t.qrDialog.title}</DialogTitle>
+          <DialogDescription>{t.qrDialog.description}</DialogDescription>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
@@ -179,16 +172,15 @@ export function QrScannerDialog({
           <div className="space-y-2 rounded-3xl border border-[#e2e8f0] bg-white p-4">
             <p className="text-sm font-semibold text-[#0f172a]">
               {status === 'scanning'
-                ? 'Buscando un QR válido'
+                ? t.qrDialog.searching
                 : status === 'starting'
-                  ? 'Iniciando cámara...'
+                  ? t.qrDialog.starting
                   : status === 'error'
-                    ? 'No se pudo iniciar la cámara'
-                    : 'Escáner listo'}
+                    ? t.qrDialog.cameraStartFailed
+                    : t.qrDialog.ready}
             </p>
             <p className="text-sm leading-6 text-[#64748b]">
-              {errorMessage ||
-                'Si el grupo te compartió un QR, la app abrirá la invitación automáticamente cuando lo detecte.'}
+              {errorMessage || t.qrDialog.readyCopy}
             </p>
           </div>
 
@@ -196,13 +188,13 @@ export function QrScannerDialog({
             type="button"
             variant="outline"
             className="h-12 w-full rounded-full"
-          onClick={() => {
-            resolvedRef.current = false;
-            void stopScanner();
-            onOpenChange(false);
-          }}
-        >
-            Cerrar
+            onClick={() => {
+              resolvedRef.current = false;
+              void stopScanner();
+              onOpenChange(false);
+            }}
+          >
+            {t.common.close}
           </Button>
         </div>
       </DialogContent>

@@ -9,6 +9,7 @@ import {
   QrCode,
 } from 'lucide-react';
 import type { keepGroupFlowState } from '#/lib/group-flow-navigation';
+import { getGroupDetailMessages } from '../-messages';
 
 import { formatMoney } from './group-detail.utils';
 
@@ -54,6 +55,7 @@ export function GroupDetailHeader({
   flowState,
   isRefreshing = false,
 }: GroupDetailHeaderProps) {
+  const t = getGroupDetailMessages();
   const getCurrencyMeta = (currency: string) =>
     currencyMeta[currency] ?? { flag: '💱', label: currency };
 
@@ -76,7 +78,7 @@ export function GroupDetailHeader({
       {isRefreshing ? (
         <div className="absolute inset-x-0 top-0 h-0.5 overflow-hidden bg-white/20">
           <span className="block h-full w-1/3 animate-[sync-progress_1.1s_ease-in-out_infinite] bg-primary" />
-          <span className="sr-only">Sincronizando datos</span>
+          <span className="sr-only">{t.header.syncingData}</span>
         </div>
       ) : null}
       <div className="mb-3 flex items-start gap-3">
@@ -84,7 +86,7 @@ export function GroupDetailHeader({
           type="button"
           onClick={onBack}
           className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
-          aria-label="Atrás"
+          aria-label={t.common.back}
         >
           <ArrowLeft className="size-4" />
         </button>
@@ -112,7 +114,7 @@ export function GroupDetailHeader({
           type="button"
           onClick={onOpenQr}
           className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
-          aria-label="Código QR del grupo"
+          aria-label={t.header.qrAria}
         >
           <QrCode className="size-6" />
         </button>
@@ -160,7 +162,7 @@ export function GroupDetailHeader({
                       hasCredit || hasDebt ? 'mt-3' : 'mt-3'
                     }`}
                   >
-                    Total gastado
+                    {t.header.totalSpent}
                   </p>
                   <h2 className="mt-2 whitespace-nowrap text-2xl font-bold tracking-tight text-white">
                     {formatMoney(currency, Math.abs(totalAmount))}
@@ -170,7 +172,7 @@ export function GroupDetailHeader({
                     <div className="mt-4 flex items-center justify-between gap-4">
                       {hasCredit ? (
                         <p className="min-w-0 text-xs font-light text-white/85">
-                          Te deben{' '}
+                          {t.header.theyOweYou}{' '}
                           <span className="font-semibold text-emerald-400">
                             {formatMoney(currency, Math.abs(creditAmount))}
                           </span>
@@ -178,7 +180,7 @@ export function GroupDetailHeader({
                       ) : null}
                       {hasDebt ? (
                         <p className="min-w-0 text-right text-xs font-light text-white/85">
-                          Debes{' '}
+                          {t.header.youOwe}{' '}
                           <span className="font-semibold text-[#ff4d6a]">
                             {formatMoney(currency, Math.abs(debtAmount))}
                           </span>
@@ -194,7 +196,7 @@ export function GroupDetailHeader({
 
         {hasMultipleCurrencies ? (
           <p className="mt-1 mb-2 flex items-center gap-2 px-1 text-[10px] font-light text-white/85">
-            <span>Cada moneda tiene sus propios gastos, deudas y balances</span>
+            <span>{t.header.multiCurrencyHint}</span>
             <Info className="size-4 shrink-0 text-white" />
           </p>
         ) : null}
@@ -211,7 +213,7 @@ export function GroupDetailHeader({
             <Plus className="size-5" />
           </span>
           <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
-            Crear gasto
+            {t.actions.createExpense}
           </span>
         </Link>
 
@@ -226,7 +228,7 @@ export function GroupDetailHeader({
             <ArrowUpRight className="size-5" />
           </span>
           <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
-            Liquidar
+            {t.actions.settle}
           </span>
         </Link>
 
@@ -239,7 +241,7 @@ export function GroupDetailHeader({
             <BarChart3 className="size-5" />
           </span>
           <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
-            Reportes
+            {t.actions.reports}
           </span>
         </button>
 
@@ -252,7 +254,7 @@ export function GroupDetailHeader({
             <MoreHorizontal className="size-5" />
           </span>
           <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
-            Ajustes
+            {t.actions.settings}
           </span>
         </button>
       </div>

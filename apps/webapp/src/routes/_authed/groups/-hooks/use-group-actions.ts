@@ -4,6 +4,7 @@ import type { InferRequestType, InferResponseType } from '#/lib/hc';
 import { client } from '#/lib/hc';
 import { createExpenseOfflineFirst } from '#/lib/offline-expense-query-collection';
 import { removeLocalGroupFallback } from '#/lib/offline-group-query-collection';
+import { m } from '#/paraglide/messages.js';
 
 const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
 const updateExpenseEndpoint =
@@ -109,7 +110,7 @@ export function useUpdateGroupImageMutation(groupId: string) {
       if (!response.ok) {
         const payload = (await response.json()) as { error?: unknown };
         throw new Error(
-          getApiErrorMessage(payload.error, 'No se pudo actualizar la imagen'),
+          getApiErrorMessage(payload.error, m['profile.photoUpdateFailed']()),
         );
       }
 
@@ -133,7 +134,7 @@ export function useUpdateGroupMutation(groupId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo actualizar el grupo');
+        throw new Error(payload.error ?? m['groups.settings.loadError']());
       }
 
       return (await response.json()) as UpdateGroupResponse;
@@ -155,7 +156,7 @@ export function useDeleteGroupMutation(groupId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo eliminar el grupo');
+        throw new Error(payload.error ?? m['groups.settings.deleteFailed']());
       }
 
       return (await response.json()) as DeleteGroupResponse;
@@ -200,7 +201,9 @@ export function useUpdateExpenseMutation(groupId: string, expenseId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo actualizar el gasto');
+        throw new Error(
+          payload.error ?? m['groups.detail.deleteExpenseFailed'](),
+        );
       }
 
       return (await response.json()) as UpdateExpenseResponse;
@@ -223,7 +226,7 @@ export function useSettleDebtMutation(groupId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo liquidar la deuda');
+        throw new Error(payload.error ?? m['groups.settle.settleFailed']());
       }
 
       return (await response.json()) as SettleDebtResponse;
@@ -246,7 +249,9 @@ export function useAddMemberMutation(groupId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo agregar el participante');
+        throw new Error(
+          payload.error ?? m['groups.detail.removeMemberFailed'](),
+        );
       }
 
       return (await response.json()) as AddMemberResponse;
@@ -269,7 +274,9 @@ export function useCreateCategoryMutation(groupId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo crear la categoría');
+        throw new Error(
+          payload.error ?? m['groups.settings.categoriesLoadError'](),
+        );
       }
 
       return (await response.json()) as CreateCategorySuccess;
@@ -292,7 +299,9 @@ export function useUpdateCategoryMutation(groupId: string, categoryId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo actualizar la categoría');
+        throw new Error(
+          payload.error ?? m['groups.settings.categoriesLoadError'](),
+        );
       }
 
       return (await response.json()) as UpdateCategorySuccess;
@@ -314,7 +323,9 @@ export function useDeleteCategoryMutation(groupId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo eliminar la categoría');
+        throw new Error(
+          payload.error ?? m['groups.settings.categoriesLoadError'](),
+        );
       }
 
       return (await response.json()) as DeleteCategoryResponse;
@@ -340,7 +351,9 @@ export function useMoveCategoryExpensesMutation(
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudieron mover los gastos');
+        throw new Error(
+          payload.error ?? m['groups.settings.moveExpensesTitle'](),
+        );
       }
 
       return (await response.json()) as MoveCategoryExpensesResponse;
@@ -363,7 +376,9 @@ export function useRemoveMemberMutation(groupId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo eliminar el participante');
+        throw new Error(
+          payload.error ?? m['groups.detail.removeMemberFailed'](),
+        );
       }
 
       return (await response.json()) as RemoveMemberResponse;
@@ -386,7 +401,7 @@ export function useUnlinkMemberMutation(groupId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo desvincular la cuenta');
+        throw new Error(payload.error ?? m['groups.settings.leaveFailed']());
       }
 
       return (await response.json()) as RemoveMemberResponse;

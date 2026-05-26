@@ -31,5 +31,13 @@ export function getLoginMessages() {
     verifyCodeError: m['login.verifyCodeError'](),
     enterEmail: m['login.enterEmail'](),
     enterName: m['login.enterName'](),
+    onboarding: {
+      travelTitle: m['login.onboarding.travelTitle'](),
+      travelDescription: m['login.onboarding.travelDescription'](),
+      expensesTitle: m['login.onboarding.expensesTitle'](),
+      expensesDescription: m['login.onboarding.expensesDescription'](),
+      goalsTitle: m['login.onboarding.goalsTitle'](),
+      goalsDescription: m['login.onboarding.goalsDescription'](),
+    },
   };
 }

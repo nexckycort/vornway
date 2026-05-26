@@ -23,6 +23,7 @@ import {
   categoryIconById,
   categoryIconOptions,
 } from '../../-components/category-icon';
+import { getGroupDetailMessages } from '../../-messages';
 
 export const Route = createFileRoute(
   '/_authed/groups/$id/settings/categories/',
@@ -49,6 +50,7 @@ function normalizeCategoryIconInput(value: string) {
 
 function RouteComponent() {
   const { id } = Route.useParams();
+  const t = getGroupDetailMessages();
   const navigate = useNavigate();
   const groupQuery = useGroupSummaryQuery(id);
   const [showEditorDrawer, setShowEditorDrawer] = useState(false);
@@ -192,9 +194,11 @@ function RouteComponent() {
 
   if (groupQuery.isLoading) {
     return (
-      <MobilePageLayout title="Categorías" onBack={goBack}>
+      <MobilePageLayout title={t.settings.categoriesTitle} onBack={goBack}>
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-[#64748b]">Cargando categorías...</p>
+          <p className="text-sm text-[#64748b]">
+            {t.settings.categoriesLoading}
+          </p>
         </div>
       </MobilePageLayout>
     );
@@ -202,12 +206,12 @@ function RouteComponent() {
 
   if (groupQuery.isError || !groupQuery.data) {
     return (
-      <MobilePageLayout title="Categorías" onBack={goBack}>
+      <MobilePageLayout title={t.settings.categoriesTitle} onBack={goBack}>
         <div className="flex flex-1 flex-col justify-center gap-4">
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {groupQuery.error instanceof Error
               ? groupQuery.error.message
-              : 'No se pudieron cargar las categorías'}
+              : t.settings.categoriesLoadError}
           </div>
           <Button
             type="button"
@@ -215,7 +219,7 @@ function RouteComponent() {
             className="h-11 rounded-full"
             onClick={goBack}
           >
-            Volver
+            {t.common.back}
           </Button>
         </div>
       </MobilePageLayout>
@@ -225,17 +229,17 @@ function RouteComponent() {
   const group = groupQuery.data;
 
   return (
-    <MobilePageLayout title="Categorías" onBack={goBack}>
+    <MobilePageLayout title={t.settings.categoriesTitle} onBack={goBack}>
       <div className="flex flex-1 flex-col pb-4">
         <section className="-mx-4 border-y border-[#e5e7eb] bg-white px-4 py-4">
           <p className="text-xs uppercase tracking-[0.18em] text-[#64748b]">
             {group.name}
           </p>
           <h2 className="mt-1 text-lg font-semibold text-[#132238]">
-            Crear y editar categorías
+            {t.settings.manageCategoriesTitle}
           </h2>
           <p className="mt-1 text-sm text-[#64748b]">
-            Organiza los gastos del grupo con iconos y colores consistentes.
+            {t.settings.manageCategoriesCopy}
           </p>
         </section>
 
@@ -250,10 +254,10 @@ function RouteComponent() {
             </span>
             <div>
               <p className="text-sm font-medium text-[#132238]">
-                Crear nueva categoría
+                {t.settings.createNewCategory}
               </p>
               <p className="text-xs text-[#64748b]">
-                Usa un nombre, un icono y un color
+                {t.settings.createNewCategoryCopy}
               </p>
             </div>
           </div>
@@ -263,7 +267,7 @@ function RouteComponent() {
         <div className="mt-5 space-y-3">
           {categories.length === 0 ? (
             <div className="rounded-[24px] border border-[#e5e7eb] bg-white px-4 py-8 text-center text-sm text-[#64748b]">
-              Aún no tienes categorías creadas.
+              {t.settings.emptyCategories}
             </div>
           ) : null}
 
@@ -295,12 +299,12 @@ function RouteComponent() {
                   </p>
                   <p className="truncate text-xs text-[#64748b]">
                     {category.icon && categoryIconById.has(category.icon)
-                      ? 'Icono predeterminado'
+                      ? t.settings.defaultIcon
                       : category.icon
-                        ? 'Emoji personalizado'
-                        : 'Sin icono'}
+                        ? t.settings.customEmoji
+                        : t.settings.noIcon}
                     {category.expenseCount > 0
-                      ? ` · ${category.expenseCount} gasto${category.expenseCount === 1 ? '' : 's'}`
+                      ? ` · ${t.settings.expenseCount(category.expenseCount)}`
                       : ''}
                   </p>
                 </div>
@@ -320,29 +324,29 @@ function RouteComponent() {
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>
-              {editorMode === 'create' ? 'Crear categoría' : 'Editar categoría'}
+              {editorMode === 'create'
+                ? t.settings.createCategory
+                : t.settings.editCategory}
             </DrawerTitle>
-            <DrawerDescription>
-              Define el nombre, el icono y el color que usarán los gastos.
-            </DrawerDescription>
+            <DrawerDescription>{t.settings.editorCopy}</DrawerDescription>
           </DrawerHeader>
 
           <div className="max-h-[70dvh] space-y-5 overflow-y-auto px-5 pb-5">
             <label className="flex flex-col gap-2">
               <span className="text-sm font-medium text-[#132238]">
-                Nombre de la categoría
+                {t.settings.categoryName}
               </span>
               <input
                 value={categoryName}
                 onChange={(event) => setCategoryName(event.target.value)}
-                placeholder="Transporte"
+                placeholder={t.settings.categoryPlaceholder}
                 className="h-12 rounded-full border border-[#e5e7eb] bg-white px-4 text-base outline-none focus:border-[#ff4d6a]"
               />
             </label>
 
             <section>
               <p className="mb-3 text-sm font-medium text-[#132238]">
-                Selecciona un icono
+                {t.settings.pickIcon}
               </p>
               <div className="grid grid-cols-6 gap-3">
                 {categoryIconOptions.map((option) => {
@@ -373,7 +377,7 @@ function RouteComponent() {
                       ? 'border-[#132238] text-[#132238]'
                       : 'border-[#e5e7eb] text-[#64748b]'
                   }`}
-                  aria-label="Usar icono del teclado"
+                  aria-label={t.settings.pickKeyboardIcon}
                 >
                   <Plus className="size-4" />
                 </button>
@@ -382,7 +386,7 @@ function RouteComponent() {
               {isCustomIcon ? (
                 <label className="mt-3 flex items-center gap-3 rounded-full border border-[#e5e7eb] bg-white px-4 py-2.5">
                   <span className="text-sm font-medium text-[#64748b]">
-                    Emoji
+                    {t.settings.emoji}
                   </span>
                   <input
                     ref={iconInputRef}
@@ -392,10 +396,10 @@ function RouteComponent() {
                         normalizeCategoryIconInput(event.target.value),
                       )
                     }
-                    placeholder="🙂"
+                    placeholder={t.settings.emojiPlaceholder}
                     inputMode="text"
                     className="min-w-0 flex-1 bg-transparent text-xl outline-none"
-                    aria-label="Emoji personalizado"
+                    aria-label={t.settings.customEmoji}
                   />
                 </label>
               ) : null}
@@ -403,7 +407,7 @@ function RouteComponent() {
 
             <section>
               <p className="mb-3 text-sm font-medium text-[#132238]">
-                Selecciona un color
+                {t.settings.pickColor}
               </p>
               <div className="flex flex-wrap gap-4">
                 {categoryColorOptions.map((color) => {
@@ -445,7 +449,7 @@ function RouteComponent() {
                   />
                 </span>
                 <p className="min-w-0 truncate text-base font-semibold text-[#132238]">
-                  {trimmedCategoryName || 'Vista previa'}
+                  {trimmedCategoryName || t.settings.preview}
                 </p>
               </div>
             </div>
@@ -467,7 +471,7 @@ function RouteComponent() {
                   ? 'Eliminando...'
                   : (selectedCategory?.expenseCount ?? 0) > 0
                     ? 'No se puede eliminar'
-                    : 'Eliminar categoría'}
+                    : t.settings.deleteCategory}
               </Button>
             ) : null}
 
@@ -480,13 +484,10 @@ function RouteComponent() {
                   onClick={openMoveDrawer}
                 >
                   <ArrowRightLeft className="mr-2 size-4" />
-                  Mover gastos
+                  {t.settings.moveExpenses}
                 </Button>
                 <p className="px-2 text-xs leading-5 text-[#64748b]">
-                  Esta categoría tiene {categoryExpenseCount} gasto
-                  {categoryExpenseCount === 1 ? '' : 's'}. Primero mueve esos
-                  gastos a otra categoría o déjalos sin categoría para poder
-                  eliminarla.
+                  {t.settings.moveExpensesCopy(categoryExpenseCount)}
                 </p>
               </div>
             ) : null}
@@ -503,11 +504,11 @@ function RouteComponent() {
             >
               {editorMode === 'create'
                 ? createCategoryMutation.isPending
-                  ? 'Creando...'
-                  : 'Guardar categoría'
+                  ? t.settings.creatingCategory
+                  : t.settings.saveCategory
                 : updateCategoryMutation.isPending
-                  ? 'Guardando...'
-                  : 'Guardar cambios'}
+                  ? t.settings.savingCategory
+                  : t.common.saveChanges}
             </Button>
           </div>
         </DrawerContent>
@@ -518,10 +519,10 @@ function RouteComponent() {
           <div className="mx-auto flex h-full w-full max-w-md flex-col overflow-hidden px-4 pb-4">
             <DrawerHeader className="px-0 pb-4">
               <DrawerTitle className="text-left text-2xl font-semibold text-[#132238]">
-                Mover gastos
+                {t.settings.moveExpensesTitle}
               </DrawerTitle>
               <DrawerDescription className="text-left text-sm text-[#64748b]">
-                Elige una categoría destino para vaciar esta categoría.
+                {t.settings.moveExpensesDescription}
               </DrawerDescription>
             </DrawerHeader>
 
@@ -535,10 +536,10 @@ function RouteComponent() {
               >
                 <div>
                   <p className="text-sm font-medium text-[#132238]">
-                    Sin categoría
+                    {t.settings.withoutCategory}
                   </p>
                   <p className="mt-1 text-xs text-[#64748b]">
-                    Los gastos quedarán sin una categoría asignada.
+                    {t.settings.withoutCategoryCopy}
                   </p>
                 </div>
                 <ChevronRight className="size-4 text-[#94a3b8]" />
@@ -573,7 +574,7 @@ function RouteComponent() {
                         {category.name}
                       </p>
                       <p className="mt-1 text-xs text-[#64748b]">
-                        Mueve los gastos a esta categoría
+                        {t.settings.moveToCategoryCopy}
                       </p>
                     </div>
                   </div>
@@ -583,8 +584,7 @@ function RouteComponent() {
 
               {movableCategories.length === 0 ? (
                 <div className="rounded-[24px] border border-[#e5e7eb] bg-white px-4 py-6 text-sm text-[#64748b]">
-                  No hay otra categoría disponible. Puedes dejar los gastos sin
-                  categoría.
+                  {t.settings.noMovableCategories}
                 </div>
               ) : null}
             </div>

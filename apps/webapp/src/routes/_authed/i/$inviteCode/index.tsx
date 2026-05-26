@@ -11,6 +11,7 @@ import {
   type InvitePreviewResponse,
   useInvitePreviewQuery,
 } from '#/routes/_authed/i/-hooks/use-invite-preview-query';
+import { getInviteMessages } from '#/routes/_authed/i/-messages';
 
 export const Route = createFileRoute('/_authed/i/$inviteCode/')({
   component: RouteComponent,
@@ -20,6 +21,7 @@ type Selection = 'new' | string;
 
 function RouteComponent() {
   const { inviteCode } = Route.useParams();
+  const t = getInviteMessages();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const previewQuery = useInvitePreviewQuery(inviteCode);
@@ -84,17 +86,13 @@ function RouteComponent() {
 
       await goToGroup(result.groupType, result.groupId);
     } catch (error) {
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo aceptar la invitación',
-      );
+      setSubmitError(error instanceof Error ? error.message : t.acceptFailed);
     }
   };
 
   return (
     <MobilePageLayout
-      title="Invitación"
+      title={t.title}
       onBack={() => {
         void navigate({ to: '/groups', replace: true });
       }}
@@ -107,7 +105,7 @@ function RouteComponent() {
             message={
               previewQuery.error instanceof Error
                 ? previewQuery.error.message
-                : 'No se pudo cargar la invitación'
+                : t.loadFailed
             }
             onRetry={() => void previewQuery.refetch()}
           />
@@ -142,8 +140,7 @@ function RouteComponent() {
               </div>
 
               <h2 className="mt-3 text-center text-[1.7rem] font-semibold leading-tight text-[#0f172a]">
-                ¡Bienvenid@ a <span className="text-primary">{group.name}</span>
-                !
+                {t.welcome(group.name)}
               </h2>
             </section>
 
@@ -151,11 +148,10 @@ function RouteComponent() {
               <>
                 <section className="space-y-2 px-1">
                   <h3 className="text-[1.1rem] font-semibold text-[#0f172a]">
-                    ¿Ya estás en este grupo?
+                    {t.existingTitle}
                   </h3>
                   <p className="text-sm leading-6 text-[#64748b]">
-                    Encontramos participantes creados previamente que podrían
-                    ser tú.
+                    {t.existingCopy}
                   </p>
                 </section>
 
@@ -164,10 +160,10 @@ function RouteComponent() {
                     <MemberRow
                       key={member.id}
                       title={member.name}
-                      email="Sin correo asignado"
+                      email={t.unassignedEmail}
                       selected={selection === member.id}
                       onClick={() => setSelection(member.id)}
-                      actionLabel="Soy yo"
+                      actionLabel={t.itsMe}
                       icon={<MemberInitials name={member.name} />}
                     />
                   ))}
@@ -189,16 +185,16 @@ function RouteComponent() {
                     {acceptMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 size-4 animate-spin" />
-                        Vinculando...
+                        {t.linking}
                       </>
                     ) : (
-                      'Vincular cuenta'
+                      t.linkAccount
                     )}
                   </Button>
 
                   <div className="flex items-center gap-3 px-1">
                     <div className="h-px flex-1 bg-[#e2e8f0]" />
-                    <span className="text-xs text-[#94a3b8]">o</span>
+                    <span className="text-xs text-[#94a3b8]">{t.or}</span>
                     <div className="h-px flex-1 bg-[#e2e8f0]" />
                   </div>
 
@@ -211,10 +207,10 @@ function RouteComponent() {
                     {acceptMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 size-4 animate-spin" />
-                        Continuando...
+                        {t.continuing}
                       </>
                     ) : (
-                      'Continuar como nuevo participante'
+                      t.continueNew
                     )}
                   </Button>
                 </section>
@@ -223,11 +219,10 @@ function RouteComponent() {
               <section className="mt-auto space-y-3 pt-1">
                 <section className="space-y-2 px-1">
                   <h3 className="text-[1.1rem] font-semibold text-[#0f172a]">
-                    Continúa como nuevo participante
+                    {t.newParticipantTitle}
                   </h3>
                   <p className="text-sm leading-6 text-[#64748b]">
-                    No hay un registro previo para tu cuenta. Puedes crear tu
-                    acceso ahora.
+                    {t.newParticipantCopy}
                   </p>
                 </section>
 
@@ -246,10 +241,10 @@ function RouteComponent() {
                   {acceptMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 size-4 animate-spin" />
-                      Continuando...
+                      {t.continuing}
                     </>
                   ) : (
-                    'Continuar como nuevo participante'
+                    t.continueNew
                   )}
                 </Button>
               </section>
@@ -317,7 +312,9 @@ function ErrorState({
 }) {
   return (
     <section className="rounded-[28px] border border-red-200 bg-red-50 p-5 text-red-700">
-      <p className="text-base font-semibold">No se pudo cargar la invitación</p>
+      <p className="text-base font-semibold">
+        {getInviteMessages().loadFailed}
+      </p>
       <p className="mt-2 text-sm leading-6">{message}</p>
       <Button
         type="button"
@@ -325,7 +322,7 @@ function ErrorState({
         variant="outline"
         className="mt-4 h-11 rounded-full border-red-200 bg-white text-red-700 hover:bg-red-50"
       >
-        Reintentar
+        {getInviteMessages().common.retry}
       </Button>
     </section>
   );
@@ -378,7 +375,7 @@ function AlreadyMemberState({
         </div>
         <div>
           <p className="text-base font-semibold text-[#0f172a]">
-            Ya eres miembro
+            {getInviteMessages().alreadyMember}
           </p>
           <p className="text-sm text-[#64748b]">{group.name}</p>
         </div>
@@ -389,7 +386,7 @@ function AlreadyMemberState({
         onClick={onGo}
         className="mt-4 h-12 w-full rounded-full bg-primary text-base font-medium text-white"
       >
-        Ir al grupo
+        {getInviteMessages().goToGroup}
       </Button>
     </section>
   );

@@ -11,6 +11,7 @@ import {
   useGroupReportsTotalsQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import { CategoryIcon } from '../-components/category-icon';
 import { formatMoney, getInitials } from '../-components/group-detail.utils';
 
@@ -26,13 +27,6 @@ export const Route = createFileRoute('/_authed/groups/$id/reports/')({
 
 type TotalsRange = 'all' | 7 | 15 | 30;
 
-const TOTALS_RANGE_OPTIONS: Array<{ label: string; value: TotalsRange }> = [
-  { label: 'Todo el periodo', value: 'all' },
-  { label: 'Hace 7 días', value: 7 },
-  { label: 'Hace 15 días', value: 15 },
-  { label: 'Hace 30 días', value: 30 },
-];
-
 const CURRENCY_META: Record<string, { flag: string; label: string }> = {
   COP: { flag: '🇨🇴', label: 'COP' },
   USD: { flag: '🇺🇸', label: 'USD' },
@@ -45,6 +39,7 @@ const CURRENCY_META: Record<string, { flag: string; label: string }> = {
 function RouteComponent() {
   const { id } = Route.useParams();
   const { tab } = Route.useSearch();
+  const t = getGroupDetailMessages();
   const navigate = useNavigate({ from: Route.fullPath });
   const { flowState, navigateToGroupRoot } = useGroupFlowNavigation(id);
   const groupQuery = useGroupSummaryQuery(id);
@@ -97,6 +92,12 @@ function RouteComponent() {
       }, {}),
     [categoryBreakdown],
   );
+  const totalsRangeOptions: Array<{ label: string; value: TotalsRange }> = [
+    { label: t.reports.rangeAll, value: 'all' },
+    { label: t.reports.range7, value: 7 },
+    { label: t.reports.range15, value: 15 },
+    { label: t.reports.range30, value: 30 },
+  ];
   useEffect(() => {
     if (availableCurrencies.length === 0) return;
     if (availableCurrencies.includes(selectedCurrency)) return;
@@ -108,7 +109,7 @@ function RouteComponent() {
     return (
       <main className="min-h-screen bg-[#fafafa] text-foreground">
         <div className="mx-auto flex min-h-screen w-full max-w-[412px] md:max-w-5xl items-center justify-center bg-[#fafafa] px-4">
-          <p className="text-sm text-[#64748b]">Cargando reportes...</p>
+          <p className="text-sm text-[#64748b]">{t.reports.loading}</p>
         </div>
       </main>
     );
@@ -121,7 +122,7 @@ function RouteComponent() {
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {groupQuery.error instanceof Error
               ? groupQuery.error.message
-              : 'No tienes acceso a este grupo'}
+              : t.reports.noAccess}
           </div>
         </div>
       </main>
@@ -129,7 +130,10 @@ function RouteComponent() {
   }
 
   return (
-    <MobilePageLayout title="Reportes" onBack={() => navigateToGroupRoot(true)}>
+    <MobilePageLayout
+      title={t.reports.title}
+      onBack={() => navigateToGroupRoot(true)}
+    >
       <div className="flex flex-1 flex-col pb-28">
         <section className="rounded-[28px] border border-[#e2e8f0] bg-white p-2 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
           <div className="grid grid-cols-2 gap-1 rounded-[20px] bg-[#eef2f7] p-1">
@@ -152,7 +156,7 @@ function RouteComponent() {
                   : 'text-[#64748b]',
               ].join(' ')}
             >
-              Balance
+              {t.reports.balance}
             </button>
             <button
               type="button"
@@ -173,7 +177,7 @@ function RouteComponent() {
                   : 'text-[#64748b]',
               ].join(' ')}
             >
-              Totales
+              {t.reports.totals}
             </button>
           </div>
         </section>
@@ -183,10 +187,10 @@ function RouteComponent() {
             <section className="mb-3 mt-4 flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#132238]">
-                  Balance por participante
+                  {t.reports.balanceTitle}
                 </h2>
                 <p className="mt-1 text-xs text-[#64748b]">
-                  Te deben / debes, separado por persona.
+                  {t.reports.balanceCopy}
                 </p>
               </div>
             </section>
@@ -225,17 +229,17 @@ function RouteComponent() {
                           {member.name}
                           {member.isCurrentUser ? (
                             <span className="ml-1 text-xs text-[#94a3b8]">
-                              (tú)
+                              ({t.reports.you})
                             </span>
                           ) : null}
                           {isCreator ? (
                             <span className="ml-2 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-                              Dueño
+                              {t.reports.owner}
                             </span>
                           ) : null}
                         </p>
                         <p className="truncate text-xs text-[#64748b]">
-                          {memberIdentity?.email ?? 'Sin cuenta vinculada'}
+                          {memberIdentity?.email ?? t.reports.unlinked}
                         </p>
                       </div>
                     </div>
@@ -253,16 +257,13 @@ function RouteComponent() {
                               <ArrowUpRight className="size-4 shrink-0 text-rose-600" />
                             )}
                             <p className="min-w-0 flex-1 text-sm text-[#334155]">
-                              {amount > 0 ? 'Le debes ' : 'Te debe '}
-                              <span
-                                className={
-                                  amount > 0
-                                    ? 'font-semibold text-emerald-600'
-                                    : 'font-semibold text-rose-600'
-                                }
-                              >
-                                {formatMoney(currency, Math.abs(amount))}
-                              </span>
+                              {amount > 0
+                                ? t.reports.youOwe(
+                                    formatMoney(currency, Math.abs(amount)),
+                                  )
+                                : t.reports.owesYou(
+                                    formatMoney(currency, Math.abs(amount)),
+                                  )}
                             </p>
                             <span
                               className={
@@ -279,7 +280,7 @@ function RouteComponent() {
                       </div>
                     ) : (
                       <p className="rounded-2xl bg-[#f8fafc] px-4 py-3 text-sm text-[#64748b]">
-                        Sin movimientos
+                        {t.reports.noMovements}
                       </p>
                     )}
                   </article>
@@ -300,7 +301,7 @@ function RouteComponent() {
                   })
                 }
               >
-                Liquidar deudas
+                {t.reports.settleDebts}
               </Button>
             </div>
           </>
@@ -309,12 +310,12 @@ function RouteComponent() {
             <section className="mt-4 flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#132238]">
-                  Gastos
+                  {t.reports.expensesTitle}
                 </h2>
                 <p className="mt-1 text-xs text-[#64748b]">
                   {expenseCount
-                    ? `${expenseCount} gastos`
-                    : 'Sin gastos para este periodo'}
+                    ? t.reports.expensesCount(expenseCount)
+                    : t.reports.noExpensesPeriod}
                 </p>
               </div>
 
@@ -329,14 +330,14 @@ function RouteComponent() {
                   })
                 }
               >
-                Ver todo
+                {t.reports.seeAll}
                 <ChevronRight className="size-4" />
               </button>
             </section>
 
             <section className="mt-4">
               <div className="flex gap-2 overflow-x-auto pb-1">
-                {TOTALS_RANGE_OPTIONS.map((option) => (
+                {totalsRangeOptions.map((option) => (
                   <button
                     key={option.value}
                     type="button"
@@ -384,7 +385,7 @@ function RouteComponent() {
               <div className="mt-3 flex items-center justify-center">
                 {reportsTotalsQuery.isLoading ? (
                   <div className="flex aspect-square h-56 w-56 items-center justify-center rounded-full border border-dashed border-[#e2e8f0] bg-[#f8fafc] text-xs text-[#94a3b8]">
-                    Cargando totales...
+                    {t.reports.loadingTotals}
                   </div>
                 ) : (
                   <ChartContainer
@@ -408,7 +409,7 @@ function RouteComponent() {
               </div>
 
               <div className="mt-3 flex flex-col items-center">
-                <p className="text-xs text-[#94a3b8]">Total grupo</p>
+                <p className="text-xs text-[#94a3b8]">{t.reports.totalGroup}</p>
                 {reportsTotalsQuery.isLoading ? (
                   <p className="mt-1 text-2xl font-semibold text-[#132238]">
                     —
@@ -457,7 +458,7 @@ function RouteComponent() {
             <section className="mt-4 grid grid-cols-2 gap-3">
               <div className="rounded-[24px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
                 <p className="text-xs font-medium text-[#64748b]">
-                  Total grupo
+                  {t.reports.totalGroup}
                 </p>
                 {reportsTotalsQuery.isLoading ? (
                   <p className="mt-1 text-2xl font-semibold text-[#132238]">
@@ -471,7 +472,9 @@ function RouteComponent() {
               </div>
 
               <div className="rounded-[24px] bg-[#111111] p-4 text-white shadow-[0_8px_24px_rgba(15,23,42,0.14)]">
-                <p className="text-xs font-medium text-white/70">Tu parte</p>
+                <p className="text-xs font-medium text-white/70">
+                  {t.reports.yourShare}
+                </p>
                 <p className="mt-1 text-2xl font-semibold">
                   {formatMoney(selectedCurrency, currentUserSpent)}
                 </p>
@@ -482,14 +485,14 @@ function RouteComponent() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-[#132238]">
-                    Participantes
+                    {t.reports.participants}
                   </h3>
                   <p className="mt-1 text-xs text-[#64748b]">
-                    Balance en {selectedCurrency}
+                    {t.reports.balanceInCurrency(selectedCurrency)}
                   </p>
                 </div>
                 <span className="text-xs text-[#94a3b8]">
-                  {group.memberBalances.length} personas
+                  {t.reports.peopleCount(group.memberBalances.length)}
                 </span>
               </div>
 

@@ -10,11 +10,7 @@ import { type MouseEvent, type TouchEvent, useRef, useState } from 'react';
 
 import type { ExpenseItem } from '../-types/group-detail.types';
 import { CategoryIcon } from './category-icon';
-import {
-  formatMoney,
-  getExpenseEmoji,
-  getExpenseRowTag,
-} from './group-detail.utils';
+import { formatMoney, getExpenseEmoji } from './group-detail.utils';
 
 type GroupExpenseRowProps = {
   expense: ExpenseItem;
@@ -23,14 +19,6 @@ type GroupExpenseRowProps = {
   onOpenOptions: (expense: ExpenseItem) => void;
   onDeleteExpense: (expense: ExpenseItem) => void;
   onEditExpense: (expense: ExpenseItem) => void;
-};
-
-const tagToneClass = {
-  emerald: 'bg-teal-50 text-teal-700',
-  rose: 'bg-rose-50 text-rose-700',
-  blue: 'bg-blue-50 text-blue-700',
-  amber: 'bg-amber-50 text-amber-700',
-  slate: 'bg-slate-50 text-slate-700',
 };
 
 const iconToneClass = {
@@ -204,7 +192,6 @@ export function GroupExpenseRow({
     setTranslateX(0);
   };
 
-  const tag = getExpenseRowTag(expense, isPinned);
   const iconTone = isSettlement
     ? iconToneClass.settlement
     : expense.expenseType === 'composite'
@@ -229,15 +216,25 @@ export function GroupExpenseRow({
           .join(
             ', ',
           )}${paidByMembers.length > 2 ? ` · +${paidByMembers.length - 2}` : ''}`;
+  const userBalance =
+    !isSettlement && typeof expense.currentUserBalance === 'number'
+      ? expense.currentUserBalance
+      : null;
+  const balanceLabel =
+    userBalance === null || Math.abs(userBalance) < 0.01
+      ? null
+      : userBalance > 0
+        ? `Te deben ${formatMoney(expense.currency, userBalance)}`
+        : `Tú debes ${formatMoney(expense.currency, Math.abs(userBalance))}`;
 
   return (
     <div
-      className={`relative overflow-hidden ${
+      className={`relative overflow-hidden rounded-[24px] border shadow-[0_10px_24px_rgba(15,23,42,0.04)] ${
         isSettlement
-          ? 'bg-emerald-50'
+          ? 'border-emerald-100 bg-emerald-50'
           : isPendingSync
-            ? 'bg-amber-50'
-            : 'bg-white'
+            ? 'border-amber-100 bg-amber-50'
+            : 'border-[#e5e7eb] bg-white'
       }`}
     >
       {showDeleteAction ? (
@@ -277,7 +274,7 @@ export function GroupExpenseRow({
           if (isPendingSync) return;
           onOpenOptions(expense);
         }}
-        className={`native-tap relative z-10 flex w-full flex-col px-4 py-4 text-left transition-transform duration-200 ${
+        className={`native-tap relative z-10 flex w-full flex-col px-4 pt-2 pb-0 text-left transition-transform duration-200 ${
           isSettlement
             ? 'bg-emerald-50'
             : isPendingSync
@@ -287,35 +284,35 @@ export function GroupExpenseRow({
         style={{ transform: `translateX(${translateX}px)` }}
       >
         {isSettlement ? (
-          <span className="absolute inset-y-5 left-0 w-1 rounded-r-full bg-emerald-400" />
+          <span className="absolute inset-y-0 left-0 w-1 rounded-r-full bg-emerald-500" />
         ) : null}
         {isPinned ? (
           <span className="absolute right-4 top-0 h-7 w-4 rounded-b-full bg-amber-400" />
         ) : null}
-        <div className="flex items-start gap-4">
+        <div className="flex items-center gap-3.5">
           <div
-            className={`flex size-14 shrink-0 items-center justify-center rounded-full ${iconTone}`}
+            className={`flex size-12 shrink-0 items-center justify-center rounded-full ${iconTone}`}
           >
             {isSettlement ? (
-              <HandCoins className="size-5" />
+              <HandCoins className="size-4.5" />
             ) : (
               <CategoryIcon
                 icon={expense.category?.icon}
                 color={expense.category?.color}
                 fallback={
-                  <span className="text-2xl">{getExpenseEmoji(expense)}</span>
+                  <span className="text-xl">{getExpenseEmoji(expense)}</span>
                 }
               />
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   {isPinned ? (
                     <Pin className="size-3.5 shrink-0 fill-current text-amber-500" />
                   ) : null}
-                  <p className="min-w-0 truncate text-sm font-semibold text-[#202124]">
+                  <p className="min-w-0 truncate text-base font-semibold text-[#202124]">
                     {expense.description}
                   </p>
                 </div>
@@ -328,7 +325,7 @@ export function GroupExpenseRow({
                     </span>
                   </div>
                 ) : (
-                  <p className="mt-1 truncate text-xs leading-5 text-[#555555]">
+                  <p className="mt-0.5 truncate text-xs leading-5 text-[#555555]">
                     Pagado por {paidBySummary}
                     {expense.participantCount > 0
                       ? ` · ${expense.participantCount} persona${expense.participantCount === 1 ? '' : 's'}`
@@ -337,24 +334,28 @@ export function GroupExpenseRow({
                 )}
               </div>
 
-              <div className="max-w-[132px] shrink-0 text-right">
-                <p className="truncate text-base font-medium text-[#202124]">
+              <div className="shrink-0 self-center text-right">
+                <p className="truncate text-base font-semibold text-[#202124]">
                   {formatMoney(expense.currency, expense.amount)}
                 </p>
+                {balanceLabel ? (
+                  <p
+                    className={`mt-0.5 text-xs font-medium ${
+                      userBalance && userBalance > 0
+                        ? 'text-red-500'
+                        : 'text-teal-600'
+                    }`}
+                  >
+                    {balanceLabel}
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
         </div>
-        <div className="mt-2 space-y-2">
-          {tag && !isSettlement ? (
-            <span
-              className={`block w-full rounded-xl px-4 py-2 text-xs font-medium ${tagToneClass[tag.tone]}`}
-            >
-              {tag.label}
-            </span>
-          ) : null}
+        <div className="mt-1.5 space-y-2 pb-0.5">
           {isPendingSync ? (
-            <span className="inline-flex items-center gap-1 rounded-xl bg-white/70 px-4 py-2 text-sm font-semibold text-amber-700">
+            <span className="inline-flex items-center gap-1 rounded-xl bg-white/70 px-4 py-1.5 text-sm font-semibold text-amber-700">
               <Clock3 className="size-3" />
               Pendiente
             </span>

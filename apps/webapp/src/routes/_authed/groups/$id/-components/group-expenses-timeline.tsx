@@ -116,21 +116,17 @@ export function GroupExpensesTimeline({
             <p className="mb-2 text-sm font-medium text-[#555555]">
               {dayGroup.label}
             </p>
-            <div className="overflow-hidden rounded-[24px] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+            <div className="flex flex-col gap-3">
               {dayGroup.items.map((expense) => (
-                <div
+                <GroupExpenseRow
                   key={expense.id}
-                  className="border-b border-[#f2f2f2] last:border-b-0"
-                >
-                  <GroupExpenseRow
-                    expense={expense}
-                    isPinned={pinnedExpenseIds.includes(expense.id)}
-                    onOpenExpense={onOpenExpense}
-                    onOpenOptions={onOpenOptions}
-                    onDeleteExpense={onDeleteExpense}
-                    onEditExpense={onEditExpense}
-                  />
-                </div>
+                  expense={expense}
+                  isPinned={pinnedExpenseIds.includes(expense.id)}
+                  onOpenExpense={onOpenExpense}
+                  onOpenOptions={onOpenOptions}
+                  onDeleteExpense={onDeleteExpense}
+                  onEditExpense={onEditExpense}
+                />
               ))}
             </div>
           </div>

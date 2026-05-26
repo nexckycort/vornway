@@ -23,8 +23,10 @@ function summarizeGroup(
       user: { image: string | null; updatedAt: Date } | null;
     }>;
     Expense: Array<{
+      amount: number;
       currency: string;
       paidById: string;
+      payers: Array<{ memberId: string; amount: number }>;
       participants: Array<{ memberId: string; share: number }>;
     }>;
   },
@@ -82,11 +84,35 @@ function summarizeGroup(
   for (const expense of group.Expense) {
     if (expense.participants.length === 0) continue;
 
-    if (expense.paidById === currentMember.id) {
+    const payerEntries =
+      expense.payers.length > 0
+        ? expense.payers
+        : [{ memberId: expense.paidById, amount: expense.amount ?? 0 }];
+    const payerIds = new Set(payerEntries.map((payer) => payer.memberId));
+    const totalPaid = payerEntries.reduce(
+      (total, payer) => total + payer.amount,
+      0,
+    );
+
+    const currentPayer = payerEntries.find(
+      (payer) => payer.memberId === currentMember.id,
+    );
+
+    if (currentPayer) {
       for (const participant of expense.participants) {
-        if (participant.memberId === currentMember.id) continue;
+        if (
+          participant.memberId === currentMember.id ||
+          payerIds.has(participant.memberId)
+        ) {
+          continue;
+        }
+        const amount = normalizeAmount(
+          totalPaid > 0
+            ? (participant.share * currentPayer.amount) / totalPaid
+            : 0,
+        );
         const key = `${participant.memberId}:${expense.currency}`;
-        pairBalances.set(key, (pairBalances.get(key) ?? 0) - participant.share);
+        pairBalances.set(key, (pairBalances.get(key) ?? 0) - amount);
       }
       continue;
     }
@@ -96,8 +122,13 @@ function summarizeGroup(
     );
     if (!ownShare) continue;
 
-    const key = `${expense.paidById}:${expense.currency}`;
-    pairBalances.set(key, (pairBalances.get(key) ?? 0) + ownShare.share);
+    for (const payer of payerEntries) {
+      const amount = normalizeAmount(
+        totalPaid > 0 ? (ownShare.share * payer.amount) / totalPaid : 0,
+      );
+      const key = `${payer.memberId}:${expense.currency}`;
+      pairBalances.set(key, (pairBalances.get(key) ?? 0) + amount);
+    }
   }
 
   const participantBalances: HomeParticipantBalance[] = [];
@@ -262,6 +293,12 @@ export function createHomeService(): HomeService {
               amount: true,
               currency: true,
               paidById: true,
+              payers: {
+                select: {
+                  memberId: true,
+                  amount: true,
+                },
+              },
               participants: {
                 select: {
                   memberId: true,

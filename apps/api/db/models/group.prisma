@@ -30,6 +30,7 @@ model GroupMember {
   user                User?                @relation(fields: [userId], references: [id])
   group               Group                @relation(fields: [groupId], references: [id])
   paidExpenses        Expense[]            @relation("MemberPaidExpenses")
+  paidExpenseAllocations ExpensePayer[]     @relation("MemberPaidExpenseAllocations")
   expenseParticipants ExpenseParticipant[]
   goalContributions   GoalContribution[]
   createdGoals        Goal[]               @relation("GoalCreatedBy")

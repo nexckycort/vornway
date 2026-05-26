@@ -97,37 +97,55 @@ function RouteComponent() {
         category,
       ]),
     );
-    const localExpenses: ExpenseItem[] = pendingExpenses.map((expense) => ({
-      id: expense.id,
-      category: expense.payload.categoryId
-        ? {
-            id: expense.payload.categoryId,
-            name:
-              categoriesById.get(expense.payload.categoryId)?.name ??
-              'Categoría',
-            icon: categoriesById.get(expense.payload.categoryId)?.icon ?? null,
-            color:
-              categoriesById.get(expense.payload.categoryId)?.color ?? null,
-          }
-        : null,
-      description: expense.payload.description,
-      amount: expense.payload.amount,
-      currency: expense.payload.currency,
-      date: expense.createdAt,
-      isDeleted: false,
-      isSettlement: false,
-      isPersonal: false,
-      expenseType: 'standard',
-      subExpenseCount: 0,
-      settlementToName: null,
-      paidBy: {
-        id: expense.payload.paidById,
-        name: membersById.get(expense.payload.paidById) ?? 'Miembro',
-      },
-      participantCount: expense.payload.participantIds?.length ?? 0,
-      currentUserBalance: null,
-      syncStatus: 'pending',
-    }));
+    const localExpenses: ExpenseItem[] = pendingExpenses.map((expense) => {
+      const primaryPayerId =
+        expense.payload.paidByIds?.[0] ?? expense.payload.paidById ?? '';
+      const payerIds = expense.payload.paidByIds?.length
+        ? expense.payload.paidByIds
+        : expense.payload.paidById
+          ? [expense.payload.paidById]
+          : [];
+      const payerShare =
+        payerIds.length > 0 ? expense.payload.amount / payerIds.length : 0;
+
+      return {
+        id: expense.id,
+        category: expense.payload.categoryId
+          ? {
+              id: expense.payload.categoryId,
+              name:
+                categoriesById.get(expense.payload.categoryId)?.name ??
+                'Categoría',
+              icon:
+                categoriesById.get(expense.payload.categoryId)?.icon ?? null,
+              color:
+                categoriesById.get(expense.payload.categoryId)?.color ?? null,
+            }
+          : null,
+        description: expense.payload.description,
+        amount: expense.payload.amount,
+        currency: expense.payload.currency,
+        date: expense.createdAt,
+        isDeleted: false,
+        isSettlement: false,
+        isPersonal: false,
+        expenseType: 'standard',
+        subExpenseCount: 0,
+        settlementToName: null,
+        paidBy: {
+          id: primaryPayerId,
+          name: membersById.get(primaryPayerId) ?? 'Miembro',
+        },
+        paidByMembers: payerIds.map((memberId) => ({
+          memberId,
+          name: membersById.get(memberId) ?? 'Miembro',
+          amount: Number(payerShare.toFixed(2)),
+        })),
+        participantCount: expense.payload.participantIds?.length ?? 0,
+        currentUserBalance: null,
+        syncStatus: 'pending',
+      };
+    });
 
     const expensesById = new Map<string, ExpenseItem>();
 

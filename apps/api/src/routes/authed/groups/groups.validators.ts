@@ -43,16 +43,26 @@ export const groupReportsTotalsQuerySchema = z.object({
     .default('all'),
 });
 
-export const createGroupExpenseSchema = z.object({
-  description: z.string().min(1).max(160),
-  amount: z.number().positive(),
-  currency: z.string().min(1).max(8),
-  categoryId: z.string().min(1).optional(),
-  paidById: z.string().min(1),
-  participantIds: z.array(z.string().min(1)).default([]),
-  splitMethod: z.enum(['equal', 'percentage', 'exact']).default('equal'),
-  exactShares: z.record(z.string(), z.number().nonnegative()).optional(),
-});
+export const createGroupExpenseSchema = z
+  .object({
+    description: z.string().min(1).max(160),
+    amount: z.number().positive(),
+    currency: z.string().min(1).max(8),
+    categoryId: z.string().min(1).optional(),
+    paidById: z.string().min(1).optional(),
+    paidByIds: z.array(z.string().min(1)).min(1).optional(),
+    participantIds: z.array(z.string().min(1)).default([]),
+    splitMethod: z.enum(['equal', 'percentage', 'exact']).default('equal'),
+    exactShares: z.record(z.string(), z.number().nonnegative()).optional(),
+  })
+  .refine(
+    (data) =>
+      (data.paidByIds?.length ?? 0) > 0 || Boolean(data.paidById?.trim()),
+    {
+      message: 'Debes seleccionar al menos una persona que pagó',
+      path: ['paidByIds'],
+    },
+  );
 
 export const settleGroupDebtSchema = z.object({
   fromMemberId: z.string().min(1),

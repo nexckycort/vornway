@@ -210,6 +210,25 @@ export function GroupExpenseRow({
     : expense.expenseType === 'composite'
       ? iconToneClass.composite
       : iconToneClass.default;
+  const paidByMembers =
+    expense.paidByMembers.length > 0
+      ? expense.paidByMembers
+      : [
+          {
+            memberId: expense.paidBy.id,
+            name: expense.paidBy.name,
+            amount: expense.amount,
+          },
+        ];
+  const paidBySummary =
+    paidByMembers.length === 1
+      ? (paidByMembers[0]?.name ?? expense.paidBy.name)
+      : `${paidByMembers
+          .slice(0, 2)
+          .map((payer) => payer.name)
+          .join(
+            ', ',
+          )}${paidByMembers.length > 2 ? ` · +${paidByMembers.length - 2}` : ''}`;
 
   return (
     <div
@@ -310,7 +329,7 @@ export function GroupExpenseRow({
                   </div>
                 ) : (
                   <p className="mt-1 truncate text-xs leading-5 text-[#555555]">
-                    Pagado por {expense.paidBy.name}
+                    Pagado por {paidBySummary}
                     {expense.participantCount > 0
                       ? ` · ${expense.participantCount} persona${expense.participantCount === 1 ? '' : 's'}`
                       : ''}

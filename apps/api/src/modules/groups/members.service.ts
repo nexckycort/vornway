@@ -25,6 +25,13 @@ async function getMemberExpenseUsageCount(input: {
           paidById: input.memberId,
         },
         {
+          payers: {
+            some: {
+              memberId: input.memberId,
+            },
+          },
+        },
+        {
           participants: {
             some: {
               memberId: input.memberId,

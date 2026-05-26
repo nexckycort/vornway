@@ -112,6 +112,13 @@ type GroupReportsTotalsSuccess = {
 function mapExpenseDetailToExpenseItem(
   expense: GroupExpenseSuccess,
 ): ExpenseItem {
+  const paidByMembers =
+    (
+      expense as GroupExpenseSuccess & {
+        paidByMembers?: ExpenseItem['paidByMembers'];
+      }
+    ).paidByMembers ?? [];
+
   return {
     id: expense.id,
     description: expense.description,
@@ -125,6 +132,7 @@ function mapExpenseDetailToExpenseItem(
     subExpenseCount: 0,
     settlementToName: null,
     paidBy: expense.paidBy,
+    paidByMembers,
     category: expense.category ?? null,
     participantCount: expense.participants?.length ?? 0,
     currentUserBalance: null,

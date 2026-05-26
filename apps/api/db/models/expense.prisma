@@ -37,12 +37,28 @@ model Expense {
   category     ExpenseCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   paidBy       GroupMember          @relation("MemberPaidExpenses", fields: [paidById], references: [id])
   compositeItems CompositeExpenseItem[]
+  payers       ExpensePayer[]
   participants ExpenseParticipant[]
 
   @@index([groupId, date(sort: Desc)])
   @@index([groupId, expenseType, status])
   @@index([groupId, pinnedAt(sort: Desc)])
   @@map("expense")
+}
+
+model ExpensePayer {
+  id        String   @id @default(cuid())
+  expenseId String
+  memberId  String
+  amount    Float
+
+  expense Expense     @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  member  GroupMember @relation("MemberPaidExpenseAllocations", fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([expenseId, memberId])
+  @@index([expenseId])
+  @@index([memberId])
+  @@map("expense_payer")
 }
 
 model ExpenseParticipant {

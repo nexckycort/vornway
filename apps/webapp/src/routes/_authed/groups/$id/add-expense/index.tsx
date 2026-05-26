@@ -146,7 +146,7 @@ function RouteComponent() {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('COP');
-  const [paidById, setPaidById] = useState('');
+  const [paidByIds, setPaidByIds] = useState<string[]>([]);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
@@ -172,6 +172,7 @@ function RouteComponent() {
   const amountInputRef = useRef<HTMLInputElement | null>(null);
   const customCategoryIconInputRef = useRef<HTMLInputElement | null>(null);
   const didMountAmountRef = useRef(false);
+  const didInitializePayersRef = useRef(false);
 
   const members = groupQuery.data?.members ?? [];
   const categories = groupQuery.data?.categories ?? [];
@@ -229,7 +230,11 @@ function RouteComponent() {
       setAmount(expense.amount.toString());
       setCurrency(expense.currency);
       setCategoryId(expense.category?.id ?? null);
-      setPaidById(expense.paidBy.id);
+      setPaidByIds(
+        expense.paidByMembers.length > 0
+          ? expense.paidByMembers.map((payer) => payer.memberId)
+          : [expense.paidBy.id],
+      );
       setParticipantIds(
         expense.participants.map((participant) => participant.memberId),
       );
@@ -248,18 +253,12 @@ function RouteComponent() {
       return;
     }
 
-    if (paidById || !groupQuery.data) return;
+    if (didInitializePayersRef.current || !groupQuery.data) return;
 
-    setPaidById(groupQuery.data.myMembership?.id ?? members[0]?.id ?? '');
+    didInitializePayersRef.current = true;
+    setPaidByIds([groupQuery.data.myMembership?.id ?? members[0]?.id ?? '']);
     setParticipantIds(members.map((member) => member.id));
-  }, [
-    expense,
-    groupQuery.data,
-    hasInitializedForm,
-    isEditMode,
-    members,
-    paidById,
-  ]);
+  }, [expense, groupQuery.data, hasInitializedForm, isEditMode, members]);
 
   useEffect(() => {
     if (splitMethod === 'equal') return;
@@ -343,7 +342,7 @@ function RouteComponent() {
   const canSubmit =
     description.trim().length > 0 &&
     normalizedAmount > 0 &&
-    paidById.length > 0 &&
+    paidByIds.length > 0 &&
     splitIsValid;
 
   const isPending = isEditMode
@@ -356,6 +355,14 @@ function RouteComponent() {
 
   const toggleParticipant = (memberId: string) => {
     setParticipantIds((current) =>
+      current.includes(memberId)
+        ? current.filter((id) => id !== memberId)
+        : [...current, memberId],
+    );
+  };
+
+  const togglePayer = (memberId: string) => {
+    setPaidByIds((current) =>
       current.includes(memberId)
         ? current.filter((id) => id !== memberId)
         : [...current, memberId],
@@ -429,7 +436,7 @@ function RouteComponent() {
       amount: normalizedAmount,
       currency,
       ...(categoryId ? { categoryId } : {}),
-      paidById,
+      paidByIds,
       participantIds,
       splitMethod,
       exactShares,
@@ -593,16 +600,21 @@ function RouteComponent() {
         </button>
 
         <section>
-          <p className="mb-3 text-sm text-gray-600">Pagado por</p>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-sm text-gray-600">Pagado por</p>
+            <span className="text-xs text-gray-400">
+              {paidByIds.length} seleccionada{paidByIds.length === 1 ? '' : 's'}
+            </span>
+          </div>
           <div className="flex gap-3 overflow-x-auto pb-1">
             {members.map((member) => {
-              const selected = paidById === member.id;
+              const selected = paidByIds.includes(member.id);
 
               return (
                 <button
                   key={member.id}
                   type="button"
-                  onClick={() => setPaidById(member.id)}
+                  onClick={() => togglePayer(member.id)}
                   className="flex min-w-[72px] flex-col items-center"
                 >
                   <div
@@ -616,6 +628,15 @@ function RouteComponent() {
                       sizeClassName="size-full"
                     />
                   </div>
+                  <span
+                    className={`mt-1 inline-flex size-4 items-center justify-center rounded-full border text-[10px] font-semibold ${
+                      selected
+                        ? 'border-rose-500 bg-rose-500 text-white'
+                        : 'border-gray-300 bg-white text-transparent'
+                    }`}
+                  >
+                    {selected ? <Check className="size-2.5" /> : '•'}
+                  </span>
                   <span className="mt-1.5 max-w-[60px] truncate text-xs text-gray-600">
                     {member.isCurrentUser ? 'Tú' : member.name}
                   </span>

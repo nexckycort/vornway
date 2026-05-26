@@ -20,6 +20,11 @@ export type ExpenseItem = {
     id: string;
     name: string;
   };
+  paidByMembers: Array<{
+    memberId: string;
+    name: string;
+    amount: number;
+  }>;
   participantCount: number;
   currentUserBalance: number | null;
   syncStatus?: 'pending';

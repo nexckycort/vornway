@@ -20,7 +20,8 @@ export type CreateGroupExpenseInput = {
   amount: number;
   currency: string;
   categoryId?: string | null;
-  paidById: string;
+  paidById?: string;
+  paidByIds?: string[];
   participantIds: string[];
   splitMethod: 'equal' | 'percentage' | 'exact';
   exactShares?: Record<string, number>;
@@ -375,6 +376,11 @@ export type GroupExpenseListItem = {
     id: string;
     name: string;
   };
+  paidByMembers: Array<{
+    memberId: string;
+    name: string;
+    amount: number;
+  }>;
   category: {
     id: string;
     name: string;
@@ -432,6 +438,11 @@ export type GroupExpenseDetailResult = {
     id: string;
     name: string;
   };
+  paidByMembers: Array<{
+    memberId: string;
+    name: string;
+    amount: number;
+  }>;
   participants: GroupExpenseParticipant[];
 };
 

@@ -4,6 +4,7 @@ import {
   buildActiveExpenseWhere,
   buildActiveGroupMemberWhere,
   buildGroupAccessWhere,
+  createPayerShares,
   createSplitShares,
   normalizeAmount,
   readSplitMethod,
@@ -27,6 +28,21 @@ function buildExpenseBaseWhere(groupId: string) {
   return {
     ...buildActiveExpenseWhere(groupId),
   };
+}
+
+function getNormalizedPayerIds(input: {
+  paidById?: string;
+  paidByIds?: string[];
+}) {
+  const payerIds = input.paidByIds?.length
+    ? input.paidByIds
+    : input.paidById
+      ? [input.paidById]
+      : [];
+
+  return Array.from(
+    new Set(payerIds.map((memberId) => memberId.trim()).filter(Boolean)),
+  );
 }
 
 export function createGroupExpensesService() {
@@ -105,6 +121,18 @@ export function createGroupExpensesService() {
                 name: true,
               },
             },
+            payers: {
+              select: {
+                memberId: true,
+                amount: true,
+                member: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+              orderBy: [{ id: 'asc' }],
+            },
             participants: {
               select: {
                 memberId: true,
@@ -141,22 +169,31 @@ export function createGroupExpensesService() {
                   (participant) => participant.memberId === currentMember.id,
                 )
               : null;
+            const currentPayer = currentMember
+              ? row.payers.find((payer) => payer.memberId === currentMember.id)
+              : null;
             let currentUserBalance: number | null = null;
 
             if (
               !isPersonal &&
               currentMember &&
-              (row.paidBy.id === currentMember.id || currentParticipation)
+              (currentPayer || currentParticipation)
             ) {
               currentUserBalance = 0;
-              if (row.paidBy.id === currentMember.id) {
-                currentUserBalance += row.amount;
+              if (currentPayer) {
+                currentUserBalance += currentPayer.amount;
               }
               if (currentParticipation) {
                 currentUserBalance -= currentParticipation.share;
               }
               currentUserBalance = normalizeAmount(currentUserBalance);
             }
+
+            const paidByMembers = row.payers.map((payer) => ({
+              memberId: payer.memberId,
+              name: payer.member.name,
+              amount: payer.amount,
+            }));
 
             return {
               id: row.id,
@@ -173,6 +210,7 @@ export function createGroupExpensesService() {
                 ? (row.participants[0]?.member.name ?? null)
                 : null,
               paidBy: row.paidBy,
+              paidByMembers,
               category: row.category,
               participantCount: row._count.participants,
               currentUserBalance,
@@ -236,6 +274,18 @@ export function createGroupExpensesService() {
               name: true,
             },
           },
+          payers: {
+            select: {
+              memberId: true,
+              amount: true,
+              member: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+            orderBy: [{ id: 'asc' }],
+          },
           participants: {
             select: {
               memberId: true,
@@ -266,6 +316,11 @@ export function createGroupExpensesService() {
         splitMethod: readSplitMethod(expense.metadata, expense.participants),
         category: expense.category,
         paidBy: expense.paidBy,
+        paidByMembers: expense.payers.map((payer) => ({
+          memberId: payer.memberId,
+          name: payer.member.name,
+          amount: payer.amount,
+        })),
         participants: expense.participants.map((participant) => ({
           memberId: participant.memberId,
           name: participant.member.name,
@@ -281,6 +336,7 @@ export function createGroupExpensesService() {
       currency,
       categoryId,
       paidById,
+      paidByIds,
       participantIds,
       splitMethod,
       exactShares,
@@ -294,18 +350,27 @@ export function createGroupExpensesService() {
         throw new Error('No tienes acceso a este grupo');
       }
 
+      const selectedPayerIds = getNormalizedPayerIds({
+        paidById,
+        paidByIds,
+      });
+
       const members = await db.groupMember.findMany({
         where: {
           groupId,
           id: {
-            in: [paidById, ...participantIds],
+            in: [...selectedPayerIds, ...participantIds],
           },
         },
         select: { id: true, name: true, userId: true },
       });
       const validMemberIds = new Set(members.map((member) => member.id));
 
-      if (!validMemberIds.has(paidById)) {
+      const validPayerIds = selectedPayerIds.filter((memberId) =>
+        validMemberIds.has(memberId),
+      );
+
+      if (validPayerIds.length === 0) {
         throw new Error('El pagador no pertenece al grupo');
       }
 
@@ -326,6 +391,11 @@ export function createGroupExpensesService() {
       const validParticipantIds = Array.from(new Set(participantIds)).filter(
         (memberId) => validMemberIds.has(memberId),
       );
+      const { payerIds: normalizedPayerIds, shares: payerShares } =
+        createPayerShares({
+          amount,
+          payerIds: validPayerIds,
+        });
 
       const { shares: participantShares, normalizedMethod } = createSplitShares(
         {
@@ -340,7 +410,7 @@ export function createGroupExpensesService() {
         const created = await tx.expense.create({
           data: {
             groupId,
-            paidById,
+            paidById: normalizedPayerIds[0] ?? validPayerIds[0],
             ...(categoryId ? { categoryId } : {}),
             description,
             amount,
@@ -348,6 +418,12 @@ export function createGroupExpensesService() {
             metadata: {
               splitMethod: normalizedMethod,
               splitValues: exactShares ?? null,
+            },
+            payers: {
+              create: normalizedPayerIds.map((memberId) => ({
+                memberId,
+                amount: payerShares[memberId] ?? 0,
+              })),
             },
             ...(validParticipantIds.length > 0
               ? {
@@ -390,7 +466,7 @@ export function createGroupExpensesService() {
               expenseId: created.id,
               amount,
               currency,
-              paidById,
+              paidByIds: normalizedPayerIds,
               participants: validParticipantIds.length,
               splitMethod: normalizedMethod,
             },
@@ -410,7 +486,7 @@ export function createGroupExpensesService() {
             where: {
               groupId,
               id: {
-                in: [paidById, ...validParticipantIds],
+                in: [...normalizedPayerIds, ...validParticipantIds],
               },
             },
             select: { id: true, name: true, userId: true },
@@ -419,7 +495,7 @@ export function createGroupExpensesService() {
 
         const recipientUserIds = getExpensePushRecipientUserIds({
           members: pushMembers,
-          paidById,
+          paidByIds: normalizedPayerIds,
           participantIds: validParticipantIds,
           creatorUserId: userId,
         });
@@ -464,6 +540,7 @@ export function createGroupExpensesService() {
       currency,
       categoryId,
       paidById,
+      paidByIds,
       participantIds,
       splitMethod,
       exactShares,
@@ -477,18 +554,27 @@ export function createGroupExpensesService() {
         throw new Error('No tienes acceso a este grupo');
       }
 
+      const selectedPayerIds = getNormalizedPayerIds({
+        paidById,
+        paidByIds,
+      });
+
       const members = await db.groupMember.findMany({
         where: {
           groupId,
           id: {
-            in: [paidById, ...participantIds],
+            in: [...selectedPayerIds, ...participantIds],
           },
         },
         select: { id: true },
       });
       const validMemberIds = new Set(members.map((member) => member.id));
 
-      if (!validMemberIds.has(paidById)) {
+      const validPayerIds = selectedPayerIds.filter((memberId) =>
+        validMemberIds.has(memberId),
+      );
+
+      if (validPayerIds.length === 0) {
         throw new Error('El pagador no pertenece al grupo');
       }
 
@@ -509,6 +595,11 @@ export function createGroupExpensesService() {
       const validParticipantIds = Array.from(new Set(participantIds)).filter(
         (memberId) => validMemberIds.has(memberId),
       );
+      const { payerIds: normalizedPayerIds, shares: payerShares } =
+        createPayerShares({
+          amount,
+          payerIds: validPayerIds,
+        });
       const { shares: participantShares, normalizedMethod } = createSplitShares(
         {
           amount,
@@ -554,10 +645,17 @@ export function createGroupExpensesService() {
             amount,
             currency,
             ...(categoryId ? { categoryId } : { categoryId: null }),
-            paidById,
+            paidById: normalizedPayerIds[0] ?? validPayerIds[0],
             metadata: {
               splitMethod: normalizedMethod,
               splitValues: exactShares ?? null,
+            },
+            payers: {
+              deleteMany: {},
+              create: normalizedPayerIds.map((memberId) => ({
+                memberId,
+                amount: payerShares[memberId] ?? 0,
+              })),
             },
           },
         });
@@ -619,7 +717,7 @@ export function createGroupExpensesService() {
               expenseId: existingExpense.id,
               amount,
               currency,
-              paidById,
+              paidByIds: normalizedPayerIds,
               participants: validParticipantIds.length,
               splitMethod: normalizedMethod,
             },
@@ -765,6 +863,14 @@ export function createGroupExpensesService() {
             amount,
             currency,
             notes: `[SETTLEMENT:FLEX] ${new Date().toISOString()} by ${membership.id}`,
+            payers: {
+              create: [
+                {
+                  memberId: fromMemberId,
+                  amount,
+                },
+              ],
+            },
             participants: {
               create: [
                 {

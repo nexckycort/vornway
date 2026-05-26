@@ -1,4 +1,4 @@
-import { Prisma } from '~/generated/prisma/client';
+import type { Prisma } from '~/generated/prisma/client';
 
 export function normalizeAmount(value: number): number {
   return Number(value.toFixed(2));
@@ -123,6 +123,79 @@ export function createSplitShares(input: {
     shares,
     normalizedMethod: splitMethod,
   };
+}
+
+export function createPayerShares(input: {
+  amount: number;
+  payerIds: string[];
+}) {
+  const uniquePayerIds = Array.from(
+    new Set(input.payerIds.map((memberId) => memberId.trim()).filter(Boolean)),
+  );
+
+  if (uniquePayerIds.length === 0) {
+    return {
+      payerIds: [] as string[],
+      shares: {} as Record<string, number>,
+    };
+  }
+
+  if (uniquePayerIds.length === 1) {
+    return {
+      payerIds: uniquePayerIds,
+      shares: {
+        [uniquePayerIds[0] as string]: normalizeAmount(input.amount),
+      } as Record<string, number>,
+    };
+  }
+
+  const baseShare = normalizeAmount(input.amount / uniquePayerIds.length);
+  const shares: Record<string, number> = {};
+
+  uniquePayerIds.forEach((memberId, index) => {
+    if (index === uniquePayerIds.length - 1) {
+      const assignedAmount = Object.values(shares).reduce(
+        (total, share) => total + share,
+        0,
+      );
+      shares[memberId] = normalizeAmount(input.amount - assignedAmount);
+      return;
+    }
+
+    shares[memberId] = baseShare;
+  });
+
+  return {
+    payerIds: uniquePayerIds,
+    shares,
+  };
+}
+
+export function getExpensePayerRows(input: {
+  paidById: string;
+  amount: number;
+  payers?: Array<{ memberId: string; amount: number }>;
+}) {
+  if (input.payers && input.payers.length > 0) {
+    return input.payers.map((payer) => ({
+      memberId: payer.memberId,
+      amount: normalizeAmount(payer.amount),
+    }));
+  }
+
+  return [
+    {
+      memberId: input.paidById,
+      amount: normalizeAmount(input.amount),
+    },
+  ];
+}
+
+export function getPrimaryPayerId(input: {
+  paidById: string;
+  payers?: Array<{ memberId: string; amount: number }>;
+}) {
+  return input.payers?.[0]?.memberId ?? input.paidById;
 }
 
 export function readSplitMethod(

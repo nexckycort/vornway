@@ -21,11 +21,14 @@ function formatExpenseAmount(amount: number, currency: string): string {
 
 export function getExpensePushRecipientUserIds(input: {
   members: GroupMemberForPush[];
-  paidById: string;
+  paidByIds: string[];
   participantIds: string[];
   creatorUserId: string;
 }): string[] {
-  const involvedMemberIds = new Set([input.paidById, ...input.participantIds]);
+  const involvedMemberIds = new Set([
+    ...input.paidByIds,
+    ...input.participantIds,
+  ]);
   const recipientUserIds = new Set<string>();
 
   input.members.forEach((member) => {

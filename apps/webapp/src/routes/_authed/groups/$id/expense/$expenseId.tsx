@@ -101,6 +101,7 @@ function normalizeExpense(
     settlementToName:
       expense.settlementToName ?? fallback?.settlementToName ?? null,
     paidBy: expense.paidBy,
+    paidByMembers: expense.paidByMembers ?? fallback?.paidByMembers ?? [],
     participantCount:
       expense.participantCount ??
       expense.participants?.length ??
@@ -145,9 +146,7 @@ function RouteComponent() {
   );
 
   const isSettlement = expense?.isSettlement ?? false;
-  const paidByMember = expense
-    ? getMemberMeta(expense.paidBy.id, groupSummaryQuery.data?.members)
-    : null;
+  const paidByMembers = expense?.paidByMembers ?? [];
   const participants = expense?.participants ?? [];
 
   const handleBack = () => {
@@ -245,10 +244,11 @@ function RouteComponent() {
                 <p className="mt-3 text-xs text-[#202124]">
                   <span>{formatDate(expense.date)}</span>
                   <span className="mx-1 text-[#9ca3af]">•</span>
-                  <span className="font-semibold">{expense.paidBy.name}</span>
-                  {paidByMember?.isCurrentUser ? (
-                    <span className="font-semibold"> (Tu)</span>
-                  ) : null}
+                  <span className="font-semibold">
+                    {paidByMembers.length > 1
+                      ? `${paidByMembers.length} personas pagaron`
+                      : expense.paidBy.name}
+                  </span>
                 </p>
               </div>
 
@@ -256,10 +256,32 @@ function RouteComponent() {
                 <p className="mb-4 text-xs font-medium text-[#444444]">
                   Pagado por
                 </p>
-                <MemberLine
-                  image={paidByMember?.image ?? null}
-                  name={`${expense.paidBy.name}${paidByMember?.isCurrentUser ? ' (Tu)' : ''}`}
-                />
+                <div className="space-y-4">
+                  {(paidByMembers.length > 0
+                    ? paidByMembers
+                    : [
+                        {
+                          memberId: expense.paidBy.id,
+                          name: expense.paidBy.name,
+                          amount: expense.amount,
+                        },
+                      ]
+                  ).map((payer) => {
+                    const member = getMemberMeta(
+                      payer.memberId,
+                      groupSummaryQuery.data?.members,
+                    );
+
+                    return (
+                      <MemberLine
+                        key={payer.memberId}
+                        image={member?.image ?? null}
+                        name={`${payer.name}${member?.isCurrentUser ? ' (Tu)' : ''}`}
+                        amount={formatAmount(expense.currency, payer.amount)}
+                      />
+                    );
+                  })}
+                </div>
 
                 {!isSettlement ? (
                   <>

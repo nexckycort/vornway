@@ -6,9 +6,6 @@ import { tanstackRouter } from '@tanstack/router-plugin/rspack';
 // Docs: https://rsbuild.rs/config/
 export default defineConfig({
   plugins: [pluginReact()],
-  server: {
-    host: true,
-  },
   output: {
     manifest: {
       filename: 'asset-manifest.json',

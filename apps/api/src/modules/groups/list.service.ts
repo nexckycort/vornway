@@ -45,6 +45,12 @@ const groupListSelect = {
       amount: true,
       currency: true,
       paidById: true,
+      payers: {
+        select: {
+          memberId: true,
+          amount: true,
+        },
+      },
       participants: {
         select: {
           memberId: true,
@@ -117,11 +123,18 @@ function mapGroupListRow(
   for (const expense of row.Expense) {
     if (expense.participants.length === 0) continue;
 
-    const payerBalances = balancesByMember.get(expense.paidById);
-    if (payerBalances) {
-      payerBalances[expense.currency] = normalizeAmount(
-        (payerBalances[expense.currency] ?? 0) + expense.amount,
-      );
+    const payerEntries =
+      expense.payers.length > 0
+        ? expense.payers
+        : [{ memberId: expense.paidById, amount: expense.amount }];
+
+    for (const payer of payerEntries) {
+      const payerBalances = balancesByMember.get(payer.memberId);
+      if (payerBalances) {
+        payerBalances[expense.currency] = normalizeAmount(
+          (payerBalances[expense.currency] ?? 0) + payer.amount,
+        );
+      }
     }
 
     for (const participant of expense.participants) {

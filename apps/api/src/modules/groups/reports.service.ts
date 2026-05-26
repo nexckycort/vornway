@@ -52,6 +52,12 @@ export function createGroupReportsService() {
           currency: true,
           notes: true,
           paidById: true,
+          participants: {
+            select: {
+              memberId: true,
+              share: true,
+            },
+          },
           category: {
             select: {
               id: true,
@@ -93,6 +99,9 @@ export function createGroupReportsService() {
         if (expense.notes?.includes('[DELETED]')) continue;
         if (expense.notes?.includes('[SETTLEMENT:')) continue;
 
+        const isPersonal = expense.participants.length === 0;
+        if (isPersonal) continue;
+
         currencyTotals.set(
           expense.currency,
           normalizeAmount(
@@ -104,14 +113,19 @@ export function createGroupReportsService() {
           (currencyExpenseCounts.get(expense.currency) ?? 0) + 1,
         );
 
-        if (currentMember && expense.paidById === currentMember.id) {
-          currentUserSpentByCurrency.set(
-            expense.currency,
-            normalizeAmount(
-              (currentUserSpentByCurrency.get(expense.currency) ?? 0) +
-                expense.amount,
-            ),
-          );
+        if (currentMember) {
+          const myShare =
+            expense.participants?.find((p) => p.memberId === currentMember.id)
+              ?.share ?? 0;
+          if (myShare > 0) {
+            currentUserSpentByCurrency.set(
+              expense.currency,
+              normalizeAmount(
+                (currentUserSpentByCurrency.get(expense.currency) ?? 0) +
+                  myShare,
+              ),
+            );
+          }
         }
 
         const categoryName = expense.category?.name?.trim() || 'Sin categoría';

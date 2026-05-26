@@ -1,5 +1,13 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Copy, LogOut, Pencil, QrCode, Share2, Trash2 } from 'lucide-react';
+import {
+  Copy,
+  LogOut,
+  Pencil,
+  QrCode,
+  Share2,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 import QRCode from 'qrcode';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
@@ -12,6 +20,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
+import { Switch } from '#/components/ui/switch';
 import {
   keepGroupFlowState,
   useGroupFlowNavigation,
@@ -19,6 +28,7 @@ import {
 import {
   useDeleteGroupMutation,
   useUnlinkMemberMutation,
+  useUpdateGroupSettingsMutation,
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 
@@ -48,6 +58,7 @@ function RouteComponent() {
   const groupQuery = useGroupSummaryQuery(id);
   const deleteGroupMutation = useDeleteGroupMutation(id);
   const unlinkMemberMutation = useUnlinkMemberMutation(id);
+  const updateSettingsMutation = useUpdateGroupSettingsMutation(id);
 
   const inviteLink = useMemo(() => {
     if (!groupQuery.data?.inviteCode || typeof window === 'undefined')
@@ -294,6 +305,30 @@ function RouteComponent() {
               Crear y editar categorías
             </span>
           </button>
+
+          <div className="flex w-full items-center gap-3 px-1 py-2 text-left">
+            <span className="flex size-9 items-center justify-center text-[#132238]">
+              <Sparkles className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-[#132238]">
+                Detalles avanzados de gastos
+              </p>
+              <p className="text-xs text-[#94a3b8]">
+                Lugares, contactos, reservas y notas por gasto
+              </p>
+            </div>
+            <Switch
+              checked={group.advancedExpenseDetailsEnabled}
+              disabled={updateSettingsMutation.isPending}
+              onCheckedChange={(checked) => {
+                updateSettingsMutation.mutate({
+                  advancedExpenseDetailsEnabled: checked,
+                });
+              }}
+              aria-label="Activar detalles avanzados de gastos"
+            />
+          </div>
         </section>
 
         <div className="-mx-4 mt-1 border-t border-[#e5e7eb] px-4 pt-4">

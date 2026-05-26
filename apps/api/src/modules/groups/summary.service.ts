@@ -34,6 +34,7 @@ export function createGroupSummaryService() {
           ownerId: true,
           createdAt: true,
           updatedAt: true,
+          advancedExpenseDetailsEnabled: true,
           totals: true,
           categories: {
             select: {
@@ -288,6 +289,7 @@ export function createGroupSummaryService() {
         ownerId: group.ownerId,
         createdAt: group.createdAt,
         updatedAt: group.updatedAt,
+        advancedExpenseDetailsEnabled: group.advancedExpenseDetailsEnabled,
         totals: (group.totals as Record<string, number>) ?? {},
         participantCount: group.GroupMember.length,
         categories: group.categories.map((category) => ({

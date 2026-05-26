@@ -237,6 +237,7 @@ function buildGroupSummaryFromListItem(group: GroupListItem): GroupSummary {
     ownerId: '',
     createdAt: String(group.createdAt),
     updatedAt: String(group.updatedAt),
+    advancedExpenseDetailsEnabled: false,
     participantCount: group.participantCount,
     totals: group.totals,
     categories: [],

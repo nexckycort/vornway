@@ -10,6 +10,7 @@ const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
 const updateExpenseEndpoint =
   client.api.groups[':id'].expenses[':expenseId'].$put;
 const updateGroupEndpoint = client.api.groups[':id'].$patch;
+const updateGroupSettingsEndpoint = client.api.groups[':id'].settings.$patch;
 const deleteGroupEndpoint = client.api.groups[':id'].$delete;
 const settleDebtEndpoint = client.api.groups[':id'].settlements.$post;
 const addMemberEndpoint = client.api.groups[':id'].members.$post;
@@ -28,6 +29,12 @@ type UpdateExpenseRequest = InferRequestType<typeof updateExpenseEndpoint>;
 type UpdateExpenseResponse = InferResponseType<typeof updateExpenseEndpoint>;
 type UpdateGroupRequest = InferRequestType<typeof updateGroupEndpoint>;
 type UpdateGroupResponse = InferResponseType<typeof updateGroupEndpoint>;
+type UpdateGroupSettingsRequest = InferRequestType<
+  typeof updateGroupSettingsEndpoint
+>;
+type UpdateGroupSettingsResponse = InferResponseType<
+  typeof updateGroupSettingsEndpoint
+>;
 type DeleteGroupResponse = InferResponseType<typeof deleteGroupEndpoint>;
 type SettleDebtRequest = InferRequestType<typeof settleDebtEndpoint>;
 type SettleDebtResponse = InferResponseType<typeof settleDebtEndpoint>;
@@ -138,6 +145,29 @@ export function useUpdateGroupMutation(groupId: string) {
       }
 
       return (await response.json()) as UpdateGroupResponse;
+    },
+    onSuccess: async () => {
+      await invalidateGroup(queryClient, groupId);
+    },
+  });
+}
+
+export function useUpdateGroupSettingsMutation(groupId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (json: UpdateGroupSettingsRequest['json']) => {
+      const response = await updateGroupSettingsEndpoint({
+        param: { id: groupId },
+        json,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? m['groups.settings.loadError']());
+      }
+
+      return (await response.json()) as UpdateGroupSettingsResponse;
     },
     onSuccess: async () => {
       await invalidateGroup(queryClient, groupId);

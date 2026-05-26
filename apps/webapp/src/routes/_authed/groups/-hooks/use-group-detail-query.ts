@@ -54,6 +54,7 @@ function buildPendingGroupSummary(group: PendingGroup): GroupSummary {
     ownerId: '',
     createdAt: group.createdAt,
     updatedAt: group.createdAt,
+    advancedExpenseDetailsEnabled: false,
     participantCount: participantMembers.length + 1,
     totals: {},
     categories: [],
@@ -136,6 +137,7 @@ function mapExpenseDetailToExpenseItem(
     category: expense.category ?? null,
     participantCount: expense.participants?.length ?? 0,
     currentUserBalance: null,
+    attachmentUrl: expense.attachmentUrl ?? null,
   };
 }
 

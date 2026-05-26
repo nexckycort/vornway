@@ -27,7 +27,24 @@ export type ExpenseItem = {
   }>;
   participantCount: number;
   currentUserBalance: number | null;
+  attachmentUrl: string | null;
+  advancedDetails?: ExpenseAdvancedDetails | null;
   syncStatus?: 'pending';
+};
+
+export type ExpenseAdvancedDetails = {
+  type: 'stay' | 'food' | 'transport' | 'activity' | 'purchase' | 'other';
+  placeName?: string;
+  address?: string;
+  mapUrl?: string;
+  mapEmbedUrl?: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  bookingCode?: string;
+  reservationTime?: string;
+  websiteUrl?: string;
+  notes?: string;
 };
 
 export type GroupMemberIdentity = {
@@ -58,6 +75,7 @@ export type GroupSummary = {
   ownerId: string;
   createdAt: string;
   updatedAt: string;
+  advancedExpenseDetailsEnabled: boolean;
   participantCount: number;
   totals: Record<string, number>;
   categories: Array<{

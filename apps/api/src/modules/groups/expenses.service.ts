@@ -1,6 +1,11 @@
 import { db } from '~/infrastructure/database/connection';
 import { pushNotificationService } from '~/modules/push';
 import {
+  deleteExpenseAttachment,
+  resolveExpenseAttachmentUrl,
+  uploadExpenseAttachment,
+} from './expense-attachment.service';
+import {
   buildActiveExpenseWhere,
   buildActiveGroupMemberWhere,
   buildGroupAccessWhere,
@@ -17,6 +22,7 @@ import type {
   CreateGroupExpenseInput,
   DeleteGroupExpenseInput,
   GetGroupExpenseInput,
+  GroupExpenseAdvancedDetails,
   GroupExpenseDetailResult,
   ListGroupExpensesInput,
   ListGroupExpensesResult,
@@ -42,6 +48,60 @@ function getNormalizedPayerIds(input: {
 
   return Array.from(
     new Set(payerIds.map((memberId) => memberId.trim()).filter(Boolean)),
+  );
+}
+
+function sanitizeAdvancedDetails(
+  details: GroupExpenseAdvancedDetails | null | undefined,
+): GroupExpenseAdvancedDetails | null {
+  if (!details) return null;
+
+  const normalized: GroupExpenseAdvancedDetails = {
+    type: details.type ?? 'other',
+  };
+
+  const placeName = details.placeName?.trim();
+  const address = details.address?.trim();
+  const mapUrl = details.mapUrl?.trim();
+  const mapEmbedUrl = details.mapEmbedUrl?.trim();
+  const contactName = details.contactName?.trim();
+  const phone = details.phone?.trim();
+  const email = details.email?.trim();
+  const bookingCode = details.bookingCode?.trim();
+  const reservationTime = details.reservationTime?.trim();
+  const websiteUrl = details.websiteUrl?.trim();
+  const notes = details.notes?.trim();
+
+  if (placeName) normalized.placeName = placeName;
+  if (address) normalized.address = address;
+  if (mapUrl) normalized.mapUrl = mapUrl;
+  if (mapEmbedUrl) normalized.mapEmbedUrl = mapEmbedUrl;
+  if (contactName) normalized.contactName = contactName;
+  if (phone) normalized.phone = phone;
+  if (email) normalized.email = email;
+  if (bookingCode) normalized.bookingCode = bookingCode;
+  if (reservationTime) normalized.reservationTime = reservationTime;
+  if (websiteUrl) normalized.websiteUrl = websiteUrl;
+  if (notes) normalized.notes = notes;
+
+  const hasContent = Object.entries(normalized).some(
+    ([key, value]) => key !== 'type' && Boolean(value),
+  );
+
+  return hasContent ? normalized : null;
+}
+
+function readAdvancedDetails(
+  metadata: unknown,
+): GroupExpenseAdvancedDetails | null {
+  if (!metadata || typeof metadata !== 'object') return null;
+
+  const advancedDetails = (metadata as { advancedDetails?: unknown })
+    .advancedDetails;
+  if (!advancedDetails || typeof advancedDetails !== 'object') return null;
+
+  return sanitizeAdvancedDetails(
+    advancedDetails as GroupExpenseAdvancedDetails,
   );
 }
 
@@ -102,6 +162,7 @@ export function createGroupExpensesService() {
             id: true,
             description: true,
             amount: true,
+            attachment: true,
             currency: true,
             date: true,
             notes: true,
@@ -199,6 +260,7 @@ export function createGroupExpensesService() {
               id: row.id,
               description: row.description,
               amount: row.amount,
+              attachmentUrl: resolveExpenseAttachmentUrl(row.attachment),
               currency: row.currency,
               date: row.date,
               isDeleted: row.status === 'DELETED' || Boolean(row.deletedAt),
@@ -254,6 +316,7 @@ export function createGroupExpensesService() {
           id: true,
           description: true,
           amount: true,
+          attachment: true,
           currency: true,
           date: true,
           notes: true,
@@ -309,6 +372,7 @@ export function createGroupExpensesService() {
         id: expense.id,
         description: expense.description,
         amount: expense.amount,
+        attachmentUrl: resolveExpenseAttachmentUrl(expense.attachment),
         currency: expense.currency,
         date: expense.date,
         isDeleted: expense.status === 'DELETED' || Boolean(expense.deletedAt),
@@ -326,6 +390,7 @@ export function createGroupExpensesService() {
           name: participant.member.name,
           share: participant.share,
         })),
+        advancedDetails: readAdvancedDetails(expense.metadata),
       };
     },
     createExpense: async ({
@@ -340,6 +405,8 @@ export function createGroupExpensesService() {
       participantIds,
       splitMethod,
       exactShares,
+      attachmentImage,
+      advancedDetails,
     }: CreateGroupExpenseInput): Promise<{ id: string }> => {
       const membership = await db.groupMember.findFirst({
         where: buildActiveGroupMemberWhere(userId, groupId),
@@ -405,6 +472,8 @@ export function createGroupExpensesService() {
           exactShares,
         },
       );
+      const normalizedAdvancedDetails =
+        sanitizeAdvancedDetails(advancedDetails);
 
       const expense = await db.$transaction(async (tx) => {
         const created = await tx.expense.create({
@@ -418,6 +487,7 @@ export function createGroupExpensesService() {
             metadata: {
               splitMethod: normalizedMethod,
               splitValues: exactShares ?? null,
+              advancedDetails: normalizedAdvancedDetails,
             },
             payers: {
               create: normalizedPayerIds.map((memberId) => ({
@@ -469,12 +539,26 @@ export function createGroupExpensesService() {
               paidByIds: normalizedPayerIds,
               participants: validParticipantIds.length,
               splitMethod: normalizedMethod,
+              advancedDetails: Boolean(normalizedAdvancedDetails),
             },
           },
         });
 
         return created;
       });
+
+      if (attachmentImage) {
+        const attachmentPath = await uploadExpenseAttachment({
+          groupId,
+          expenseId: expense.id,
+          dataUrl: attachmentImage.dataUrl,
+        });
+
+        await db.expense.update({
+          where: { id: expense.id },
+          data: { attachment: attachmentPath },
+        });
+      }
 
       try {
         const [group, pushMembers] = await Promise.all([
@@ -544,6 +628,8 @@ export function createGroupExpensesService() {
       participantIds,
       splitMethod,
       exactShares,
+      attachmentImage,
+      advancedDetails,
     }: UpdateGroupExpenseInput): Promise<{ id: string }> => {
       const membership = await db.groupMember.findFirst({
         where: buildActiveGroupMemberWhere(userId, groupId),
@@ -608,6 +694,8 @@ export function createGroupExpensesService() {
           exactShares,
         },
       );
+      const normalizedAdvancedDetails =
+        sanitizeAdvancedDetails(advancedDetails);
 
       const expense = await db.$transaction(async (tx) => {
         const existingExpense = await tx.expense.findFirst({
@@ -618,6 +706,7 @@ export function createGroupExpensesService() {
           select: {
             id: true,
             amount: true,
+            attachment: true,
             currency: true,
             description: true,
             notes: true,
@@ -649,6 +738,7 @@ export function createGroupExpensesService() {
             metadata: {
               splitMethod: normalizedMethod,
               splitValues: exactShares ?? null,
+              advancedDetails: normalizedAdvancedDetails,
             },
             payers: {
               deleteMany: {},
@@ -720,14 +810,40 @@ export function createGroupExpensesService() {
               paidByIds: normalizedPayerIds,
               participants: validParticipantIds.length,
               splitMethod: normalizedMethod,
+              advancedDetails: Boolean(normalizedAdvancedDetails),
             },
           },
         });
 
-        return { id: existingExpense.id };
+        return {
+          id: existingExpense.id,
+          previousAttachment: existingExpense.attachment,
+        };
       });
 
-      return expense;
+      if (attachmentImage) {
+        const attachmentPath = await uploadExpenseAttachment({
+          groupId,
+          expenseId: expense.id,
+          dataUrl: attachmentImage.dataUrl,
+        });
+
+        await db.expense.update({
+          where: { id: expense.id },
+          data: { attachment: attachmentPath },
+        });
+
+        if (
+          expense.previousAttachment &&
+          expense.previousAttachment !== attachmentPath
+        ) {
+          await deleteExpenseAttachment(expense.previousAttachment).catch(
+            () => undefined,
+          );
+        }
+      }
+
+      return { id: expense.id };
     },
     deleteExpense: async ({
       userId,
@@ -751,6 +867,7 @@ export function createGroupExpensesService() {
         select: {
           id: true,
           amount: true,
+          attachment: true,
           currency: true,
           description: true,
           notes: true,
@@ -818,6 +935,12 @@ export function createGroupExpensesService() {
           },
         });
       });
+
+      if (expense.attachment) {
+        await deleteExpenseAttachment(expense.attachment).catch(
+          () => undefined,
+        );
+      }
 
       return { id: expense.id };
     },

@@ -102,6 +102,9 @@ function normalizeExpense(
       expense.settlementToName ?? fallback?.settlementToName ?? null,
     paidBy: expense.paidBy,
     paidByMembers: expense.paidByMembers ?? fallback?.paidByMembers ?? [],
+    attachmentUrl: expense.attachmentUrl ?? fallback?.attachmentUrl ?? null,
+    advancedDetails:
+      expense.advancedDetails ?? fallback?.advancedDetails ?? null,
     participantCount:
       expense.participantCount ??
       expense.participants?.length ??
@@ -148,6 +151,11 @@ function RouteComponent() {
   const isSettlement = expense?.isSettlement ?? false;
   const paidByMembers = expense?.paidByMembers ?? [];
   const participants = expense?.participants ?? [];
+  const advancedDetails = expense?.advancedDetails ?? null;
+  const attachmentUrl = expense?.attachmentUrl ?? null;
+  const mapEmbedUrl =
+    advancedDetails?.mapEmbedUrl ??
+    getGoogleMapsEmbedUrl(advancedDetails?.mapUrl ?? null);
 
   const handleBack = () => {
     void navigateToGroupRoot(true);
@@ -310,6 +318,85 @@ function RouteComponent() {
                     </div>
                   </>
                 ) : null}
+
+                {advancedDetails ? (
+                  <>
+                    <p className="mb-4 mt-7 text-xs font-medium text-[#444444]">
+                      Detalles del lugar
+                    </p>
+                    <div className="space-y-3 rounded-3xl bg-[#fafafa] p-4">
+                      {mapEmbedUrl ? (
+                        <div className="overflow-hidden rounded-3xl border border-[#e5e7eb] bg-white">
+                          <iframe
+                            title={`Mapa de ${advancedDetails.placeName ?? expense.description}`}
+                            src={mapEmbedUrl}
+                            className="aspect-[4/3] w-full"
+                            loading="lazy"
+                            allowFullScreen
+                            referrerPolicy="no-referrer-when-downgrade"
+                          />
+                        </div>
+                      ) : null}
+
+                      <DetailLine
+                        label="Tipo"
+                        value={getAdvancedTypeLabel(advancedDetails.type)}
+                      />
+                      <DetailLine
+                        label="Lugar"
+                        value={advancedDetails.placeName}
+                      />
+                      <DetailLine
+                        label="Dirección"
+                        value={advancedDetails.address}
+                      />
+                      {!mapEmbedUrl ? (
+                        <DetailLine
+                          label="Mapa"
+                          value={advancedDetails.mapUrl}
+                        />
+                      ) : null}
+                      <DetailLine
+                        label="Contacto"
+                        value={advancedDetails.contactName}
+                      />
+                      <DetailLine
+                        label="Teléfono"
+                        value={advancedDetails.phone}
+                      />
+                      <DetailLine
+                        label="Correo"
+                        value={advancedDetails.email}
+                      />
+                      <DetailLine
+                        label="Reserva"
+                        value={advancedDetails.bookingCode}
+                      />
+                      <DetailLine
+                        label="Fecha u hora"
+                        value={advancedDetails.reservationTime}
+                      />
+                      <DetailLine
+                        label="Link"
+                        value={advancedDetails.websiteUrl}
+                      />
+                      <DetailLine label="Notas" value={advancedDetails.notes} />
+                    </div>
+                  </>
+                ) : null}
+
+                {attachmentUrl ? (
+                  <>
+                    <p className="mb-4 mt-7 text-xs font-medium text-[#444444]">
+                      Imagen
+                    </p>
+                    <img
+                      src={attachmentUrl}
+                      alt={`Imagen de ${expense.description}`}
+                      className="aspect-[4/3] w-full rounded-3xl object-cover"
+                    />
+                  </>
+                ) : null}
               </div>
 
               <div className="mt-auto flex items-center gap-3 px-5 pb-4 pt-6">
@@ -403,6 +490,66 @@ function MemberLine({
           {amount}
         </span>
       ) : null}
+    </div>
+  );
+}
+
+function getAdvancedTypeLabel(type: string) {
+  switch (type) {
+    case 'stay':
+      return 'Estadía';
+    case 'food':
+      return 'Comida';
+    case 'transport':
+      return 'Transporte';
+    case 'activity':
+      return 'Actividad';
+    case 'purchase':
+      return 'Compra';
+    default:
+      return 'Otro';
+  }
+}
+
+function getGoogleMapsEmbedUrl(value: string | null | undefined) {
+  const rawValue = value?.trim();
+  if (!rawValue) return null;
+
+  const iframeSrc = rawValue.match(/\ssrc=["']([^"']+)["']/i)?.[1];
+  const candidate = iframeSrc ?? rawValue;
+
+  try {
+    const url = new URL(candidate);
+    const hostname = url.hostname.replace(/^www\./, '');
+    const isGoogleMapsHost =
+      hostname === 'google.com' || hostname.endsWith('.google.com');
+    const isEmbedPath = url.pathname.includes('/maps/embed');
+
+    if (!isGoogleMapsHost || !isEmbedPath) {
+      return null;
+    }
+
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function DetailLine({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | null;
+}) {
+  if (!value) return null;
+
+  return (
+    <div>
+      <p className="text-[11px] font-medium text-[#94a3b8]">{label}</p>
+      <p className="mt-0.5 break-words text-sm font-medium text-[#202124]">
+        {value}
+      </p>
     </div>
   );
 }

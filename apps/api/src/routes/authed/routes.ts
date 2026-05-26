@@ -6,6 +6,7 @@ import goalsRoutes from './goals/routes';
 import groupsRoutes from './groups/routes';
 import homeRoutes from './home/routes';
 import invitesRoutes from './invites/routes';
+import mapsRoutes from './maps/routes';
 import pushRoutes from './push/routes';
 import usersRoutes from './users/routes';
 
@@ -16,6 +17,7 @@ const app = new Hono()
   .route('/invites', invitesRoutes)
   .route('/goals', goalsRoutes)
   .route('/home', homeRoutes)
+  .route('/maps', mapsRoutes)
   .route('/push', pushRoutes)
   .route('/users', usersRoutes)
   .route('/groups', groupsRoutes);

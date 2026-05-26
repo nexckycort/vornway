@@ -22,6 +22,7 @@ import {
   settleGroupDebtSchema,
   updateGroupCategorySchema,
   updateGroupSchema,
+  updateGroupSettingsSchema,
 } from './groups.validators';
 
 const groupsService = createGroupsService();
@@ -120,6 +121,32 @@ const groups = new Hono<AppContext>()
           if (error.message === 'No tienes permiso para editar el grupo') {
             return c.json({ error: error.message }, 403);
           }
+        }
+
+        throw error;
+      }
+    },
+  )
+  .patch(
+    '/:id/settings',
+    zValidator('param', groupParamsSchema),
+    zValidator('json', updateGroupSettingsSchema),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      const data = c.req.valid('json');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.updateGroupSettings({
+          userId,
+          groupId: id,
+          advancedExpenseDetailsEnabled: data.advancedExpenseDetailsEnabled,
+        });
+
+        return c.json(result);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Grupo no encontrado') {
+          return c.json({ error: error.message }, 404);
         }
 
         throw error;
@@ -395,6 +422,8 @@ const groups = new Hono<AppContext>()
           participantIds: data.participantIds,
           splitMethod: data.splitMethod,
           exactShares: data.exactShares,
+          attachmentImage: data.attachmentImage,
+          advancedDetails: data.advancedDetails,
         });
         return c.json(result, 201);
       } catch (error) {
@@ -428,6 +457,8 @@ const groups = new Hono<AppContext>()
           participantIds: data.participantIds,
           splitMethod: data.splitMethod,
           exactShares: data.exactShares,
+          attachmentImage: data.attachmentImage,
+          advancedDetails: data.advancedDetails,
         });
         return c.json(result);
       } catch (error) {

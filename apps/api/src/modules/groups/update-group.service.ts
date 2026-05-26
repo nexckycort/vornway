@@ -5,7 +5,12 @@ import {
   uploadGroupImage,
 } from './group-image.service';
 import { buildGroupAccessWhere } from './helpers';
-import type { UpdateGroupInput, UpdateGroupResult } from './types';
+import type {
+  UpdateGroupInput,
+  UpdateGroupResult,
+  UpdateGroupSettingsInput,
+  UpdateGroupSettingsResult,
+} from './types';
 
 export function createGroupUpdateService() {
   return {
@@ -69,6 +74,45 @@ export function createGroupUpdateService() {
         imageUrl: getVersionedGroupImageUrl(nextImageUrl, updatedAt),
         updatedAt,
       };
+    },
+    updateGroupSettings: async ({
+      userId,
+      groupId,
+      advancedExpenseDetailsEnabled,
+    }: UpdateGroupSettingsInput): Promise<UpdateGroupSettingsResult> => {
+      const group = await db.group.findFirst({
+        where: {
+          ...buildGroupAccessWhere(userId, groupId),
+          type: {
+            not: 'meta',
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!group) {
+        throw new Error('Grupo no encontrado');
+      }
+
+      const updatedAt = new Date();
+      const updated = await db.group.update({
+        where: { id: groupId },
+        data: {
+          ...(advancedExpenseDetailsEnabled !== undefined
+            ? { advancedExpenseDetailsEnabled }
+            : {}),
+          updatedAt,
+        },
+        select: {
+          id: true,
+          advancedExpenseDetailsEnabled: true,
+          updatedAt: true,
+        },
+      });
+
+      return updated;
     },
   };
 }

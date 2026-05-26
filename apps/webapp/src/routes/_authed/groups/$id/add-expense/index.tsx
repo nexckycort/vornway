@@ -1,6 +1,24 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Check, ChevronDown, Minus, Plus } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  CalendarClock,
+  Camera,
+  Check,
+  ChevronDown,
+  Link as LinkIcon,
+  MapPin,
+  Minus,
+  Phone,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+import {
+  type InputHTMLAttributes,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import {
@@ -18,6 +36,8 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
+import { client } from '#/lib/hc';
+import { compressImageFileToDataUrl } from '#/lib/image-compression';
 import { enqueueExpenseOffline } from '#/lib/offline-expense-query-collection';
 import {
   useCreateCategoryMutation,
@@ -33,8 +53,10 @@ import {
   categoryIconOptions,
 } from '../-components/category-icon';
 import { formatMoney, getInitials } from '../-components/group-detail.utils';
+import type { ExpenseAdvancedDetails } from '../-types/group-detail.types';
 
 type SplitMethod = 'equal' | 'percentage' | 'exact';
+type AdvancedDetailsType = ExpenseAdvancedDetails['type'];
 
 const splitMethods: Array<{ value: SplitMethod; label: string }> = [
   { value: 'equal', label: 'Partes iguales' },
@@ -55,6 +77,46 @@ const currencyMeta: Record<
 };
 
 const currencyOptions = ['COP', 'EUR', 'USD', 'GBP', 'MXN', 'BRL'] as const;
+const advancedDetailsTypeOptions: Array<{
+  value: AdvancedDetailsType;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'stay',
+    label: 'Estadía',
+    description: 'Hotel, Airbnb o alojamiento',
+  },
+  { value: 'food', label: 'Comida', description: 'Restaurante o reserva' },
+  {
+    value: 'transport',
+    label: 'Transporte',
+    description: 'Trayecto, reserva o contacto',
+  },
+  {
+    value: 'activity',
+    label: 'Actividad',
+    description: 'Tour, evento o entrada',
+  },
+  { value: 'purchase', label: 'Compra', description: 'Tienda o proveedor' },
+  { value: 'other', label: 'Otro', description: 'Información adicional' },
+];
+
+const emptyAdvancedDetails: ExpenseAdvancedDetails = {
+  type: 'other',
+  placeName: '',
+  address: '',
+  mapUrl: '',
+  contactName: '',
+  phone: '',
+  email: '',
+  bookingCode: '',
+  reservationTime: '',
+  websiteUrl: '',
+  notes: '',
+};
+
+const resolveMapEndpoint = client.api.maps.resolve.$post;
 
 const customCategoryIconId = 'custom';
 
@@ -86,6 +148,59 @@ function normalizeCategoryIconInput(value: string) {
   return Array.from(value.trim()).slice(0, 4).join('');
 }
 
+function normalizeAdvancedDetails(
+  details: ExpenseAdvancedDetails,
+): ExpenseAdvancedDetails | null {
+  const next: ExpenseAdvancedDetails = {
+    type: details.type,
+    placeName: details.placeName?.trim() || undefined,
+    address: details.address?.trim() || undefined,
+    mapUrl: details.mapUrl?.trim() || undefined,
+    mapEmbedUrl: details.mapEmbedUrl?.trim() || undefined,
+    contactName: details.contactName?.trim() || undefined,
+    phone: details.phone?.trim() || undefined,
+    email: details.email?.trim() || undefined,
+    bookingCode: details.bookingCode?.trim() || undefined,
+    reservationTime: details.reservationTime?.trim() || undefined,
+    websiteUrl: details.websiteUrl?.trim() || undefined,
+    notes: details.notes?.trim() || undefined,
+  };
+
+  const hasContent = Object.entries(next).some(
+    ([key, value]) => key !== 'type' && Boolean(value),
+  );
+
+  return hasContent ? next : null;
+}
+
+async function resolveAdvancedDetailsMap(
+  details: ExpenseAdvancedDetails,
+): Promise<ExpenseAdvancedDetails> {
+  if (!details.mapUrl || details.mapEmbedUrl) return details;
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return details;
+
+  try {
+    const response = await resolveMapEndpoint({
+      json: { url: details.mapUrl },
+    });
+
+    if (!response.ok) return details;
+
+    const payload = (await response.json()) as {
+      embedUrl?: string | null;
+    };
+
+    if (!payload.embedUrl) return details;
+
+    return {
+      ...details,
+      mapEmbedUrl: payload.embedUrl,
+    };
+  } catch {
+    return details;
+  }
+}
+
 function ParticipantAvatar({
   name,
   image,
@@ -112,6 +227,38 @@ function ParticipantAvatar({
     >
       {getInitials(name)}
     </div>
+  );
+}
+
+function AdvancedDetailsInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  inputMode,
+  icon,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  inputMode?: InputHTMLAttributes<HTMLInputElement>['inputMode'];
+  icon?: ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="text-sm font-medium text-gray-900">{label}</span>
+      <div className="mt-2 flex h-12 items-center gap-2 rounded-full border border-gray-200 px-4 focus-within:border-rose-500">
+        {icon ? <span className="shrink-0 text-gray-400">{icon}</span> : null}
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          inputMode={inputMode}
+          className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
+        />
+      </div>
+    </label>
   );
 }
 
@@ -152,6 +299,8 @@ function RouteComponent() {
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
   const [showCurrencyDrawer, setShowCurrencyDrawer] = useState(false);
   const [showCategoryDrawer, setShowCategoryDrawer] = useState(false);
+  const [showAdvancedDetailsDrawer, setShowAdvancedDetailsDrawer] =
+    useState(false);
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
     useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -166,11 +315,21 @@ function RouteComponent() {
   const [participantValues, setParticipantValues] = useState<
     Record<string, string>
   >({});
+  const [advancedDetails, setAdvancedDetails] =
+    useState<ExpenseAdvancedDetails>(emptyAdvancedDetails);
+  const [attachmentDataUrl, setAttachmentDataUrl] = useState<string | null>(
+    null,
+  );
+  const [attachmentFileName, setAttachmentFileName] = useState<string | null>(
+    null,
+  );
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasInitializedForm, setHasInitializedForm] = useState(false);
   const [isAmountAnimating, setIsAmountAnimating] = useState(false);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
   const customCategoryIconInputRef = useRef<HTMLInputElement | null>(null);
+  const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   const didMountAmountRef = useRef(false);
   const didInitializePayersRef = useRef(false);
 
@@ -179,6 +338,18 @@ function RouteComponent() {
   const expense = expenseQuery.data;
   const currentCurrency = currencyMeta[currency] ?? currencyMeta.COP;
   const selectedCategory = categories.find((item) => item.id === categoryId);
+  const advancedDetailsEnabled =
+    groupQuery.data?.advancedExpenseDetailsEnabled ?? false;
+  const normalizedAdvancedDetails = normalizeAdvancedDetails(advancedDetails);
+  const selectedAdvancedDetailsType =
+    advancedDetailsTypeOptions.find(
+      (option) => option.value === advancedDetails.type,
+    ) ?? advancedDetailsTypeOptions[advancedDetailsTypeOptions.length - 1];
+  const attachmentPreviewUrl =
+    attachmentDataUrl ??
+    ((expense as { attachmentUrl?: string | null } | undefined)
+      ?.attachmentUrl ||
+      null);
   const isCustomCategoryIcon = newCategoryIcon === customCategoryIconId;
   const customCategoryIcon = newCategoryCustomIcon.trim();
   const trimmedNewCategoryName = newCategoryName.trim();
@@ -249,6 +420,11 @@ function RouteComponent() {
           ]),
         ),
       );
+      setAdvancedDetails({
+        ...emptyAdvancedDetails,
+        ...((expense as { advancedDetails?: ExpenseAdvancedDetails | null })
+          .advancedDetails ?? {}),
+      });
       setHasInitializedForm(true);
       return;
     }
@@ -417,6 +593,39 @@ function RouteComponent() {
     }
   };
 
+  const handleAttachmentSelect = async (file: File | null) => {
+    if (!file) return;
+
+    setAttachmentError(null);
+
+    try {
+      const dataUrl = await compressImageFileToDataUrl(file);
+      setAttachmentDataUrl(dataUrl);
+      setAttachmentFileName(file.name);
+    } catch (selectionError) {
+      setAttachmentDataUrl(null);
+      setAttachmentFileName(null);
+      setAttachmentError(
+        selectionError instanceof Error
+          ? selectionError.message
+          : 'No se pudo procesar la imagen',
+      );
+    } finally {
+      if (attachmentInputRef.current) {
+        attachmentInputRef.current.value = '';
+      }
+    }
+  };
+
+  const clearAttachmentSelection = () => {
+    setAttachmentDataUrl(null);
+    setAttachmentFileName(null);
+    setAttachmentError(null);
+    if (attachmentInputRef.current) {
+      attachmentInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async () => {
     if (!canSubmit || isPending) return;
     setError(null);
@@ -431,6 +640,11 @@ function RouteComponent() {
             ]),
           );
 
+    const advancedDetailsPayload =
+      advancedDetailsEnabled && normalizedAdvancedDetails
+        ? await resolveAdvancedDetailsMap(normalizedAdvancedDetails)
+        : null;
+
     const payload = {
       description: description.trim(),
       amount: normalizedAmount,
@@ -440,6 +654,20 @@ function RouteComponent() {
       participantIds,
       splitMethod,
       exactShares,
+      ...(advancedDetailsEnabled && attachmentDataUrl
+        ? {
+            attachmentImage: {
+              dataUrl: attachmentDataUrl,
+              ...(attachmentFileName ? { fileName: attachmentFileName } : {}),
+            },
+          }
+        : {}),
+      ...(advancedDetailsEnabled && normalizedAdvancedDetails
+        ? {
+            advancedDetails:
+              advancedDetailsPayload ?? normalizedAdvancedDetails,
+          }
+        : {}),
     };
 
     try {
@@ -598,6 +826,28 @@ function RouteComponent() {
           </div>
           <ChevronDown className="size-4 text-gray-400" />
         </button>
+
+        {advancedDetailsEnabled ? (
+          <button
+            type="button"
+            onClick={() => setShowAdvancedDetailsDrawer(true)}
+            className="flex w-full items-center justify-between rounded-xl border border-gray-200 px-4 py-3.5 text-left"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-500">
+                <MapPin className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs text-gray-500">Detalles del lugar</p>
+                <p className="truncate text-sm font-medium text-gray-900">
+                  {normalizedAdvancedDetails?.placeName ??
+                    selectedAdvancedDetailsType.label}
+                </p>
+              </div>
+            </div>
+            <ChevronDown className="size-4 text-gray-400" />
+          </button>
+        ) : null}
 
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -854,6 +1104,276 @@ function RouteComponent() {
                 </button>
               );
             })}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer
+        open={showAdvancedDetailsDrawer}
+        onOpenChange={setShowAdvancedDetailsDrawer}
+      >
+        <DrawerContent className="h-dvh max-h-dvh">
+          <DrawerHeader>
+            <DrawerTitle>Detalles del lugar</DrawerTitle>
+            <DrawerDescription>
+              Agrega datos útiles para el viaje sin cambiar el gasto.
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="flex-1 space-y-5 overflow-y-auto px-5 pb-5">
+            <section>
+              <p className="mb-3 text-sm font-medium text-gray-900">
+                Tipo de información
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {advancedDetailsTypeOptions.map((option) => {
+                  const active = advancedDetails.type === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() =>
+                        setAdvancedDetails((current) => ({
+                          ...current,
+                          type: option.value,
+                        }))
+                      }
+                      className={`rounded-2xl border px-3 py-3 text-left transition-colors ${
+                        active
+                          ? 'border-rose-500 bg-rose-50'
+                          : 'border-gray-200 bg-white'
+                      }`}
+                    >
+                      <p className="text-sm font-semibold text-gray-900">
+                        {option.label}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {option.description}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <AdvancedDetailsInput
+              label="Nombre del lugar"
+              value={advancedDetails.placeName ?? ''}
+              onChange={(value) =>
+                setAdvancedDetails((current) => ({
+                  ...current,
+                  placeName: value,
+                }))
+              }
+              placeholder={
+                advancedDetails.type === 'food'
+                  ? 'Restaurante'
+                  : advancedDetails.type === 'stay'
+                    ? 'Hotel o Airbnb'
+                    : 'Lugar o proveedor'
+              }
+            />
+
+            <AdvancedDetailsInput
+              label="Dirección"
+              value={advancedDetails.address ?? ''}
+              onChange={(value) =>
+                setAdvancedDetails((current) => ({
+                  ...current,
+                  address: value,
+                }))
+              }
+              placeholder="Calle, zona o referencia"
+              icon={<MapPin className="size-4" />}
+            />
+
+            <AdvancedDetailsInput
+              label="Ubicación en mapa"
+              value={advancedDetails.mapUrl ?? ''}
+              onChange={(value) =>
+                setAdvancedDetails((current) => ({
+                  ...current,
+                  mapUrl: value,
+                }))
+              }
+              placeholder="https://maps.google.com/..."
+              inputMode="url"
+              icon={<MapPin className="size-4" />}
+            />
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <AdvancedDetailsInput
+                label="Contacto"
+                value={advancedDetails.contactName ?? ''}
+                onChange={(value) =>
+                  setAdvancedDetails((current) => ({
+                    ...current,
+                    contactName: value,
+                  }))
+                }
+                placeholder="Host, restaurante..."
+              />
+
+              <AdvancedDetailsInput
+                label="Teléfono o WhatsApp"
+                value={advancedDetails.phone ?? ''}
+                onChange={(value) =>
+                  setAdvancedDetails((current) => ({
+                    ...current,
+                    phone: value,
+                  }))
+                }
+                placeholder="+57..."
+                inputMode="tel"
+                icon={<Phone className="size-4" />}
+              />
+            </div>
+
+            <AdvancedDetailsInput
+              label="Correo"
+              value={advancedDetails.email ?? ''}
+              onChange={(value) =>
+                setAdvancedDetails((current) => ({
+                  ...current,
+                  email: value,
+                }))
+              }
+              placeholder="contacto@lugar.com"
+              inputMode="email"
+            />
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <AdvancedDetailsInput
+                label="Código de reserva"
+                value={advancedDetails.bookingCode ?? ''}
+                onChange={(value) =>
+                  setAdvancedDetails((current) => ({
+                    ...current,
+                    bookingCode: value,
+                  }))
+                }
+                placeholder="ABC123"
+              />
+
+              <AdvancedDetailsInput
+                label="Fecha u hora"
+                value={advancedDetails.reservationTime ?? ''}
+                onChange={(value) =>
+                  setAdvancedDetails((current) => ({
+                    ...current,
+                    reservationTime: value,
+                  }))
+                }
+                placeholder="Check-in, reserva..."
+                icon={<CalendarClock className="size-4" />}
+              />
+            </div>
+
+            <AdvancedDetailsInput
+              label="Link externo"
+              value={advancedDetails.websiteUrl ?? ''}
+              onChange={(value) =>
+                setAdvancedDetails((current) => ({
+                  ...current,
+                  websiteUrl: value,
+                }))
+              }
+              placeholder="Booking, Airbnb, ticket..."
+              inputMode="url"
+              icon={<LinkIcon className="size-4" />}
+            />
+
+            <section>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-gray-900">Imagen</p>
+                {attachmentDataUrl ? (
+                  <button
+                    type="button"
+                    onClick={clearAttachmentSelection}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-rose-500"
+                  >
+                    <Trash2 className="size-3.5" />
+                    Quitar nueva imagen
+                  </button>
+                ) : null}
+              </div>
+
+              <input
+                ref={attachmentInputRef}
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(event) =>
+                  void handleAttachmentSelect(event.target.files?.[0] ?? null)
+                }
+              />
+
+              <button
+                type="button"
+                onClick={() => attachmentInputRef.current?.click()}
+                className="flex w-full items-center gap-3 rounded-3xl border border-dashed border-gray-300 bg-white p-3 text-left"
+              >
+                {attachmentPreviewUrl ? (
+                  <img
+                    src={attachmentPreviewUrl}
+                    alt="Imagen del gasto"
+                    className="size-20 shrink-0 rounded-2xl object-cover"
+                  />
+                ) : (
+                  <span className="flex size-20 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
+                    <Camera className="size-6" />
+                  </span>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-gray-900">
+                    {attachmentPreviewUrl ? 'Cambiar imagen' : 'Agregar imagen'}
+                  </span>
+                  <span className="mt-1 block text-xs text-gray-500">
+                    Recibo, reserva, ticket o referencia del lugar
+                  </span>
+                </span>
+              </button>
+
+              {attachmentError ? (
+                <p className="mt-2 text-xs text-rose-600">{attachmentError}</p>
+              ) : null}
+            </section>
+
+            <label className="block">
+              <span className="text-sm font-medium text-gray-900">Notas</span>
+              <textarea
+                value={advancedDetails.notes ?? ''}
+                onChange={(event) =>
+                  setAdvancedDetails((current) => ({
+                    ...current,
+                    notes: event.target.value,
+                  }))
+                }
+                placeholder="Instrucciones, reglas, punto de encuentro..."
+                className="mt-2 min-h-28 w-full resize-none rounded-2xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none focus:border-rose-500"
+              />
+            </label>
+          </div>
+
+          <div className="border-t border-gray-200 px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4">
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-full"
+                onClick={() => setAdvancedDetails(emptyAdvancedDetails)}
+              >
+                Limpiar
+              </Button>
+              <Button
+                type="button"
+                className="h-11 rounded-full bg-primary text-white hover:bg-primary/90"
+                onClick={() => setShowAdvancedDetailsDrawer(false)}
+              >
+                Guardar
+              </Button>
+            </div>
           </div>
         </DrawerContent>
       </Drawer>

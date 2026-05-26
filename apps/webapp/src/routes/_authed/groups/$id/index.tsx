@@ -143,6 +143,7 @@ function RouteComponent() {
         })),
         participantCount: expense.payload.participantIds?.length ?? 0,
         currentUserBalance: null,
+        attachmentUrl: null,
         syncStatus: 'pending',
       };
     });

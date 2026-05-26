@@ -25,6 +25,11 @@ export type CreateGroupExpenseInput = {
   participantIds: string[];
   splitMethod: 'equal' | 'percentage' | 'exact';
   exactShares?: Record<string, number>;
+  attachmentImage?: {
+    dataUrl: string;
+    fileName?: string;
+  };
+  advancedDetails?: GroupExpenseAdvancedDetails | null;
 };
 
 export type UpdateGroupExpenseInput = CreateGroupExpenseInput & {
@@ -125,6 +130,18 @@ export type UpdateGroupResult = {
   type: string;
   description: string | null;
   imageUrl: string | null;
+  updatedAt: Date;
+};
+
+export type UpdateGroupSettingsInput = {
+  userId: string;
+  groupId: string;
+  advancedExpenseDetailsEnabled?: boolean;
+};
+
+export type UpdateGroupSettingsResult = {
+  id: string;
+  advancedExpenseDetailsEnabled: boolean;
   updatedAt: Date;
 };
 
@@ -231,6 +248,9 @@ export type GroupsService = {
   listGroups: (input: ListGroupsInput) => Promise<ListGroupsResult>;
   createGroup: (input: CreateGroupInput) => Promise<CreateGroupResult>;
   updateGroup: (input: UpdateGroupInput) => Promise<UpdateGroupResult>;
+  updateGroupSettings: (
+    input: UpdateGroupSettingsInput,
+  ) => Promise<UpdateGroupSettingsResult>;
   createCategory: (
     input: CreateGroupCategoryInput,
   ) => Promise<CreateGroupCategoryResult>;
@@ -304,6 +324,7 @@ export type GroupSummaryResult = {
   ownerId: string;
   createdAt: Date;
   updatedAt: Date;
+  advancedExpenseDetailsEnabled: boolean;
   totals: Record<string, number>;
   participantCount: number;
   categories: Array<{
@@ -348,6 +369,21 @@ export type GroupSummaryResult = {
   isOwner: boolean;
 };
 
+export type GroupExpenseAdvancedDetails = {
+  type: 'stay' | 'food' | 'transport' | 'activity' | 'purchase' | 'other';
+  placeName?: string;
+  address?: string;
+  mapUrl?: string;
+  mapEmbedUrl?: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  bookingCode?: string;
+  reservationTime?: string;
+  websiteUrl?: string;
+  notes?: string;
+};
+
 export type GroupMemberSearchResult = {
   id: string;
   name: string;
@@ -389,6 +425,7 @@ export type GroupExpenseListItem = {
   } | null;
   participantCount: number;
   currentUserBalance: number | null;
+  attachmentUrl: string | null;
 };
 
 export type GroupReportsTotalsInput = {
@@ -444,6 +481,8 @@ export type GroupExpenseDetailResult = {
     amount: number;
   }>;
   participants: GroupExpenseParticipant[];
+  advancedDetails: GroupExpenseAdvancedDetails | null;
+  attachmentUrl: string | null;
 };
 
 export type ListGroupExpensesResult = {

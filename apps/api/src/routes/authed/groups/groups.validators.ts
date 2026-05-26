@@ -43,6 +43,11 @@ export const groupReportsTotalsQuerySchema = z.object({
     .default('all'),
 });
 
+const expenseAttachmentImageSchema = z.object({
+  dataUrl: z.string().min(1).max(15_000_000),
+  fileName: z.string().min(1).max(200).optional(),
+});
+
 export const createGroupExpenseSchema = z
   .object({
     description: z.string().min(1).max(160),
@@ -54,6 +59,25 @@ export const createGroupExpenseSchema = z
     participantIds: z.array(z.string().min(1)).default([]),
     splitMethod: z.enum(['equal', 'percentage', 'exact']).default('equal'),
     exactShares: z.record(z.string(), z.number().nonnegative()).optional(),
+    attachmentImage: expenseAttachmentImageSchema.optional(),
+    advancedDetails: z
+      .object({
+        type: z
+          .enum(['stay', 'food', 'transport', 'activity', 'purchase', 'other'])
+          .default('other'),
+        placeName: z.string().trim().max(160).optional(),
+        address: z.string().trim().max(240).optional(),
+        mapUrl: z.string().trim().max(500).optional(),
+        mapEmbedUrl: z.string().trim().max(1000).optional(),
+        contactName: z.string().trim().max(120).optional(),
+        phone: z.string().trim().max(80).optional(),
+        email: z.string().trim().email().max(160).optional().or(z.literal('')),
+        bookingCode: z.string().trim().max(120).optional(),
+        reservationTime: z.string().trim().max(80).optional(),
+        websiteUrl: z.string().trim().max(500).optional(),
+        notes: z.string().trim().max(600).optional(),
+      })
+      .optional(),
   })
   .refine(
     (data) =>
@@ -144,6 +168,10 @@ export const updateGroupSchema = z.object({
   type: z.string().min(1).max(60),
   description: z.string().max(400).optional(),
   image: groupImageSchema.optional(),
+});
+
+export const updateGroupSettingsSchema = z.object({
+  advancedExpenseDetailsEnabled: z.boolean().optional(),
 });
 
 export type ListGroupsQuery = z.infer<typeof listGroupsQuerySchema>;

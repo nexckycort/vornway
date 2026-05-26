@@ -43,8 +43,26 @@ function formatCompactAmount(currency: string, amount: number) {
 }
 
 function formatAmountInput(currency: string, digits: string) {
-  const amount = parseEditableAmount(digits);
-  return formatCompactAmount(currency, amount);
+  const normalizedDigits = digits.includes(',') ? digits : `${digits},00`;
+  const [integerPart, decimalPart = '00'] = normalizedDigits.split(',');
+  const amount = parseEditableAmount(normalizedDigits);
+  const formattedAmount = formatCompactAmount(currency, amount);
+  const safeIntegerPart = integerPart || '0';
+  const safeDecimalPart = decimalPart.padEnd(2, '0').slice(0, 2);
+
+  try {
+    const formattedInteger = new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(Number.parseInt(safeIntegerPart, 10) || 0);
+
+    return `${formattedInteger},${safeDecimalPart}`;
+  } catch {
+    void formattedAmount;
+    return `${safeIntegerPart},${safeDecimalPart} ${currency}`;
+  }
 }
 
 function formatEditableAmount(value: number) {

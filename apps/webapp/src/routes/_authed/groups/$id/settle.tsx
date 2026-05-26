@@ -495,10 +495,10 @@ function RouteComponent() {
             />
           </div>
         ) : (
-          <div className="flex flex-1 flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-4">
+          <div className="flex flex-1 flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-4 min-h-0">
             {selected ? (
               <>
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-4 shrink-0">
                   <div>
                     <button
                       type="button"
@@ -522,7 +522,7 @@ function RouteComponent() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="mt-6 flex items-center justify-between rounded-[22px] border border-[#e8edf3] bg-white px-4 py-3 text-left shadow-[0_8px_20px_rgba(15,23,42,0.03)]"
+                  className="mt-6 flex shrink-0 items-center justify-between rounded-[22px] border border-[#e8edf3] bg-white px-4 py-3 text-left shadow-[0_8px_20px_rgba(15,23,42,0.03)]"
                 >
                   <div className="flex items-center gap-3">
                     <AvatarCircle
@@ -544,7 +544,7 @@ function RouteComponent() {
                   </span>
                 </button>
 
-                <div className="mt-5 grid grid-cols-3 gap-3">
+                <div className="mt-5 grid min-h-0 flex-1 grid-cols-3 grid-rows-4 gap-3">
                   {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(
                     (digit) => (
                       <KeypadButton
@@ -567,28 +567,30 @@ function RouteComponent() {
                   />
                 </div>
 
-                {error ? (
-                  <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {error}
-                  </div>
-                ) : null}
+                <div className="mt-auto shrink-0 pt-4">
+                  {error ? (
+                    <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {error}
+                    </div>
+                  ) : null}
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    void submit();
-                  }}
-                  disabled={!canSubmit || settleMutation.isPending}
-                  className="mt-8 h-14 rounded-full bg-primary text-base font-semibold text-white transition-opacity disabled:opacity-50"
-                >
-                  {isEditingSettlement
-                    ? updateSettlementMutation.isPending
-                      ? t.settle.saving
-                      : t.settle.save
-                    : settleMutation.isPending
-                      ? t.settle.settling
-                      : t.settle.settle}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void submit();
+                    }}
+                    disabled={!canSubmit || settleMutation.isPending}
+                    className="h-14 w-full rounded-full bg-primary text-base font-semibold text-white transition-opacity disabled:opacity-50"
+                  >
+                    {isEditingSettlement
+                      ? updateSettlementMutation.isPending
+                        ? t.settle.saving
+                        : t.settle.save
+                      : settleMutation.isPending
+                        ? t.settle.settling
+                        : t.settle.settle}
+                  </button>
+                </div>
               </>
             ) : null}
           </div>
@@ -738,7 +740,7 @@ function KeypadButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-[104px] items-center justify-center rounded-[18px] bg-white text-[24px] font-light text-[#1f2937] transition-transform active:scale-[0.98] ${
+      className={`flex min-h-0 items-center justify-center rounded-[18px] bg-white text-[24px] font-light text-[#1f2937] transition-transform active:scale-[0.98] ${
         borderless
           ? ''
           : 'border border-[#edf1f5] shadow-[0_8px_18px_rgba(15,23,42,0.03)]'

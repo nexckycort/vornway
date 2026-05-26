@@ -195,7 +195,7 @@ function RouteComponent() {
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-[412px] md:max-w-5xl flex-col bg-[#ececec] px-4 pb-8 pt-6">
+      <div className="mx-auto flex min-h-screen w-full max-w-[412px] md:max-w-5xl flex-col overflow-x-hidden bg-[#ececec] px-4 pb-8 pt-6">
         <header className="mb-5 grid grid-cols-[2.25rem_1fr_2.25rem] items-center gap-3">
           <button
             type="button"
@@ -225,8 +225,8 @@ function RouteComponent() {
         ) : null}
 
         {expense ? (
-          <section className="flex flex-1 flex-col">
-            <div className="relative flex flex-1 flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_18px_42px_rgba(15,23,42,0.06)]">
+          <section className="flex flex-1 min-w-0 flex-col">
+            <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_18px_42px_rgba(15,23,42,0.06)]">
               <div className="px-5 pb-4 pt-4 text-center">
                 <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-teal-50 text-teal-600">
                   {isSettlement ? (
@@ -324,13 +324,13 @@ function RouteComponent() {
                     <p className="mb-4 mt-7 text-xs font-medium text-[#444444]">
                       Detalles del lugar
                     </p>
-                    <div className="space-y-3 rounded-3xl bg-[#fafafa] p-4">
+                    <div className="min-w-0 space-y-3 rounded-3xl bg-[#fafafa] p-4">
                       {mapEmbedUrl ? (
-                        <div className="overflow-hidden rounded-3xl border border-[#e5e7eb] bg-white">
+                        <div className="max-w-full overflow-hidden rounded-3xl border border-[#e5e7eb] bg-white">
                           <iframe
                             title={`Mapa de ${advancedDetails.placeName ?? expense.description}`}
                             src={mapEmbedUrl}
-                            className="aspect-[4/3] w-full"
+                            className="block aspect-[4/3] w-full max-w-full"
                             loading="lazy"
                             allowFullScreen
                             referrerPolicy="no-referrer-when-downgrade"
@@ -393,7 +393,7 @@ function RouteComponent() {
                     <img
                       src={attachmentUrl}
                       alt={`Imagen de ${expense.description}`}
-                      className="aspect-[4/3] w-full rounded-3xl object-cover"
+                      className="block aspect-[4/3] w-full max-w-full rounded-3xl object-cover"
                     />
                   </>
                 ) : null}
@@ -547,7 +547,7 @@ function DetailLine({
   return (
     <div>
       <p className="text-[11px] font-medium text-[#94a3b8]">{label}</p>
-      <p className="mt-0.5 break-words text-sm font-medium text-[#202124]">
+      <p className="mt-0.5 min-w-0 break-words text-sm font-medium text-[#202124] [overflow-wrap:anywhere]">
         {value}
       </p>
     </div>

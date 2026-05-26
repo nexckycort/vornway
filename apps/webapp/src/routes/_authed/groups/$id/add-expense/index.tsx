@@ -566,6 +566,13 @@ function RouteComponent() {
     setShowCurrencyDrawer(false);
   };
 
+  const openCreateCategoryDialog = () => {
+    setShowCategoryDrawer(false);
+    window.requestAnimationFrame(() => {
+      setShowCreateCategoryDialog(true);
+    });
+  };
+
   const handleCreateCategory = async () => {
     if (!trimmedNewCategoryName || createCategoryMutation.isPending) return;
 
@@ -1389,7 +1396,7 @@ function RouteComponent() {
               type="button"
               variant="ghost"
               className="mt-2 h-10 w-full justify-start rounded-full px-0 text-rose-500 hover:bg-rose-50 hover:text-rose-500"
-              onClick={() => setShowCreateCategoryDialog(true)}
+              onClick={openCreateCategoryDialog}
             >
               <Plus className="mr-2 size-4" />
               Crear una nueva categoría

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 import { Button } from '#/components/ui/button';
 import {
@@ -470,7 +471,7 @@ function RouteComponent() {
                 label="Compartir"
                 onClick={() => {
                   void navigator.clipboard?.writeText(window.location.href);
-                  setMessage('Enlace copiado');
+                  toast.success('Enlace copiado');
                 }}
               />
             </div>
@@ -744,15 +745,15 @@ function RouteComponent() {
         open={showContributionDrawer}
         onOpenChange={setShowContributionDrawer}
       >
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="mt-0 h-dvh max-h-dvh rounded-none">
+          <DrawerHeader className="shrink-0">
             <DrawerTitle>Registrar aporte</DrawerTitle>
             <DrawerDescription>
               Agrega un movimiento a {goal.title}.
             </DrawerDescription>
           </DrawerHeader>
 
-          <div className="space-y-4 px-4 pb-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-4">
             <div className="grid gap-2">
               {goal.members.map((member) => (
                 <button
@@ -823,7 +824,7 @@ function RouteComponent() {
             </label>
           </div>
 
-          <DrawerFooter>
+          <DrawerFooter className="shrink-0 border-t border-[#e2e8f0] bg-white">
             <Button
               type="button"
               className="h-12 rounded-full"

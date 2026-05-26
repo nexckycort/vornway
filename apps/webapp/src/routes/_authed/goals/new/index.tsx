@@ -1,11 +1,26 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import {
+  CalendarDays,
+  Check,
+  ChevronRight,
+  Mail,
+  UserPlus,
+  X,
+} from 'lucide-react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
+import { formatCurrency } from '#/lib/i18n';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { UserPlus, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-
 import { useCreateGoalMutation } from '../-hooks/use-create-goal';
+import {
+  type ContributionMode,
+  contributionModes,
+  type GoalType,
+  getGoalTheme,
+  goalTypes,
+} from '../-lib/goal-experience';
 
 export const Route = createFileRoute('/_authed/goals/new/')({
   component: RouteComponent,
@@ -28,12 +43,23 @@ function RouteComponent() {
   const nameRef = useRef<HTMLInputElement | null>(null);
   const participantRef = useRef<HTMLInputElement | null>(null);
 
-  const [name, setName] = useState('');
+  const [step, setStep] = useState(0);
+  const [goalType, setGoalType] = useState<GoalType>('gift');
+  const [name, setName] = useState('Regalos para Navidad');
+  const [emoji, setEmoji] = useState('🎁');
   const [description, setDescription] = useState('');
   const [currency, setCurrency] = useState('COP');
-  const [targetAmount, setTargetAmount] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [targetAmount, setTargetAmount] = useState('2200000');
+  const [startDate, setStartDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
+  const [endDate, setEndDate] = useState(() => {
+    const next = new Date();
+    next.setMonth(11, 20);
+    return next.toISOString().slice(0, 10);
+  });
+  const [contributionMode, setContributionMode] =
+    useState<ContributionMode>('monthly');
   const [installmentCount, setInstallmentCount] = useState('12');
   const [installmentAmount, setInstallmentAmount] = useState('');
   const [participantInput, setParticipantInput] = useState('');
@@ -43,12 +69,26 @@ function RouteComponent() {
 
   const searchQuery = useUserSearchQuery(debouncedSearch);
   const searchResults = searchQuery.data?.data ?? [];
+  const theme = getGoalTheme(goalType);
+  const selectedType =
+    goalTypes.find((item) => item.id === goalType) ?? goalTypes[0];
+  const months = Math.max(1, Number(installmentCount) || 1);
+  const target = Number(targetAmount) || 0;
+  const participantCount = participants.length + 1;
+  const monthlyTotal = target / months;
+  const perPersonMonthly = monthlyTotal / Math.max(1, participantCount);
+  const suggestedContribution = installmentAmount
+    ? Number(installmentAmount)
+    : perPersonMonthly;
+  const canSubmit =
+    name.trim().length > 0 &&
+    target > 0 &&
+    startDate.length > 0 &&
+    endDate.length > 0 &&
+    months > 0;
 
   useEffect(() => {
-    const node = nameRef.current;
-    if (!node) return;
-
-    const frame = window.requestAnimationFrame(() => node.focus());
+    const frame = window.requestAnimationFrame(() => nameRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
@@ -60,19 +100,16 @@ function RouteComponent() {
     return () => window.clearTimeout(timeout);
   }, [participantInput]);
 
-  const canSubmit =
-    name.trim().length > 0 &&
-    Number(targetAmount) > 0 &&
-    startDate.length > 0 &&
-    endDate.length > 0 &&
-    Number(installmentCount) > 0;
-
-  const canAddParticipant = participantInput.trim().length > 0;
+  useEffect(() => {
+    const nextType = goalTypes.find((item) => item.id === goalType);
+    if (!nextType) return;
+    setEmoji((current) => current || nextType.emoji);
+  }, [goalType]);
 
   const participantsCountLabel = useMemo(() => {
-    if (participants.length === 0) return 'Sin participantes extra';
-    if (participants.length === 1) return '1 participante agregado';
-    return `${participants.length} participantes agregados`;
+    if (participants.length === 0) return 'Solo tú';
+    if (participants.length === 1) return '2 personas';
+    return `${participants.length + 1} personas`;
   }, [participants.length]);
 
   const addParticipant = (participant: DraftParticipant) => {
@@ -108,7 +145,9 @@ function RouteComponent() {
   };
 
   const removeParticipant = (index: number) => {
-    setParticipants((previous) => previous.filter((_, current) => current !== index));
+    setParticipants((previous) =>
+      previous.filter((_, current) => current !== index),
+    );
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -121,12 +160,17 @@ function RouteComponent() {
       const result = await createGoalMutation.mutateAsync({
         name,
         description,
+        goalType,
+        emoji,
+        themeColor: theme.accent,
+        contributionMode,
         currency,
         targetAmount,
         startDate,
         endDate,
         installmentCount,
         installmentAmount,
+        suggestedContributionAmount: String(Math.round(suggestedContribution)),
         participants,
       });
 
@@ -148,235 +192,543 @@ function RouteComponent() {
     }
   };
 
+  const nextStep = () => setStep((current) => Math.min(5, current + 1));
+  const previousStep = () => {
+    if (step === 0) {
+      void navigate({ to: '/goals', replace: true });
+      return;
+    }
+    setStep((current) => Math.max(0, current - 1));
+  };
+
   return (
-    <MobilePageLayout
-      title="Crear meta"
-      onBack={() => navigate({ to: '/goals', replace: true })}
-    >
-      <form
-        onSubmit={handleSubmit}
-        className="flex h-full flex-1 flex-col gap-5 pb-6"
-      >
-        <div className="space-y-4">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[#64748b]">
-              Metas de ahorro
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold leading-8 text-[#0f172a]">
-              Crear meta
-            </h1>
-            <p className="mt-1 text-sm text-[#64748b]">
-              Puedes crearla solo para ti o agregar participantes ahora.
-            </p>
-          </div>
-
-          <input
-            ref={nameRef}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Nombre de la meta"
-            className="h-12 w-full rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none"
-          />
-
-          <textarea
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="Descripción opcional"
-            rows={3}
-            className="w-full rounded-2xl border border-[#e2e8f0] bg-white px-4 py-3 text-sm outline-none"
-          />
-
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              value={targetAmount}
-              onChange={(event) => setTargetAmount(event.target.value)}
-              inputMode="numeric"
-              placeholder="Monto objetivo"
-              className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none"
-            />
-            <input
-              value={currency}
-              onChange={(event) => setCurrency(event.target.value.toUpperCase())}
-              placeholder="COP"
-              className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="date"
-              value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
-              className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none"
-            />
-            <input
-              type="date"
-              value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
-              className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              value={installmentCount}
-              onChange={(event) => setInstallmentCount(event.target.value)}
-              inputMode="numeric"
-              placeholder="Cuotas"
-              className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none"
-            />
-            <input
-              value={installmentAmount}
-              onChange={(event) => setInstallmentAmount(event.target.value)}
-              inputMode="numeric"
-              placeholder="Cuota opcional"
-              className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none"
+    <MobilePageLayout title="Nueva meta" onBack={previousStep}>
+      <form onSubmit={handleSubmit} className="flex flex-1 flex-col pb-6">
+        <div className="-mx-4 border-y border-[#e2e8f0] bg-white px-4 py-3">
+          <div className="h-1.5 overflow-hidden rounded-full bg-[#eef2f7]">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500"
+              style={{ width: `${((step + 1) / 6) * 100}%` }}
             />
           </div>
         </div>
 
-        <section className="rounded-2xl border border-[#e2e8f0] bg-white p-4">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-[#334155]">
-                Participantes
-              </p>
-              <p className="text-xs text-[#64748b]">
-                Busca por nombre o correo. Si no existe, puedes crearlo manualmente.
-              </p>
-            </div>
-            <span className="text-xs text-[#64748b]">{participantsCountLabel}</span>
-          </div>
-
-          <div className="flex gap-2">
-            <input
-              ref={participantRef}
-              value={participantInput}
-              onChange={(event) => setParticipantInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  addParticipant({ name: participantInput });
-                }
-              }}
-              placeholder="Nombre o correo"
-              className="h-12 min-w-0 flex-1 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none"
-            />
-            <Button
-              type="button"
-              size="icon"
-              className="size-12 rounded-2xl"
-              onClick={() => addParticipant({ name: participantInput })}
-              disabled={!canAddParticipant}
-              aria-label="Agregar participante"
-            >
-              <UserPlus className="size-5" />
-            </Button>
-          </div>
-
-          {searchQuery.isFetching && debouncedSearch ? (
-            <p className="mt-3 text-sm text-[#64748b]">Buscando coincidencias...</p>
-          ) : null}
-
-          {debouncedSearch &&
-          !searchQuery.isFetching &&
-          searchResults.length === 0 ? (
-            <p className="mt-3 text-sm text-[#64748b]">
-              No encontramos coincidencias. Puedes crearlo manualmente.
-            </p>
-          ) : null}
-
-          {searchResults.length > 0 ? (
-            <div className="mt-3 flex flex-col gap-2">
-              {searchResults.map((candidate) => (
-                <button
-                  key={candidate.id}
-                  type="button"
-                  disabled={candidate.isCurrentUser}
-                  onClick={() => {
-                    if (candidate.isCurrentUser) return;
-
-                    addParticipant({
-                      name: candidate.name,
-                      userId: candidate.id,
-                      email: candidate.email,
-                    });
-                  }}
-                  className={`rounded-2xl border px-4 py-3 text-left ${
-                    candidate.isCurrentUser
-                      ? 'cursor-not-allowed border-[#e2e8f0] bg-[#f8fafc] opacity-70'
-                      : 'border-[#e2e8f0] bg-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-[#132238]">
-                        {candidate.name}
-                      </p>
-                      <p className="truncate text-xs text-[#64748b]">
-                        {candidate.email}
-                      </p>
-                    </div>
-                    {candidate.isCurrentUser ? (
-                      <span className="rounded-full bg-[#f8fafc] px-2 py-1 text-[11px] text-[#64748b]">
-                        Tú
+        <div className="flex-1 pt-5">
+          {step === 0 ? (
+            <section className="space-y-4">
+              <StepHeader
+                eyebrow="Paso 1 de 6"
+                title="¿Qué quieres lograr?"
+                copy="El tipo define la vibra visual, el ritmo sugerido y cómo se sentirá el progreso."
+              />
+              <div className="grid gap-3">
+                {goalTypes.map((type) => {
+                  const Icon = type.icon;
+                  const active = goalType === type.id;
+                  return (
+                    <button
+                      key={type.id}
+                      type="button"
+                      onClick={() => {
+                        setGoalType(type.id);
+                        setEmoji(type.emoji);
+                      }}
+                      className={`flex items-center gap-4 rounded-[26px] border bg-white p-4 text-left shadow-[0_10px_24px_rgba(15,23,42,0.04)] transition-transform active:scale-[0.99] ${
+                        active ? 'border-primary/40' : 'border-[#e2e8f0]'
+                      }`}
+                    >
+                      <span
+                        className="flex size-12 items-center justify-center rounded-2xl text-xl"
+                        style={{
+                          backgroundColor: type.soft,
+                          color: type.accent,
+                        }}
+                      >
+                        <Icon className="size-5" />
                       </span>
-                    ) : null}
-                  </div>
-                </button>
-              ))}
-            </div>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-base font-semibold text-[#0f172a]">
+                          {type.label}
+                        </span>
+                        <span className="mt-1 block text-sm leading-5 text-[#64748b]">
+                          {type.description}
+                        </span>
+                      </span>
+                      {active ? (
+                        <Check className="size-5 text-primary" />
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
           ) : null}
 
-          {participants.length > 0 ? (
-            <div className="mt-4 flex flex-col gap-2">
-              {participants.map((participant, index) => (
-                <div
-                  key={`${participant.userId ?? participant.name}-${index}`}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-[#e2e8f0] bg-[#fafafa] px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-[#132238]">
-                      {participant.name}
-                    </p>
-                    <p className="truncate text-xs text-[#64748b]">
-                      {participant.email ?? 'Participante manual'}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-9 rounded-full"
-                    onClick={() => removeParticipant(index)}
-                    aria-label={`Eliminar ${participant.name}`}
-                  >
-                    <X className="size-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+          {step === 1 ? (
+            <section className="space-y-4">
+              <StepHeader
+                eyebrow="Paso 2 de 6"
+                title="Dale identidad"
+                copy="Debe sentirse como algo que vale la pena abrir y compartir."
+              />
+              <GoalPreviewCard
+                name={name}
+                emoji={emoji}
+                typeLabel={selectedType.label}
+                target={target}
+                currency={currency}
+                progress={0}
+                accent={theme.accent}
+              />
+              <div className="grid grid-cols-[86px_1fr] gap-3">
+                <input
+                  value={emoji}
+                  onChange={(event) => setEmoji(event.target.value.slice(0, 8))}
+                  className="h-14 rounded-[22px] border border-[#e2e8f0] bg-white px-4 text-center text-2xl outline-none"
+                  aria-label="Emoji"
+                />
+                <input
+                  ref={nameRef}
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Nombre de la meta"
+                  className="h-14 rounded-[22px] border border-[#e2e8f0] bg-white px-4 text-base outline-none"
+                />
+              </div>
+              <textarea
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Descripción opcional"
+                rows={3}
+                className="w-full rounded-[22px] border border-[#e2e8f0] bg-white px-4 py-3 text-base outline-none"
+              />
+            </section>
           ) : null}
-        </section>
+
+          {step === 2 ? (
+            <section className="space-y-4">
+              <StepHeader
+                eyebrow="Paso 3 de 6"
+                title="Define el objetivo"
+                copy="Vornway calcula el ritmo necesario para llegar a tiempo."
+              />
+              <div className="rounded-[30px] bg-[#111111] p-5 text-white">
+                <p className="text-sm text-white/60">Objetivo</p>
+                <div className="mt-3 flex items-end gap-3">
+                  <input
+                    value={targetAmount}
+                    onChange={(event) => setTargetAmount(event.target.value)}
+                    inputMode="numeric"
+                    className="min-w-0 flex-1 bg-transparent text-4xl font-semibold outline-none"
+                    placeholder="0"
+                  />
+                  <input
+                    value={currency}
+                    onChange={(event) =>
+                      setCurrency(event.target.value.toUpperCase())
+                    }
+                    className="w-20 bg-transparent pb-1 text-right text-xl font-semibold outline-none"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <DateField
+                  label="Inicio"
+                  value={startDate}
+                  onChange={setStartDate}
+                />
+                <DateField
+                  label="Final"
+                  value={endDate}
+                  onChange={setEndDate}
+                />
+              </div>
+              <InsightCard
+                label="Ritmo sugerido"
+                value={formatCurrency(currency, perPersonMonthly)}
+                copy={`por persona al mes con ${participantsCountLabel.toLowerCase()}`}
+              />
+            </section>
+          ) : null}
+
+          {step === 3 ? (
+            <section className="space-y-4">
+              <StepHeader
+                eyebrow="Paso 4 de 6"
+                title="Elige cómo aportan"
+                copy="La meta puede ser estricta, flexible o simplemente sugerir un ritmo."
+              />
+              <div className="grid gap-3">
+                {contributionModes.map((mode) => {
+                  const active = contributionMode === mode.id;
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setContributionMode(mode.id)}
+                      className={`rounded-[24px] border bg-white p-4 text-left transition-transform active:scale-[0.99] ${
+                        active ? 'border-primary/40' : 'border-[#e2e8f0]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-base font-semibold text-[#0f172a]">
+                            {mode.label}
+                          </p>
+                          <p className="mt-1 text-sm leading-5 text-[#64748b]">
+                            {mode.description}
+                          </p>
+                        </div>
+                        {active ? (
+                          <Check className="size-5 text-primary" />
+                        ) : null}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  value={installmentCount}
+                  onChange={(event) => setInstallmentCount(event.target.value)}
+                  inputMode="numeric"
+                  placeholder="Meses"
+                  className="h-12 rounded-[20px] border border-[#e2e8f0] bg-white px-4 text-base outline-none"
+                />
+                <input
+                  value={installmentAmount}
+                  onChange={(event) => setInstallmentAmount(event.target.value)}
+                  inputMode="numeric"
+                  placeholder="Cuota opcional"
+                  className="h-12 rounded-[20px] border border-[#e2e8f0] bg-white px-4 text-base outline-none"
+                />
+              </div>
+            </section>
+          ) : null}
+
+          {step === 4 ? (
+            <section className="space-y-4">
+              <StepHeader
+                eyebrow="Paso 5 de 6"
+                title="Agrega personas"
+                copy="Puedes buscar usuarios o crear participantes manuales para reclamar después."
+              />
+              <div className="flex gap-2">
+                <input
+                  ref={participantRef}
+                  value={participantInput}
+                  onChange={(event) => setParticipantInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      addParticipant({ name: participantInput });
+                    }
+                  }}
+                  placeholder="Nombre o correo"
+                  className="h-12 min-w-0 flex-1 rounded-[20px] border border-[#e2e8f0] bg-white px-4 text-base outline-none"
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  className="size-12 rounded-[20px]"
+                  onClick={() => addParticipant({ name: participantInput })}
+                  disabled={!participantInput.trim()}
+                  aria-label="Agregar participante"
+                >
+                  <UserPlus className="size-5" />
+                </Button>
+              </div>
+
+              {searchQuery.isFetching && debouncedSearch ? (
+                <p className="text-sm text-[#64748b]">
+                  Buscando coincidencias...
+                </p>
+              ) : null}
+
+              {searchResults.length > 0 ? (
+                <div className="space-y-2">
+                  {searchResults.map((candidate) => (
+                    <button
+                      key={candidate.id}
+                      type="button"
+                      disabled={candidate.isCurrentUser}
+                      onClick={() => {
+                        if (candidate.isCurrentUser) return;
+                        addParticipant({
+                          name: candidate.name,
+                          userId: candidate.id,
+                          email: candidate.email,
+                        });
+                      }}
+                      className="flex w-full items-center gap-3 rounded-[22px] border border-[#e2e8f0] bg-white px-4 py-3 text-left disabled:opacity-60"
+                    >
+                      <MemberAvatar name={candidate.name} image={null} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-[#0f172a]">
+                          {candidate.name}
+                        </span>
+                        <span className="block truncate text-xs text-[#64748b]">
+                          {candidate.email}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="space-y-2">
+                {participants.map((participant, index) => (
+                  <div
+                    key={`${participant.userId ?? participant.name}-${index}`}
+                    className="flex items-center gap-3 rounded-[22px] border border-[#e2e8f0] bg-white px-4 py-3"
+                  >
+                    <MemberAvatar
+                      name={participant.name}
+                      image={participant.image ?? null}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-[#0f172a]">
+                        {participant.name}
+                      </span>
+                      <span className="block truncate text-xs text-[#64748b]">
+                        {participant.email ?? 'Participante manual'}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeParticipant(index)}
+                      className="flex size-9 items-center justify-center rounded-full text-[#94a3b8]"
+                      aria-label={`Eliminar ${participant.name}`}
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {step === 5 ? (
+            <section className="space-y-4">
+              <StepHeader
+                eyebrow="Paso 6 de 6"
+                title="Así se verá tu meta"
+                copy="Confirma el plan antes de crear el fondo."
+              />
+              <GoalPreviewCard
+                name={name}
+                emoji={emoji}
+                typeLabel={selectedType.label}
+                target={target}
+                currency={currency}
+                progress={0}
+                accent={theme.accent}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <InsightCard
+                  label="Cuota sugerida"
+                  value={formatCurrency(currency, suggestedContribution)}
+                  copy="por persona"
+                />
+                <InsightCard
+                  label="Miembros"
+                  value={participantCount.toString()}
+                  copy={participantsCountLabel}
+                />
+              </div>
+              <div className="rounded-[26px] border border-[#e2e8f0] bg-white p-4">
+                <p className="text-sm font-semibold text-[#0f172a]">Timeline</p>
+                <div className="mt-4 flex items-center gap-2">
+                  {Array.from({ length: Math.min(6, months) }).map(
+                    (_, index) => (
+                      <div key={index} className="min-w-0 flex-1">
+                        <div
+                          className="h-2 rounded-full"
+                          style={{
+                            backgroundColor:
+                              index === 0 ? theme.accent : '#e2e8f0',
+                          }}
+                        />
+                      </div>
+                    ),
+                  )}
+                </div>
+                <p className="mt-3 text-xs text-[#64748b]">
+                  {months} meses para llegar a{' '}
+                  {formatCurrency(currency, target || 0)}.
+                </p>
+              </div>
+            </section>
+          ) : null}
+        </div>
 
         {error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         ) : null}
 
-        <div className="mt-auto border-t border-[#e2e8f0] bg-[#fafafa] px-0 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-4">
-          <div className="px-0">
+        <div className="sticky bottom-0 -mx-4 mt-6 border-t border-[#e2e8f0] bg-[#fafafa]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-4 backdrop-blur">
+          {step < 5 ? (
+            <Button
+              type="button"
+              onClick={nextStep}
+              className="h-14 w-full rounded-full bg-primary text-base font-semibold text-white"
+            >
+              Continuar
+              <ChevronRight className="ml-1 size-4" />
+            </Button>
+          ) : (
             <Button
               type="submit"
               disabled={!canSubmit || createGoalMutation.isPending}
-              className="h-14 w-full rounded-full bg-primary text-base font-medium text-white"
+              className="h-14 w-full rounded-full bg-primary text-base font-semibold text-white"
             >
               {createGoalMutation.isPending ? 'Creando...' : 'Crear meta'}
             </Button>
-          </div>
+          )}
         </div>
       </form>
     </MobilePageLayout>
+  );
+}
+
+function StepHeader({
+  eyebrow,
+  title,
+  copy,
+}: {
+  eyebrow: string;
+  title: string;
+  copy: string;
+}) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold uppercase text-primary">
+        {eyebrow}
+      </p>
+      <h1 className="mt-1 text-3xl font-semibold leading-9 text-[#0f172a]">
+        {title}
+      </h1>
+      <p className="mt-2 text-sm leading-6 text-[#64748b]">{copy}</p>
+    </div>
+  );
+}
+
+function GoalPreviewCard({
+  name,
+  emoji,
+  typeLabel,
+  target,
+  currency,
+  progress,
+  accent,
+}: {
+  name: string;
+  emoji: string;
+  typeLabel: string;
+  target: number;
+  currency: string;
+  progress: number;
+  accent: string;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-[32px] bg-[#111111] p-5 text-white shadow-[0_20px_45px_rgba(15,23,42,0.22)]">
+      <div
+        className="absolute -right-10 -top-10 size-36 rounded-full opacity-25 blur-2xl"
+        style={{ backgroundColor: accent }}
+      />
+      <div className="relative flex items-start justify-between">
+        <div className="flex size-14 items-center justify-center rounded-3xl bg-white/10 text-3xl">
+          {emoji || '✨'}
+        </div>
+        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">
+          {typeLabel}
+        </span>
+      </div>
+      <h2 className="relative mt-6 text-2xl font-semibold leading-8">
+        {name || 'Nueva meta'}
+      </h2>
+      <p className="relative mt-2 text-sm text-white/60">
+        Objetivo {formatCurrency(currency, target || 0)}
+      </p>
+      <div className="relative mt-5 h-2 rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${Math.max(3, progress)}%`,
+            backgroundColor: accent,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function DateField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="rounded-[22px] border border-[#e2e8f0] bg-white px-4 py-3">
+      <span className="flex items-center gap-2 text-xs text-[#64748b]">
+        <CalendarDays className="size-3.5" />
+        {label}
+      </span>
+      <input
+        type="date"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-2 w-full bg-transparent text-sm font-semibold text-[#0f172a] outline-none"
+      />
+    </label>
+  );
+}
+
+function InsightCard({
+  label,
+  value,
+  copy,
+}: {
+  label: string;
+  value: string;
+  copy: string;
+}) {
+  return (
+    <div className="rounded-[24px] border border-[#e2e8f0] bg-white p-4">
+      <p className="text-xs text-[#64748b]">{label}</p>
+      <p className="mt-1 text-xl font-semibold text-[#0f172a]">{value}</p>
+      <p className="mt-1 text-xs text-[#94a3b8]">{copy}</p>
+    </div>
+  );
+}
+
+function MemberAvatar({
+  name,
+  image,
+}: {
+  name: string;
+  image?: string | null;
+}) {
+  if (image) {
+    return (
+      <img
+        src={image}
+        alt={name}
+        className="size-10 rounded-full object-cover"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
+  return (
+    <span className="flex size-10 items-center justify-center rounded-full bg-[#f1f5f9] text-sm font-semibold text-[#0f172a]">
+      {name.trim().charAt(0).toUpperCase() || <Mail className="size-4" />}
+    </span>
   );
 }

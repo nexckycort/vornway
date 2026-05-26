@@ -4,12 +4,19 @@ model Goal {
   createdByMemberId  String
   title              String
   description        String?
+  goalType           String             @default("saving")
+  emoji              String?
+  coverImageUrl      String?
+  themeColor         String?
+  contributionMode   String             @default("manual")
   currency           String
   targetAmount       Float
   startDate          DateTime
   endDate            DateTime
   installmentCount   Int
   installmentAmount  Float
+  suggestedContributionAmount Float?
+  completedAt        DateTime?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   deletedAt          DateTime?

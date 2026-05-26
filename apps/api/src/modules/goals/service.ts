@@ -11,23 +11,77 @@ import type {
   GoalDetailResult,
   GoalListItem,
   GoalsListResponse,
+  UpdateGoalInput,
+  UpdateGoalResult,
 } from './types';
 
 function normalizeAmount(value: number): number {
   return Number(value.toFixed(2));
 }
 
+function differenceInCalendarDays(from: Date, to: Date): number {
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+  fromDate.setHours(0, 0, 0, 0);
+  toDate.setHours(0, 0, 0, 0);
+
+  return Math.ceil((toDate.getTime() - fromDate.getTime()) / 86_400_000);
+}
+
+function monthKey(value: Date): string {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function estimateProjectedCompletionDate(input: {
+  savedAmount: number;
+  targetAmount: number;
+  contributions: Array<{ amount: number; contributedAt: Date }>;
+}): Date | null {
+  const { savedAmount, targetAmount, contributions } = input;
+  const remaining = targetAmount - savedAmount;
+  if (remaining <= 0) return new Date();
+  if (contributions.length === 0) return null;
+
+  const sorted = [...contributions].sort(
+    (left, right) =>
+      left.contributedAt.getTime() - right.contributedAt.getTime(),
+  );
+  const first = sorted[0]?.contributedAt;
+  const last = sorted[sorted.length - 1]?.contributedAt ?? new Date();
+  if (!first) return null;
+
+  const days = Math.max(1, differenceInCalendarDays(first, last) + 1);
+  const ratePerDay =
+    sorted.reduce((total, contribution) => total + contribution.amount, 0) /
+    days;
+  if (ratePerDay <= 0) return null;
+
+  const projected = new Date();
+  projected.setDate(projected.getDate() + Math.ceil(remaining / ratePerDay));
+  return projected;
+}
+
 function summarizeGoal(goal: {
   id: string;
   title: string;
   description: string | null;
+  goalType: string;
+  emoji: string | null;
+  coverImageUrl: string | null;
+  themeColor: string | null;
+  contributionMode: string;
   currency: string;
   targetAmount: number;
+  installmentCount: number;
+  installmentAmount: number;
   endDate: Date;
   createdAt: Date;
   group: {
     id: string;
     name: string;
+    _count?: {
+      GroupMember: number;
+    };
   };
   contributions: Array<{ amount: number }>;
 }): GoalListItem {
@@ -41,18 +95,37 @@ function summarizeGoal(goal: {
     goal.targetAmount > 0
       ? Math.min(100, normalizeAmount((savedAmount / goal.targetAmount) * 100))
       : 0;
+  const participantCount = goal.group._count?.GroupMember ?? 0;
+  const monthlyTarget = normalizeAmount(
+    goal.installmentAmount ||
+      goal.targetAmount / Math.max(1, goal.installmentCount),
+  );
 
   return {
     id: goal.id,
     title: goal.title,
     description: goal.description,
+    goalType: goal.goalType,
+    emoji: goal.emoji,
+    coverImageUrl: goal.coverImageUrl,
+    themeColor: goal.themeColor,
+    contributionMode: goal.contributionMode,
     currency: goal.currency,
     targetAmount: goal.targetAmount,
     savedAmount,
     progress,
     endDate: goal.endDate,
     createdAt: goal.createdAt,
-    group: goal.group,
+    participantCount,
+    daysLeft: Math.max(0, differenceInCalendarDays(new Date(), goal.endDate)),
+    monthlyTarget,
+    perMemberMonthlyTarget: normalizeAmount(
+      monthlyTarget / Math.max(1, participantCount),
+    ),
+    group: {
+      id: goal.group.id,
+      name: goal.group.name,
+    },
   };
 }
 
@@ -61,12 +134,19 @@ function summarizeGoalDetail(
     id: string;
     title: string;
     description: string | null;
+    goalType: string;
+    emoji: string | null;
+    coverImageUrl: string | null;
+    themeColor: string | null;
+    contributionMode: string;
     currency: string;
     targetAmount: number;
     startDate: Date;
     endDate: Date;
     installmentCount: number;
     installmentAmount: number;
+    suggestedContributionAmount: number | null;
+    completedAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
     group: {
@@ -120,20 +200,70 @@ function summarizeGoalDetail(
   const currentMembership = goal.group.GroupMember.find(
     (member) => member.userId === userId,
   );
+  const now = new Date();
+  const currentMonthKey = monthKey(now);
+  const currentMonthContributions = goal.contributions.filter(
+    (contribution) => monthKey(contribution.contributedAt) === currentMonthKey,
+  );
+  const memberStats = goal.group.GroupMember.map((member) => {
+    const memberContributions = goal.contributions.filter(
+      (contribution) => contribution.member.id === member.id,
+    );
+    const totalAmount = normalizeAmount(
+      memberContributions.reduce(
+        (total, contribution) => total + contribution.amount,
+        0,
+      ),
+    );
+    const latestContributionAt =
+      [...memberContributions].sort(
+        (left, right) =>
+          right.contributedAt.getTime() - left.contributedAt.getTime(),
+      )[0]?.contributedAt ?? null;
+
+    return {
+      memberId: member.id,
+      totalAmount,
+      contributionCount: memberContributions.length,
+      contributedThisMonth: memberContributions.some(
+        (contribution) =>
+          monthKey(contribution.contributedAt) === currentMonthKey,
+      ),
+      latestContributionAt,
+    };
+  });
+  const monthlyTarget = normalizeAmount(
+    goal.installmentAmount ||
+      goal.targetAmount / Math.max(1, goal.installmentCount),
+  );
+  const perMemberMonthlyTarget = normalizeAmount(
+    monthlyTarget / Math.max(1, goal.group.GroupMember.length),
+  );
 
   return {
     id: goal.id,
     title: goal.title,
     description: goal.description,
+    goalType: goal.goalType,
+    emoji: goal.emoji,
+    coverImageUrl: goal.coverImageUrl,
+    themeColor: goal.themeColor,
+    contributionMode: goal.contributionMode,
     currency: goal.currency,
     targetAmount: goal.targetAmount,
     savedAmount,
     progress,
     endDate: goal.endDate,
     createdAt: goal.createdAt,
+    participantCount: goal.group.GroupMember.length,
+    daysLeft: Math.max(0, differenceInCalendarDays(now, goal.endDate)),
+    monthlyTarget,
+    perMemberMonthlyTarget,
     startDate: goal.startDate,
     installmentCount: goal.installmentCount,
     installmentAmount: goal.installmentAmount,
+    suggestedContributionAmount: goal.suggestedContributionAmount,
+    completedAt: goal.completedAt,
     updatedAt: goal.updatedAt,
     group: {
       id: goal.group.id,
@@ -163,7 +293,6 @@ function summarizeGoalDetail(
           role: currentMembership.role,
         }
       : null,
-    participantCount: goal.group.GroupMember.length,
     contributions: goal.contributions.map((contribution) => ({
       id: contribution.id,
       amount: contribution.amount,
@@ -179,6 +308,33 @@ function summarizeGoalDetail(
         isCurrentUser: contribution.member.userId === userId,
       },
     })),
+    stats: {
+      remainingAmount: normalizeAmount(
+        Math.max(0, goal.targetAmount - savedAmount),
+      ),
+      averageContribution:
+        goal.contributions.length > 0
+          ? normalizeAmount(savedAmount / goal.contributions.length)
+          : 0,
+      projectedCompletionDate: estimateProjectedCompletionDate({
+        savedAmount,
+        targetAmount: goal.targetAmount,
+        contributions: goal.contributions,
+      }),
+      currentMonthContributionTotal: normalizeAmount(
+        currentMonthContributions.reduce(
+          (total, contribution) => total + contribution.amount,
+          0,
+        ),
+      ),
+      contributorsThisMonth: new Set(
+        currentMonthContributions.map((contribution) => contribution.member.id),
+      ).size,
+      pendingMembersThisMonth: memberStats.filter(
+        (member) => !member.contributedThisMonth,
+      ).length,
+    },
+    memberStats,
   };
 }
 
@@ -192,6 +348,7 @@ export type GoalsService = {
   list: (userId: string, query: GoalsListQuery) => Promise<GoalsListResponse>;
   getById: (userId: string, goalId: string) => Promise<GoalDetailResult | null>;
   create: (input: CreateGoalInput) => Promise<CreateGoalResult>;
+  update: (input: UpdateGoalInput) => Promise<UpdateGoalResult>;
   addContribution: (
     input: CreateGoalContributionInput,
   ) => Promise<CreateGoalContributionResult>;
@@ -248,14 +405,26 @@ export function createGoalsService(): GoalsService {
             id: true,
             title: true,
             description: true,
+            goalType: true,
+            emoji: true,
+            coverImageUrl: true,
+            themeColor: true,
+            contributionMode: true,
             currency: true,
             targetAmount: true,
+            installmentCount: true,
+            installmentAmount: true,
             endDate: true,
             createdAt: true,
             group: {
               select: {
                 id: true,
                 name: true,
+                _count: {
+                  select: {
+                    GroupMember: true,
+                  },
+                },
               },
             },
             contributions: {
@@ -304,12 +473,19 @@ export function createGoalsService(): GoalsService {
           id: true,
           title: true,
           description: true,
+          goalType: true,
+          emoji: true,
+          coverImageUrl: true,
+          themeColor: true,
+          contributionMode: true,
           currency: true,
           targetAmount: true,
           startDate: true,
           endDate: true,
           installmentCount: true,
           installmentAmount: true,
+          suggestedContributionAmount: true,
+          completedAt: true,
           createdAt: true,
           updatedAt: true,
           group: {
@@ -384,6 +560,122 @@ export function createGoalsService(): GoalsService {
 
       return summarizeGoalDetail(goal, userId);
     },
+    update: async (input) => {
+      const goal = await db.goal.findFirst({
+        where: {
+          id: input.goalId,
+          deletedAt: null,
+          group: {
+            type: 'meta' as const,
+            OR: [
+              { ownerId: input.userId },
+              {
+                GroupMember: {
+                  some: {
+                    userId: input.userId,
+                    role: 'admin',
+                  },
+                },
+              },
+            ],
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          groupId: true,
+          group: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!goal) {
+        throw new Error('Meta no encontrada');
+      }
+
+      const data: {
+        title?: string;
+        description?: string | null;
+        goalType?: string;
+        emoji?: string | null;
+        coverImageUrl?: string | null;
+        themeColor?: string | null;
+        contributionMode?: string;
+        currency?: string;
+        targetAmount?: number;
+        startDate?: Date;
+        endDate?: Date;
+        installmentCount?: number;
+        installmentAmount?: number;
+        suggestedContributionAmount?: number | null;
+      } = {};
+
+      if (input.name !== undefined) {
+        const name = input.name.trim();
+        if (!name) throw new Error('El nombre de la meta es obligatorio');
+        data.title = name;
+      }
+
+      if (input.description !== undefined) {
+        data.description = input.description?.trim() || null;
+      }
+
+      if (input.goalType !== undefined) data.goalType = input.goalType;
+      if (input.emoji !== undefined) data.emoji = input.emoji?.trim() || null;
+      if (input.coverImageUrl !== undefined) {
+        data.coverImageUrl = input.coverImageUrl?.trim() || null;
+      }
+      if (input.themeColor !== undefined) data.themeColor = input.themeColor;
+      if (input.contributionMode !== undefined) {
+        data.contributionMode = input.contributionMode;
+      }
+      if (input.currency !== undefined) {
+        data.currency = input.currency.trim().toUpperCase();
+      }
+      if (input.targetAmount !== undefined) {
+        if (input.targetAmount <= 0) {
+          throw new Error('El monto objetivo debe ser mayor a 0');
+        }
+        data.targetAmount = input.targetAmount;
+      }
+      if (input.startDate !== undefined) data.startDate = input.startDate;
+      if (input.endDate !== undefined) data.endDate = input.endDate;
+      if (input.installmentCount !== undefined) {
+        if (input.installmentCount <= 0) {
+          throw new Error('Las cuotas deben ser mayores a 0');
+        }
+        data.installmentCount = input.installmentCount;
+      }
+      if (input.installmentAmount !== undefined) {
+        if (input.installmentAmount !== null && input.installmentAmount <= 0) {
+          throw new Error('La cuota mensual debe ser mayor a 0');
+        }
+        if (input.installmentAmount !== null) {
+          data.installmentAmount = input.installmentAmount;
+        }
+      }
+      if (input.suggestedContributionAmount !== undefined) {
+        data.suggestedContributionAmount = input.suggestedContributionAmount;
+      }
+
+      const updated = await db.goal.update({
+        where: { id: goal.id },
+        data,
+        select: { id: true },
+      });
+
+      if (data.title !== undefined) {
+        await db.group.update({
+          where: { id: goal.groupId },
+          data: { name: data.title, updatedAt: new Date() },
+        });
+      }
+
+      return { id: updated.id };
+    },
     addContribution: async ({
       userId,
       goalId,
@@ -420,6 +712,7 @@ export function createGoalsService(): GoalsService {
           id: true,
           title: true,
           currency: true,
+          targetAmount: true,
           groupId: true,
         },
       });
@@ -494,6 +787,18 @@ export function createGoalsService(): GoalsService {
         },
       });
 
+      const contributionTotals = await db.goalContribution.aggregate({
+        where: { goalId: goal.id },
+        _sum: { amount: true },
+      });
+      const totalSaved = contributionTotals._sum.amount ?? 0;
+      if (totalSaved >= goal.targetAmount) {
+        await db.goal.update({
+          where: { id: goal.id },
+          data: { completedAt: new Date() },
+        });
+      }
+
       return {
         id: contribution.id,
       };
@@ -523,6 +828,7 @@ export function createGoalsService(): GoalsService {
           id: true,
           title: true,
           currency: true,
+          targetAmount: true,
           groupId: true,
         },
       });
@@ -595,6 +901,18 @@ export function createGoalsService(): GoalsService {
           },
         },
       });
+
+      const contributionTotals = await db.goalContribution.aggregate({
+        where: { goalId: goal.id },
+        _sum: { amount: true },
+      });
+      const totalSaved = contributionTotals._sum.amount ?? 0;
+      if (totalSaved < goal.targetAmount) {
+        await db.goal.update({
+          where: { id: goal.id },
+          data: { completedAt: null },
+        });
+      }
 
       return {
         id: contribution.id,
@@ -695,12 +1013,19 @@ export function createGoalsService(): GoalsService {
             createdByMemberId: ownerMember.id,
             title: input.name.trim(),
             description: input.description?.trim() || null,
+            goalType: input.goalType ?? 'saving',
+            emoji: input.emoji?.trim() || null,
+            coverImageUrl: input.coverImageUrl?.trim() || null,
+            themeColor: input.themeColor?.trim() || null,
+            contributionMode: input.contributionMode ?? 'manual',
             currency: input.currency,
             targetAmount: input.targetAmount,
             startDate: input.startDate,
             endDate: input.endDate,
             installmentCount: input.installmentCount,
             installmentAmount,
+            suggestedContributionAmount:
+              input.suggestedContributionAmount ?? null,
           },
           select: {
             id: true,
@@ -720,6 +1045,8 @@ export function createGoalsService(): GoalsService {
               currency: input.currency,
               installmentCount: input.installmentCount,
               installmentAmount,
+              goalType: input.goalType ?? 'saving',
+              contributionMode: input.contributionMode ?? 'manual',
               participantCount: normalizedParticipants.length + 1,
               startDate: input.startDate,
               endDate: input.endDate,

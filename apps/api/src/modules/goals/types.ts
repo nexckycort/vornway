@@ -2,12 +2,21 @@ export type GoalListItem = {
   id: string;
   title: string;
   description: string | null;
+  goalType: string;
+  emoji: string | null;
+  coverImageUrl: string | null;
+  themeColor: string | null;
+  contributionMode: string;
   currency: string;
   targetAmount: number;
   savedAmount: number;
   progress: number;
   endDate: Date;
   createdAt: Date;
+  participantCount: number;
+  daysLeft: number;
+  monthlyTarget: number;
+  perMemberMonthlyTarget: number;
   group: {
     id: string;
     name: string;
@@ -41,6 +50,8 @@ export type GoalDetailResult = GoalListItem & {
   startDate: Date;
   installmentCount: number;
   installmentAmount: number;
+  suggestedContributionAmount: number | null;
+  completedAt: Date | null;
   updatedAt: Date;
   group: {
     id: string;
@@ -59,6 +70,21 @@ export type GoalDetailResult = GoalListItem & {
   } | null;
   participantCount: number;
   contributions: GoalContributionItem[];
+  stats: {
+    remainingAmount: number;
+    averageContribution: number;
+    projectedCompletionDate: Date | null;
+    currentMonthContributionTotal: number;
+    contributorsThisMonth: number;
+    pendingMembersThisMonth: number;
+  };
+  memberStats: Array<{
+    memberId: string;
+    totalAmount: number;
+    contributionCount: number;
+    contributedThisMonth: boolean;
+    latestContributionAt: Date | null;
+  }>;
 };
 
 export type GoalsListResponse = {
@@ -75,12 +101,18 @@ export type CreateGoalInput = {
   ownerName: string;
   name: string;
   description?: string;
+  goalType?: string;
+  emoji?: string | null;
+  coverImageUrl?: string | null;
+  themeColor?: string | null;
+  contributionMode?: string;
   currency: string;
   targetAmount: number;
   startDate: Date;
   endDate: Date;
   installmentCount: number;
   installmentAmount?: number;
+  suggestedContributionAmount?: number | null;
   participants?: Array<{
     name: string;
     userId?: string | null;
@@ -88,6 +120,29 @@ export type CreateGoalInput = {
 };
 
 export type CreateGoalResult = {
+  id: string;
+};
+
+export type UpdateGoalInput = {
+  userId: string;
+  goalId: string;
+  name?: string;
+  description?: string | null;
+  goalType?: string;
+  emoji?: string | null;
+  coverImageUrl?: string | null;
+  themeColor?: string | null;
+  contributionMode?: string;
+  currency?: string;
+  targetAmount?: number;
+  startDate?: Date;
+  endDate?: Date;
+  installmentCount?: number;
+  installmentAmount?: number | null;
+  suggestedContributionAmount?: number | null;
+};
+
+export type UpdateGoalResult = {
   id: string;
 };
 

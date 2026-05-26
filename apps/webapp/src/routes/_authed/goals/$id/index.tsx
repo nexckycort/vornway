@@ -102,7 +102,6 @@ function RouteComponent() {
 
   const [participantInput, setParticipantInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [message, setMessage] = useState<string | null>(null);
   const [showContributionDrawer, setShowContributionDrawer] = useState(false);
   const [showDeleteContributionDrawer, setShowDeleteContributionDrawer] =
     useState(false);
@@ -181,8 +180,6 @@ function RouteComponent() {
     const trimmedName = participant.name.trim();
     if (!trimmedName) return;
 
-    setMessage(null);
-
     try {
       await addMemberMutation.mutateAsync({
         name: trimmedName,
@@ -193,9 +190,9 @@ function RouteComponent() {
       await queryClient.invalidateQueries({ queryKey: ['goal-detail', id] });
       setParticipantInput('');
       setDebouncedSearch('');
-      setMessage('Participante agregado');
+      toast.success('Participante agregado');
     } catch (error) {
-      setMessage(
+      toast.error(
         error instanceof Error
           ? error.message
           : 'No se pudo agregar el participante',
@@ -241,9 +238,9 @@ function RouteComponent() {
           : {}),
       });
       setShowContributionDrawer(false);
-      setMessage('Aporte agregado');
+      toast.success('Aporte agregado');
     } catch (error) {
-      setMessage(
+      toast.error(
         error instanceof Error
           ? error.message
           : 'No se pudo registrar el aporte',
@@ -271,9 +268,9 @@ function RouteComponent() {
         contributionMode: editContributionMode,
       });
       setShowEditDrawer(false);
-      setMessage('Meta actualizada');
+      toast.success('Meta actualizada');
     } catch (error) {
-      setMessage(
+      toast.error(
         error instanceof Error
           ? error.message
           : 'No se pudo actualizar la meta',
@@ -299,9 +296,9 @@ function RouteComponent() {
       await deleteContributionMutation.mutateAsync(contributionToDelete.id);
       setShowDeleteContributionDrawer(false);
       setContributionToDelete(null);
-      setMessage('Aporte eliminado');
+      toast.success('Aporte eliminado');
     } catch (error) {
-      setMessage(
+      toast.error(
         error instanceof Error
           ? error.message
           : 'No se pudo eliminar el aporte',
@@ -731,12 +728,6 @@ function RouteComponent() {
                 copy="según ritmo actual"
               />
             </section>
-
-            {message ? (
-              <p className="rounded-2xl bg-white px-4 py-3 text-sm text-[#64748b]">
-                {message}
-              </p>
-            ) : null}
           </div>
         </div>
       </div>

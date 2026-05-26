@@ -149,7 +149,9 @@ export function GroupDetailHeader({
                   className={`min-w-[calc(100%-2rem)] snap-start rounded-[24px] bg-[#2c2226] px-5 py-4 shadow-[0_18px_35px_rgba(0,0,0,0.18)] ${
                     hasCredit || hasDebt
                       ? ''
-                      : 'flex min-h-[158px] flex-col justify-center'
+                      : hasMultipleCurrencies
+                        ? 'flex min-h-[158px] flex-col justify-center'
+                        : 'flex min-h-[126px] flex-col justify-center'
                   } ${hasMultipleCurrencies ? '' : 'w-full min-w-0'}`}
                 >
                   <div className="flex items-center gap-2 text-sm font-medium text-white/85">

@@ -88,6 +88,18 @@ function buildTimeline(startDate: string | Date, endDate: string | Date) {
   return months;
 }
 
+function isMemberOnTrack(input: {
+  totalAmount: number;
+  savedAmount: number;
+  participantCount: number;
+}) {
+  const { totalAmount, savedAmount, participantCount } = input;
+  if (participantCount <= 0) return false;
+
+  const expectedShare = savedAmount / participantCount;
+  return totalAmount + 0.01 >= expectedShare;
+}
+
 function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
@@ -330,21 +342,28 @@ function RouteComponent() {
 
   const theme = getGoalTheme(goal.goalType, goal.themeColor ?? undefined);
   const timeline = buildTimeline(goal.startDate, goal.endDate);
-  const completedThisMonth = goal.stats.contributorsThisMonth;
-  const pendingThisMonth = goal.stats.pendingMembersThisMonth;
   const recentContributions = goal.contributions.slice(0, 6);
   const topMembers = [...goal.members]
     .map((member) => {
       const stats = goal.memberStats.find(
         (item) => item.memberId === member.id,
       );
+      const amount = stats?.totalAmount ?? 0;
+
       return {
         member,
         stats,
-        amount: stats?.totalAmount ?? 0,
+        amount,
+        isOnTrack: isMemberOnTrack({
+          totalAmount: amount,
+          savedAmount: goal.savedAmount,
+          participantCount: goal.participantCount,
+        }),
       };
     })
     .sort((left, right) => right.amount - left.amount);
+  const membersOnTrack = topMembers.filter((member) => member.isOnTrack).length;
+  const pendingMembers = Math.max(0, goal.participantCount - membersOnTrack);
 
   return (
     <main className="min-h-screen bg-[#111111] text-foreground">
@@ -445,8 +464,8 @@ function RouteComponent() {
                   goal.stats.currentMonthContributionTotal,
                 )}
               />
-              <HeroStat label="Al día" value={`${completedThisMonth}`} />
-              <HeroStat label="Pendientes" value={`${pendingThisMonth}`} />
+              <HeroStat label="Al día" value={`${membersOnTrack}`} />
+              <HeroStat label="Pendientes" value={`${pendingMembers}`} />
             </div>
 
             <div className="mt-2.5 grid grid-cols-3 gap-2">
@@ -615,7 +634,7 @@ function RouteComponent() {
               ) : null}
 
               <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {topMembers.map(({ member, stats, amount }, index) => (
+                {topMembers.map(({ member, amount, isOnTrack }, index) => (
                   <article
                     key={member.id}
                     className="rounded-[24px] border border-[#edf2f7] bg-[#fafafa] p-4"
@@ -632,9 +651,9 @@ function RouteComponent() {
                           ) : null}
                         </p>
                         <p className="text-xs text-[#64748b]">
-                          {stats?.contributedThisMonth
-                            ? 'Al día este mes'
-                            : 'Pendiente este mes'}
+                          {isOnTrack
+                            ? 'Va al día con el fondo'
+                            : 'Debe ponerse al día'}
                         </p>
                       </div>
                       {index === 0 && amount > 0 ? (
@@ -651,15 +670,11 @@ function RouteComponent() {
                       <span
                         className="rounded-full px-3 py-1 text-xs font-semibold"
                         style={{
-                          color: stats?.contributedThisMonth
-                            ? '#059669'
-                            : '#e11d48',
-                          backgroundColor: stats?.contributedThisMonth
-                            ? '#ecfdf5'
-                            : '#fff1f2',
+                          color: isOnTrack ? '#059669' : '#e11d48',
+                          backgroundColor: isOnTrack ? '#ecfdf5' : '#fff1f2',
                         }}
                       >
-                        {stats?.contributedThisMonth ? 'Listo' : 'Pendiente'}
+                        {isOnTrack ? 'Al día' : 'Pendiente'}
                       </span>
                     </div>
                   </article>

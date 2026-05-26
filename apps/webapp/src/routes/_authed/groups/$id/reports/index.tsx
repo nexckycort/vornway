@@ -295,6 +295,7 @@ function RouteComponent() {
                   void navigate({
                     to: '/groups/$id/settle',
                     params: { id },
+                    search: { settlementExpenseId: undefined },
                     state: flowState,
                   })
                 }

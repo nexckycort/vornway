@@ -155,7 +155,17 @@ function RouteComponent() {
   };
 
   const handleEditExpense = () => {
-    if (!expense || isSettlement) return;
+    if (!expense) return;
+
+    if (isSettlement) {
+      void navigate({
+        to: '/groups/$id/settle',
+        params: { id },
+        search: { settlementExpenseId: expense.id },
+        state: flowState,
+      });
+      return;
+    }
 
     void navigate({
       to: '/groups/$id/add-expense',
@@ -281,23 +291,22 @@ function RouteComponent() {
               </div>
 
               <div className="mt-auto flex items-center gap-3 px-5 pb-4 pt-6">
-                {!isSettlement ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteDrawer(true)}
-                    className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#202124] shadow-[0_4px_12px_rgba(15,23,42,0.05)]"
-                    aria-label="Eliminar gasto"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteDrawer(true)}
+                  className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#202124] shadow-[0_4px_12px_rgba(15,23,42,0.05)]"
+                  aria-label={
+                    isSettlement ? 'Eliminar liquidación' : 'Eliminar gasto'
+                  }
+                >
+                  <Trash2 className="size-4" />
+                </button>
                 <button
                   type="button"
                   onClick={handleEditExpense}
-                  disabled={isSettlement}
-                  className="flex h-12 flex-1 items-center justify-center rounded-full bg-[#080202] text-sm font-semibold text-white disabled:opacity-50"
+                  className="flex h-12 flex-1 items-center justify-center rounded-full bg-[#080202] text-sm font-semibold text-white"
                 >
-                  Editar gasto
+                  {isSettlement ? 'Editar liquidación' : 'Editar gasto'}
                 </button>
               </div>
             </div>
@@ -308,9 +317,13 @@ function RouteComponent() {
       <Drawer open={showDeleteDrawer} onOpenChange={setShowDeleteDrawer}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Eliminar gasto</DrawerTitle>
+            <DrawerTitle>
+              {isSettlement ? 'Eliminar liquidación' : 'Eliminar gasto'}
+            </DrawerTitle>
             <DrawerDescription>
-              Esta acción eliminará el gasto del grupo.
+              {isSettlement
+                ? 'Esta acción eliminará la liquidación y restaurará la deuda pendiente.'
+                : 'Esta acción eliminará el gasto del grupo.'}
             </DrawerDescription>
           </DrawerHeader>
           <DrawerFooter className="grid grid-cols-2">

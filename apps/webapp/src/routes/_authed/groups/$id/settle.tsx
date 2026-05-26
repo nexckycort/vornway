@@ -3,10 +3,23 @@ import { ArrowLeft, ChevronDown, Delete, Repeat2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
-import { useSettleDebtMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
-import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import {
+  useSettleDebtMutation,
+  useUpdateExpenseMutation,
+} from '#/routes/_authed/groups/-hooks/use-group-actions';
+import {
+  useGroupExpenseQuery,
+  useGroupSummaryQuery,
+} from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 
 export const Route = createFileRoute('/_authed/groups/$id/settle')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    settlementExpenseId:
+      typeof search.settlementExpenseId === 'string' &&
+      search.settlementExpenseId.trim().length > 0
+        ? search.settlementExpenseId
+        : undefined,
+  }),
   component: RouteComponent,
 });
 
@@ -84,9 +97,18 @@ function initialsFromName(name: string) {
 
 function RouteComponent() {
   const { id } = Route.useParams();
+  const { settlementExpenseId } = Route.useSearch();
   const { navigateToGroupRoot } = useGroupFlowNavigation(id);
   const groupQuery = useGroupSummaryQuery(id);
   const settleMutation = useSettleDebtMutation(id);
+  const updateSettlementMutation = useUpdateExpenseMutation(
+    id,
+    settlementExpenseId ?? '',
+  );
+  const settlementExpenseQuery = useGroupExpenseQuery(
+    id,
+    settlementExpenseId ?? '',
+  );
 
   const [step, setStep] = useState<Step>(1);
   const [selectedKey, setSelectedKey] = useState('');
@@ -94,6 +116,7 @@ function RouteComponent() {
   const [error, setError] = useState<string | null>(null);
   const hasStepTwoHistoryRef = useRef(false);
   const closingStepTwoFromPopStateRef = useRef(false);
+  const didInitializeEditRef = useRef(false);
 
   const options = useMemo(
     () =>
@@ -134,12 +157,53 @@ function RouteComponent() {
     [myMembershipId, options],
   );
 
+  const editableSettlementOption = useMemo(() => {
+    const expense = settlementExpenseQuery.data;
+    if (!settlementExpenseId || !expense?.isSettlement) return null;
+
+    const toMemberId = expense.participants[0]?.memberId;
+    const toName = expense.participants[0]?.name;
+    if (!toMemberId || !toName) return null;
+
+    const key = `${expense.paidBy.id}:${toMemberId}:${expense.currency}`;
+    const pendingDebt =
+      options.find((option) => option.key === key)?.amount ?? 0;
+
+    return {
+      key,
+      fromMemberId: expense.paidBy.id,
+      fromName: expense.paidBy.name,
+      toMemberId,
+      toName,
+      currency: expense.currency,
+      amount: pendingDebt + expense.amount,
+    };
+  }, [options, settlementExpenseId, settlementExpenseQuery.data]);
+
   useEffect(() => {
+    if (settlementExpenseId) return;
+
     if (!selectedKey && options[0]) {
       setSelectedKey(options[0].key);
       setAmountDigits(formatEditableAmount(options[0].amount));
     }
-  }, [options, selectedKey]);
+  }, [options, selectedKey, settlementExpenseId]);
+
+  useEffect(() => {
+    if (!settlementExpenseId || didInitializeEditRef.current) return;
+    const expense = settlementExpenseQuery.data;
+    if (!expense || !expense.isSettlement) return;
+
+    const toMemberId = expense.participants[0]?.memberId;
+    if (!toMemberId) return;
+
+    const key = `${expense.paidBy.id}:${toMemberId}:${expense.currency}`;
+    setSelectedKey(key);
+    setAmountDigits(formatEditableAmount(expense.amount));
+    setStep(2);
+    setError(null);
+    didInitializeEditRef.current = true;
+  }, [settlementExpenseId, settlementExpenseQuery.data]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -189,7 +253,12 @@ function RouteComponent() {
     };
   }, [step]);
 
-  const selected = options.find((option) => option.key === selectedKey) ?? null;
+  const selected =
+    options.find((option) => option.key === selectedKey) ??
+    (editableSettlementOption?.key === selectedKey
+      ? editableSettlementOption
+      : null);
+  const isEditingSettlement = Boolean(settlementExpenseId);
   const selectedCounterpart = selected
     ? selected.fromMemberId === myMembershipId
       ? (membersById.get(selected.toMemberId) ?? null)
@@ -227,7 +296,13 @@ function RouteComponent() {
   };
 
   const appendDigits = (next: string) => {
-    if (!selected || settleMutation.isPending) return;
+    if (
+      !selected ||
+      settleMutation.isPending ||
+      updateSettlementMutation.isPending
+    ) {
+      return;
+    }
 
     if (next === ',') {
       if (amountDigits.includes(',')) return;
@@ -254,49 +329,88 @@ function RouteComponent() {
   };
 
   const deleteDigit = () => {
-    if (settleMutation.isPending) return;
+    if (settleMutation.isPending || updateSettlementMutation.isPending) return;
     setAmountDigits((current) => current.slice(0, -1) || '0');
   };
 
   const submit = async () => {
-    if (!selected || !canSubmit || settleMutation.isPending) return;
+    if (
+      !selected ||
+      !canSubmit ||
+      settleMutation.isPending ||
+      updateSettlementMutation.isPending
+    ) {
+      return;
+    }
     setError(null);
 
     try {
-      await settleMutation.mutateAsync({
-        fromMemberId: selected.fromMemberId,
-        toMemberId: selected.toMemberId,
-        amount: parsedAmount,
-        currency: selected.currency,
-      });
+      if (isEditingSettlement && settlementExpenseId) {
+        await updateSettlementMutation.mutateAsync({
+          description: `Liquidación: ${selected.fromName} -> ${selected.toName}`,
+          amount: parsedAmount,
+          currency: selected.currency,
+          paidById: selected.fromMemberId,
+          participantIds: [selected.toMemberId],
+          splitMethod: 'exact',
+          exactShares: {
+            [selected.toMemberId]: parsedAmount,
+          },
+        });
+      } else {
+        await settleMutation.mutateAsync({
+          fromMemberId: selected.fromMemberId,
+          toMemberId: selected.toMemberId,
+          amount: parsedAmount,
+          currency: selected.currency,
+        });
+      }
       await navigateToGroupRoot(true);
     } catch (submitError) {
       setError(
         submitError instanceof Error
           ? submitError.message
-          : 'No se pudo liquidar la deuda',
+          : isEditingSettlement
+            ? 'No se pudo actualizar la liquidación'
+            : 'No se pudo liquidar la deuda',
       );
     }
   };
 
-  if (groupQuery.isLoading) {
+  if (
+    groupQuery.isLoading ||
+    (isEditingSettlement && settlementExpenseQuery.isLoading)
+  ) {
     return (
       <main className="min-h-dvh bg-white">
         <div className="flex min-h-dvh items-center justify-center px-6 text-sm text-[#64748b]">
-          Cargando deudas...
+          {isEditingSettlement
+            ? 'Cargando liquidación...'
+            : 'Cargando deudas...'}
         </div>
       </main>
     );
   }
 
-  if (groupQuery.isError || !groupQuery.data) {
+  if (
+    groupQuery.isError ||
+    !groupQuery.data ||
+    (isEditingSettlement &&
+      (settlementExpenseQuery.isError ||
+        !settlementExpenseQuery.data ||
+        !settlementExpenseQuery.data.isSettlement))
+  ) {
     return (
       <main className="min-h-dvh bg-white">
         <div className="flex min-h-dvh flex-col justify-center gap-4 px-6">
           <div className="rounded-3xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {groupQuery.error instanceof Error
               ? groupQuery.error.message
-              : 'No se pudo cargar el grupo'}
+              : settlementExpenseQuery.error instanceof Error
+                ? settlementExpenseQuery.error.message
+                : isEditingSettlement
+                  ? 'No se pudo cargar la liquidación'
+                  : 'No se pudo cargar el grupo'}
           </div>
           <button
             type="button"
@@ -466,7 +580,13 @@ function RouteComponent() {
                   disabled={!canSubmit || settleMutation.isPending}
                   className="mt-8 h-14 rounded-full bg-primary text-base font-semibold text-white transition-opacity disabled:opacity-50"
                 >
-                  {settleMutation.isPending ? 'Liquidando...' : 'Liquidar'}
+                  {isEditingSettlement
+                    ? updateSettlementMutation.isPending
+                      ? 'Guardando...'
+                      : 'Guardar cambios'
+                    : settleMutation.isPending
+                      ? 'Liquidando...'
+                      : 'Liquidar'}
                 </button>
               </>
             ) : null}

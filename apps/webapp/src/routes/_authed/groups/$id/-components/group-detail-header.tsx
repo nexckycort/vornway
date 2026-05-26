@@ -218,6 +218,7 @@ export function GroupDetailHeader({
         <Link
           to="/groups/$id/settle"
           params={{ id: groupId }}
+          search={{ settlementExpenseId: undefined }}
           state={flowState}
           className="flex min-w-0 flex-col items-center gap-1"
         >

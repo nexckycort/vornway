@@ -501,7 +501,8 @@ function RouteComponent() {
                   <span className="font-medium text-[#132238]">Abrir</span>
                 </button>
 
-                {!expenseForOptions.isDeleted ? (
+                {!expenseForOptions.isDeleted &&
+                !expenseForOptions.isSettlement ? (
                   <button
                     type="button"
                     onClick={() => {
@@ -513,9 +514,7 @@ function RouteComponent() {
                   >
                     <Pencil className="size-5 text-primary" />
                     <span className="font-medium text-[#132238]">
-                      {expenseForOptions.isSettlement
-                        ? 'Editar liquidación'
-                        : 'Editar gasto'}
+                      Editar gasto
                     </span>
                   </button>
                 ) : null}

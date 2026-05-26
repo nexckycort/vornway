@@ -25,20 +25,35 @@ const currencyMeta: Record<
 type Step = 1 | 2;
 
 function formatCompactAmount(currency: string, amount: number) {
+  const hasDecimals = Math.abs(amount % 1) > 0.000001;
+
   try {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
       currency,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: hasDecimals ? 2 : 0,
+      maximumFractionDigits: 2,
     }).format(amount);
   } catch {
-    return `${amount.toLocaleString('es-CO')} ${currency}`;
+    return `${amount.toLocaleString('es-CO', {
+      minimumFractionDigits: hasDecimals ? 2 : 0,
+      maximumFractionDigits: 2,
+    })} ${currency}`;
   }
 }
 
 function formatAmountInput(currency: string, digits: string) {
-  const amount = Number(digits || '0');
+  const amount = parseEditableAmount(digits);
   return formatCompactAmount(currency, amount);
+}
+
+function formatEditableAmount(value: number) {
+  if (Number.isInteger(value)) return String(value);
+  return value.toFixed(2).replace('.', ',');
+}
+
+function parseEditableAmount(value: string) {
+  return Number.parseFloat(value.replace(',', '.')) || 0;
 }
 
 function initialsFromName(name: string) {
@@ -83,16 +98,20 @@ function RouteComponent() {
 
   const debtsIOwe = useMemo(
     () =>
-      options.filter((option) =>
-        myMembershipId ? option.fromMemberId === myMembershipId : false,
+      options.filter(
+        (option) =>
+          (myMembershipId ? option.fromMemberId === myMembershipId : false) &&
+          option.amount > 0,
       ),
     [myMembershipId, options],
   );
 
   const debtsOwedToMe = useMemo(
     () =>
-      options.filter((option) =>
-        myMembershipId ? option.toMemberId === myMembershipId : false,
+      options.filter(
+        (option) =>
+          (myMembershipId ? option.toMemberId === myMembershipId : false) &&
+          option.amount > 0,
       ),
     [myMembershipId, options],
   );
@@ -100,7 +119,7 @@ function RouteComponent() {
   useEffect(() => {
     if (!selectedKey && options[0]) {
       setSelectedKey(options[0].key);
-      setAmountDigits(String(Math.round(options[0].amount)));
+      setAmountDigits(formatEditableAmount(options[0].amount));
     }
   }, [options, selectedKey]);
 
@@ -160,13 +179,13 @@ function RouteComponent() {
     : null;
   const selectedCurrency =
     (selected && currencyMeta[selected.currency]) || currencyMeta.COP;
-  const parsedAmount = Number(amountDigits || '0');
-  const maxAmount = selected ? Math.round(selected.amount) : 0;
+  const parsedAmount = parseEditableAmount(amountDigits);
+  const maxAmount = selected ? selected.amount : 0;
   const canSubmit =
     Boolean(selected) &&
     Number.isFinite(parsedAmount) &&
     parsedAmount > 0 &&
-    parsedAmount <= maxAmount;
+    parsedAmount <= maxAmount + 0.000001;
 
   const progressWidth = step === 1 ? '50%' : '100%';
 
@@ -184,7 +203,7 @@ function RouteComponent() {
     const next = options.find((option) => option.key === key);
     if (!next) return;
     setSelectedKey(key);
-    setAmountDigits(String(Math.round(next.amount)));
+    setAmountDigits(formatEditableAmount(next.amount));
     setError(null);
     setStep(2);
   };
@@ -192,15 +211,24 @@ function RouteComponent() {
   const appendDigits = (next: string) => {
     if (!selected || settleMutation.isPending) return;
 
+    if (next === ',') {
+      if (amountDigits.includes(',')) return;
+      setAmountDigits((current) => `${current || '0'},`);
+      return;
+    }
+
+    const fractionalPart = amountDigits.split(',')[1] ?? '';
+    if (amountDigits.includes(',') && fractionalPart.length >= 2) return;
+
     const candidate =
       amountDigits === '0'
         ? next.replace(/^0+(?=\d)/, '')
         : `${amountDigits}${next}`;
     const normalized = candidate.replace(/^0+(?=\d)/, '') || '0';
-    const numericValue = Number(normalized);
+    const numericValue = parseEditableAmount(normalized);
 
     if (numericValue > maxAmount) {
-      setAmountDigits(String(maxAmount));
+      setAmountDigits(formatEditableAmount(maxAmount));
       return;
     }
 
@@ -393,14 +421,16 @@ function RouteComponent() {
                       />
                     ),
                   )}
-                  <KeypadButton label="0" onClick={() => appendDigits('0')} />
                   <KeypadButton
-                    label="000"
-                    onClick={() => appendDigits('000')}
+                    label="0"
+                    onClick={() => appendDigits('0')}
+                    borderless
                   />
+                  <KeypadButton label="," onClick={() => appendDigits(',')} />
                   <KeypadButton
                     label={<Delete className="size-5" />}
                     onClick={deleteDigit}
+                    borderless
                   />
                 </div>
 
@@ -416,7 +446,7 @@ function RouteComponent() {
                     void submit();
                   }}
                   disabled={!canSubmit || settleMutation.isPending}
-                  className="mt-auto h-14 rounded-full bg-primary text-base font-semibold text-white shadow-[0_14px_30px_rgba(229,0,89,0.28)] transition-opacity disabled:opacity-50"
+                  className="mt-8 h-14 rounded-full bg-primary text-base font-semibold text-white transition-opacity disabled:opacity-50"
                 >
                   {settleMutation.isPending ? 'Liquidando...' : 'Liquidar'}
                 </button>
@@ -553,15 +583,21 @@ function AvatarCircle({
 function KeypadButton({
   label,
   onClick,
+  borderless = false,
 }: {
   label: React.ReactNode;
   onClick: () => void;
+  borderless?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex h-[92px] items-center justify-center rounded-[18px] border border-[#edf1f5] bg-white text-[24px] font-light text-[#1f2937] shadow-[0_8px_18px_rgba(15,23,42,0.03)] transition-transform active:scale-[0.98]"
+      className={`flex h-[104px] items-center justify-center rounded-[18px] bg-white text-[24px] font-light text-[#1f2937] transition-transform active:scale-[0.98] ${
+        borderless
+          ? ''
+          : 'border border-[#edf1f5] shadow-[0_8px_18px_rgba(15,23,42,0.03)]'
+      }`}
     >
       {label}
     </button>

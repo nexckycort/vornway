@@ -274,7 +274,7 @@ export function GroupExpenseRow({
           if (isPendingSync) return;
           onOpenOptions(expense);
         }}
-        className={`native-tap relative z-10 flex w-full flex-col px-4 pt-2 pb-0 text-left transition-transform duration-200 ${
+        className={`native-tap relative z-10 flex w-full flex-col px-4 pt-2.5 pb-0.5 text-left transition-transform duration-200 ${
           isSettlement
             ? 'bg-emerald-50'
             : isPendingSync

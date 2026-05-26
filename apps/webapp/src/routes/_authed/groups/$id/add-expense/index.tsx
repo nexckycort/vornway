@@ -327,9 +327,11 @@ function RouteComponent() {
   const [error, setError] = useState<string | null>(null);
   const [hasInitializedForm, setHasInitializedForm] = useState(false);
   const [isAmountAnimating, setIsAmountAnimating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
   const customCategoryIconInputRef = useRef<HTMLInputElement | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
+  const submitLockRef = useRef(false);
   const didMountAmountRef = useRef(false);
   const didInitializePayersRef = useRef(false);
 
@@ -524,6 +526,7 @@ function RouteComponent() {
   const isPending = isEditMode
     ? updateExpenseMutation.isPending
     : createExpenseMutation.isPending;
+  const isSubmitLocked = isPending || isSubmitting;
   const isLoading =
     groupQuery.isLoading || (isEditMode && expenseQuery.isLoading);
   const isLoadingError =
@@ -634,50 +637,53 @@ function RouteComponent() {
   };
 
   const handleSubmit = async () => {
-    if (!canSubmit || isPending) return;
+    if (!canSubmit || submitLockRef.current) return;
+
+    submitLockRef.current = true;
+    setIsSubmitting(true);
     setError(null);
 
-    const exactShares =
-      splitMethod === 'equal'
-        ? undefined
-        : Object.fromEntries(
-            participantIds.map((memberId) => [
-              memberId,
-              Number(participantValues[memberId] ?? '0'),
-            ]),
-          );
-
-    const advancedDetailsPayload =
-      advancedDetailsEnabled && normalizedAdvancedDetails
-        ? await resolveAdvancedDetailsMap(normalizedAdvancedDetails)
-        : null;
-
-    const payload = {
-      description: description.trim(),
-      amount: normalizedAmount,
-      currency,
-      ...(categoryId ? { categoryId } : {}),
-      paidByIds,
-      participantIds,
-      splitMethod,
-      exactShares,
-      ...(advancedDetailsEnabled && attachmentDataUrl
-        ? {
-            attachmentImage: {
-              dataUrl: attachmentDataUrl,
-              ...(attachmentFileName ? { fileName: attachmentFileName } : {}),
-            },
-          }
-        : {}),
-      ...(advancedDetailsEnabled && normalizedAdvancedDetails
-        ? {
-            advancedDetails:
-              advancedDetailsPayload ?? normalizedAdvancedDetails,
-          }
-        : {}),
-    };
-
     try {
+      const exactShares =
+        splitMethod === 'equal'
+          ? undefined
+          : Object.fromEntries(
+              participantIds.map((memberId) => [
+                memberId,
+                Number(participantValues[memberId] ?? '0'),
+              ]),
+            );
+
+      const advancedDetailsPayload =
+        advancedDetailsEnabled && normalizedAdvancedDetails
+          ? await resolveAdvancedDetailsMap(normalizedAdvancedDetails)
+          : null;
+
+      const payload = {
+        description: description.trim(),
+        amount: normalizedAmount,
+        currency,
+        ...(categoryId ? { categoryId } : {}),
+        paidByIds,
+        participantIds,
+        splitMethod,
+        exactShares,
+        ...(advancedDetailsEnabled && attachmentDataUrl
+          ? {
+              attachmentImage: {
+                dataUrl: attachmentDataUrl,
+                ...(attachmentFileName ? { fileName: attachmentFileName } : {}),
+              },
+            }
+          : {}),
+        ...(advancedDetailsEnabled && normalizedAdvancedDetails
+          ? {
+              advancedDetails:
+                advancedDetailsPayload ?? normalizedAdvancedDetails,
+            }
+          : {}),
+      };
+
       if (isEditMode && expenseId) {
         await updateExpenseMutation.mutateAsync(payload);
       } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -688,6 +694,8 @@ function RouteComponent() {
 
       void navigateToGroupRoot(true);
     } catch (submitError) {
+      submitLockRef.current = false;
+      setIsSubmitting(false);
       setError(
         submitError instanceof Error
           ? submitError.message
@@ -1061,10 +1069,10 @@ function RouteComponent() {
         <Button
           type="button"
           onClick={handleSubmit}
-          disabled={!canSubmit || isPending}
+          disabled={!canSubmit || isSubmitLocked}
           className="h-14 w-full rounded-full bg-rose-500 text-base font-medium text-white hover:bg-rose-500/90"
         >
-          {isPending
+          {isSubmitLocked
             ? isEditMode
               ? 'Guardando...'
               : 'Agregando...'

@@ -7,16 +7,18 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "build": "rsbuild build",
+    "build": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && rsbuild build",
     "clean": "rm -rf node_modules && rm -rf dist",
     "check": "biome check --write",
     "dev": "rsbuild --open --port 3001",
     "deploy": "wrangler pages deploy --branch=main",
     "typecheck": "tsgo --noEmit",
-    "preview": "rsbuild preview"
+    "preview": "rsbuild preview",
+    "machine-translate": "inlang machine translate --project project.inlang"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
+    "@inlang/paraglide-js": "^2.18.1",
     "@tanstack/db": "^0.6.5",
     "@tanstack/query-core": "^5.100.11",
     "@tanstack/query-db-collection": "^1.0.36",
@@ -51,6 +53,8 @@
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "catalog:",
     "typescript": "catalog:",
-    "wrangler": "^4.86.0"
+    "wrangler": "^4.86.0",
+    "@inlang/paraglide-js": "^2.18.1",
+    "@inlang/cli": "^3.0.0"
   }
 }

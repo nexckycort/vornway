@@ -1,3 +1,5 @@
+import { formatCurrency, formatLongDate } from '#/lib/i18n';
+import { getGoalsMessages } from '#/routes/_authed/goals/-messages';
 import type { GoalListItem } from '../-hooks/use-goals-infinite-query';
 
 type GoalCardProps = {
@@ -5,30 +7,9 @@ type GoalCardProps = {
   onPress: () => void;
 };
 
-function formatMoney(currency: string, amount: number): string {
-  try {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${amount.toLocaleString()} ${currency}`;
-  }
-}
-
-function formatDate(value: string | Date): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-
-  return new Intl.DateTimeFormat('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(date);
-}
-
 export function GoalCard({ goal, onPress }: GoalCardProps) {
+  const t = getGoalsMessages();
+
   return (
     <button
       type="button"
@@ -46,7 +27,7 @@ export function GoalCard({ goal, onPress }: GoalCardProps) {
         </div>
 
         <div className="rounded-full bg-[#f1f5f9] px-3 py-1 text-[11px] font-medium text-[#475569]">
-          Meta
+          {t.goalBadge}
         </div>
       </div>
 
@@ -59,10 +40,10 @@ export function GoalCard({ goal, onPress }: GoalCardProps) {
       <div className="mt-4 flex items-end justify-between gap-4">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-[#0f172a]">
-            {formatMoney(goal.currency, goal.savedAmount)}
+            {formatCurrency(goal.currency, goal.savedAmount)}
             <span className="font-normal text-[#64748b]">
               {' '}
-              / {formatMoney(goal.currency, goal.targetAmount)}
+              / {formatCurrency(goal.currency, goal.targetAmount)}
             </span>
           </p>
           <div className="mt-2 h-2 rounded-full bg-[#eef2ff]">
@@ -74,9 +55,9 @@ export function GoalCard({ goal, onPress }: GoalCardProps) {
         </div>
 
         <div className="shrink-0 text-right">
-          <p className="text-xs text-[#64748b]">Cierra</p>
+          <p className="text-xs text-[#64748b]">{t.closes}</p>
           <p className="text-sm font-medium text-[#0f172a]">
-            {formatDate(goal.endDate)}
+            {formatLongDate(goal.endDate)}
           </p>
         </div>
       </div>

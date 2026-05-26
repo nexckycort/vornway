@@ -1,8 +1,4 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   Bell,
@@ -10,6 +6,7 @@ import {
   Camera,
   ChevronRight,
   Download,
+  Languages,
   LaptopMinimal,
   LogOut,
   QrCode,
@@ -18,12 +15,12 @@ import {
   UserRound,
 } from 'lucide-react';
 import {
+  type ChangeEvent,
+  type ReactNode,
   useEffect,
   useMemo,
   useRef,
   useState,
-  type ChangeEvent,
-  type ReactNode,
 } from 'react';
 import { toast } from 'sonner';
 
@@ -44,19 +41,22 @@ import {
 } from '#/components/ui/drawer';
 import { useAuth } from '#/contexts/auth/use-auth';
 import { usePWAInstall } from '#/hooks/use-pwa-install';
-import {
-  listSessions,
-  revokeSession,
-  useSession,
-} from '#/lib/auth-client';
-import { compressImageFileToDataUrl } from '#/lib/image-compression';
+import { listSessions, revokeSession, useSession } from '#/lib/auth-client';
 import { client } from '#/lib/hc';
+import {
+  changeLocale,
+  formatDateTime,
+  getCurrentLocale,
+  languages,
+} from '#/lib/i18n';
+import { compressImageFileToDataUrl } from '#/lib/image-compression';
 import {
   disablePushNotifications,
   enablePushNotifications,
   getPushNotificationStatus,
 } from '#/lib/push-notifications';
 import { QrScannerDialog } from './-components/qr-scanner-dialog';
+import { getProfileMessages } from './-messages';
 
 export const Route = createFileRoute('/_authed/profile/')({
   component: RouteComponent,
@@ -69,16 +69,13 @@ type NotificationStatus =
   | 'blocked';
 
 function RouteComponent() {
+  const t = getProfileMessages();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const auth = useAuth();
   const session = useSession();
-  const {
-    isInstallable,
-    isInstalled,
-    installApp,
-    getInstallInstructions,
-  } = usePWAInstall();
+  const { isInstallable, isInstalled, installApp, getInstallInstructions } =
+    usePWAInstall();
   const currentSession = session.data;
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -91,11 +88,13 @@ function RouteComponent() {
     useState(false);
   const [showInstallInstructionsDialog, setShowInstallInstructionsDialog] =
     useState(false);
+  const [showLanguageDrawer, setShowLanguageDrawer] = useState(false);
 
-  const userName = auth.user?.name?.trim() || 'Usuario';
-  const userEmail = auth.user?.email?.trim() || 'Sin correo';
+  const currentLocale = getCurrentLocale();
+  const userName = auth.user?.name?.trim() || t.defaultUser;
+  const userEmail = auth.user?.email?.trim() || t.noEmail;
   const userImage = previewImageUrl ?? auth.user?.image ?? null;
-  const notificationLabel = getNotificationLabel(notificationStatus);
+  const notificationLabel = getNotificationLabel(notificationStatus, t);
   const installInstructions = getInstallInstructions();
   const currentSessionId = currentSession?.session.id ?? null;
 
@@ -104,7 +103,7 @@ function RouteComponent() {
     queryFn: async () => {
       const result = await listSessions();
       if (result.error) {
-        throw new Error('No se pudieron cargar las sesiones');
+        throw new Error(t.sessionsLoadFailed);
       }
       return result.data ?? [];
     },
@@ -115,16 +114,16 @@ function RouteComponent() {
     mutationFn: async (token: string) => {
       const result = await revokeSession({ token });
       if (result.error) {
-        throw new Error('No se pudo eliminar la sesión');
+        throw new Error(t.sessionRemoveFailed);
       }
       return result.data;
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['profile-sessions'] });
-      toast.success('Sesión eliminada correctamente');
+      toast.success(t.sessionRemoved);
     },
     onError: () => {
-      toast.error('No se pudo eliminar la sesión');
+      toast.error(t.sessionRemoveFailed);
     },
   });
 
@@ -139,12 +138,10 @@ function RouteComponent() {
       });
 
       if (!uploadResponse.ok) {
-        const payload = (await uploadResponse.json().catch(() => null)) as
-          | { error?: string }
-          | null;
-        throw new Error(
-          payload?.error ?? 'No se pudo actualizar la foto de perfil',
-        );
+        const payload = (await uploadResponse.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(payload?.error ?? t.photoUpdateFailed);
       }
 
       const payload = (await uploadResponse.json()) as {
@@ -152,7 +149,7 @@ function RouteComponent() {
       };
 
       if (!payload.imageUrl) {
-        throw new Error('No se pudo actualizar la foto de perfil');
+        throw new Error(t.photoUpdateFailed);
       }
 
       await session.refetch();
@@ -161,7 +158,7 @@ function RouteComponent() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['profile-sessions'] });
-      toast.success('Foto de perfil actualizada');
+      toast.success(t.photoUpdated);
       setPreviewImageUrl(null);
       if (imageInputRef.current) {
         imageInputRef.current.value = '';
@@ -172,11 +169,7 @@ function RouteComponent() {
       if (imageInputRef.current) {
         imageInputRef.current.value = '';
       }
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo actualizar la foto de perfil',
-      );
+      toast.error(error instanceof Error ? error.message : t.photoUpdateFailed);
     },
   });
 
@@ -201,21 +194,18 @@ function RouteComponent() {
     };
   }, []);
 
-  const sessions = useMemo(
-    () => {
-      const list = sessionsQuery.data ?? [];
-      if (!currentSessionId) return list;
+  const sessions = useMemo(() => {
+    const list = sessionsQuery.data ?? [];
+    if (!currentSessionId) return list;
 
-      const current = list.find((session) => session.id === currentSessionId);
-      if (!current) return list;
+    const current = list.find((session) => session.id === currentSessionId);
+    if (!current) return list;
 
-      return [
-        current,
-        ...list.filter((session) => session.id !== currentSessionId),
-      ];
-    },
-    [currentSessionId, sessionsQuery.data],
-  );
+    return [
+      current,
+      ...list.filter((session) => session.id !== currentSessionId),
+    ];
+  }, [currentSessionId, sessionsQuery.data]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -262,7 +252,7 @@ function RouteComponent() {
 
   async function handleRemoveCurrentSession() {
     await auth.logout();
-    toast.success('Sesión cerrada correctamente');
+    toast.success(t.sessionClosed);
     await navigate({
       to: '/login',
       search: { redirect: '/login' },
@@ -272,6 +262,15 @@ function RouteComponent() {
 
   async function handleRemoveSession(sessionToken: string) {
     await revokeSessionMutation.mutateAsync(sessionToken);
+  }
+
+  async function handleChangeLocale(locale: keyof typeof languages) {
+    if (locale === currentLocale) {
+      setShowLanguageDrawer(false);
+      return;
+    }
+
+    await changeLocale(locale);
   }
 
   function handleImageInputChange(event: ChangeEvent<HTMLInputElement>) {
@@ -287,7 +286,7 @@ function RouteComponent() {
         <div className="flex min-h-screen w-full flex-col px-4 pb-28 pt-6">
           <header className="mb-5">
             <h1 className="mt-2 text-3xl font-semibold leading-9 text-[#0f172a]">
-              Mi perfil
+              {t.title}
             </h1>
           </header>
 
@@ -297,7 +296,7 @@ function RouteComponent() {
                 type="button"
                 onClick={() => imageInputRef.current?.click()}
                 className="relative shrink-0 overflow-visible transition-transform active:scale-95"
-                aria-label="Actualizar foto de perfil"
+                aria-label={t.updatePhoto}
                 disabled={updateProfileImageMutation.isPending}
               >
                 <div className="relative size-14 overflow-hidden rounded-3xl">
@@ -342,7 +341,7 @@ function RouteComponent() {
           <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-2 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
             <ProfileActionRow
               icon={<Bell className="size-5" />}
-              title="Notificaciones"
+              title={t.notifications}
               subtitle={notificationLabel}
               onClick={() => {
                 if (notificationStatus === 'enabled') {
@@ -352,40 +351,49 @@ function RouteComponent() {
 
                 void handleEnableNotifications();
               }}
-              trailing={notificationStatus === 'enabled' ? 'Desactivar' : 'Activar'}
+              trailing={
+                notificationStatus === 'enabled'
+                  ? t.common.disable
+                  : t.common.enable
+              }
             />
             {!isInstalled ? (
               <ProfileActionRow
                 icon={<Download className="size-5" />}
-                title="Instalar app"
-                subtitle="Agregar a la pantalla de inicio"
+                title={t.installApp}
+                subtitle={t.installAppSubtitle}
                 onClick={() => {
                   void handleInstallApp();
                 }}
-                trailing={isInstallable ? 'Instalar' : 'Manual'}
+                trailing={isInstallable ? t.common.install : t.common.manual}
               />
             ) : null}
             <ProfileActionRow
+              icon={<Languages className="size-5" />}
+              title={t.language}
+              subtitle={languages[currentLocale]}
+              onClick={() => setShowLanguageDrawer(true)}
+            />
+            <ProfileActionRow
               icon={<Shield className="size-5" />}
-              title="Seguridad"
-              subtitle="Sesiones y acceso"
+              title={t.security}
+              subtitle={t.securitySubtitle}
               onClick={() => setShowSessionsDialog(true)}
             />
             <ProfileActionRow
               icon={<QrCode className="size-5" />}
-              title="Escanear QR"
-              subtitle="Unirse a un grupo"
+              title={t.qrScanner}
+              subtitle={t.qrScannerSubtitle}
               onClick={() => setShowQrScannerDialog(true)}
             />
           </section>
 
           <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
             <p className="text-xs uppercase tracking-[0.22em] text-[#94a3b8]">
-              Sesión principal
+              {t.mainSession}
             </p>
             <p className="mt-1 text-sm leading-6 text-[#64748b]">
-              Cerrar sesión quitará el acceso al contenido sincronizado en este
-              dispositivo.
+              {t.logoutCopy}
             </p>
 
             <Button
@@ -395,7 +403,7 @@ function RouteComponent() {
               className="mt-4 h-12 w-full rounded-full bg-destructive text-base font-medium text-white shadow-[0_10px_30px_rgba(239,68,68,0.22)] hover:bg-destructive/90"
             >
               <LogOut className="mr-2 size-4" />
-              {isLoggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
+              {isLoggingOut ? t.loggingOut : t.logout}
             </Button>
           </section>
         </div>
@@ -419,11 +427,8 @@ function RouteComponent() {
       >
         <DialogContent className="max-w-[calc(100%-1rem)] rounded-[28px] p-4 sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Desactivar notificaciones</DialogTitle>
-            <DialogDescription>
-              Si las desactivas, dejarás de recibir avisos de gastos, cambios y
-              movimientos del grupo en esta app.
-            </DialogDescription>
+            <DialogTitle>{t.disableNotificationsTitle}</DialogTitle>
+            <DialogDescription>{t.disableNotificationsCopy}</DialogDescription>
           </DialogHeader>
 
           <div className="mt-4 flex gap-3">
@@ -433,7 +438,7 @@ function RouteComponent() {
               className="h-12 flex-1 rounded-full"
               onClick={() => setShowDisableNotificationsDialog(false)}
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button
               type="button"
@@ -443,7 +448,7 @@ function RouteComponent() {
                 void handleDisableNotifications();
               }}
             >
-              Sí, desactivar
+              {t.common.yesDisable}
             </Button>
           </div>
         </DialogContent>
@@ -456,10 +461,7 @@ function RouteComponent() {
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>{installInstructions.title}</DrawerTitle>
-            <DrawerDescription>
-              Sigue estos pasos para instalar Vornway como una app en tu
-              dispositivo.
-            </DrawerDescription>
+            <DrawerDescription>{t.installInstructionsCopy}</DrawerDescription>
           </DrawerHeader>
 
           <div className="space-y-3 px-4 pb-4">
@@ -481,10 +483,8 @@ function RouteComponent() {
       <Dialog open={showSessionsDialog} onOpenChange={setShowSessionsDialog}>
         <DialogContent className="flex max-h-[calc(100dvh-1.5rem)] max-w-[calc(100%-1rem)] flex-col overflow-hidden rounded-[28px] p-4 sm:max-w-md">
           <DialogHeader className="shrink-0">
-            <DialogTitle>Sesiones abiertas</DialogTitle>
-            <DialogDescription>
-              Administra los dispositivos donde tienes sesión iniciada.
-            </DialogDescription>
+            <DialogTitle>{t.sessionsTitle}</DialogTitle>
+            <DialogDescription>{t.sessionsCopy}</DialogDescription>
           </DialogHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
@@ -493,12 +493,12 @@ function RouteComponent() {
                 <SessionSkeletonList />
               ) : sessions.length === 0 ? (
                 <p className="rounded-2xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] px-4 py-5 text-sm text-[#64748b]">
-                  No hay sesiones abiertas en este momento.
+                  {t.noSessions}
                 </p>
               ) : (
                 sessions.map((session) => {
                   const isCurrent = session.id === currentSessionId;
-                  const deviceLabel = describeSession(session.userAgent);
+                  const deviceLabel = describeSession(session.userAgent, t);
 
                   return (
                     <div
@@ -521,24 +521,27 @@ function RouteComponent() {
                             </p>
                             {isCurrent ? (
                               <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                                Esta sesión
+                                {t.currentSession}
                               </span>
                             ) : null}
                           </div>
                           <p className="mt-1 flex items-center gap-1 text-xs text-[#64748b]">
                             <CalendarClock className="size-3.5 shrink-0" />
-                            Inició {formatDateTime(session.createdAt)}
+                            {t.startedAt(
+                              formatDateTime(session.createdAt, t.unknownDate),
+                            )}
                           </p>
                           <p className="mt-1 text-xs text-[#64748b]">
-                            Expira {formatDateTime(session.expiresAt)}
+                            {t.expiresAt(
+                              formatDateTime(session.expiresAt, t.unknownDate),
+                            )}
                           </p>
                         </div>
                       </div>
 
                       <div className="mt-4 flex items-center justify-between gap-3">
                         <p className="min-w-0 flex-1 truncate text-xs text-[#94a3b8]">
-                          {session.userAgent ??
-                            'Sin información del dispositivo'}
+                          {session.userAgent ?? t.unknownDeviceInfo}
                         </p>
                         <Button
                           type="button"
@@ -556,7 +559,7 @@ function RouteComponent() {
                             void handleRemoveSession(session.token);
                           }}
                         >
-                          {isCurrent ? 'Cerrar esta sesión' : 'Eliminar'}
+                          {isCurrent ? t.closeThisSession : t.common.delete}
                         </Button>
                       </div>
                     </div>
@@ -567,6 +570,46 @@ function RouteComponent() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Drawer open={showLanguageDrawer} onOpenChange={setShowLanguageDrawer}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{t.localeDrawerTitle}</DrawerTitle>
+            <DrawerDescription>{t.localeDrawerCopy}</DrawerDescription>
+          </DrawerHeader>
+
+          <div className="space-y-2 px-4 pb-4">
+            {Object.entries(languages).map(([locale, label]) => {
+              const active = locale === currentLocale;
+
+              return (
+                <button
+                  key={locale}
+                  type="button"
+                  onClick={() =>
+                    void handleChangeLocale(locale as keyof typeof languages)
+                  }
+                  className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors ${
+                    active
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-[#e2e8f0] bg-white text-[#0f172a]'
+                  }`}
+                >
+                  <div>
+                    <p className="text-sm font-semibold">{label}</p>
+                    {active ? (
+                      <p className="text-xs text-primary">
+                        {t.selectedLanguage}
+                      </p>
+                    ) : null}
+                  </div>
+                  <ChevronRight className="size-4" />
+                </button>
+              );
+            })}
+          </div>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }
@@ -610,16 +653,19 @@ function ProfileActionRow({
   );
 }
 
-function describeSession(userAgent?: string | null) {
-  if (!userAgent) return 'Sesión sin dispositivo identificado';
+function describeSession(
+  userAgent: string | null | undefined,
+  t: ReturnType<typeof getProfileMessages>,
+) {
+  if (!userAgent) return t.deviceUnknown;
   const normalized = userAgent.toLowerCase();
   if (normalized.includes('iphone') || normalized.includes('android')) {
-    return 'Dispositivo móvil';
+    return t.mobileDevice;
   }
   if (normalized.includes('ipad') || normalized.includes('tablet')) {
-    return 'Tableta';
+    return t.tablet;
   }
-  return 'Escritorio o navegador web';
+  return t.desktop;
 }
 
 function isMobileSession(userAgent?: string | null) {
@@ -632,21 +678,14 @@ function isMobileSession(userAgent?: string | null) {
   );
 }
 
-function formatDateTime(value: string | Date) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'fecha desconocida';
-
-  return new Intl.DateTimeFormat('es-CO', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date);
-}
-
-function getNotificationLabel(status: NotificationStatus) {
-  if (status === 'unsupported') return 'No compatible';
-  if (status === 'permission-required') return 'Desactivadas';
-  if (status === 'enabled') return 'Activadas en esta app';
-  return 'Bloqueadas';
+function getNotificationLabel(
+  status: NotificationStatus,
+  t: ReturnType<typeof getProfileMessages>,
+) {
+  if (status === 'unsupported') return t.notificationsUnsupported;
+  if (status === 'permission-required') return t.notificationsDisabled;
+  if (status === 'enabled') return t.notificationsEnabled;
+  return t.notificationsBlocked;
 }
 
 function SessionSkeletonList() {

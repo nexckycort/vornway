@@ -6,6 +6,7 @@ import {
   type InferResponseType,
   publicClient,
 } from '#/lib/hc';
+import { getLoginMessages } from '#/routes/_public/login/-messages';
 
 type LoginStep = 'email' | 'name' | 'otp' | 'done';
 
@@ -19,14 +20,20 @@ type VerifyOtpRequest = InferRequestType<VerifyOtpMethod>['json'];
 type VerifyOtpResponse = InferResponseType<VerifyOtpMethod>;
 
 async function sendOtp(payload: SendOtpRequest): Promise<SendOtpResponse> {
-  const response = await publicClient.api.login['send-otp'].$post({ json: payload });
+  const response = await publicClient.api.login['send-otp'].$post({
+    json: payload,
+  });
   const data = (await response.json()) as SendOtpResponse;
 
   return data;
 }
 
-async function verifyOtp(payload: VerifyOtpRequest): Promise<VerifyOtpResponse> {
-  const response = await publicClient.api.login['verify-otp'].$post({ json: payload });
+async function verifyOtp(
+  payload: VerifyOtpRequest,
+): Promise<VerifyOtpResponse> {
+  const response = await publicClient.api.login['verify-otp'].$post({
+    json: payload,
+  });
   const data = (await response.json()) as VerifyOtpResponse;
 
   if (!response.ok) {
@@ -37,6 +44,7 @@ async function verifyOtp(payload: VerifyOtpRequest): Promise<VerifyOtpResponse> 
 }
 
 export function useLogin() {
+  const t = getLoginMessages();
   const [step, setStep] = useState<LoginStep>('email');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -62,7 +70,7 @@ export function useLogin() {
     },
     onError: (rawError) => {
       const data = rawError as Partial<SendOtpResponse>;
-      setError(data.message ?? 'No se pudo enviar el código. Intenta de nuevo.');
+      setError(data.message ?? t.sendCodeError);
     },
   });
 
@@ -79,7 +87,7 @@ export function useLogin() {
     },
     onError: (rawError) => {
       const data = rawError as Partial<{ error: string }>;
-      setError(data.error ?? 'No se pudo verificar el código. Intenta de nuevo.');
+      setError(data.error ?? t.verifyCodeError);
     },
   });
 
@@ -99,7 +107,7 @@ export function useLogin() {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!normalizedEmail) {
-      setError('Ingresa tu correo.');
+      setError(t.enterEmail);
       return;
     }
 
@@ -112,7 +120,7 @@ export function useLogin() {
     const normalizedName = name.trim();
 
     if (!normalizedName) {
-      setError('Ingresa tu nombre.');
+      setError(t.enterName);
       return;
     }
 
@@ -127,7 +135,7 @@ export function useLogin() {
     const normalizedOtp = otp.replace(/\s+/g, '').trim();
 
     if (!normalizedOtp) {
-      setError('Ingresa el código OTP.');
+      setError(t.otpRequired);
       return;
     }
 

@@ -12,16 +12,18 @@ import {
   emptyHomeData,
   useHomeQuery,
 } from '#/routes/_authed/(home)/-hooks/use-home-query';
+import { getHomeMessages } from '#/routes/_authed/(home)/-messages';
 
 export const Route = createFileRoute('/_authed/(home)/')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const t = getHomeMessages();
   const { user } = useAuth();
   const homeQuery = useHomeQuery();
   const data = homeQuery.data ?? emptyHomeData;
-  const userName = user?.name?.trim() || 'Viajero';
+  const userName = user?.name?.trim() || t.fallbackUser;
   const BellIcon = homeIcons.bell;
   const PlusIcon = homeIcons.plus;
 
@@ -36,7 +38,7 @@ function RouteComponent() {
               <header className="flex items-center justify-between">
                 <div>
                   <h1 className="text-lg leading-7">
-                    Hola,&nbsp;
+                    {t.greeting}&nbsp;
                     <span className="font-semibold text-primary">
                       {userName}
                     </span>
@@ -51,7 +53,7 @@ function RouteComponent() {
                   variant="outline"
                   size="icon-sm"
                   className="rounded-full bg-white shadow-sm"
-                  aria-label="Notificaciones"
+                  aria-label={t.notificationsAria}
                 >
                   <BellIcon />
                 </Button>
@@ -59,7 +61,7 @@ function RouteComponent() {
 
               <section
                 className="mt-8 grid grid-cols-2 gap-4"
-                aria-label="Acciones rapidas"
+                aria-label={t.quickActionsAria}
               >
                 {data.actions.map((action) => (
                   <HomeAction key={action.id} action={action} />
@@ -67,7 +69,7 @@ function RouteComponent() {
               </section>
 
               <HomeSection
-                title="Grupos recientes"
+                title={t.recentGroups}
                 className="mt-7"
                 viewAllTo="/groups"
               >
@@ -79,7 +81,7 @@ function RouteComponent() {
               </HomeSection>
 
               <HomeSection
-                title="Metas de ahorro"
+                title={t.savingGoals}
                 className="mt-8"
                 viewAllTo="/goals"
               >
@@ -90,7 +92,7 @@ function RouteComponent() {
                     className="h-11 rounded-full bg-white text-base shadow-sm"
                   >
                     <PlusIcon data-icon="inline-start" />
-                    Crear meta
+                    {t.createGoal}
                   </Button>
 
                   <div className="flex flex-col gap-4">

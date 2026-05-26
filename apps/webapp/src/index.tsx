@@ -15,6 +15,7 @@ import {
   AuthProvider,
 } from './contexts/auth/auth-context';
 import { useAuth } from './contexts/auth/use-auth';
+import { getCurrentLocale } from './lib/i18n';
 import { initOfflineSync } from './lib/offline-sync';
 import { registerPushServiceWorker } from './lib/push-notifications';
 
@@ -44,6 +45,10 @@ function App() {
   React.useEffect(() => {
     void registerPushServiceWorker();
     initOfflineSync();
+  }, []);
+
+  React.useEffect(() => {
+    document.documentElement.lang = getCurrentLocale();
   }, []);
 
   if (auth.loading) return <FullscreenLoader />;

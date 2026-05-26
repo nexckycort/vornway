@@ -1,7 +1,10 @@
 import { Skeleton } from '#/components/ui/skeleton';
+import { getHomeMessages } from '#/routes/_authed/(home)/-messages';
 import { HomeSection } from './home-section';
 
 export function HomeSkeleton() {
+  const t = getHomeMessages();
+
   return (
     <>
       <header className="flex items-center justify-between">
@@ -13,19 +16,22 @@ export function HomeSkeleton() {
         <Skeleton className="size-10 rounded-full" />
       </header>
 
-      <section className="mt-8 grid grid-cols-2 gap-4" aria-label="Acciones rapidas">
+      <section
+        className="mt-8 grid grid-cols-2 gap-4"
+        aria-label={t.quickActionsAria}
+      >
         <Skeleton className="h-[118px] rounded-[24px]" />
         <Skeleton className="h-[118px] rounded-[24px]" />
       </section>
 
-      <HomeSection title="Grupos recientes" className="mt-7" viewAllTo="/groups">
+      <HomeSection title={t.recentGroups} className="mt-7" viewAllTo="/groups">
         <div className="flex flex-col gap-4">
           <HomeTripSkeleton />
           <HomeTripSkeleton />
         </div>
       </HomeSection>
 
-      <HomeSection title="Metas de ahorro" className="mt-8" viewAllTo="/goals">
+      <HomeSection title={t.savingGoals} className="mt-8" viewAllTo="/goals">
         <div className="flex flex-col gap-5">
           <Skeleton className="h-11 rounded-full" />
           <div className="flex flex-col gap-4">

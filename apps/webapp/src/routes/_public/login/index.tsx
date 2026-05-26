@@ -12,12 +12,14 @@ import { VornwayLogo } from '#/components/vornway-logo';
 import { useAuth } from '#/contexts/auth/use-auth';
 import { signIn } from '#/lib/auth-client';
 import { useLogin } from '#/routes/_public/login/-hooks/use-login';
+import { getLoginMessages } from '#/routes/_public/login/-messages';
 
 export const Route = createFileRoute('/_public/login/')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const t = getLoginMessages();
   const navigate = useNavigate();
   const auth = useAuth();
   const {
@@ -76,7 +78,7 @@ function RouteComponent() {
       });
     } catch (rawError) {
       console.error('Error en login con Google:', rawError);
-      setSyncError('No se pudo iniciar sesión con Google. Intenta de nuevo.');
+      setSyncError(t.googleError);
       setIsGoogleLoading(false);
     }
   }
@@ -85,7 +87,7 @@ function RouteComponent() {
     const normalizedOtp = otp.replace(/\s+/g, '').trim();
 
     if (!normalizedOtp) {
-      setSyncError('Ingresa el código OTP.');
+      setSyncError(t.otpRequired);
       return;
     }
 
@@ -100,9 +102,9 @@ function RouteComponent() {
 
       if (code === 'INVALID_OTP') {
         setOtp('');
-        setSyncError('Código inválido. Ingresa el OTP nuevamente.');
+        setSyncError(t.invalidOtp);
       } else {
-        setSyncError('No se pudo iniciar sesión. Intenta de nuevo.');
+        setSyncError(t.loginError);
       }
     } finally {
       setIsAuthSubmitting(false);
@@ -120,7 +122,7 @@ function RouteComponent() {
                 Vornway
               </p>
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                Entra a tu app
+                {t.title}
               </h1>
             </div>
           </div>
@@ -136,22 +138,20 @@ function RouteComponent() {
                 className="h-12 w-full rounded-full border-border bg-background text-base font-medium text-foreground hover:bg-muted/40"
               >
                 <GoogleIcon className="mr-2 size-5" />
-                {isGoogleLoading ? 'Redirigiendo...' : 'Continuar con Google'}
+                {isGoogleLoading ? t.redirecting : t.continueWithGoogle}
               </Button>
 
               <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-                <span className="h-px flex-1 bg-border" />o con correo
+                <span className="h-px flex-1 bg-border" />
+                {t.orWithEmail}
                 <span className="h-px flex-1 bg-border" />
               </div>
 
               {isEmailStep ? (
-                <StepCard
-                  title="Tu correo"
-                  copy="Solo necesitamos tu correo electrónico para continuar."
-                >
+                <StepCard title={t.emailTitle} copy={t.emailCopy}>
                   <Input
                     type="email"
-                    placeholder="tu@correo.com"
+                    placeholder={t.emailPlaceholder}
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     className="h-12 rounded-2xl border-border bg-background px-4 text-base placeholder:text-muted-foreground"
@@ -163,19 +163,16 @@ function RouteComponent() {
                     disabled={!canSubmitEmail}
                     className="h-12 w-full rounded-full bg-primary text-base font-medium text-primary-foreground shadow-[0_10px_30px_rgba(222,3,77,0.16)] hover:bg-primary/90"
                   >
-                    {isSubmitting ? 'Enviando...' : 'Continuar'}
+                    {isSubmitting ? t.common.loading : t.common.continue}
                   </Button>
                 </StepCard>
               ) : null}
 
               {isNameStep ? (
-                <StepCard
-                  title="Tu nombre"
-                  copy={`No encontramos una cuenta para ${email}.`}
-                >
+                <StepCard title={t.nameTitle} copy={t.nameCopy(email)}>
                   <Input
                     type="text"
-                    placeholder="Tu nombre"
+                    placeholder={t.namePlaceholder}
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                     className="h-12 rounded-2xl border-border bg-background px-4 text-base placeholder:text-muted-foreground"
@@ -187,7 +184,7 @@ function RouteComponent() {
                     disabled={!canSubmitName}
                     className="h-12 w-full rounded-full bg-primary text-base font-medium text-primary-foreground shadow-[0_10px_30px_rgba(222,3,77,0.16)] hover:bg-primary/90"
                   >
-                    {isSubmitting ? 'Enviando...' : 'Continuar'}
+                    {isSubmitting ? t.common.loading : t.common.continue}
                   </Button>
 
                   <Button
@@ -196,16 +193,13 @@ function RouteComponent() {
                     onClick={goBackToEmail}
                     className="h-11 w-full rounded-full text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                   >
-                    Volver
+                    {t.back}
                   </Button>
                 </StepCard>
               ) : null}
 
               {isOtpStep ? (
-                <StepCard
-                  title="Verifica tu acceso"
-                  copy={`Enviamos un código a ${email}`}
-                >
+                <StepCard title={t.otpTitle} copy={t.otpCopy(email)}>
                   <div className="mx-auto">
                     <InputOTP
                       maxLength={6}
@@ -230,7 +224,7 @@ function RouteComponent() {
                     disabled={!canSubmitOtp || isAuthSubmitting}
                     className="h-12 w-full rounded-full bg-primary text-base font-medium text-primary-foreground shadow-[0_10px_30px_rgba(222,3,77,0.16)] hover:bg-primary/90"
                   >
-                    {isAuthSubmitting ? 'Verificando...' : 'Verificar código'}
+                    {isAuthSubmitting ? t.common.loading : t.verifyCode}
                   </Button>
 
                   <div className="flex items-center justify-between text-sm">
@@ -239,14 +233,14 @@ function RouteComponent() {
                       onClick={goBackToEmail}
                       className="font-medium text-muted-foreground hover:underline"
                     >
-                      Cambiar correo
+                      {t.changeEmail}
                     </button>
                     <button
                       type="button"
                       onClick={resendOtp}
                       className="font-medium text-foreground hover:underline"
                     >
-                      Reenviar código
+                      {t.resendCode}
                     </button>
                   </div>
                 </StepCard>

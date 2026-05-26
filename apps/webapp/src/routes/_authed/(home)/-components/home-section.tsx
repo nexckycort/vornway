@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
-
 import { cn } from '#/lib/utils';
+import { getHomeMessages } from '#/routes/_authed/(home)/-messages';
 
 type HomeSectionProps = {
   title: string;
@@ -16,6 +16,8 @@ export function HomeSection({
   children,
   viewAllTo,
 }: HomeSectionProps) {
+  const t = getHomeMessages();
+
   return (
     <section className={cn('flex flex-col gap-5', className)}>
       <div className="flex items-center justify-between">
@@ -25,7 +27,7 @@ export function HomeSection({
             to={viewAllTo}
             className="text-sm font-medium text-primary transition-opacity hover:opacity-80"
           >
-            Ver todo
+            {t.common.viewAll}
           </Link>
         ) : null}
       </div>

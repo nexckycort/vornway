@@ -12,6 +12,7 @@ import {
   UserRound,
 } from 'lucide-react';
 
+import { getBottomAppBarMessages } from '#/components/bottom-app-bar.messages';
 import { cn } from '#/lib/utils';
 
 export type BottomAppBarIconName = 'compass' | 'home' | 'piggy-bank' | 'user';
@@ -34,14 +35,8 @@ const navIcons: Record<BottomAppBarIconName, LucideIcon> = {
   user: UserRound,
 };
 
-const items: BottomAppBarItem[] = [
-  { id: 'home', label: 'Inicio', icon: 'home', to: '/' },
-  { id: 'groups', label: 'Grupos', icon: 'compass', to: '/groups' },
-  { id: 'goals', label: 'Metas', icon: 'piggy-bank', to: '/goals' },
-  { id: 'profile', label: 'Perfil', icon: 'user', to: '/profile' },
-];
-
 export function BottomAppBar() {
+  const t = getBottomAppBarMessages();
   const navigate = useNavigate();
   const router = useRouter();
   const location = useLocation();
@@ -51,6 +46,12 @@ export function BottomAppBar() {
   const hasBottomNavRoot =
     (location.state as BottomNavState).bottomNavRoot === true;
   const bottomNavState = { bottomNavRoot: true } as never;
+  const items: BottomAppBarItem[] = [
+    { id: 'home', label: t.home, icon: 'home', to: '/' },
+    { id: 'groups', label: t.groups, icon: 'compass', to: '/groups' },
+    { id: 'goals', label: t.goals, icon: 'piggy-bank', to: '/goals' },
+    { id: 'profile', label: t.profile, icon: 'user', to: '/profile' },
+  ];
 
   const navigateToTab = async (to: BottomAppBarItem['to']) => {
     if (to === '/') {

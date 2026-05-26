@@ -1,0 +1,35 @@
+import { m } from '#/paraglide/messages.js';
+
+export function getLoginMessages() {
+  return {
+    common: {
+      continue: m['common.continue'](),
+      loading: m['common.loading'](),
+    },
+    title: m['login.title'](),
+    continueWithGoogle: m['login.continueWithGoogle'](),
+    redirecting: m['login.redirecting'](),
+    orWithEmail: m['login.orWithEmail'](),
+    emailTitle: m['login.emailTitle'](),
+    emailCopy: m['login.emailCopy'](),
+    emailPlaceholder: m['login.emailPlaceholder'](),
+    nameTitle: m['login.nameTitle'](),
+    nameCopy: (email: string) => m['login.nameCopy']({ email }),
+    namePlaceholder: m['login.namePlaceholder'](),
+    back: m['login.back'](),
+    otpTitle: m['login.otpTitle'](),
+    otpCopy: (email: string) => m['login.otpCopy']({ email }),
+    verifyCode: m['login.verifyCode'](),
+    resendCode: m['login.resendCode'](),
+    resendLoading: m['login.resendLoading'](),
+    changeEmail: m['login.changeEmail'](),
+    googleError: m['login.googleError'](),
+    otpRequired: m['login.otpRequired'](),
+    invalidOtp: m['login.invalidOtp'](),
+    loginError: m['login.loginError'](),
+    sendCodeError: m['login.sendCodeError'](),
+    verifyCodeError: m['login.verifyCodeError'](),
+    enterEmail: m['login.enterEmail'](),
+    enterName: m['login.enterName'](),
+  };
+}

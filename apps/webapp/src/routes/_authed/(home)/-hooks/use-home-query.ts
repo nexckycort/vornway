@@ -1,5 +1,7 @@
-import { client } from '#/lib/hc';
 import { useQuery } from '@tanstack/react-query';
+import { client } from '#/lib/hc';
+import { formatCurrency, formatShortDate } from '#/lib/i18n';
+import { getHomeMessages } from '#/routes/_authed/(home)/-messages';
 
 export type HomeIconName =
   | 'bell'
@@ -108,40 +110,40 @@ type HomeApiResponse = {
   }>;
 };
 
-const homeActions: HomeAction[] = [
-  {
-    id: 'currency-converter',
-    icon: 'repeat',
-    label: 'Convertidor de moneda',
-    variant: 'neutral',
-  },
-  {
-    id: 'create-group',
-    icon: 'compass',
-    label: 'Crear nuevo grupo',
-    variant: 'primary',
-  },
-];
-
 function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
+  const t = getHomeMessages();
+  const homeActions: HomeAction[] = [
+    {
+      id: 'currency-converter',
+      icon: 'repeat',
+      label: t.currencyConverter,
+      variant: 'neutral',
+    },
+    {
+      id: 'create-group',
+      icon: 'compass',
+      label: t.createNewGroup,
+      variant: 'primary',
+    },
+  ];
   const trips: Trip[] = apiData.groups.map((group) => {
     const avatars =
       group.members.length <= 2
         ? group.members
-        : [group.members[0], group.members[group.members.length - 1]].filter(
+        : ([group.members[0], group.members[group.members.length - 1]].filter(
             Boolean,
           ) as Array<{
             name: string;
             image: string | null;
-          }>;
+          }>);
     const extraPeople = Math.max(0, group.members.length - avatars.length);
 
     const balances = group.participantBalances.map((item) => ({
       person: item.memberName,
       amount:
         item.direction === 'theyOweYou'
-          ? `Te debe ${formatAmount(item.currency, item.amount)}`
-          : `Debes ${formatAmount(item.currency, item.amount)}`,
+          ? `${t.theyOwe} ${formatCurrency(item.currency, item.amount)}`
+          : `${t.youOwe} ${formatCurrency(item.currency, item.amount)}`,
     }));
     const visibleBalances = balances.slice(0, 2);
     const overflowCount = Math.max(0, balances.length - visibleBalances.length);
@@ -152,33 +154,33 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
     const firstTotal = totals[0];
     const balanceLabel = firstTotal
       ? firstTotal[1] > 0
-        ? `Te deben ${formatAmount(firstTotal[0], Math.abs(firstTotal[1]))}`
-        : `Debes ${formatAmount(firstTotal[0], Math.abs(firstTotal[1]))}`
-      : 'Sin saldos pendientes';
+        ? `${t.theyOwe} ${formatCurrency(firstTotal[0], Math.abs(firstTotal[1]))}`
+        : `${t.youOwe} ${formatCurrency(firstTotal[0], Math.abs(firstTotal[1]))}`
+      : t.noPendingBalances;
 
     if (balances.length === 0) {
       return {
         id: group.id,
         name: group.name,
-        dates: `Creado ${formatShortDate(group.createdAt)}`,
+        dates: t.createdAt(formatShortDate(group.createdAt)),
         imageUrl: group.imageUrl,
         avatars,
         extraPeople,
-        emptyLabel: group.hasExpenses ? 'Sin saldos pendientes' : 'Sin gastos',
+        emptyLabel: group.hasExpenses ? t.noPendingBalances : t.noExpenses,
       };
     }
 
     return {
       id: group.id,
       name: group.name,
-      dates: `Creado ${formatShortDate(group.createdAt)}`,
+      dates: t.createdAt(formatShortDate(group.createdAt)),
       imageUrl: group.imageUrl,
       avatars,
       extraPeople,
       balanceLabel,
       balanceItems: visibleBalances,
       ...(overflowCount > 0
-        ? { balanceOverflowLabel: `y ${overflowCount} otros saldos` }
+        ? { balanceOverflowLabel: t.otherBalances(overflowCount) }
         : {}),
     };
   });
@@ -187,15 +189,15 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
     id: goal.id,
     name: goal.title,
     category: goal.group.name,
-    saved: formatAmount(goal.currency, goal.savedAmount),
-    target: formatAmount(goal.currency, goal.targetAmount),
+    saved: formatCurrency(goal.currency, goal.savedAmount),
+    target: formatCurrency(goal.currency, goal.targetAmount),
     progress: goal.progress,
     icon: index % 2 === 0 ? 'compass' : 'shirt',
     tone: index % 2 === 0 ? 'pink' : 'yellow',
   }));
 
   return {
-    welcomeText: 'Bienvenido a Vornway',
+    welcomeText: t.welcome,
     actions: homeActions,
     trips,
     savingGoals,
@@ -203,40 +205,21 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
 }
 
 const emptyHomeData: HomeQueryData = {
-  welcomeText: 'Bienvenido a Vornway',
-  actions: homeActions,
+  welcomeText: getHomeMessages().welcome,
+  actions: [],
   trips: [],
   savingGoals: [],
 };
 
-function formatAmount(currency: string, amount: number): string {
-  try {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${amount.toLocaleString()} ${currency}`;
-  }
-}
-
-function formatShortDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('es-CO', {
-    day: 'numeric',
-    month: 'short',
-  }).format(date);
-}
-
 export function useHomeQuery() {
+  const t = getHomeMessages();
+
   return useQuery({
     queryKey: ['home-summary'],
     queryFn: async () => {
       const response = await homeEndpoint();
       if (!response.ok) {
-        throw new Error('No se pudo cargar el home');
+        throw new Error(t.loadError);
       }
       const payload = (await response.json()) as HomeApiResponse;
       return mapHomeData(payload);

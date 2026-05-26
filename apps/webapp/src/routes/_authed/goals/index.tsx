@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Plus, Search, Target } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { getGoalsMessages } from '#/routes/_authed/goals/-messages';
 import { GoalCard } from './-components/goal-card';
 import { GoalsSkeleton } from './-components/goals-skeleton';
 import { useGoalsInfiniteQuery } from './-hooks/use-goals-infinite-query';
@@ -11,6 +12,7 @@ export const Route = createFileRoute('/_authed/goals/')({
 });
 
 function RouteComponent() {
+  const t = getGoalsMessages();
   const isProduction = import.meta.env.PROD;
   const navigate = useNavigate();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -50,10 +52,10 @@ function RouteComponent() {
         <div className="flex-1 overflow-y-auto px-4 pb-32 pt-6">
           <header>
             <h1 className="text-3xl font-semibold leading-9 text-[#0f172a]">
-              Metas
+              {t.title}
             </h1>
             <div className="mt-3 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-              En construcción: esta sección puede cambiar o tener errores
+              {t.notice}
             </div>
           </header>
 
@@ -63,7 +65,7 @@ function RouteComponent() {
             className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-medium text-white shadow-[0_10px_24px_rgba(59,130,246,0.22)]"
           >
             <Plus className="size-4" />
-            Crear nueva meta
+            {t.createNew}
           </button>
 
           <label className="mt-4 flex h-12 items-center gap-3 rounded-full border border-[#e2e8f0] bg-white px-4 shadow-[0_6px_16px_rgba(15,23,42,0.04)]">
@@ -71,7 +73,7 @@ function RouteComponent() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por nombre de meta"
+              placeholder={t.searchPlaceholder}
               className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#94a3b8]"
             />
           </label>
@@ -81,7 +83,7 @@ function RouteComponent() {
               <GoalsSkeleton />
             ) : goalsQuery.isError ? (
               <div className="rounded-[28px] border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700">
-                No se pudieron cargar las metas.
+                {t.loadError}
               </div>
             ) : goals.length === 0 ? (
               <div className="rounded-[28px] border border-[#e2e8f0] bg-white px-5 py-8 text-center shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
@@ -89,18 +91,15 @@ function RouteComponent() {
                   <Target className="size-7 text-primary" />
                 </div>
                 <p className="text-base font-semibold text-[#0f172a]">
-                  Aún no tienes metas
+                  {t.emptyTitle}
                 </p>
-                <p className="mt-2 text-sm text-[#64748b]">
-                  Cuando crees una meta aparecerá aquí con su progreso y
-                  vencimiento.
-                </p>
+                <p className="mt-2 text-sm text-[#64748b]">{t.emptyCopy}</p>
                 <button
                   type="button"
                   onClick={() => void navigate({ to: '/goals/new' })}
                   className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white"
                 >
-                  Crear meta
+                  {t.common.createGoal}
                 </button>
               </div>
             ) : (
@@ -124,13 +123,13 @@ function RouteComponent() {
 
             {goalsQuery.isFetchingNextPage ? (
               <div className="mt-2 flex items-center justify-center text-sm text-[#64748b]">
-                Cargando más metas...
+                {t.loadingMore}
               </div>
             ) : null}
 
             {!goalsQuery.hasNextPage && goals.length > 0 ? (
               <div className="mt-2 flex items-center justify-center text-xs text-[#94a3b8]">
-                No hay más metas para mostrar.
+                {t.noMore}
               </div>
             ) : null}
           </section>
@@ -140,14 +139,13 @@ function RouteComponent() {
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/55 backdrop-blur-sm px-6">
             <div className="w-full max-w-[320px] rounded-3xl border border-white/70 bg-white/80 px-6 py-7 text-center shadow-[0_16px_40px_rgba(15,23,42,0.16)]">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-                Próximamente
+                {t.comingSoon}
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#0f172a]">
-                Metas en construcción
+                {t.buildingTitle}
               </h2>
               <p className="mt-2 text-sm leading-6 text-[#64748b]">
-                Estamos mejorando esta sección. La experiencia puede cambiar y
-                tener comportamientos inestables por ahora.
+                {t.buildingCopy}
               </p>
             </div>
           </div>

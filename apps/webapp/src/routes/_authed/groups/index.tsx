@@ -18,6 +18,7 @@ import {
   getEmptyGroupListItems,
   subscribeGroupListItems,
 } from '#/lib/groups-list-query-collection';
+import { formatShortDate, getIntlLocale } from '#/lib/i18n';
 import {
   getEmptyPendingGroups,
   getPendingGroups,
@@ -26,6 +27,7 @@ import {
 import { TripCard } from '#/routes/_authed/(home)/-components/trip-card';
 import type { Trip } from '#/routes/_authed/(home)/-hooks/use-home-query';
 import { useGroupsInfiniteQuery } from '#/routes/_authed/groups/-hooks/use-groups-infinite-query';
+import { getGroupsMessages } from '#/routes/_authed/groups/-messages';
 import { GroupsSkeleton } from './-components/groups-skeleton';
 
 export const Route = createFileRoute('/_authed/groups/')({
@@ -33,6 +35,7 @@ export const Route = createFileRoute('/_authed/groups/')({
 });
 
 function RouteComponent() {
+  const t = getGroupsMessages();
   const location = useLocation();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
@@ -89,14 +92,14 @@ function RouteComponent() {
       groups.map((group) => ({
         id: group.id,
         name: group.name,
-        dates: `Creado ${formatShortDate(group.createdAt)}`,
+        dates: t.home.createdAt(formatShortDate(group.createdAt)),
         imageUrl: group.imageUrl,
         avatars: mapMembersToAvatars(group.members),
         extraPeople: Math.max(0, group.members.length - 2),
         ...(group.participantBalances.length > 0
           ? {
               balanceLabel:
-                group.participantBalances[0]?.label ?? 'Sin saldos pendientes',
+                group.participantBalances[0]?.label ?? t.home.noPendingBalances,
               balanceItems: group.participantBalances
                 .slice(0, 2)
                 .map((item) => ({
@@ -105,33 +108,41 @@ function RouteComponent() {
                 })),
               ...(group.participantBalances.length > 2
                 ? {
-                    balanceOverflowLabel: `y ${group.participantBalances.length - 2} otros saldos`,
+                    balanceOverflowLabel: t.home.otherBalances(
+                      group.participantBalances.length - 2,
+                    ),
                   }
                 : {}),
             }
           : {
               emptyLabel: group.hasExpenses
-                ? 'Sin saldos pendientes'
-                : 'Sin gastos',
+                ? t.home.noPendingBalances
+                : t.home.noExpenses,
             }),
         createdAt: group.createdAt,
       })) as Array<Trip & { createdAt: string }>,
-    [groups],
+    [groups, t.home],
   );
 
   const groupedTrips = useMemo(
     () => buildTripSections(groupTrips),
     [groupTrips],
   );
+  const filters: Array<{ value: GroupListFilter; label: string }> = [
+    { value: 'all', label: t.all },
+    { value: 'theyOweYou', label: t.theyOweYou },
+    { value: 'youOweThem', label: t.youOweThem },
+    { value: 'noDebt', label: t.noDebt },
+  ];
 
   const visiblePendingGroups = useMemo(() => {
-    const normalizedSearch = search.trim().toLocaleLowerCase('es-CO');
+    const normalizedSearch = search.trim().toLocaleLowerCase(getIntlLocale());
     if (filter !== 'all' && filter !== 'noDebt') return [];
 
     return pendingGroups.filter((group) => {
       if (!normalizedSearch) return true;
       return group.payload.name
-        .toLocaleLowerCase('es-CO')
+        .toLocaleLowerCase(getIntlLocale())
         .includes(normalizedSearch);
     });
   }, [filter, pendingGroups, search]);
@@ -145,7 +156,7 @@ function RouteComponent() {
       <div className="flex min-h-screen w-full flex-col bg-[#fafafa] px-4 pb-28 pt-6">
         <header>
           <h1 className="mt-2 text-3xl font-semibold leading-9 text-[#0f172a]">
-            Mis grupos
+            {t.title}
           </h1>
 
           <Link
@@ -158,7 +169,7 @@ function RouteComponent() {
             }}
             className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-medium text-white shadow-[0_10px_24px_rgba(222,3,77,0.18)]"
           >
-            + Crear nuevo grupo
+            + {t.createNew}
           </Link>
 
           <label className="mt-4 flex h-12 items-center gap-3 rounded-full border border-[#e2e8f0] bg-white px-4 shadow-[0_6px_16px_rgba(15,23,42,0.04)]">
@@ -166,7 +177,7 @@ function RouteComponent() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por nombre de grupos"
+              placeholder={t.searchPlaceholder}
               className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#94a3b8]"
             />
           </label>
@@ -190,12 +201,10 @@ function RouteComponent() {
 
           <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-[#64748b]">
-              {groupsQuery.isLoading
-                ? 'Cargando grupos...'
-                : `${total} grupos en total`}
+              {groupsQuery.isLoading ? t.loadingGroups : t.totalGroups(total)}
             </p>
             <p className="text-sm text-[#64748b]">
-              {groupTrips.length} visibles
+              {t.visibleGroups(groupTrips.length)}
             </p>
           </div>
         </header>
@@ -218,11 +227,9 @@ function RouteComponent() {
               <Users className="size-7 text-primary" />
             </div>
             <p className="text-base font-semibold text-[#0f172a]">
-              Aún no tienes grupos
+              {t.noGroupsTitle}
             </p>
-            <p className="mt-2 text-sm text-[#64748b]">
-              Cuando crees un grupo aparecerá aquí con sus saldos y gastos.
-            </p>
+            <p className="mt-2 text-sm text-[#64748b]">{t.noGroupsCopy}</p>
             <Link
               to="/groups/new"
               search={{
@@ -233,7 +240,7 @@ function RouteComponent() {
               }}
               className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white"
             >
-              Crear grupo
+              {t.common.createGroup}
             </Link>
           </div>
         ) : null}
@@ -242,7 +249,7 @@ function RouteComponent() {
           {visiblePendingGroups.length > 0 ? (
             <section className="flex flex-col gap-4">
               <h2 className="text-sm font-medium text-[#475569]">
-                Pendientes por sincronizar
+                {t.pendingSync}
               </h2>
               <div className="flex flex-col gap-4">
                 {visiblePendingGroups.map((group) => (
@@ -259,16 +266,16 @@ function RouteComponent() {
                           {group.payload.name}
                         </h3>
                         <p className="text-xs leading-4 text-[#64748b]">
-                          Creado sin conexión
+                          {t.createdOffline}
                         </p>
                       </div>
                       <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
                         <WifiOff className="size-3" />
-                        Pendiente
+                        {t.pendingBadge}
                       </span>
                     </div>
                     <p className="mt-4 text-sm leading-5 text-[#64748b]">
-                      Se creará automáticamente cuando vuelva la conexión.
+                      {t.pendingCopy}
                     </p>
                   </Link>
                 ))}
@@ -293,37 +300,28 @@ function RouteComponent() {
         <div ref={loadMoreRef} className="h-8" />
 
         {groupsQuery.isFetchingNextPage ? (
-          <p className="text-center text-sm text-[#64748b]">Cargando más...</p>
+          <p className="text-center text-sm text-[#64748b]">{t.loadingMore}</p>
         ) : null}
 
         {groupsQuery.data && !groupsQuery.hasNextPage && groups.length > 0 ? (
-          <p className="text-center text-sm text-[#94a3b8]">
-            No hay más grupos por cargar.
-          </p>
+          <p className="text-center text-sm text-[#94a3b8]">{t.noMore}</p>
         ) : null}
       </div>
     </main>
   );
 }
 
-const filters: Array<{ value: GroupListFilter; label: string }> = [
-  { value: 'all', label: 'Todos' },
-  { value: 'theyOweYou', label: 'Te deben' },
-  { value: 'youOweThem', label: 'Debo' },
-  { value: 'noDebt', label: 'Sin deuda' },
-];
-
 function filterCachedGroups(
   groups: GroupListItem[],
   search: string,
   filter: GroupListFilter,
 ) {
-  const normalizedSearch = search.trim().toLocaleLowerCase('es-CO');
+  const normalizedSearch = search.trim().toLocaleLowerCase(getIntlLocale());
 
   return groups.filter((group) => {
     if (
       normalizedSearch &&
-      !group.name.toLocaleLowerCase('es-CO').includes(normalizedSearch)
+      !group.name.toLocaleLowerCase(getIntlLocale()).includes(normalizedSearch)
     ) {
       return false;
     }
@@ -355,6 +353,7 @@ function mapMembersToAvatars(
 }
 
 function buildTripSections(trips: Array<Trip & { createdAt: string }>) {
+  const t = getGroupsMessages();
   const sections = {
     recent: [] as Trip[],
     lastTwoMonths: [] as Trip[],
@@ -368,15 +367,15 @@ function buildTripSections(trips: Array<Trip & { createdAt: string }>) {
 
   return [
     {
-      title: 'Más recientes',
+      title: t.recent,
       trips: sections.recent,
     },
     {
-      title: 'Últimos 2 meses',
+      title: t.lastTwoMonths,
       trips: sections.lastTwoMonths,
     },
     {
-      title: 'Más antiguos',
+      title: t.older,
       trips: sections.older,
     },
   ].filter((section) => section.trips.length > 0);
@@ -393,13 +392,4 @@ function getRecencyBucket(value: string): 'recent' | 'lastTwoMonths' | 'older' {
   if (diffDays <= 30) return 'recent';
   if (diffDays <= 60) return 'lastTwoMonths';
   return 'older';
-}
-
-function formatShortDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('es-CO', {
-    day: 'numeric',
-    month: 'short',
-  }).format(date);
 }

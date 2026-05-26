@@ -1,11 +1,4 @@
-import {
-  ArrowRight,
-  Clock3,
-  HandCoins,
-  Pencil,
-  Pin,
-  Trash2,
-} from 'lucide-react';
+import { ArrowDownLeft, Clock3, Pencil, Pin, Trash2 } from 'lucide-react';
 import { type MouseEvent, type TouchEvent, useRef, useState } from 'react';
 
 import type { ExpenseItem } from '../-types/group-detail.types';
@@ -226,6 +219,7 @@ export function GroupExpenseRow({
       : userBalance > 0
         ? `Te deben ${formatMoney(expense.currency, userBalance)}`
         : `Tú debes ${formatMoney(expense.currency, Math.abs(userBalance))}`;
+  const settlementLabel = expense.description.replace(/^Liquidación:\s*/i, '');
 
   return (
     <div
@@ -274,27 +268,29 @@ export function GroupExpenseRow({
           if (isPendingSync) return;
           onOpenOptions(expense);
         }}
-        className={`native-tap relative z-10 flex w-full flex-col px-4 pt-2.5 pb-0.5 text-left transition-transform duration-200 ${
+        className={`native-tap relative z-10 flex w-full flex-col text-left transition-transform duration-200 ${
           isSettlement
-            ? 'bg-emerald-50'
+            ? 'bg-emerald-50 px-4 pb-0.5'
             : isPendingSync
-              ? 'bg-amber-50'
-              : 'bg-white'
+              ? 'bg-amber-50 px-4 pt-2.5 pb-0.5'
+              : 'bg-white px-4 pt-2.5 pb-0.5'
         }`}
         style={{ transform: `translateX(${translateX}px)` }}
       >
         {isSettlement ? (
-          <span className="absolute inset-y-0 left-0 w-1 rounded-r-full bg-emerald-500" />
+          <span className="absolute inset-y-0 left-0 w-3 rounded-r-full bg-emerald-600" />
         ) : null}
         {isPinned ? (
           <span className="absolute right-4 top-0 h-7 w-4 rounded-b-full bg-amber-400" />
         ) : null}
-        <div className="flex items-center gap-3.5">
+        <div
+          className={`flex items-center gap-3.5 ${isSettlement ? 'min-h-0' : ''}`}
+        >
           <div
-            className={`flex size-12 shrink-0 items-center justify-center rounded-full ${iconTone}`}
+            className={`flex ${isSettlement ? 'size-10' : 'size-12'} shrink-0 items-center justify-center rounded-full ${iconTone}`}
           >
             {isSettlement ? (
-              <HandCoins className="size-4.5" />
+              <ArrowDownLeft className="size-4.5 text-emerald-700" />
             ) : (
               <CategoryIcon
                 icon={expense.category?.icon}
@@ -306,61 +302,66 @@ export function GroupExpenseRow({
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  {isPinned ? (
-                    <Pin className="size-3.5 shrink-0 fill-current text-amber-500" />
-                  ) : null}
-                  <p className="min-w-0 truncate text-base font-semibold text-[#202124]">
-                    {expense.description}
+            {isSettlement ? (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <p className="min-w-0 truncate text-sm font-medium text-[#202124]">
+                    {settlementLabel}
                   </p>
                 </div>
-                {isSettlement ? (
-                  <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-sm font-medium text-emerald-700">
-                    <span className="truncate">{expense.paidBy.name}</span>
-                    <ArrowRight className="size-3.5 shrink-0" />
-                    <span className="truncate">
-                      {expense.settlementToName ?? 'otro miembro'}
-                    </span>
+                <p className="shrink-0 truncate text-sm font-semibold text-[#202124]">
+                  {formatMoney(expense.currency, expense.amount)}
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    {isPinned ? (
+                      <Pin className="size-3.5 shrink-0 fill-current text-amber-500" />
+                    ) : null}
+                    <p className="min-w-0 truncate text-sm font-semibold text-[#202124]">
+                      {expense.description}
+                    </p>
                   </div>
-                ) : (
                   <p className="mt-0.5 truncate text-xs leading-5 text-[#555555]">
                     Pagado por {paidBySummary}
                     {expense.participantCount > 0
                       ? ` · ${expense.participantCount} persona${expense.participantCount === 1 ? '' : 's'}`
                       : ''}
                   </p>
-                )}
-              </div>
+                </div>
 
-              <div className="shrink-0 self-center text-right">
-                <p className="truncate text-base font-semibold text-[#202124]">
-                  {formatMoney(expense.currency, expense.amount)}
-                </p>
-                {balanceLabel ? (
-                  <p
-                    className={`mt-0.5 text-xs font-medium ${
-                      userBalance && userBalance > 0
-                        ? 'text-red-500'
-                        : 'text-teal-600'
-                    }`}
-                  >
-                    {balanceLabel}
+                <div className="shrink-0 self-center text-right">
+                  <p className="truncate text-sm font-semibold text-[#202124]">
+                    {formatMoney(expense.currency, expense.amount)}
                   </p>
-                ) : null}
+                  {balanceLabel ? (
+                    <p
+                      className={`mt-0.5 text-xs font-medium ${
+                        userBalance && userBalance > 0
+                          ? 'text-red-500'
+                          : 'text-teal-600'
+                      }`}
+                    >
+                      {balanceLabel}
+                    </p>
+                  ) : null}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
-        <div className="mt-1.5 space-y-2 pb-0.5">
-          {isPendingSync ? (
-            <span className="inline-flex items-center gap-1 rounded-xl bg-white/70 px-4 py-1.5 text-sm font-semibold text-amber-700">
-              <Clock3 className="size-3" />
-              Pendiente
-            </span>
-          ) : null}
-        </div>
+        {!isSettlement ? (
+          <div className="mt-1.5 space-y-2 pb-0.5">
+            {isPendingSync ? (
+              <span className="inline-flex items-center gap-1 rounded-xl bg-white/70 px-4 py-1.5 text-sm font-semibold text-amber-700">
+                <Clock3 className="size-3" />
+                Pendiente
+              </span>
+            ) : null}
+          </div>
+        ) : null}
       </button>
     </div>
   );

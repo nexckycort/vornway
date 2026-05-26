@@ -283,7 +283,7 @@ function RouteComponent() {
           </button>
         </section>
 
-        <section className="-mx-4 mt-2">
+        <section className="-mx-4 mt-2 overflow-x-hidden">
           <p className="px-3 pb-1 text-sm text-[#64748b]">
             Otras configuraciones
           </p>
@@ -306,15 +306,15 @@ function RouteComponent() {
             </span>
           </button>
 
-          <div className="flex w-full items-center gap-3 px-1 py-2 text-left">
+          <div className="flex w-full min-w-0 items-center gap-3 overflow-hidden px-1 py-2 text-left">
             <span className="flex size-9 items-center justify-center text-[#132238]">
               <Sparkles className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-[#132238]">
+              <p className="truncate text-sm text-[#132238]">
                 Detalles avanzados de gastos
               </p>
-              <p className="text-xs text-[#94a3b8]">
+              <p className="truncate text-xs text-[#94a3b8]">
                 Lugares, contactos, reservas y notas por gasto
               </p>
             </div>

@@ -858,15 +858,15 @@ function RouteComponent() {
       </Drawer>
 
       <Drawer open={showEditDrawer} onOpenChange={setShowEditDrawer}>
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="mt-0 h-dvh max-h-dvh rounded-none">
+          <DrawerHeader className="shrink-0">
             <DrawerTitle>Editar meta</DrawerTitle>
             <DrawerDescription>
               Ajusta el objetivo sin perder los aportes existentes.
             </DrawerDescription>
           </DrawerHeader>
 
-          <div className="space-y-4 px-4 pb-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-4">
             <label className="flex flex-col gap-2">
               <span className="text-sm font-medium text-[#334155]">Nombre</span>
               <input
@@ -933,7 +933,7 @@ function RouteComponent() {
             </div>
           </div>
 
-          <DrawerFooter>
+          <DrawerFooter className="shrink-0 border-t border-[#e2e8f0] bg-white">
             <Button
               type="button"
               className="h-12 rounded-full"

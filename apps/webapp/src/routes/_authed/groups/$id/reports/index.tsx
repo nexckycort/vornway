@@ -8,6 +8,7 @@ import { Button } from '#/components/ui/button';
 import { ChartContainer } from '#/components/ui/chart';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import {
+  useGroupReportsSharesQuery,
   useGroupReportsTotalsQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
@@ -47,6 +48,11 @@ function RouteComponent() {
   const [selectedRange, setSelectedRange] = useState<TotalsRange>('all');
   const activeTab = tab;
   const group = groupQuery.data;
+  const reportsSharesQuery = useGroupReportsSharesQuery(
+    id,
+    selectedRange,
+    activeTab === 'totales',
+  );
   const reportsTotalsQuery = useGroupReportsTotalsQuery(
     id,
     selectedRange,
@@ -63,13 +69,23 @@ function RouteComponent() {
 
     return Array.from(currencies);
   }, [group?.totals, reportsTotalsQuery.data?.totalsByCurrency]);
-  const sortedMembers = useMemo(
+  const sortedBalanceMembers = useMemo(
     () =>
       Array.from(group?.memberBalances ?? []).sort((left, right) => {
         if (left.isCurrentUser === right.isCurrentUser) return 0;
         return left.isCurrentUser ? -1 : 1;
       }),
     [group?.memberBalances],
+  );
+  const sortedShareMembers = useMemo(
+    () =>
+      Array.from(reportsSharesQuery.data?.memberShares ?? []).sort(
+        (left, right) => {
+          if (left.isCurrentUser === right.isCurrentUser) return 0;
+          return left.isCurrentUser ? -1 : 1;
+        },
+      ),
+    [reportsSharesQuery.data?.memberShares],
   );
   const categoryBreakdown =
     reportsTotalsQuery.data?.categoriesByCurrency[selectedCurrency] ?? [];
@@ -196,7 +212,7 @@ function RouteComponent() {
             </section>
 
             <section className="flex flex-1 flex-col gap-2">
-              {sortedMembers.map((member) => {
+              {sortedBalanceMembers.map((member) => {
                 const memberIdentity = group.members.find(
                   (item) => item.id === member.memberId,
                 );
@@ -485,20 +501,20 @@ function RouteComponent() {
                     {t.reports.participants}
                   </h3>
                   <p className="mt-1 text-xs text-[#64748b]">
-                    {t.reports.balanceInCurrency(selectedCurrency)}
+                    Parte en {selectedCurrency}
                   </p>
                 </div>
                 <span className="text-xs text-[#94a3b8]">
-                  {t.reports.peopleCount(group.memberBalances.length)}
+                  {t.reports.peopleCount(sortedShareMembers.length)}
                 </span>
               </div>
 
               <div className="space-y-3">
-                {sortedMembers.map((member) => {
+                {sortedShareMembers.map((member) => {
                   const memberIdentity = group.members.find(
                     (item) => item.id === member.memberId,
                   );
-                  const amount = member.balances[selectedCurrency] ?? 0;
+                  const amount = member.shares[selectedCurrency] ?? 0;
                   const isCreator = group.ownerId === memberIdentity?.userId;
 
                   return (
@@ -539,16 +555,7 @@ function RouteComponent() {
                       </div>
 
                       <div className="text-right">
-                        <p
-                          className={
-                            amount > 0
-                              ? 'text-sm font-semibold text-emerald-600'
-                              : amount < 0
-                                ? 'text-sm font-semibold text-rose-600'
-                                : 'text-sm font-semibold text-[#64748b]'
-                          }
-                        >
-                          {amount > 0 ? '+' : ''}
+                        <p className="text-sm font-semibold text-[#132238]">
                           {formatMoney(selectedCurrency, amount)}
                         </p>
                       </div>

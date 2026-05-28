@@ -400,6 +400,56 @@ const groups = new Hono<AppContext>()
       }
     },
   )
+  .get(
+    '/:id/reports/balances',
+    zValidator('param', groupParamsSchema),
+    zValidator('query', groupReportsTotalsQuerySchema),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      const query = c.req.valid('query');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.getGroupReportsBalances({
+          userId,
+          groupId: id,
+          range: query.range === 'all' ? 'all' : (query.range as 7 | 15 | 30),
+        });
+
+        return c.json(result);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Grupo no encontrado') {
+          return c.json({ error: error.message }, 404);
+        }
+        throw error;
+      }
+    },
+  )
+  .get(
+    '/:id/reports/shares',
+    zValidator('param', groupParamsSchema),
+    zValidator('query', groupReportsTotalsQuerySchema),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      const query = c.req.valid('query');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.getGroupReportsShares({
+          userId,
+          groupId: id,
+          range: query.range === 'all' ? 'all' : (query.range as 7 | 15 | 30),
+        });
+
+        return c.json(result);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Grupo no encontrado') {
+          return c.json({ error: error.message }, 404);
+        }
+        throw error;
+      }
+    },
+  )
   .post(
     '/:id/expenses',
     zValidator('param', groupParamsSchema),

@@ -5,6 +5,10 @@ import {
   normalizeAmount,
 } from './helpers';
 import type {
+  GroupReportsBalancesInput,
+  GroupReportsBalancesResult,
+  GroupReportsSharesInput,
+  GroupReportsSharesResult,
   GroupReportsTotalsInput,
   GroupReportsTotalsResult,
 } from './types';
@@ -185,6 +189,182 @@ export function createGroupReportsService() {
               .sort((left, right) => right.amount - left.amount),
           ]),
         ),
+      };
+    },
+    getGroupReportsBalances: async ({
+      userId,
+      groupId,
+      range,
+    }: GroupReportsBalancesInput): Promise<GroupReportsBalancesResult> => {
+      const group = await db.group.findFirst({
+        where: {
+          ...buildGroupAccessWhere(userId, groupId),
+          type: {
+            not: 'meta',
+          },
+        },
+        select: {
+          id: true,
+          GroupMember: {
+            select: {
+              id: true,
+              name: true,
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!group) {
+        throw new Error('Grupo no encontrado');
+      }
+
+      const expenses = await db.expense.findMany({
+        where: buildReportExpenseWhere({
+          groupId: group.id,
+          range,
+        }),
+        select: {
+          amount: true,
+          currency: true,
+          notes: true,
+          paidById: true,
+          payers: {
+            select: {
+              memberId: true,
+              amount: true,
+            },
+          },
+          participants: {
+            select: {
+              memberId: true,
+              share: true,
+            },
+          },
+        },
+        orderBy: [{ date: 'asc' }, { id: 'asc' }],
+      });
+
+      const balancesByMember = new Map<string, Record<string, number>>();
+      for (const member of group.GroupMember) {
+        balancesByMember.set(member.id, {});
+      }
+
+      for (const expense of expenses) {
+        if (expense.notes?.includes('[DELETED]')) continue;
+        if (expense.notes?.includes('[SETTLEMENT:')) continue;
+        if (expense.participants.length === 0) continue;
+
+        const payerEntries =
+          expense.payers.length > 0
+            ? expense.payers
+            : [{ memberId: expense.paidById, amount: expense.amount }];
+
+        for (const payer of payerEntries) {
+          const payerBalances = balancesByMember.get(payer.memberId);
+          if (payerBalances) {
+            payerBalances[expense.currency] = normalizeAmount(
+              (payerBalances[expense.currency] ?? 0) + payer.amount,
+            );
+          }
+        }
+
+        for (const participant of expense.participants) {
+          const participantBalances = balancesByMember.get(
+            participant.memberId,
+          );
+          if (participantBalances) {
+            participantBalances[expense.currency] = normalizeAmount(
+              (participantBalances[expense.currency] ?? 0) - participant.share,
+            );
+          }
+        }
+      }
+
+      return {
+        range,
+        memberBalances: group.GroupMember.map((member) => ({
+          memberId: member.id,
+          name: member.name,
+          isCurrentUser: member.userId === userId,
+          balances: balancesByMember.get(member.id) ?? {},
+        })),
+      };
+    },
+    getGroupReportsShares: async ({
+      userId,
+      groupId,
+      range,
+    }: GroupReportsSharesInput): Promise<GroupReportsSharesResult> => {
+      const group = await db.group.findFirst({
+        where: {
+          ...buildGroupAccessWhere(userId, groupId),
+          type: {
+            not: 'meta',
+          },
+        },
+        select: {
+          id: true,
+          GroupMember: {
+            select: {
+              id: true,
+              name: true,
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!group) {
+        throw new Error('Grupo no encontrado');
+      }
+
+      const expenses = await db.expense.findMany({
+        where: buildReportExpenseWhere({
+          groupId: group.id,
+          range,
+        }),
+        select: {
+          notes: true,
+          currency: true,
+          participants: {
+            select: {
+              memberId: true,
+              share: true,
+            },
+          },
+        },
+        orderBy: [{ date: 'asc' }, { id: 'asc' }],
+      });
+
+      const sharesByMember = new Map<string, Record<string, number>>();
+      for (const member of group.GroupMember) {
+        sharesByMember.set(member.id, {});
+      }
+
+      for (const expense of expenses) {
+        if (expense.notes?.includes('[DELETED]')) continue;
+        if (expense.notes?.includes('[SETTLEMENT:')) continue;
+        if (expense.participants.length === 0) continue;
+
+        for (const participant of expense.participants) {
+          const memberShares = sharesByMember.get(participant.memberId);
+          if (!memberShares) continue;
+
+          memberShares[expense.currency] = normalizeAmount(
+            (memberShares[expense.currency] ?? 0) + participant.share,
+          );
+        }
+      }
+
+      return {
+        range,
+        memberShares: group.GroupMember.map((member) => ({
+          memberId: member.id,
+          name: member.name,
+          isCurrentUser: member.userId === userId,
+          shares: sharesByMember.get(member.id) ?? {},
+        })),
       };
     },
   };

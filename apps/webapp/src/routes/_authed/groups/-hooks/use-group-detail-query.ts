@@ -28,6 +28,9 @@ const groupExpensesEndpoint = client.api.groups[':id'].expenses.$get;
 const groupExpenseEndpoint =
   client.api.groups[':id'].expenses[':expenseId'].$get;
 const groupReportsTotalsEndpoint = client.api.groups[':id'].reports.totals.$get;
+const groupReportsBalancesEndpoint =
+  client.api.groups[':id'].reports.balances.$get;
+const groupReportsSharesEndpoint = client.api.groups[':id'].reports.shares.$get;
 
 function buildPendingGroupSummary(group: PendingGroup): GroupSummary {
   const ownerMemberId = `${group.id}:owner`;
@@ -108,6 +111,26 @@ type GroupReportsTotalsSuccess = {
       fill: string;
     }>
   >;
+};
+
+type GroupReportsBalancesSuccess = {
+  range: 'all' | 7 | 15 | 30;
+  memberBalances: Array<{
+    memberId: string;
+    name: string;
+    isCurrentUser: boolean;
+    balances: Record<string, number>;
+  }>;
+};
+
+type GroupReportsSharesSuccess = {
+  range: 'all' | 7 | 15 | 30;
+  memberShares: Array<{
+    memberId: string;
+    name: string;
+    isCurrentUser: boolean;
+    shares: Record<string, number>;
+  }>;
 };
 
 function mapExpenseDetailToExpenseItem(
@@ -341,6 +364,54 @@ export function useGroupReportsTotalsQuery(
       }
 
       return (await response.json()) as GroupReportsTotalsSuccess;
+    },
+  });
+}
+
+export function useGroupReportsBalancesQuery(
+  groupId: string,
+  range: 'all' | 7 | 15 | 30,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ['group-reports-balances', groupId, range],
+    enabled,
+    placeholderData: (previous) => previous,
+    queryFn: async () => {
+      const response = await groupReportsBalancesEndpoint({
+        param: { id: groupId },
+        query: { range: String(range) },
+      });
+
+      if (!response.ok) {
+        throw new Error('No se pudieron cargar los balances');
+      }
+
+      return (await response.json()) as GroupReportsBalancesSuccess;
+    },
+  });
+}
+
+export function useGroupReportsSharesQuery(
+  groupId: string,
+  range: 'all' | 7 | 15 | 30,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ['group-reports-shares', groupId, range],
+    enabled,
+    placeholderData: (previous) => previous,
+    queryFn: async () => {
+      const response = await groupReportsSharesEndpoint({
+        param: { id: groupId },
+        query: { range: String(range) },
+      });
+
+      if (!response.ok) {
+        throw new Error('No se pudieron cargar las partes');
+      }
+
+      return (await response.json()) as GroupReportsSharesSuccess;
     },
   });
 }

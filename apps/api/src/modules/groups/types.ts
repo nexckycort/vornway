@@ -280,6 +280,12 @@ export type GroupsService = {
   getGroupReportsTotals: (
     input: GroupReportsTotalsInput,
   ) => Promise<GroupReportsTotalsResult>;
+  getGroupReportsBalances: (
+    input: GroupReportsBalancesInput,
+  ) => Promise<GroupReportsBalancesResult>;
+  getGroupReportsShares: (
+    input: GroupReportsSharesInput,
+  ) => Promise<GroupReportsSharesResult>;
   getGroupExpense: (
     input: GetGroupExpenseInput,
   ) => Promise<GroupExpenseDetailResult>;
@@ -434,6 +440,9 @@ export type GroupReportsTotalsInput = {
   range: 'all' | 7 | 15 | 30;
 };
 
+export type GroupReportsBalancesInput = GroupReportsTotalsInput;
+export type GroupReportsSharesInput = GroupReportsTotalsInput;
+
 export type GroupReportsTotalsResult = {
   range: 'all' | 7 | 15 | 30;
   totalsByCurrency: Record<string, number>;
@@ -448,6 +457,26 @@ export type GroupReportsTotalsResult = {
       fill: string;
     }>
   >;
+};
+
+export type GroupReportsBalancesResult = {
+  range: 'all' | 7 | 15 | 30;
+  memberBalances: Array<{
+    memberId: string;
+    name: string;
+    isCurrentUser: boolean;
+    balances: Record<string, number>;
+  }>;
+};
+
+export type GroupReportsSharesResult = {
+  range: 'all' | 7 | 15 | 30;
+  memberShares: Array<{
+    memberId: string;
+    name: string;
+    isCurrentUser: boolean;
+    shares: Record<string, number>;
+  }>;
 };
 
 export type GroupExpenseParticipant = {

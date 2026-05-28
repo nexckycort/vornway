@@ -45,6 +45,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
+    "@inlang/cli": "^3.0.0",
+    "@inlang/paraglide-js": "^2.18.1",
     "@rsbuild/core": "^2.0.0",
     "@rsbuild/plugin-react": "^2.0.0",
     "@tailwindcss/postcss": "^4.2.4",
@@ -53,8 +55,6 @@
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "catalog:",
     "typescript": "catalog:",
-    "wrangler": "^4.86.0",
-    "@inlang/paraglide-js": "^2.18.1",
-    "@inlang/cli": "^3.0.0"
+    "wrangler": "^4.86.0"
   }
 }

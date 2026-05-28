@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifications'
 import { Route as AuthedConverterRouteImport } from './routes/_authed/converter'
 import { Route as PublicLoginIndexRouteImport } from './routes/_public/login/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
@@ -40,6 +41,11 @@ const PublicRoute = PublicRouteImport.update({
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedNotificationsRoute = AuthedNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedConverterRoute = AuthedConverterRouteImport.update({
   id: '/converter',
@@ -157,6 +163,7 @@ const AuthedGroupsIdSettingsCategoriesIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthedhomeIndexRoute
   '/converter': typeof AuthedConverterRoute
+  '/notifications': typeof AuthedNotificationsRoute
   '/groups/new': typeof AuthedGroupsNewRouteWithChildren
   '/goals/': typeof AuthedGoalsIndexRoute
   '/groups/': typeof AuthedGroupsIndexRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof AuthedhomeIndexRoute
   '/converter': typeof AuthedConverterRoute
+  '/notifications': typeof AuthedNotificationsRoute
   '/goals': typeof AuthedGoalsIndexRoute
   '/groups': typeof AuthedGroupsIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
@@ -204,6 +212,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_authed/converter': typeof AuthedConverterRoute
+  '/_authed/notifications': typeof AuthedNotificationsRoute
   '/_authed/groups/new': typeof AuthedGroupsNewRouteWithChildren
   '/_authed/(home)/': typeof AuthedhomeIndexRoute
   '/_authed/goals/': typeof AuthedGoalsIndexRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/converter'
+    | '/notifications'
     | '/groups/new'
     | '/goals/'
     | '/groups/'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/converter'
+    | '/notifications'
     | '/goals'
     | '/groups'
     | '/profile'
@@ -276,6 +287,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/_public'
     | '/_authed/converter'
+    | '/_authed/notifications'
     | '/_authed/groups/new'
     | '/_authed/(home)/'
     | '/_authed/goals/'
@@ -318,6 +330,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/notifications': {
+      id: '/_authed/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthedNotificationsRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/converter': {
       id: '/_authed/converter'
@@ -485,6 +504,7 @@ const AuthedGroupsNewRouteWithChildren = AuthedGroupsNewRoute._addFileChildren(
 
 interface AuthedRouteChildren {
   AuthedConverterRoute: typeof AuthedConverterRoute
+  AuthedNotificationsRoute: typeof AuthedNotificationsRoute
   AuthedGroupsNewRoute: typeof AuthedGroupsNewRouteWithChildren
   AuthedhomeIndexRoute: typeof AuthedhomeIndexRoute
   AuthedGoalsIndexRoute: typeof AuthedGoalsIndexRoute
@@ -506,6 +526,7 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedConverterRoute: AuthedConverterRoute,
+  AuthedNotificationsRoute: AuthedNotificationsRoute,
   AuthedGroupsNewRoute: AuthedGroupsNewRouteWithChildren,
   AuthedhomeIndexRoute: AuthedhomeIndexRoute,
   AuthedGoalsIndexRoute: AuthedGoalsIndexRoute,

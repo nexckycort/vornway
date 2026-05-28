@@ -1,7 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { BellRing, Plus, RefreshCcw } from 'lucide-react';
+import { useEffect } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
-import { useNotificationsQuery } from '#/routes/_authed/(home)/-hooks/use-notifications-query';
+import {
+  markNotificationsAsRead,
+  useNotificationsQuery,
+} from '#/routes/_authed/(home)/-hooks/use-notifications-query';
 
 export const Route = createFileRoute('/_authed/notifications')({
   component: RouteComponent,
@@ -121,6 +125,12 @@ function RouteComponent() {
   const notifications = notificationsQuery.data?.data ?? [];
   const grouped = groupNotifications(notifications);
 
+  useEffect(() => {
+    return () => {
+      void markNotificationsAsRead();
+    };
+  }, []);
+
   return (
     <MobilePageLayout
       title="Notificaciones"
@@ -142,16 +152,19 @@ function RouteComponent() {
         {!notificationsQuery.isLoading &&
         !notificationsQuery.isError &&
         grouped.length === 0 ? (
-          <div className="mt-8 flex flex-col items-center px-4 text-center">
-            <span className="mb-3 inline-flex size-14 items-center justify-center rounded-full bg-[#fff1f5] text-[#ff4d6a]">
-              <BellRing className="size-6" />
-            </span>
-            <p className="text-base font-semibold text-[#202124]">
-              Aún no tienes notificaciones
-            </p>
-            <p className="mt-1 text-sm text-[#64748b]">
-              Cuando haya actividad en tus grupos la verás aquí.
-            </p>
+          <div className="flex min-h-[calc(100dvh-180px)] items-center justify-center px-4 text-center">
+            <div className="-mt-10 flex flex-col items-center">
+              <span className="mb-3 inline-flex size-14 items-center justify-center rounded-full bg-[#fff1f5] text-[#ff4d6a]">
+                <BellRing className="size-6" />
+              </span>
+              <p className="text-base font-semibold leading-6 text-[#202124]">
+                Aún no tienes notificaciones
+              </p>
+              <p className="mt-1 max-w-[260px] text-sm leading-5 text-[#64748b]">
+                Empieza por crear tu primera aventura y te notificaremos todo lo
+                nuevo
+              </p>
+            </div>
           </div>
         ) : null}
 

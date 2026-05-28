@@ -1,12 +1,12 @@
 'use client';
 
-import { Button } from '#/components/ui/button';
-import { cn } from '#/lib/utils';
 import useEmblaCarousel, {
   type UseEmblaCarouselType,
 } from 'embla-carousel-react';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import * as React from 'react';
+import { Button } from '#/components/ui/button';
+import { cn } from '#/lib/utils';
 
 type CarouselApi = UseEmblaCarouselType[1];
 type UseCarouselParameters = Parameters<typeof useEmblaCarousel>;
@@ -32,7 +32,7 @@ type CarouselContextProps = {
 const CarouselContext = React.createContext<CarouselContextProps | null>(null);
 
 function useCarousel() {
-  const context = React.useContext(CarouselContext);
+  const context = React.use(CarouselContext);
 
   if (!context) {
     throw new Error('useCarousel must be used within a <Carousel />');
@@ -232,10 +232,10 @@ function CarouselNext({
 
 export {
   Carousel,
+  type CarouselApi,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
   useCarousel,
-  type CarouselApi,
 };

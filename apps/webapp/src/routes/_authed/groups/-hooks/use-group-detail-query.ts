@@ -286,7 +286,8 @@ export function usePinnedGroupExpensesQuery(
   groupId: string,
   pinnedExpenseIds: string[],
 ) {
-  const stableIds = [...new Set(pinnedExpenseIds)].sort();
+  const stableIds = Array.from(new Set(pinnedExpenseIds));
+  stableIds.sort();
 
   return useQuery({
     queryKey: ['group-pinned-expenses', groupId, stableIds],
@@ -305,13 +306,14 @@ export function usePinnedGroupExpensesQuery(
         }),
       );
 
-      return results
-        .filter(
-          (result): result is PromiseFulfilledResult<ExpenseItem | null> =>
-            result.status === 'fulfilled',
-        )
-        .map((result) => result.value)
-        .filter((expense): expense is ExpenseItem => expense !== null);
+      const expenses: ExpenseItem[] = [];
+      for (const result of results) {
+        if (result.status !== 'fulfilled') continue;
+        if (result.value === null) continue;
+        expenses.push(result.value);
+      }
+
+      return expenses;
     },
     staleTime: 30_000,
   });

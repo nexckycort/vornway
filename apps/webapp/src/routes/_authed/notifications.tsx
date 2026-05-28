@@ -26,6 +26,12 @@ type NotificationGroup = {
   }>;
 };
 
+const relativeDateFormatter = new Intl.DateTimeFormat('es-CO', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+
 function formatRelativeTime(isoDate: string): string {
   const createdAt = new Date(isoDate).getTime();
   const now = Date.now();
@@ -41,11 +47,7 @@ function formatRelativeTime(isoDate: string): string {
     return `Hace ${diffHours}h`;
   }
 
-  return new Intl.DateTimeFormat('es-CO', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(isoDate));
+  return relativeDateFormatter.format(new Date(isoDate));
 }
 
 function groupNotifications(
@@ -56,9 +58,7 @@ function groupNotifications(
   const oneMonthAgo = new Date(now);
   oneMonthAgo.setMonth(now.getMonth() - 1);
 
-  const groups = new Map<string, NotificationGroup['items']>();
-
-  notifications.forEach((item) => {
+  const groups = notifications.reduce((acc, item) => {
     const createdAt = new Date(item.createdAt);
     const label =
       createdAt >= today
@@ -67,17 +67,18 @@ function groupNotifications(
           ? 'Este mes'
           : 'Hace 1 mes';
 
-    const current = groups.get(label) ?? [];
-    current.push(item);
-    groups.set(label, current);
-  });
+    (acc.get(label) ?? acc.set(label, []).get(label)!).push(item);
+    return acc;
+  }, new Map<string, NotificationGroup['items']>());
 
-  return ['Hoy', 'Este mes', 'Hace 1 mes']
-    .map((label) => ({
-      label,
-      items: groups.get(label) ?? [],
-    }))
-    .filter((group) => group.items.length > 0);
+  const orderedGroups: NotificationGroup[] = [];
+  for (const label of ['Hoy', 'Este mes', 'Hace 1 mes']) {
+    const items = groups.get(label) ?? [];
+    if (items.length === 0) continue;
+    orderedGroups.push({ label, items });
+  }
+
+  return orderedGroups;
 }
 
 function NotificationIcon({
@@ -138,7 +139,7 @@ function RouteComponent() {
     >
       <div className="-mx-1 flex flex-1 flex-col overflow-y-auto px-1 pb-4 pt-2">
         {notificationsQuery.isLoading ? (
-          <p className="px-3 py-6 text-sm text-[#64748b]">Cargando...</p>
+          <p className="px-3 py-6 text-sm text-[#64748b]">Cargando…</p>
         ) : null}
 
         {notificationsQuery.isError ? (

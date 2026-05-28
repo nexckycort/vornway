@@ -166,7 +166,7 @@ export function GroupDetailHeader({
                   >
                     {t.header.totalSpent}
                   </p>
-                  <h2 className="mt-2 whitespace-nowrap text-2xl font-bold tracking-tight text-white">
+                  <h2 className="mt-2 whitespace-nowrap text-2xl font-semibold tracking-tight text-white">
                     {formatMoney(currency, Math.abs(totalAmount))}
                   </h2>
 

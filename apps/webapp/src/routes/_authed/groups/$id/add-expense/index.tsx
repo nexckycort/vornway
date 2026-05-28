@@ -303,8 +303,7 @@ function RouteComponent() {
     useState(false);
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
     useState(false);
-  const [pendingCreateCategoryDialog, setPendingCreateCategoryDialog] =
-    useState(false);
+  const pendingCreateCategoryDialogRef = useRef(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryIcon, setNewCategoryIcon] = useState(
     categoryIconOptions[1].id,
@@ -322,12 +321,10 @@ function RouteComponent() {
   const [attachmentDataUrl, setAttachmentDataUrl] = useState<string | null>(
     null,
   );
-  const [attachmentFileName, setAttachmentFileName] = useState<string | null>(
-    null,
-  );
+  const attachmentFileNameRef = useRef<string | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [hasInitializedForm, setHasInitializedForm] = useState(false);
+  const hasInitializedFormRef = useRef(false);
   const [isAmountAnimating, setIsAmountAnimating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
@@ -399,7 +396,7 @@ function RouteComponent() {
 
   useEffect(() => {
     if (isEditMode) {
-      if (!expense || hasInitializedForm) return;
+      if (!expense || hasInitializedFormRef.current) return;
 
       setDescription(expense.description);
       setAmount(expense.amount.toString());
@@ -429,7 +426,7 @@ function RouteComponent() {
         ...((expense as { advancedDetails?: ExpenseAdvancedDetails | null })
           .advancedDetails ?? {}),
       });
-      setHasInitializedForm(true);
+      hasInitializedFormRef.current = true;
       return;
     }
 
@@ -438,7 +435,7 @@ function RouteComponent() {
     didInitializePayersRef.current = true;
     setPaidByIds([groupQuery.data.myMembership?.id ?? members[0]?.id ?? '']);
     setParticipantIds(members.map((member) => member.id));
-  }, [expense, groupQuery.data, hasInitializedForm, isEditMode, members]);
+  }, [expense, groupQuery.data, isEditMode, members]);
 
   useEffect(() => {
     if (splitMethod === 'equal') return;
@@ -572,20 +569,20 @@ function RouteComponent() {
   };
 
   const openCreateCategoryDialog = () => {
-    setPendingCreateCategoryDialog(true);
+    pendingCreateCategoryDialogRef.current = true;
     setShowCategoryDrawer(false);
   };
 
   useEffect(() => {
-    if (showCategoryDrawer || !pendingCreateCategoryDialog) return;
+    if (showCategoryDrawer || !pendingCreateCategoryDialogRef.current) return;
 
     const frame = window.requestAnimationFrame(() => {
       setShowCreateCategoryDialog(true);
-      setPendingCreateCategoryDialog(false);
+      pendingCreateCategoryDialogRef.current = false;
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [pendingCreateCategoryDialog, showCategoryDrawer]);
+  }, [showCategoryDrawer]);
 
   const handleCreateCategory = async () => {
     if (!trimmedNewCategoryName || createCategoryMutation.isPending) return;
@@ -604,7 +601,6 @@ function RouteComponent() {
       setNewCategoryCustomIcon('');
       setNewCategoryColor(categoryColorOptions[0]);
       setShowCreateCategoryDialog(false);
-      setPendingCreateCategoryDialog(false);
       setShowCategoryDrawer(false);
     } catch (creationError) {
       setError(
@@ -623,10 +619,10 @@ function RouteComponent() {
     try {
       const dataUrl = await compressImageFileToDataUrl(file);
       setAttachmentDataUrl(dataUrl);
-      setAttachmentFileName(file.name);
+      attachmentFileNameRef.current = file.name;
     } catch (selectionError) {
       setAttachmentDataUrl(null);
-      setAttachmentFileName(null);
+      attachmentFileNameRef.current = null;
       setAttachmentError(
         selectionError instanceof Error
           ? selectionError.message
@@ -641,7 +637,7 @@ function RouteComponent() {
 
   const clearAttachmentSelection = () => {
     setAttachmentDataUrl(null);
-    setAttachmentFileName(null);
+    attachmentFileNameRef.current = null;
     setAttachmentError(null);
     if (attachmentInputRef.current) {
       attachmentInputRef.current.value = '';
@@ -684,7 +680,9 @@ function RouteComponent() {
           ? {
               attachmentImage: {
                 dataUrl: attachmentDataUrl,
-                ...(attachmentFileName ? { fileName: attachmentFileName } : {}),
+                ...(attachmentFileNameRef.current
+                  ? { fileName: attachmentFileNameRef.current }
+                  : {}),
               },
             }
           : {}),
@@ -1500,7 +1498,7 @@ function RouteComponent() {
         onOpenChange={(nextOpen) => {
           setShowCreateCategoryDialog(nextOpen);
           if (!nextOpen) {
-            setPendingCreateCategoryDialog(false);
+            pendingCreateCategoryDialogRef.current = false;
           }
         }}
       >

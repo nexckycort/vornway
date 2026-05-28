@@ -12,6 +12,7 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
+import { formatCurrency } from '#/lib/i18n';
 import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-delete-expense';
 import {
   useGroupExpenseQuery,
@@ -25,13 +26,15 @@ export const Route = createFileRoute('/_authed/groups/$id/expense/$expenseId')({
   component: RouteComponent,
 });
 
+const expenseDateFormatter = new Intl.DateTimeFormat('es-CO', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+
 function formatAmount(currency: string, amount: number): string {
   try {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 2,
-    }).format(amount);
+    return formatCurrency(currency, amount);
   } catch {
     return `${amount.toLocaleString()} ${currency}`;
   }
@@ -40,11 +43,7 @@ function formatAmount(currency: string, amount: number): string {
 function formatDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('en-US', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(date);
+  return expenseDateFormatter.format(date);
 }
 
 function getInitials(name: string): string {
@@ -450,7 +449,7 @@ function RouteComponent() {
               onClick={() => void handleConfirmDeleteExpense()}
               disabled={deleteExpenseMutation.isPending}
             >
-              {deleteExpenseMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+              {deleteExpenseMutation.isPending ? 'Eliminando…' : 'Eliminar'}
             </Button>
           </DrawerFooter>
         </DrawerContent>

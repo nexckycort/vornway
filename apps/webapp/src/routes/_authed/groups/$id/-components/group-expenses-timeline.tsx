@@ -35,7 +35,7 @@ export function GroupExpensesTimeline({
   const sortedExpenses = useMemo(() => {
     const pinnedSet = new Set(pinnedExpenseIds);
 
-    return [...expenses].sort((left, right) => {
+    return expenses.slice().sort((left, right) => {
       const leftPinned = pinnedSet.has(left.id);
       const rightPinned = pinnedSet.has(right.id);
 
@@ -64,7 +64,7 @@ export function GroupExpensesTimeline({
               </div>
 
               <div className="flex flex-col gap-3">
-                {Array.from({ length: 2 }).map((__, rowIndex) => (
+                {Array.from({ length: 2 }).map((_, rowIndex) => (
                   <article
                     key={`skeleton-row-${dayIndex}-${rowIndex}`}
                     className="rounded-[22px] border border-[#e5e7eb] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
@@ -139,7 +139,7 @@ export function GroupExpensesTimeline({
       <div ref={loadMoreRef} className="h-8" />
 
       {isFetchingNextPage ? (
-        <p className="text-center text-sm text-[#64748b]">Cargando más...</p>
+        <p className="text-center text-sm text-[#64748b]">Cargando más…</p>
       ) : null}
     </section>
   );

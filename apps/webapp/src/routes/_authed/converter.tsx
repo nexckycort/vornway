@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { client, type InferResponseType } from '#/lib/hc';
+import { formatCurrency } from '#/lib/i18n';
 import { getConverterMessages } from '#/routes/_authed/converter/-messages';
 
 const converterEndpoint = client.api.converter.$get;
@@ -25,6 +26,13 @@ const CURRENCY_META: Record<string, { flag: string; name: string }> = {
   MXN: { flag: '🇲🇽', name: 'Peso mexicano' },
   BRL: { flag: '🇧🇷', name: 'Real brasileño' },
 };
+
+const converterLastUpdatedFormatter = new Intl.DateTimeFormat('es-CO', {
+  day: '2-digit',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
 
 export const Route = createFileRoute('/_authed/converter')({
   component: RouteComponent,
@@ -115,12 +123,7 @@ function RouteComponent() {
 
   const { currencies, disclaimer, lastUpdatedAt } = converterQuery.data;
   const formattedLastUpdatedAt = lastUpdatedAt
-    ? new Intl.DateTimeFormat('es-CO', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-      }).format(new Date(lastUpdatedAt))
+    ? converterLastUpdatedFormatter.format(new Date(lastUpdatedAt))
     : null;
 
   return (
@@ -130,13 +133,14 @@ function RouteComponent() {
           <button
             type="button"
             onClick={() => router.history.back()}
+            aria-label="Volver"
             className="inline-flex items-center gap-2 text-sm font-medium text-[#1f2937]"
           >
             <ChevronLeft className="size-5" />
             {t.common.back}
           </button>
 
-          <div className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white px-4 py-4 shadow-sm">
+          <div className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-sm">
             <div className="flex items-start gap-3">
               <div className="flex size-11 items-center justify-center rounded-2xl bg-[#fff1f5] text-primary">
                 <ArrowLeftRight className="size-5" />
@@ -193,7 +197,7 @@ function RouteComponent() {
           </div>
 
           <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-end gap-3">
-            <div className="rounded-[22px] border border-[#e2e8f0] bg-[#f8fafc] px-3 py-3">
+            <div className="rounded-[22px] border border-[#e2e8f0] bg-[#f8fafc] p-3">
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]">
                 {t.from}
               </label>
@@ -229,7 +233,7 @@ function RouteComponent() {
               <ArrowLeftRight className="size-4" />
             </button>
 
-            <div className="rounded-[22px] border border-[#e2e8f0] bg-[#f8fafc] px-3 py-3">
+            <div className="rounded-[22px] border border-[#e2e8f0] bg-[#f8fafc] p-3">
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]">
                 {t.to}
               </label>
@@ -287,11 +291,7 @@ function RouteComponent() {
 
 function formatMoney(amount: number, currency: string): string {
   try {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 2,
-    }).format(amount);
+    return formatCurrency(currency, amount);
   } catch {
     return `${amount.toLocaleString()} ${currency}`;
   }

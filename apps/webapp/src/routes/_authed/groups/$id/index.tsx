@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { Pencil, Pin, Trash2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import {
@@ -161,11 +161,13 @@ function RouteComponent() {
       }
     }
 
-    return [...expensesById.values()].sort((left, right) => {
+    const sortedExpenses = Array.from(expensesById.values());
+    sortedExpenses.sort((left, right) => {
       const leftDate = new Date(left.date).getTime();
       const rightDate = new Date(right.date).getTime();
       return rightDate - leftDate;
     });
+    return sortedExpenses;
   }, [
     expensesQuery.data,
     groupQuery.data?.categories,
@@ -256,12 +258,12 @@ function RouteComponent() {
               ? groupQuery.error.message
               : 'No tienes acceso a este grupo'}
           </div>
-          <a
-            href="/groups"
+          <Link
+            to="/groups"
             className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"
           >
             Volver a grupos
-          </a>
+          </Link>
         </div>
       </main>
     );
@@ -471,7 +473,7 @@ function RouteComponent() {
               </div>
             ) : (
               <div className="rounded-[28px] border border-dashed border-[#cbd5e1] bg-[#f8fafc] px-4 py-10 text-center text-sm text-[#64748b]">
-                Generando QR...
+                Generando QR…
               </div>
             )}
 
@@ -567,7 +569,7 @@ function RouteComponent() {
                     setExpenseForOptions(null);
                     handleEditExpense(expenseForOptions);
                   }}
-                  className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left"
+                  className="flex w-full items-center gap-3 rounded-2xl p-1 text-left"
                 >
                   <Pencil className="size-5 text-[#202124]" />
                   <span className="font-medium text-[#132238]">
@@ -584,7 +586,7 @@ function RouteComponent() {
                     expenseForOptions.isDeleted ||
                     toggleExpensePinMutation.isPending
                   }
-                  className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left disabled:opacity-60"
+                  className="flex w-full items-center gap-3 rounded-2xl p-1 text-left disabled:opacity-60"
                 >
                   <Pin className="size-5 text-[#202124]" />
                   <span className="font-medium text-[#132238]">
@@ -603,7 +605,7 @@ function RouteComponent() {
                     setExpenseForOptions(null);
                     handleDeleteExpense(expenseForOptions);
                   }}
-                  className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left"
+                  className="flex w-full items-center gap-3 rounded-2xl p-1 text-left"
                 >
                   <Trash2 className="size-5 text-red-500" />
                   <span className="font-medium text-red-500">Eliminar</span>
@@ -677,7 +679,7 @@ function RouteComponent() {
                   disabled={deleteExpenseMutation.isPending}
                 >
                   {deleteExpenseMutation.isPending
-                    ? 'Eliminando...'
+                    ? 'Eliminando…'
                     : 'Sí, eliminar gasto'}
                 </Button>
               </DrawerFooter>
@@ -723,7 +725,7 @@ function RouteComponent() {
                   disabled={removeMemberMutation.isPending}
                 >
                   {removeMemberMutation.isPending
-                    ? 'Eliminando...'
+                    ? 'Eliminando…'
                     : 'Sí, eliminar miembro'}
                 </Button>
                 <Button

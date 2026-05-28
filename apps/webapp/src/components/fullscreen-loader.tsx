@@ -32,9 +32,9 @@ export function FullscreenLoader({ label }: FullscreenLoaderProps) {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <span className="size-1.5 animate-bounce rounded-full bg-[#ff4d6a] [animation-delay:-0.2s]" />
-          <span className="size-1.5 animate-bounce rounded-full bg-[#ff4d6a] [animation-delay:-0.1s]" />
-          <span className="size-1.5 animate-bounce rounded-full bg-[#ff4d6a]" />
+          <span className="size-1.5 animate-pulse rounded-full bg-[#ff4d6a]" />
+          <span className="size-1.5 animate-pulse rounded-full bg-[#ff4d6a] [animation-delay:150ms]" />
+          <span className="size-1.5 animate-pulse rounded-full bg-[#ff4d6a] [animation-delay:300ms]" />
         </div>
       </div>
     </main>

@@ -40,10 +40,23 @@ export const Route = createFileRoute('/_authed/groups/new/participants')({
 });
 
 type DraftParticipant = {
+  id: string;
   name: string;
   userId?: string;
   email?: string;
 };
+
+function createDraftParticipant(
+  participant: Omit<DraftParticipant, 'id'>,
+): DraftParticipant {
+  return {
+    id:
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()}`,
+    ...participant,
+  };
+}
 
 function normalizeText(value: string) {
   return value.trim().toLocaleLowerCase('es-CO');
@@ -133,7 +146,7 @@ function RouteComponent() {
     });
   };
 
-  const addParticipant = (participant: DraftParticipant) => {
+  const addParticipant = (participant: Omit<DraftParticipant, 'id'>) => {
     const normalizedName = participant.name.trim();
     if (!normalizedName) return;
 
@@ -153,11 +166,11 @@ function RouteComponent() {
 
     setParticipants((previous) => [
       ...previous,
-      {
+      createDraftParticipant({
         name: normalizedName,
         ...(participant.userId ? { userId: participant.userId } : {}),
         ...(participant.email ? { email: participant.email } : {}),
-      },
+      }),
     ]);
     setParticipantInput('');
     setDebouncedSearch('');
@@ -167,9 +180,9 @@ function RouteComponent() {
     addParticipant({ name: participantInput });
   };
 
-  const removeParticipant = (index: number) => {
+  const removeParticipant = (id: string) => {
     setParticipants((previous) =>
-      previous.filter((_, current) => current !== index),
+      previous.filter((current) => current.id !== id),
     );
   };
 
@@ -335,9 +348,7 @@ function RouteComponent() {
         </p>
 
         {searchQuery.isFetching && debouncedSearch ? (
-          <p className="mt-3 text-sm text-[#64748b]">
-            Buscando coincidencias...
-          </p>
+          <p className="mt-3 text-sm text-[#64748b]">Buscando coincidencias…</p>
         ) : null}
 
         {debouncedSearch &&
@@ -360,11 +371,13 @@ function RouteComponent() {
                     return;
                   }
 
-                  addParticipant({
-                    name: candidate.name,
-                    userId: candidate.id,
-                    email: candidate.email,
-                  });
+                  addParticipant(
+                    createDraftParticipant({
+                      name: candidate.name,
+                      userId: candidate.id,
+                      email: candidate.email,
+                    }),
+                  );
                 }}
                 className={`rounded-2xl border px-4 py-3 text-left transition-colors ${
                   candidate.isCurrentUser
@@ -401,9 +414,9 @@ function RouteComponent() {
         <p className="mt-3 text-xs text-[#64748b]">{participantsCountLabel}</p>
 
         <section className="mt-4 flex flex-col gap-2">
-          {participants.map((participant, index) => (
+          {participants.map((participant) => (
             <div
-              key={`${participant.userId ?? participant.name}-${index}`}
+              key={participant.id}
               className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-3"
             >
               <div className="min-w-0 flex-1">
@@ -422,7 +435,7 @@ function RouteComponent() {
               </div>
               <button
                 type="button"
-                onClick={() => removeParticipant(index)}
+                onClick={() => removeParticipant(participant.id)}
                 className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[#64748b]"
                 aria-label={`Eliminar a ${participant.name}`}
               >
@@ -456,7 +469,7 @@ function RouteComponent() {
               disabled={isSubmitting}
             >
               <PlusCircle data-icon="inline-start" />
-              {isSubmitting ? 'Creando...' : 'Crear grupo'}
+              {isSubmitting ? 'Creando…' : 'Crear grupo'}
             </Button>
           </div>
         </div>
@@ -487,8 +500,8 @@ function RouteComponent() {
           <div className="space-y-5 px-4 pb-4">
             <div className="flex items-center justify-center pt-1">
               <div className="relative h-24 w-32">
-                <div className="absolute right-1 top-1 h-[4.5rem] w-[4.5rem] rounded-[30px] bg-primary" />
-                <div className="absolute left-2 top-2 h-[4.75rem] w-[4.75rem] overflow-hidden rounded-[28px] border-[3px] border-white bg-[#f8fafc] shadow-[0_14px_28px_rgba(15,23,42,0.14)]">
+                <div className="absolute right-1 top-1 size-[4.5rem] rounded-[30px] bg-primary" />
+                <div className="absolute left-2 top-2 size-[4.75rem] overflow-hidden rounded-[28px] border-[3px] border-white bg-[#f8fafc] shadow-[0_14px_28px_rgba(15,23,42,0.14)]">
                   {draft?.image?.dataUrl ? (
                     <img
                       src={draft.image.dataUrl}
@@ -560,7 +573,7 @@ function RouteComponent() {
               </Button>
             </div>
 
-            <div className="rounded-[26px] bg-white px-4 py-4">
+            <div className="rounded-[26px] bg-white p-4">
               <p className="text-lg font-semibold text-[#0f172a]">
                 ¿Qué puedes hacer ahora?
               </p>

@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import {
   ArrowLeft,
   Check,
@@ -44,15 +44,21 @@ export const Route = createFileRoute('/_authed/goals/$id/')({
   component: RouteComponent,
 });
 
+const goalDateFormatter = new Intl.DateTimeFormat('es-CO', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+});
+
+const goalMonthFormatter = new Intl.DateTimeFormat('es-CO', {
+  month: 'short',
+});
+
 function formatDate(value: string | Date): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
 
-  return new Intl.DateTimeFormat('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(date);
+  return goalDateFormatter.format(date);
 }
 
 function toDateInputValue(value: string | Date) {
@@ -62,10 +68,10 @@ function toDateInputValue(value: string | Date) {
 }
 
 function monthLabel(value: Date) {
-  return new Intl.DateTimeFormat('es-CO', {
-    month: 'short',
-  }).format(value);
+  return goalMonthFormatter.format(value);
 }
+
+const currentMonthDate = new Date();
 
 function buildTimeline(startDate: string | Date, endDate: string | Date) {
   const start = new Date(startDate);
@@ -102,7 +108,6 @@ function isMemberOnTrack(input: {
 
 function RouteComponent() {
   const { id } = Route.useParams();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const goalQuery = useGoalDetailQuery(id);
   const goal = goalQuery.data;
@@ -141,7 +146,12 @@ function RouteComponent() {
   const currentMember =
     goal?.members.find((member) => member.isCurrentUser) ?? null;
   const currentUserIds = useMemo(
-    () => new Set(goal?.members.map((member) => member.userId).filter(Boolean)),
+    () =>
+      new Set(
+        goal?.members.flatMap((member) =>
+          member.userId ? [member.userId] : [],
+        ) ?? [],
+      ),
     [goal?.members],
   );
 
@@ -180,7 +190,7 @@ function RouteComponent() {
       return;
     }
 
-    void navigate({ to: '/goals', replace: true });
+    window.location.replace('/goals');
   };
 
   const addParticipant = async (participant: {
@@ -690,7 +700,7 @@ function RouteComponent() {
               />
               <div className="mt-4 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {timeline.map((item, index) => {
-                  const active = item.date <= new Date();
+                  const active = item.date <= currentMonthDate;
                   return (
                     <div
                       key={item.key}
@@ -986,7 +996,7 @@ function RouteComponent() {
               onClick={() => void confirmDeleteContribution()}
             >
               {deleteContributionMutation.isPending
-                ? 'Eliminando...'
+                ? 'Eliminando…'
                 : 'Eliminar'}
             </Button>
             <Button

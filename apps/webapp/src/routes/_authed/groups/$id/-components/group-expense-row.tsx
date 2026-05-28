@@ -33,11 +33,11 @@ export function GroupExpenseRow({
   const FULL_SWIPE_THRESHOLD = 78;
   const LONG_PRESS_MS = 450;
   const [translateX, setTranslateX] = useState(0);
-  const [startX, setStartX] = useState<number | null>(null);
-  const [startY, setStartY] = useState<number | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [didSwipe, setDidSwipe] = useState(false);
-  const [didLongPress, setDidLongPress] = useState(false);
+  const startXRef = useRef<number | null>(null);
+  const startYRef = useRef<number | null>(null);
+  const isDraggingRef = useRef(false);
+  const didSwipeRef = useRef(false);
+  const didLongPressRef = useRef(false);
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -59,8 +59,8 @@ export function GroupExpenseRow({
     if (isPendingSync) return;
     clearLongPressTimeout();
     longPressTimeoutRef.current = setTimeout(() => {
-      setDidLongPress(true);
-      setDidSwipe(true);
+      didLongPressRef.current = true;
+      didSwipeRef.current = true;
       setTranslateX(0);
       onOpenOptions(expense);
     }, LONG_PRESS_MS);
@@ -69,19 +69,19 @@ export function GroupExpenseRow({
   const handleTouchStart = (event: TouchEvent<HTMLButtonElement>) => {
     if (expense.isDeleted || isPendingSync) return;
     const touch = event.touches[0];
-    setStartX(touch.clientX);
-    setStartY(touch.clientY);
-    setIsDragging(true);
-    setDidSwipe(false);
-    setDidLongPress(false);
+    startXRef.current = touch.clientX;
+    startYRef.current = touch.clientY;
+    isDraggingRef.current = true;
+    didSwipeRef.current = false;
+    didLongPressRef.current = false;
     startLongPressTimeout();
   };
 
   const handleTouchMove = (event: TouchEvent<HTMLButtonElement>) => {
     if (
-      !isDragging ||
-      startX === null ||
-      startY === null ||
+      !isDraggingRef.current ||
+      startXRef.current === null ||
+      startYRef.current === null ||
       expense.isDeleted ||
       isPendingSync
     ) {
@@ -89,8 +89,8 @@ export function GroupExpenseRow({
     }
 
     const touch = event.touches[0];
-    const deltaX = touch.clientX - startX;
-    const deltaY = touch.clientY - startY;
+    const deltaX = touch.clientX - startXRef.current;
+    const deltaY = touch.clientY - startYRef.current;
 
     if (Math.abs(deltaY) > Math.abs(deltaX)) {
       clearLongPressTimeout();
@@ -103,7 +103,7 @@ export function GroupExpenseRow({
       Math.min(maxRightSwipe, deltaX),
     );
     if (Math.abs(nextTranslateX) > 6) {
-      setDidSwipe(true);
+      didSwipeRef.current = true;
       clearLongPressTimeout();
     }
     setTranslateX(nextTranslateX);
@@ -111,13 +111,13 @@ export function GroupExpenseRow({
 
   const handleTouchEnd = () => {
     clearLongPressTimeout();
-    if (!isDragging || expense.isDeleted || isPendingSync) return;
+    if (!isDraggingRef.current || expense.isDeleted || isPendingSync) return;
 
-    if (didLongPress) {
-      setIsDragging(false);
-      setStartX(null);
-      setStartY(null);
-      setDidLongPress(false);
+    if (didLongPressRef.current) {
+      isDraggingRef.current = false;
+      startXRef.current = null;
+      startYRef.current = null;
+      didLongPressRef.current = false;
       return;
     }
 
@@ -138,14 +138,14 @@ export function GroupExpenseRow({
       setTranslateX(0);
     }
 
-    setIsDragging(false);
-    setStartX(null);
-    setStartY(null);
+    isDraggingRef.current = false;
+    startXRef.current = null;
+    startYRef.current = null;
   };
 
   const handleMouseDown = () => {
     if (expense.isDeleted || isPendingSync) return;
-    setDidLongPress(false);
+    didLongPressRef.current = false;
     startLongPressTimeout();
   };
 
@@ -154,15 +154,15 @@ export function GroupExpenseRow({
   };
 
   const handleOpenExpense = () => {
-    if (didSwipe) {
-      setDidSwipe(false);
+    if (didSwipeRef.current) {
+      didSwipeRef.current = false;
       return;
     }
 
     if (isPendingSync) return;
 
-    if (didLongPress) {
-      setDidLongPress(false);
+    if (didLongPressRef.current) {
+      didLongPressRef.current = false;
       return;
     }
 

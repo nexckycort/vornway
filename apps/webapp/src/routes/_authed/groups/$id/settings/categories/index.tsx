@@ -231,7 +231,7 @@ function RouteComponent() {
   return (
     <MobilePageLayout title={t.settings.categoriesTitle} onBack={goBack}>
       <div className="flex flex-1 flex-col pb-4">
-        <section className="-mx-4 border-y border-[#e5e7eb] bg-white px-4 py-4">
+        <section className="-mx-4 border-y border-[#e5e7eb] bg-white p-4">
           <p className="text-xs uppercase tracking-[0.18em] text-[#64748b]">
             {group.name}
           </p>
@@ -246,7 +246,7 @@ function RouteComponent() {
         <button
           type="button"
           onClick={openCreateDrawer}
-          className="mt-5 flex w-full items-center justify-between rounded-[24px] border border-dashed border-[#cbd5e1] bg-[#f8fafc] px-4 py-4 text-left"
+          className="mt-5 flex w-full items-center justify-between rounded-[24px] border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-4 text-left"
         >
           <div className="flex items-center gap-3">
             <span className="flex size-11 items-center justify-center rounded-full bg-white text-[#e11d48] shadow-sm">
@@ -276,7 +276,7 @@ function RouteComponent() {
               key={category.id}
               type="button"
               onClick={() => openEditDrawer(category)}
-              className="flex w-full items-center justify-between rounded-[24px] border border-[#e5e7eb] bg-white px-4 py-4 text-left shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-transform active:scale-[0.99]"
+              className="flex w-full items-center justify-between rounded-[24px] border border-[#e5e7eb] bg-white p-4 text-left shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-transform active:scale-[0.99]"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <span
@@ -532,7 +532,7 @@ function RouteComponent() {
                 onClick={() => {
                   void handleMoveExpenses(null);
                 }}
-                className="flex w-full items-center justify-between rounded-[24px] border border-[#e5e7eb] bg-white px-4 py-4 text-left shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-transform active:scale-[0.99]"
+                className="flex w-full items-center justify-between rounded-[24px] border border-[#e5e7eb] bg-white p-4 text-left shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-transform active:scale-[0.99]"
               >
                 <div>
                   <p className="text-sm font-medium text-[#132238]">
@@ -552,7 +552,7 @@ function RouteComponent() {
                   onClick={() => {
                     void handleMoveExpenses(category.id);
                   }}
-                  className="flex w-full items-center justify-between rounded-[24px] border border-[#e5e7eb] bg-white px-4 py-4 text-left shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-transform active:scale-[0.99]"
+                  className="flex w-full items-center justify-between rounded-[24px] border border-[#e5e7eb] bg-white p-4 text-left shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-transform active:scale-[0.99]"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <span

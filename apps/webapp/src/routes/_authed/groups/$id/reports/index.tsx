@@ -65,7 +65,7 @@ function RouteComponent() {
   }, [group?.totals, reportsTotalsQuery.data?.totalsByCurrency]);
   const sortedMembers = useMemo(
     () =>
-      [...(group?.memberBalances ?? [])].sort((left, right) => {
+      Array.from(group?.memberBalances ?? []).sort((left, right) => {
         if (left.isCurrentUser === right.isCurrentUser) return 0;
         return left.isCurrentUser ? -1 : 1;
       }),
@@ -291,7 +291,7 @@ function RouteComponent() {
             <div className="fixed inset-x-0 bottom-0 z-10 mx-auto w-full max-w-[412px] md:max-w-5xl border-t border-[#e2e8f0] bg-gradient-to-t from-white via-white to-white/90 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4">
               <Button
                 type="button"
-                className="h-12 w-full rounded-full bg-black text-base font-medium text-white hover:bg-black/90"
+                className="h-12 w-full rounded-full bg-gray-950 text-base font-medium text-white hover:bg-gray-950/90"
                 onClick={() =>
                   void navigate({
                     to: '/groups/$id/settle',
@@ -384,14 +384,11 @@ function RouteComponent() {
 
               <div className="mt-3 flex items-center justify-center">
                 {reportsTotalsQuery.isLoading ? (
-                  <div className="flex aspect-square h-56 w-56 items-center justify-center rounded-full border border-dashed border-[#e2e8f0] bg-[#f8fafc] text-xs text-[#94a3b8]">
+                  <div className="flex size-56 items-center justify-center rounded-full border border-dashed border-[#e2e8f0] bg-[#f8fafc] text-xs text-[#94a3b8]">
                     {t.reports.loadingTotals}
                   </div>
                 ) : (
-                  <ChartContainer
-                    className="aspect-square h-56 w-56"
-                    config={chartConfig}
-                  >
+                  <ChartContainer className="size-56" config={chartConfig}>
                     <PieChart>
                       <Pie
                         data={categoryBreakdown}
@@ -412,7 +409,7 @@ function RouteComponent() {
                 <p className="text-xs text-[#94a3b8]">{t.reports.totalGroup}</p>
                 {reportsTotalsQuery.isLoading ? (
                   <p className="mt-1 text-2xl font-semibold text-[#132238]">
-                    —
+                    …
                   </p>
                 ) : (
                   <p className="mt-1 text-2xl font-semibold text-[#132238]">
@@ -462,7 +459,7 @@ function RouteComponent() {
                 </p>
                 {reportsTotalsQuery.isLoading ? (
                   <p className="mt-1 text-2xl font-semibold text-[#132238]">
-                    —
+                    …
                   </p>
                 ) : (
                   <p className="mt-1 text-2xl font-semibold text-[#132238]">

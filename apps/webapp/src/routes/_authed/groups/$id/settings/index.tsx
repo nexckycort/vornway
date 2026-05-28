@@ -175,7 +175,7 @@ function RouteComponent() {
     return (
       <MobilePageLayout title="Ajustes" onBack={goBack}>
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-[#64748b]">Cargando ajustes...</p>
+          <p className="text-sm text-[#64748b]">Cargando ajustes…</p>
         </div>
       </MobilePageLayout>
     );
@@ -467,7 +467,7 @@ function RouteComponent() {
               onClick={handleConfirmDeleteGroup}
               disabled={deleteGroupMutation.isPending}
             >
-              {deleteGroupMutation.isPending ? 'Eliminando...' : 'Sí, eliminar'}
+              {deleteGroupMutation.isPending ? 'Eliminando…' : 'Sí, eliminar'}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -501,7 +501,7 @@ function RouteComponent() {
               onClick={handleLeaveGroup}
               disabled={unlinkMemberMutation.isPending}
             >
-              {unlinkMemberMutation.isPending ? 'Saliendo...' : 'Sí, salir'}
+              {unlinkMemberMutation.isPending ? 'Saliendo…' : 'Sí, salir'}
             </Button>
           </DrawerFooter>
         </DrawerContent>

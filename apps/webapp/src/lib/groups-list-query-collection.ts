@@ -242,18 +242,26 @@ function buildGroupSummaryFromListItem(group: GroupListItem): GroupSummary {
     totals: group.totals,
     categories: [],
     members,
-    directDebts: group.participantBalances
-      .filter((balance) => balance.direction === 'youOweThem')
-      .map((balance) => ({
+    directDebts: group.participantBalances.reduce<
+      Array<{ currency: string; amount: number }>
+    >((acc, balance) => {
+      if (balance.direction !== 'youOweThem') return acc;
+      acc.push({
         currency: balance.currency,
         amount: balance.amount,
-      })),
-    directCredits: group.participantBalances
-      .filter((balance) => balance.direction === 'theyOweYou')
-      .map((balance) => ({
+      });
+      return acc;
+    }, []),
+    directCredits: group.participantBalances.reduce<
+      Array<{ currency: string; amount: number }>
+    >((acc, balance) => {
+      if (balance.direction !== 'theyOweYou') return acc;
+      acc.push({
         currency: balance.currency,
         amount: balance.amount,
-      })),
+      });
+      return acc;
+    }, []),
     memberBalances: members.map((member) => ({
       memberId: member.id,
       name: member.name,

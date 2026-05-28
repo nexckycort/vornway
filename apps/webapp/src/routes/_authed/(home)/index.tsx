@@ -87,14 +87,14 @@ function RouteComponent() {
               {!hasGroups ? (
                 <div className="flex min-h-[calc(100dvh-260px)] items-center justify-center">
                   <div className="flex w-full max-w-[380px] flex-col items-center text-center">
-                    <div className="relative flex h-32 w-32 items-center justify-center">
-                      <div className="absolute right-2 top-4 h-20 w-20 rounded-[22px] bg-primary shadow-[0_14px_28px_rgba(222,3,77,0.22)]" />
-                      <div className="absolute left-4 top-8 h-20 w-20 rounded-[22px] bg-white shadow-[0_18px_36px_rgba(0,0,0,0.05)] ring-1 ring-[#f1f1f1]" />
-                      <div className="relative z-10 flex h-16 w-16 items-center justify-center overflow-hidden rounded-[18px] bg-white shadow-[0_12px_24px_rgba(0,0,0,0.08)]">
+                    <div className="relative flex size-32 items-center justify-center">
+                      <div className="absolute right-2 top-4 size-20 rounded-[22px] bg-primary shadow-[0_14px_28px_rgba(222,3,77,0.22)]" />
+                      <div className="absolute left-4 top-8 size-20 rounded-[22px] bg-white shadow-[0_18px_36px_rgba(0,0,0,0.05)] ring-1 ring-[#f1f1f1]" />
+                      <div className="relative z-10 flex size-16 items-center justify-center overflow-hidden rounded-[18px] bg-white shadow-[0_12px_24px_rgba(0,0,0,0.08)]">
                         <img
                           src="/logo.webp"
                           alt="Vornway"
-                          className="h-full w-full object-cover"
+                          className="size-full object-cover"
                         />
                       </div>
                     </div>

@@ -92,18 +92,6 @@ function getApiErrorMessage(error: unknown, fallback: string) {
   return getApiErrorMessage(candidate.error, fallback);
 }
 
-function invalidateGroup(
-  queryClient: ReturnType<typeof useQueryClient>,
-  groupId: string,
-) {
-  return Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-    queryClient.invalidateQueries({ queryKey: ['group-expenses', groupId] }),
-    queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-    queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-  ]);
-}
-
 export function useUpdateGroupImageMutation(groupId: string) {
   const queryClient = useQueryClient();
 
@@ -124,7 +112,14 @@ export function useUpdateGroupImageMutation(groupId: string) {
       return (await response.json()) as UpdateGroupImageResponse;
     },
     onSuccess: async () => {
-      await invalidateGroup(queryClient, groupId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }
@@ -147,7 +142,14 @@ export function useUpdateGroupMutation(groupId: string) {
       return (await response.json()) as UpdateGroupResponse;
     },
     onSuccess: async () => {
-      await invalidateGroup(queryClient, groupId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }
@@ -170,7 +172,14 @@ export function useUpdateGroupSettingsMutation(groupId: string) {
       return (await response.json()) as UpdateGroupSettingsResponse;
     },
     onSuccess: async () => {
-      await invalidateGroup(queryClient, groupId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }
@@ -214,7 +223,14 @@ export function useCreateExpenseMutation(groupId: string) {
       return { id: result.id };
     },
     onSuccess: () => {
-      void invalidateGroup(queryClient, groupId);
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }
@@ -239,7 +255,14 @@ export function useUpdateExpenseMutation(groupId: string, expenseId: string) {
       return (await response.json()) as UpdateExpenseResponse;
     },
     onSuccess: async () => {
-      await invalidateGroup(queryClient, groupId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }
@@ -262,7 +285,14 @@ export function useSettleDebtMutation(groupId: string) {
       return (await response.json()) as SettleDebtResponse;
     },
     onSuccess: async () => {
-      await invalidateGroup(queryClient, groupId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }
@@ -287,7 +317,14 @@ export function useAddMemberMutation(groupId: string) {
       return (await response.json()) as AddMemberResponse;
     },
     onSuccess: async () => {
-      await invalidateGroup(queryClient, groupId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }
@@ -312,7 +349,14 @@ export function useCreateCategoryMutation(groupId: string) {
       return (await response.json()) as CreateCategorySuccess;
     },
     onSuccess: async () => {
-      await invalidateGroup(queryClient, groupId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }
@@ -337,7 +381,14 @@ export function useUpdateCategoryMutation(groupId: string, categoryId: string) {
       return (await response.json()) as UpdateCategorySuccess;
     },
     onSuccess: async () => {
-      await invalidateGroup(queryClient, groupId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }
@@ -361,7 +412,14 @@ export function useDeleteCategoryMutation(groupId: string) {
       return (await response.json()) as DeleteCategoryResponse;
     },
     onSuccess: async () => {
-      await invalidateGroup(queryClient, groupId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }
@@ -389,7 +447,14 @@ export function useMoveCategoryExpensesMutation(
       return (await response.json()) as MoveCategoryExpensesResponse;
     },
     onSuccess: async () => {
-      await invalidateGroup(queryClient, groupId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }
@@ -414,7 +479,14 @@ export function useRemoveMemberMutation(groupId: string) {
       return (await response.json()) as RemoveMemberResponse;
     },
     onSuccess: async () => {
-      await invalidateGroup(queryClient, groupId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }
@@ -437,7 +509,14 @@ export function useUnlinkMemberMutation(groupId: string) {
       return (await response.json()) as RemoveMemberResponse;
     },
     onSuccess: async () => {
-      await invalidateGroup(queryClient, groupId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
 }

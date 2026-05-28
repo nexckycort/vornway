@@ -303,6 +303,8 @@ function RouteComponent() {
     useState(false);
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
     useState(false);
+  const [pendingCreateCategoryDialog, setPendingCreateCategoryDialog] =
+    useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryIcon, setNewCategoryIcon] = useState(
     categoryIconOptions[1].id,
@@ -570,11 +572,20 @@ function RouteComponent() {
   };
 
   const openCreateCategoryDialog = () => {
+    setPendingCreateCategoryDialog(true);
     setShowCategoryDrawer(false);
-    window.requestAnimationFrame(() => {
-      setShowCreateCategoryDialog(true);
-    });
   };
+
+  useEffect(() => {
+    if (showCategoryDrawer || !pendingCreateCategoryDialog) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      setShowCreateCategoryDialog(true);
+      setPendingCreateCategoryDialog(false);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [pendingCreateCategoryDialog, showCategoryDrawer]);
 
   const handleCreateCategory = async () => {
     if (!trimmedNewCategoryName || createCategoryMutation.isPending) return;
@@ -593,6 +604,7 @@ function RouteComponent() {
       setNewCategoryCustomIcon('');
       setNewCategoryColor(categoryColorOptions[0]);
       setShowCreateCategoryDialog(false);
+      setPendingCreateCategoryDialog(false);
       setShowCategoryDrawer(false);
     } catch (creationError) {
       setError(
@@ -1485,7 +1497,12 @@ function RouteComponent() {
 
       <Dialog
         open={showCreateCategoryDialog}
-        onOpenChange={setShowCreateCategoryDialog}
+        onOpenChange={(nextOpen) => {
+          setShowCreateCategoryDialog(nextOpen);
+          if (!nextOpen) {
+            setPendingCreateCategoryDialog(false);
+          }
+        }}
       >
         <DialogContent className="max-h-[88dvh] max-w-[calc(100%-2rem)] gap-0 overflow-hidden rounded-[28px] p-0 sm:max-h-[85vh] sm:max-w-md">
           <DialogHeader>

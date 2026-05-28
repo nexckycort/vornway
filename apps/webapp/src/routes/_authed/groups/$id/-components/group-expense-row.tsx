@@ -281,7 +281,9 @@ export function GroupExpenseRow({
           <span className="absolute inset-y-0 left-0 w-3 rounded-r-full bg-emerald-600" />
         ) : null}
         {isPinned ? (
-          <span className="absolute right-4 top-0 h-7 w-4 rounded-b-full bg-amber-400" />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#f59e0b]">
+            <Pin className="size-4 shrink-0 fill-current" />
+          </span>
         ) : null}
         <div
           className={`flex items-center gap-3.5 ${isSettlement ? 'min-h-0' : ''}`}
@@ -314,12 +316,11 @@ export function GroupExpenseRow({
                 </p>
               </div>
             ) : (
-              <div className="flex items-start justify-between gap-3">
+              <div
+                className={`flex items-start justify-between gap-3 ${isPinned ? 'pr-6' : ''}`}
+              >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    {isPinned ? (
-                      <Pin className="size-3.5 shrink-0 fill-current text-amber-500" />
-                    ) : null}
                     <p className="min-w-0 truncate text-sm font-semibold text-[#202124]">
                       {expense.description}
                     </p>

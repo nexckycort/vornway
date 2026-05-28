@@ -500,126 +500,124 @@ function RouteComponent() {
       >
         <DrawerContent>
           {expenseForOptions ? (
-            <>
-              <div className="space-y-3 px-5 pb-5 pt-4">
-                <div className="rounded-[20px] border border-[#e2e8f0] bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                  <div className="flex items-start gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#eeeeee] text-[#202124]">
-                      <CategoryIcon
-                        icon={expenseForOptions.category?.icon}
-                        color={expenseForOptions.category?.color}
-                        fallback={<span className="text-lg">💸</span>}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-[#132238]">
-                            {expenseForOptions.description}
-                          </p>
-                          <p className="truncate text-xs text-[#64748b]">
-                            Pagado por {expenseForOptions.paidBy.name}
-                          </p>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className="text-sm font-semibold text-[#202124]">
-                            {formatMoney(
-                              expenseForOptions.currency,
-                              expenseForOptions.amount,
-                            )}
-                          </p>
-                          {expenseForOptions.currentUserBalance !== null ? (
-                            <p
-                              className={`text-xs font-medium ${
-                                expenseForOptions.currentUserBalance > 0
-                                  ? 'text-emerald-500'
-                                  : expenseForOptions.currentUserBalance < 0
-                                    ? 'text-red-500'
-                                    : 'text-[#64748b]'
-                              }`}
-                            >
-                              {expenseForOptions.currentUserBalance > 0
-                                ? `Te deben ${formatMoney(
-                                    expenseForOptions.currency,
-                                    expenseForOptions.currentUserBalance,
-                                  )}`
+            <div className="space-y-3 px-5 pb-5 pt-4">
+              <div className="rounded-[20px] border border-[#e2e8f0] bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                <div className="flex items-start gap-3">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#eeeeee] text-[#202124]">
+                    <CategoryIcon
+                      icon={expenseForOptions.category?.icon}
+                      color={expenseForOptions.category?.color}
+                      fallback={<span className="text-lg">💸</span>}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-[#132238]">
+                          {expenseForOptions.description}
+                        </p>
+                        <p className="truncate text-xs text-[#64748b]">
+                          Pagado por {expenseForOptions.paidBy.name}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-sm font-semibold text-[#202124]">
+                          {formatMoney(
+                            expenseForOptions.currency,
+                            expenseForOptions.amount,
+                          )}
+                        </p>
+                        {expenseForOptions.currentUserBalance !== null ? (
+                          <p
+                            className={`text-xs font-medium ${
+                              expenseForOptions.currentUserBalance > 0
+                                ? 'text-emerald-500'
                                 : expenseForOptions.currentUserBalance < 0
-                                  ? `Tú debes ${formatMoney(
-                                      expenseForOptions.currency,
-                                      Math.abs(
-                                        expenseForOptions.currentUserBalance,
-                                      ),
-                                    )}`
-                                  : 'Sin saldo'}
-                            </p>
-                          ) : null}
-                        </div>
+                                  ? 'text-red-500'
+                                  : 'text-[#64748b]'
+                            }`}
+                          >
+                            {expenseForOptions.currentUserBalance > 0
+                              ? `Te deben ${formatMoney(
+                                  expenseForOptions.currency,
+                                  expenseForOptions.currentUserBalance,
+                                )}`
+                              : expenseForOptions.currentUserBalance < 0
+                                ? `Tú debes ${formatMoney(
+                                    expenseForOptions.currency,
+                                    Math.abs(
+                                      expenseForOptions.currentUserBalance,
+                                    ),
+                                  )}`
+                                : 'Sin saldo'}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   </div>
                 </div>
-
-                {!expenseForOptions.isDeleted &&
-                !expenseForOptions.isSettlement ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowExpenseOptionsDrawer(false);
-                      setExpenseForOptions(null);
-                      handleEditExpense(expenseForOptions);
-                    }}
-                    className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left"
-                  >
-                    <Pencil className="size-5 text-[#202124]" />
-                    <span className="font-medium text-[#132238]">
-                      Editar gasto
-                    </span>
-                  </button>
-                ) : null}
-
-                {!expenseForOptions.isSettlement ? (
-                  <button
-                    type="button"
-                    onClick={handleTogglePinnedExpense}
-                    disabled={
-                      expenseForOptions.isDeleted ||
-                      toggleExpensePinMutation.isPending
-                    }
-                    className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left disabled:opacity-60"
-                  >
-                    <Pin className="size-5 text-[#202124]" />
-                    <span className="font-medium text-[#132238]">
-                      {pinnedExpenseIds.includes(expenseForOptions.id)
-                        ? 'Desfijar'
-                        : 'Fijar'}
-                    </span>
-                  </button>
-                ) : null}
-
-                {!expenseForOptions.isDeleted ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowExpenseOptionsDrawer(false);
-                      setExpenseForOptions(null);
-                      handleDeleteExpense(expenseForOptions);
-                    }}
-                    className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left"
-                  >
-                    <Trash2 className="size-5 text-red-500" />
-                    <span className="font-medium text-red-500">Eliminar</span>
-                  </button>
-                ) : null}
-
-                {toggleExpensePinMutation.error ? (
-                  <p className="text-sm text-red-500">
-                    {toggleExpensePinMutation.error instanceof Error
-                      ? toggleExpensePinMutation.error.message
-                      : 'No se pudo actualizar el pin'}
-                  </p>
-                ) : null}
               </div>
-            </>
+
+              {!expenseForOptions.isDeleted &&
+              !expenseForOptions.isSettlement ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowExpenseOptionsDrawer(false);
+                    setExpenseForOptions(null);
+                    handleEditExpense(expenseForOptions);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left"
+                >
+                  <Pencil className="size-5 text-[#202124]" />
+                  <span className="font-medium text-[#132238]">
+                    Editar gasto
+                  </span>
+                </button>
+              ) : null}
+
+              {!expenseForOptions.isSettlement ? (
+                <button
+                  type="button"
+                  onClick={handleTogglePinnedExpense}
+                  disabled={
+                    expenseForOptions.isDeleted ||
+                    toggleExpensePinMutation.isPending
+                  }
+                  className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left disabled:opacity-60"
+                >
+                  <Pin className="size-5 text-[#202124]" />
+                  <span className="font-medium text-[#132238]">
+                    {pinnedExpenseIds.includes(expenseForOptions.id)
+                      ? 'Desfijar'
+                      : 'Fijar'}
+                  </span>
+                </button>
+              ) : null}
+
+              {!expenseForOptions.isDeleted ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowExpenseOptionsDrawer(false);
+                    setExpenseForOptions(null);
+                    handleDeleteExpense(expenseForOptions);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left"
+                >
+                  <Trash2 className="size-5 text-red-500" />
+                  <span className="font-medium text-red-500">Eliminar</span>
+                </button>
+              ) : null}
+
+              {toggleExpensePinMutation.error ? (
+                <p className="text-sm text-red-500">
+                  {toggleExpensePinMutation.error instanceof Error
+                    ? toggleExpensePinMutation.error.message
+                    : 'No se pudo actualizar el pin'}
+                </p>
+              ) : null}
+            </div>
           ) : null}
         </DrawerContent>
       </Drawer>

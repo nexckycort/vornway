@@ -21,6 +21,7 @@ export type ListNotificationsResult = {
     total: number;
     nextCursor: string | null;
   };
+  unreadCount: number;
 };
 
 export type NotificationService = {

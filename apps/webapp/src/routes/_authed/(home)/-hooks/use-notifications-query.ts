@@ -1,30 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { client } from '#/lib/hc';
-
-type NotificationItem = {
-  id: string;
-  type: string;
-  title: string;
-  body: string;
-  url: string;
-  groupId: string | null;
-  expenseId: string | null;
-  actorName: string | null;
-  actorImage: string | null;
-  readAt: string | null;
-  createdAt: string;
-};
-
-type NotificationsResponse = {
-  data: NotificationItem[];
-  pagination: {
-    limit: number;
-    total: number;
-    nextCursor: string | null;
-  };
-};
+import { client, type InferResponseType } from '#/lib/hc';
 
 const notificationsEndpoint = client.api.notifications.$get;
+
+type NotificationsResponse = InferResponseType<typeof notificationsEndpoint>;
 
 export function useNotificationsQuery() {
   return useQuery({
@@ -38,7 +17,7 @@ export function useNotificationsQuery() {
         throw new Error('No se pudieron cargar las notificaciones');
       }
 
-      return (await response.json()) as NotificationsResponse;
+      return (await response.json()) as unknown as NotificationsResponse;
     },
   });
 }

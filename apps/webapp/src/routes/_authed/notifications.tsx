@@ -157,7 +157,7 @@ function RouteComponent() {
 
         {grouped.map((group) => (
           <section key={group.label} className="mt-4">
-            <p className="px-3 pb-3 text-[22px] font-medium leading-none text-[#555555]">
+            <p className="px-3 pb-3 text-sm font-medium leading-5 text-[#555555]">
               {group.label}
             </p>
             <div className="divide-y divide-[#ececec] border-y border-[#ececec] bg-transparent">
@@ -180,10 +180,10 @@ function RouteComponent() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate text-[19px] font-semibold leading-6 text-[#202124]">
+                          <p className="truncate text-base font-semibold leading-6 text-[#202124]">
                             {item.title}
                           </p>
-                          <p className="mt-1 text-base leading-5 text-[#555555]">
+                          <p className="mt-1 text-sm leading-5 text-[#555555]">
                             {item.body}
                           </p>
                         </div>
@@ -191,7 +191,7 @@ function RouteComponent() {
                           <span className="mt-4 inline-flex size-2.5 shrink-0 rounded-full bg-[#ef4444]" />
                         )}
                       </div>
-                      <p className="mt-2 text-sm text-[#9ca3af]">
+                      <p className="mt-2 text-xs text-[#9ca3af]">
                         {formatRelativeTime(item.createdAt)}
                       </p>
                     </div>

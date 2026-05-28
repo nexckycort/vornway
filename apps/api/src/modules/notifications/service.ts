@@ -62,7 +62,7 @@ export function createNotificationService(): NotificationService {
       const safeLimit = Math.max(1, Math.min(50, limit));
       const where = { userId };
 
-      const [rows, total] = await Promise.all([
+      const [rows, total, unreadCount] = await Promise.all([
         db.notification.findMany({
           where,
           orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -75,6 +75,12 @@ export function createNotificationService(): NotificationService {
           take: safeLimit,
         }),
         db.notification.count({ where }),
+        db.notification.count({
+          where: {
+            userId,
+            readAt: null,
+          },
+        }),
       ]);
 
       const nextCursor =
@@ -87,6 +93,7 @@ export function createNotificationService(): NotificationService {
           total,
           nextCursor,
         },
+        unreadCount,
       } satisfies ListNotificationsResult;
     },
     markAllAsRead: async (userId) => {

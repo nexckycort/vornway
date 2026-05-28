@@ -12,6 +12,7 @@ import {
   emptyHomeData,
   useHomeQuery,
 } from '#/routes/_authed/(home)/-hooks/use-home-query';
+import { useNotificationsSummaryQuery } from '#/routes/_authed/(home)/-hooks/use-notifications-summary-query';
 import { getHomeMessages } from '#/routes/_authed/(home)/-messages';
 
 export const Route = createFileRoute('/_authed/(home)/')({
@@ -23,11 +24,14 @@ function RouteComponent() {
   const t = getHomeMessages();
   const { user } = useAuth();
   const homeQuery = useHomeQuery();
+  const notificationsSummaryQuery = useNotificationsSummaryQuery();
   const data = homeQuery.data ?? emptyHomeData;
   const userName = user?.name?.trim() || t.fallbackUser;
   const BellIcon = homeIcons.bell;
   const PlusIcon = homeIcons.plus;
   const hasGroups = data.trips.length > 0;
+  const hasUnreadNotifications =
+    (notificationsSummaryQuery.data?.unreadCount ?? 0) > 0;
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
@@ -60,11 +64,14 @@ function RouteComponent() {
                   type="button"
                   variant="outline"
                   size="icon-sm"
-                  className="rounded-full bg-white shadow-sm"
+                  className="relative rounded-full bg-white shadow-sm"
                   aria-label={t.notificationsAria}
                   onClick={() => navigate({ to: '/notifications' })}
                 >
                   <BellIcon />
+                  {hasUnreadNotifications ? (
+                    <span className="absolute right-0 top-0 size-2 rounded-full bg-primary" />
+                  ) : null}
                 </Button>
               </header>
 

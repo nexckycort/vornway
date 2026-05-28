@@ -148,10 +148,20 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
     const visibleBalances = balances.slice(0, 2);
     const overflowCount = Math.max(0, balances.length - visibleBalances.length);
 
-    const totals = Object.entries(group.totalsByCurrency).filter(
+    const balanceTotalsByCurrency = new Map<string, number>();
+    for (const item of group.participantBalances) {
+      const signedAmount =
+        item.direction === 'theyOweYou' ? item.amount : -item.amount;
+      balanceTotalsByCurrency.set(
+        item.currency,
+        (balanceTotalsByCurrency.get(item.currency) ?? 0) + signedAmount,
+      );
+    }
+
+    const balanceTotals = Array.from(balanceTotalsByCurrency.entries()).filter(
       ([, value]) => Math.abs(value) >= 0.01,
     );
-    const firstTotal = totals[0];
+    const firstTotal = balanceTotals[0];
     const balanceLabel = firstTotal
       ? firstTotal[1] > 0
         ? `${t.theyOwe} ${formatCurrency(firstTotal[0], Math.abs(firstTotal[1]))}`

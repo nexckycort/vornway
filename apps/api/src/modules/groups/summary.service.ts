@@ -66,6 +66,7 @@ export function createGroupSummaryService() {
             select: {
               amount: true,
               currency: true,
+              notes: true,
               paidById: true,
               payers: {
                 select: {
@@ -103,8 +104,8 @@ export function createGroupSummaryService() {
       );
       const balanceByMember = new Map<string, Record<string, number>>();
       const expenseCountByMember = new Map<string, number>();
-      const directDebtByPair = new Map<string, number>();
-      const allDebtByPair = new Map<string, number>();
+      const directDebtByCounterparty = new Map<string, number>();
+      const directCreditByCounterparty = new Map<string, number>();
       const categoryExpenseCount = new Map<string, number>();
 
       for (const expense of groupExpenses) {
@@ -122,6 +123,7 @@ export function createGroupSummaryService() {
 
       for (const expense of group.Expense) {
         if (expense.participants.length === 0) continue;
+        const isSettlement = expense.notes?.includes('[SETTLEMENT:') ?? false;
 
         const payerEntries =
           expense.payers.length > 0
@@ -160,40 +162,17 @@ export function createGroupSummaryService() {
               (participantBalances[expense.currency] ?? 0) - participant.share,
             );
           }
-
-          if (payerIds.has(participant.memberId)) {
-            continue;
-          }
-
-          for (const payer of payerEntries) {
-            const amount = normalizeAmount(
-              totalPaid > 0
-                ? (participant.share * payer.amount) / totalPaid
-                : 0,
-            );
-            if (amount <= 0) continue;
-
-            const key = `${participant.memberId}:${payer.memberId}:${expense.currency}`;
-            allDebtByPair.set(
-              key,
-              normalizeAmount((allDebtByPair.get(key) ?? 0) + amount),
-            );
-          }
         }
 
         if (!myMembership) continue;
+        if (isSettlement) continue;
 
         const currentPayer = payerEntries.find(
           (payer) => payer.memberId === myMembership.id,
         );
         if (currentPayer) {
           for (const participant of expense.participants) {
-            if (
-              participant.memberId === myMembership.id ||
-              payerIds.has(participant.memberId)
-            ) {
-              continue;
-            }
+            if (participant.memberId === myMembership.id) continue;
 
             const amount = normalizeAmount(
               totalPaid > 0
@@ -203,12 +182,13 @@ export function createGroupSummaryService() {
             if (amount <= 0) continue;
 
             const key = `${participant.memberId}:${expense.currency}`;
-            directDebtByPair.set(
+            directCreditByCounterparty.set(
               key,
-              normalizeAmount((directDebtByPair.get(key) ?? 0) - amount),
+              normalizeAmount(
+                (directCreditByCounterparty.get(key) ?? 0) + amount,
+              ),
             );
           }
-          continue;
         }
 
         const currentParticipation = expense.participants.find(
@@ -217,6 +197,8 @@ export function createGroupSummaryService() {
         if (!currentParticipation) continue;
 
         for (const payer of payerEntries) {
+          if (payer.memberId === myMembership.id) continue;
+
           const amount = normalizeAmount(
             totalPaid > 0
               ? (currentParticipation.share * payer.amount) / totalPaid
@@ -225,14 +207,14 @@ export function createGroupSummaryService() {
           if (amount <= 0) continue;
 
           const key = `${payer.memberId}:${expense.currency}`;
-          directDebtByPair.set(
+          directDebtByCounterparty.set(
             key,
-            normalizeAmount((directDebtByPair.get(key) ?? 0) + amount),
+            normalizeAmount((directDebtByCounterparty.get(key) ?? 0) + amount),
           );
         }
       }
 
-      const directDebts = Array.from(directDebtByPair.entries())
+      const directDebts = Array.from(directDebtByCounterparty.entries())
         .map(([pairKey, amount]) => {
           const [toMemberId, currency] = pairKey.split(':');
           return {
@@ -245,39 +227,63 @@ export function createGroupSummaryService() {
         .filter((entry) => entry.amount > 0)
         .sort((a, b) => b.amount - a.amount);
 
-      const directCredits = Array.from(directDebtByPair.entries())
+      const directCredits = Array.from(directCreditByCounterparty.entries())
         .map(([pairKey, amount]) => {
           const [fromMemberId, currency] = pairKey.split(':');
           return {
             fromMemberId,
             fromName: memberNameById.get(fromMemberId) ?? 'Miembro',
             currency,
-            amount: normalizeAmount(Math.abs(amount)),
+            amount: normalizeAmount(amount),
           };
         })
         .filter((entry) => entry.amount > 0)
-        .filter((entry) => {
-          const key = `${entry.fromMemberId}:${entry.currency}`;
-          return (directDebtByPair.get(key) ?? 0) < 0;
-        })
         .sort((a, b) => b.amount - a.amount);
 
-      const settlementDebts = Array.from(allDebtByPair.entries())
-        .map(([pairKey, amount]) => {
-          const [fromMemberId, toMemberId, currency] = pairKey.split(':');
-          const reverseAmount =
-            allDebtByPair.get(`${toMemberId}:${fromMemberId}:${currency}`) ?? 0;
-          return {
-            fromMemberId,
-            fromName: memberNameById.get(fromMemberId) ?? 'Miembro',
-            toMemberId,
-            toName: memberNameById.get(toMemberId) ?? 'Miembro',
-            currency,
-            amount: normalizeAmount(amount - reverseAmount),
-          };
-        })
-        .filter((entry) => entry.amount > 0)
-        .sort((a, b) => b.amount - a.amount);
+      const settlementDebts = myMembership
+        ? group.GroupMember.flatMap((member) => {
+            if (member.id === myMembership.id) return [];
+
+            const balances = balanceByMember.get(member.id) ?? {};
+            return Object.entries(balances)
+              .map(([currency, balance]) => {
+                const amount = normalizeAmount(Math.abs(balance));
+                if (amount <= 0.01) return null;
+
+                return balance > 0
+                  ? {
+                      fromMemberId: myMembership.id,
+                      fromName: myMembership.name,
+                      toMemberId: member.id,
+                      toName: member.name,
+                      currency,
+                      amount,
+                    }
+                  : {
+                      fromMemberId: member.id,
+                      fromName: member.name,
+                      toMemberId: myMembership.id,
+                      toName: myMembership.name,
+                      currency,
+                      amount,
+                    };
+              })
+              .filter(
+                (
+                  entry,
+                ): entry is {
+                  fromMemberId: string;
+                  fromName: string;
+                  toMemberId: string;
+                  toName: string;
+                  currency: string;
+                  amount: number;
+                } => entry !== null,
+              );
+          })
+        : [];
+
+      settlementDebts.sort((a, b) => b.amount - a.amount);
 
       return {
         id: group.id,

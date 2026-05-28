@@ -38,6 +38,16 @@ const currencyMeta: Record<
 
 type Step = 1 | 2;
 
+type SettlementOption = {
+  key: string;
+  fromMemberId: string;
+  fromName: string;
+  toMemberId: string;
+  toName: string;
+  currency: string;
+  amount: number;
+};
+
 function formatCompactAmount(currency: string, amount: number) {
   const hasDecimals = Math.abs(amount % 1) > 0.000001;
 
@@ -120,14 +130,51 @@ function RouteComponent() {
   const closingStepTwoFromPopStateRef = useRef(false);
   const didInitializeEditRef = useRef(false);
 
-  const options = useMemo(
-    () =>
-      (groupQuery.data?.settlementDebts ?? []).map((debt) => ({
-        key: `${debt.fromMemberId}:${debt.toMemberId}:${debt.currency}`,
-        ...debt,
-      })),
-    [groupQuery.data?.settlementDebts],
-  );
+  const myMembershipId = groupQuery.data?.myMembership?.id ?? null;
+  const myMembershipName = groupQuery.data?.myMembership?.name ?? 'Tú';
+  const directDebts = (groupQuery.data?.directDebts ?? []) as Array<{
+    toMemberId: string;
+    toName: string;
+    currency: string;
+    amount: number;
+  }>;
+  const directCredits = (groupQuery.data?.directCredits ?? []) as Array<{
+    fromMemberId: string;
+    fromName: string;
+    currency: string;
+    amount: number;
+  }>;
+
+  const options = useMemo<SettlementOption[]>(() => {
+    if (!myMembershipId) return [];
+
+    const oweOthers: SettlementOption[] = directDebts.map((debt) => ({
+      key: `${myMembershipId}:${debt.toMemberId}:${debt.currency}`,
+      fromMemberId: myMembershipId,
+      fromName: myMembershipName,
+      toMemberId: debt.toMemberId,
+      toName: debt.toName,
+      currency: debt.currency,
+      amount: debt.amount,
+    }));
+
+    const owedToMe: SettlementOption[] = directCredits.map((credit) => ({
+      key: `${credit.fromMemberId}:${myMembershipId}:${credit.currency}`,
+      fromMemberId: credit.fromMemberId,
+      fromName: credit.fromName,
+      toMemberId: myMembershipId,
+      toName: myMembershipName,
+      currency: credit.currency,
+      amount: credit.amount,
+    }));
+
+    return [...oweOthers, ...owedToMe];
+  }, [
+    groupQuery.data?.directCredits,
+    groupQuery.data?.directDebts,
+    myMembershipId,
+    myMembershipName,
+  ]);
 
   const membersById = useMemo(
     () =>
@@ -137,14 +184,10 @@ function RouteComponent() {
     [groupQuery.data?.members],
   );
 
-  const myMembershipId = groupQuery.data?.myMembership?.id ?? null;
-
   const debtsIOwe = useMemo(
     () =>
       options.filter(
-        (option) =>
-          (myMembershipId ? option.fromMemberId === myMembershipId : false) &&
-          option.amount > 0,
+        (option) => option.fromMemberId === myMembershipId && option.amount > 0,
       ),
     [myMembershipId, options],
   );
@@ -152,9 +195,7 @@ function RouteComponent() {
   const debtsOwedToMe = useMemo(
     () =>
       options.filter(
-        (option) =>
-          (myMembershipId ? option.toMemberId === myMembershipId : false) &&
-          option.amount > 0,
+        (option) => option.toMemberId === myMembershipId && option.amount > 0,
       ),
     [myMembershipId, options],
   );

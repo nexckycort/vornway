@@ -34,7 +34,7 @@ import {
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
 import { CategoryIcon } from './-components/category-icon';
-import { formatMoney, sumByCurrency } from './-components/group-detail.utils';
+import { formatMoney } from './-components/group-detail.utils';
 import { GroupDetailHeader } from './-components/group-detail-header';
 import { GroupDetailSkeleton } from './-components/group-detail-skeleton';
 import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
@@ -274,12 +274,9 @@ function RouteComponent() {
     ([, amount]) => Math.abs(amount) >= 0.01,
   );
   const primaryTotal = totalsEntries[0];
-  const debtEntries = Object.entries(sumByCurrency(group.directDebts)).filter(
-    ([, amount]) => amount > 0,
-  );
-  const creditEntries = Object.entries(
-    sumByCurrency(group.directCredits),
-  ).filter(([, amount]) => amount > 0);
+  const currentUserBalanceEntries = Object.entries(
+    group.memberBalances.find((member) => member.isCurrentUser)?.balances ?? {},
+  ).filter(([, amount]) => Math.abs(amount) >= 0.01);
 
   const copyText = async (value: string, label: string) => {
     try {
@@ -394,8 +391,7 @@ function RouteComponent() {
           imageUrl={group.imageUrl}
           totalsEntries={totalsEntries}
           primaryTotal={primaryTotal}
-          creditEntries={creditEntries}
-          debtEntries={debtEntries}
+          balanceEntries={currentUserBalanceEntries}
           onOpenQr={() => setShowQrDrawer(true)}
           onBack={navigateToFlowBack}
           flowState={flowState}

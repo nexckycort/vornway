@@ -18,7 +18,7 @@ import {
   getEmptyGroupListItems,
   subscribeGroupListItems,
 } from '#/lib/groups-list-query-collection';
-import { formatShortDate, getIntlLocale } from '#/lib/i18n';
+import { formatCurrency, formatShortDate, getIntlLocale } from '#/lib/i18n';
 import {
   getEmptyPendingGroups,
   getPendingGroups,
@@ -89,38 +89,66 @@ function RouteComponent() {
 
   const groupTrips = useMemo(
     () =>
-      groups.map((group) => ({
-        id: group.id,
-        name: group.name,
-        dates: t.home.createdAt(formatShortDate(group.createdAt)),
-        imageUrl: group.imageUrl,
-        avatars: mapMembersToAvatars(group.members),
-        extraPeople: Math.max(0, group.members.length - 2),
-        ...(group.participantBalances.length > 0
-          ? {
-              balanceLabel:
-                group.participantBalances[0]?.label ?? t.home.noPendingBalances,
-              balanceItems: group.participantBalances
-                .slice(0, 2)
-                .map((item) => ({
-                  person: item.memberName,
-                  amount: item.label,
-                })),
-              ...(group.participantBalances.length > 2
-                ? {
-                    balanceOverflowLabel: t.home.otherBalances(
-                      group.participantBalances.length - 2,
-                    ),
-                  }
-                : {}),
-            }
-          : {
-              emptyLabel: group.hasExpenses
-                ? t.home.noPendingBalances
-                : t.home.noExpenses,
-            }),
-        createdAt: group.createdAt,
-      })) as Array<Trip & { createdAt: string }>,
+      groups.map((group) => {
+        const balanceTotalsByCurrency = new Map<string, number>();
+        for (const item of group.participantBalances) {
+          const signedAmount =
+            item.direction === 'theyOweYou' ? item.amount : -item.amount;
+          balanceTotalsByCurrency.set(
+            item.currency,
+            (balanceTotalsByCurrency.get(item.currency) ?? 0) + signedAmount,
+          );
+        }
+
+        const balanceItems = group.participantBalances.map((item) => ({
+          person: item.memberName,
+          amount: item.label,
+        }));
+        const visibleBalanceItems = balanceItems.slice(0, 2);
+        const overflowCount = Math.max(
+          0,
+          balanceItems.length - visibleBalanceItems.length,
+        );
+        const balanceTotals = Array.from(
+          balanceTotalsByCurrency.entries(),
+        ).filter(([, value]) => Math.abs(value) >= 0.01);
+        const firstTotal = balanceTotals[0];
+
+        return {
+          id: group.id,
+          name: group.name,
+          dates: t.home.createdAt(formatShortDate(group.createdAt)),
+          imageUrl: group.imageUrl,
+          avatars: mapMembersToAvatars(group.members),
+          extraPeople: Math.max(0, group.members.length - 2),
+          ...(group.participantBalances.length > 0
+            ? {
+                balanceLabel: firstTotal
+                  ? firstTotal[1] > 0
+                    ? `${t.theyOweYou} ${formatCurrency(
+                        firstTotal[0],
+                        Math.abs(firstTotal[1]),
+                      )}`
+                    : `${t.youOweThem} ${formatCurrency(
+                        firstTotal[0],
+                        Math.abs(firstTotal[1]),
+                      )}`
+                  : t.home.noPendingBalances,
+                balanceItems: visibleBalanceItems,
+                ...(overflowCount > 0
+                  ? {
+                      balanceOverflowLabel: t.home.otherBalances(overflowCount),
+                    }
+                  : {}),
+              }
+            : {
+                emptyLabel: group.hasExpenses
+                  ? t.home.noPendingBalances
+                  : t.home.noExpenses,
+              }),
+          createdAt: group.createdAt,
+        };
+      }) as Array<Trip & { createdAt: string }>,
     [groups, t.home],
   );
 

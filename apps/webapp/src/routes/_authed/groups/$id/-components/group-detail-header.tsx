@@ -29,8 +29,7 @@ type GroupDetailHeaderProps = {
   imageUrl: string | null;
   totalsEntries: Array<[string, number]>;
   primaryTotal: [string, number] | undefined;
-  creditEntries: Array<[string, number]>;
-  debtEntries: Array<[string, number]>;
+  balanceEntries: Array<[string, number]>;
   onOpenQr: () => void;
   onBack: () => void;
   onOpenSettings: () => void;
@@ -46,8 +45,7 @@ export function GroupDetailHeader({
   imageUrl,
   totalsEntries,
   primaryTotal,
-  creditEntries,
-  debtEntries,
+  balanceEntries,
   onOpenQr,
   onBack,
   onOpenSettings,
@@ -62,8 +60,7 @@ export function GroupDetailHeader({
   const balanceCurrencies = Array.from(
     new Set([
       ...totalsEntries.map(([currency]) => currency),
-      ...creditEntries.map(([currency]) => currency),
-      ...debtEntries.map(([currency]) => currency),
+      ...balanceEntries.map(([currency]) => currency),
       primaryTotal?.[0] ?? 'COP',
     ]),
   );
@@ -138,16 +135,14 @@ export function GroupDetailHeader({
             {balanceCurrencies.map((currency) => {
               const meta = getCurrencyMeta(currency);
               const totalAmount = getEntryAmount(totalsEntries, currency);
-              const creditAmount = getEntryAmount(creditEntries, currency);
-              const debtAmount = getEntryAmount(debtEntries, currency);
-              const hasCredit = Math.abs(creditAmount) > 0;
-              const hasDebt = Math.abs(debtAmount) > 0;
+              const balanceAmount = getEntryAmount(balanceEntries, currency);
+              const hasBalance = Math.abs(balanceAmount) > 0.01;
 
               return (
                 <article
                   key={currency}
                   className={`min-w-[calc(100%-2rem)] snap-start rounded-[24px] bg-[#2c2226] px-5 py-4 shadow-[0_18px_35px_rgba(0,0,0,0.18)] ${
-                    hasCredit || hasDebt
+                    hasBalance
                       ? ''
                       : hasMultipleCurrencies
                         ? 'flex min-h-[158px] flex-col justify-center'
@@ -161,7 +156,7 @@ export function GroupDetailHeader({
 
                   <p
                     className={`text-xs font-light text-white/80 ${
-                      hasCredit || hasDebt ? 'mt-3' : 'mt-3'
+                      hasBalance ? 'mt-3' : 'mt-3'
                     }`}
                   >
                     {t.header.totalSpent}
@@ -170,21 +165,21 @@ export function GroupDetailHeader({
                     {formatMoney(currency, Math.abs(totalAmount))}
                   </h2>
 
-                  {hasCredit || hasDebt ? (
+                  {hasBalance ? (
                     <div className="mt-4 flex items-center justify-between gap-4">
-                      {hasCredit ? (
+                      {balanceAmount > 0 ? (
                         <p className="min-w-0 text-xs font-light text-white/85">
                           {t.header.theyOweYou}{' '}
                           <span className="font-semibold text-emerald-400">
-                            {formatMoney(currency, Math.abs(creditAmount))}
+                            {formatMoney(currency, Math.abs(balanceAmount))}
                           </span>
                         </p>
                       ) : null}
-                      {hasDebt ? (
+                      {balanceAmount < 0 ? (
                         <p className="min-w-0 text-right text-xs font-light text-white/85">
                           {t.header.youOwe}{' '}
                           <span className="font-semibold text-[#ff4d6a]">
-                            {formatMoney(currency, Math.abs(debtAmount))}
+                            {formatMoney(currency, Math.abs(balanceAmount))}
                           </span>
                         </p>
                       ) : null}

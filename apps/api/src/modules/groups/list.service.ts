@@ -44,6 +44,7 @@ const groupListSelect = {
     select: {
       amount: true,
       currency: true,
+      notes: true,
       paidById: true,
       payers: {
         select: {
@@ -150,77 +151,28 @@ function mapGroupListRow(
   const participantBalances: GroupListItem['participantBalances'] = [];
 
   if (currentMember) {
-    const currencies = new Set<string>();
-    for (const balances of balancesByMember.values()) {
-      for (const currency of Object.keys(balances)) {
-        currencies.add(currency);
-      }
-    }
+    for (const member of row.GroupMember) {
+      if (member.id === currentMember.id) continue;
 
-    for (const currency of currencies) {
-      const currentBalance = normalizeAmount(
-        balancesByMember.get(currentMember.id)?.[currency] ?? 0,
-      );
-      if (Math.abs(currentBalance) < 0.01) continue;
+      const balances = balancesByMember.get(member.id) ?? {};
+      for (const [currency, rawValue] of Object.entries(balances)) {
+        if (Math.abs(rawValue) < 0.01) continue;
 
-      if (currentBalance > 0) {
-        let remaining = currentBalance;
-        const debtors = orderedMembers
-          .map((member) => ({
-            member,
-            amount: normalizeAmount(
-              Math.abs(balancesByMember.get(member.id)?.[currency] ?? 0),
-            ),
-            balance: normalizeAmount(
-              balancesByMember.get(member.id)?.[currency] ?? 0,
-            ),
-          }))
-          .filter((entry) => entry.balance < 0)
-          .sort((left, right) => right.amount - left.amount);
-
-        for (const debtor of debtors) {
-          if (remaining <= 0) break;
-          const amount = normalizeAmount(Math.min(remaining, debtor.amount));
-          if (amount <= 0) continue;
-
-          participantBalances.push({
-            memberId: debtor.member.id,
-            memberName: debtor.member.name,
-            currency,
-            amount,
-            direction: 'theyOweYou',
-            label: `Te debe ${amount.toLocaleString()} ${currency}`,
-          });
-          remaining = normalizeAmount(remaining - amount);
-        }
-        continue;
-      }
-
-      let remaining = Math.abs(currentBalance);
-      const creditors = orderedMembers
-        .map((member) => ({
-          member,
-          amount: normalizeAmount(
-            balancesByMember.get(member.id)?.[currency] ?? 0,
-          ),
-        }))
-        .filter((entry) => entry.amount > 0)
-        .sort((left, right) => right.amount - left.amount);
-
-      for (const creditor of creditors) {
-        if (remaining <= 0) break;
-        const amount = normalizeAmount(Math.min(remaining, creditor.amount));
-        if (amount <= 0) continue;
+        const amount = normalizeAmount(Math.abs(rawValue));
+        const direction: GroupListItem['participantBalances'][number]['direction'] =
+          rawValue < 0 ? 'theyOweYou' : 'youOweThem';
 
         participantBalances.push({
-          memberId: creditor.member.id,
-          memberName: creditor.member.name,
+          memberId: member.id,
+          memberName: member?.name ?? 'Participante',
           currency,
           amount,
-          direction: 'youOweThem',
-          label: `Debes ${amount.toLocaleString()} ${currency}`,
+          direction,
+          label:
+            direction === 'theyOweYou'
+              ? `Te debe ${amount.toLocaleString()} ${currency}`
+              : `Debes ${amount.toLocaleString()} ${currency}`,
         });
-        remaining = normalizeAmount(remaining - amount);
       }
     }
   }

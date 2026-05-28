@@ -120,20 +120,16 @@ export function createGroupReportsService() {
         );
 
         if (currentMember) {
-          const myPaidAmount =
-            expense.payers.length > 0
-              ? (expense.payers.find(
-                  (payer) => payer.memberId === currentMember.id,
-                )?.amount ?? 0)
-              : expense.paidById === currentMember.id
-                ? expense.amount
-                : 0;
-          if (myPaidAmount > 0) {
+          const myOwedAmount =
+            expense.participants.find(
+              (participant) => participant.memberId === currentMember.id,
+            )?.share ?? 0;
+          if (myOwedAmount !== 0) {
             currentUserSpentByCurrency.set(
               expense.currency,
               normalizeAmount(
                 (currentUserSpentByCurrency.get(expense.currency) ?? 0) +
-                  myPaidAmount,
+                  myOwedAmount,
               ),
             );
           }

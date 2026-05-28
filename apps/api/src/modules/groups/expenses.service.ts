@@ -1,4 +1,5 @@
 import { db } from '~/infrastructure/database/connection';
+import { notificationService } from '~/modules/notifications';
 import { pushNotificationService } from '~/modules/push';
 import {
   deleteExpenseAttachment,
@@ -573,7 +574,12 @@ export function createGroupExpensesService() {
                 in: [...normalizedPayerIds, ...validParticipantIds],
               },
             },
-            select: { id: true, name: true, userId: true },
+            select: {
+              id: true,
+              name: true,
+              userId: true,
+              user: { select: { image: true } },
+            },
           }),
         ]);
 
@@ -585,19 +591,41 @@ export function createGroupExpensesService() {
         });
 
         if (group && recipientUserIds.length > 0) {
-          void pushNotificationService
-            .sendToUsers(
-              recipientUserIds,
-              buildExpensePushPayload({
+          const actorImage =
+            pushMembers.find((member) => member.userId === userId)?.user
+              ?.image ?? null;
+          const pushPayload = buildExpensePushPayload({
+            groupId,
+            groupName: group.name,
+            expenseId: expense.id,
+            expenseTitle: description,
+            amount,
+            currency,
+            createdByName: membership.name,
+          });
+
+          void notificationService
+            .createForUsers({
+              userIds: recipientUserIds,
+              type: 'expense.created',
+              title: pushPayload.title,
+              body: pushPayload.body,
+              url: pushPayload.url,
+              groupId,
+              expenseId: expense.id,
+              actorName: membership.name,
+              actorImage,
+            })
+            .catch((error) => {
+              console.warn('Failed to create expense inbox notification', {
                 groupId,
-                groupName: group.name,
                 expenseId: expense.id,
-                expenseTitle: description,
-                amount,
-                currency,
-                createdByName: membership.name,
-              }),
-            )
+                error,
+              });
+            });
+
+          void pushNotificationService
+            .sendToUsers(recipientUserIds, pushPayload)
             .catch((error) => {
               console.warn('Failed to send expense push notification', {
                 groupId,

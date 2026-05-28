@@ -1,4 +1,5 @@
 import { db } from '~/infrastructure/database/connection';
+import { notificationService } from '~/modules/notifications';
 import { pushNotificationService } from '~/modules/push';
 import {
   buildActiveExpenseWhere,
@@ -114,14 +115,23 @@ export function createGroupMembersService() {
               return;
             }
 
-            await pushNotificationService.sendToUsers(
-              [linkedUserId],
-              buildGroupMemberAddedPushPayload({
-                groupId,
-                groupName: group.name,
-                addedByName: name,
-              }),
-            );
+            const payload = buildGroupMemberAddedPushPayload({
+              groupId,
+              groupName: group.name,
+              addedByName: name,
+            });
+
+            await notificationService.createForUsers({
+              userIds: [linkedUserId],
+              type: 'group.member.added',
+              title: payload.title,
+              body: payload.body,
+              url: payload.url,
+              groupId,
+              actorName: name,
+            });
+
+            await pushNotificationService.sendToUsers([linkedUserId], payload);
           } catch (error) {
             console.warn('Failed to send group member push notification', {
               groupId,

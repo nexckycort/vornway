@@ -1,0 +1,20 @@
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String
+  title      String
+  body       String
+  url        String
+  groupId    String?
+  expenseId  String?
+  actorName  String?
+  actorImage String?
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt, createdAt])
+  @@map("notification")
+}

@@ -13,6 +13,7 @@ model User {
   groupMembers  GroupMember[]
   itineraries   Itinerary[]
   pushSubscriptions PushSubscription[]
+  notifications Notification[]
 
   @@unique([email])
   @@map("user")

@@ -96,18 +96,16 @@ function summarizeGroup(
     for (const payer of payerEntries) {
       const payerBalances = balanceByMember.get(payer.memberId);
       if (payerBalances) {
-        payerBalances[expense.currency] = normalizeAmount(
-          (payerBalances[expense.currency] ?? 0) + payer.amount,
-        );
+        payerBalances[expense.currency] =
+          (payerBalances[expense.currency] ?? 0) + payer.amount;
       }
     }
 
     for (const participant of expense.participants) {
       const participantBalances = balanceByMember.get(participant.memberId);
       if (participantBalances) {
-        participantBalances[expense.currency] = normalizeAmount(
-          (participantBalances[expense.currency] ?? 0) - participant.share,
-        );
+        participantBalances[expense.currency] =
+          (participantBalances[expense.currency] ?? 0) - participant.share;
       }
     }
   }

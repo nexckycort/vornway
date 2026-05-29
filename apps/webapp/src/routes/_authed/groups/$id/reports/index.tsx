@@ -28,6 +28,19 @@ export const Route = createFileRoute('/_authed/groups/$id/reports/')({
 
 type TotalsRange = 'all' | 7 | 15 | 30;
 
+type GroupSummaryCounterpartyFields = {
+  directDebts: Array<{
+    toMemberId: string;
+    currency: string;
+    amount: number;
+  }>;
+  directCredits: Array<{
+    fromMemberId: string;
+    currency: string;
+    amount: number;
+  }>;
+};
+
 const CURRENCY_META: Record<string, { flag: string; label: string }> = {
   COP: { flag: '🇨🇴', label: 'COP' },
   USD: { flag: '🇺🇸', label: 'USD' },
@@ -69,14 +82,54 @@ function RouteComponent() {
 
     return Array.from(currencies);
   }, [group?.totals, reportsTotalsQuery.data?.totalsByCurrency]);
-  const sortedBalanceMembers = useMemo(
-    () =>
-      Array.from(group?.memberBalances ?? []).sort((left, right) => {
+  const sortedBalanceMembers = useMemo(() => {
+    if (!group) return [];
+    const summary = group as typeof group & GroupSummaryCounterpartyFields;
+    const currentMemberId =
+      group.members.find((member) => member.isCurrentUser)?.id ?? null;
+
+    const memberMap = new Map<
+      string,
+      {
+        memberId: string;
+        name: string;
+        isCurrentUser: boolean;
+        balances: Record<string, number>;
+      }
+    >();
+
+    for (const member of group.members) {
+      memberMap.set(member.id, {
+        memberId: member.id,
+        name: member.name,
+        isCurrentUser: currentMemberId === member.id,
+        balances: {},
+      });
+    }
+
+    for (const debt of summary.directDebts) {
+      const member = memberMap.get(debt.toMemberId);
+      if (!member) continue;
+      member.balances[debt.currency] =
+        (member.balances[debt.currency] ?? 0) - debt.amount;
+    }
+
+    for (const credit of summary.directCredits) {
+      const member = memberMap.get(credit.fromMemberId);
+      if (!member) continue;
+      member.balances[credit.currency] =
+        (member.balances[credit.currency] ?? 0) + credit.amount;
+    }
+
+    return Array.from(memberMap.values())
+      .filter((member) =>
+        Object.values(member.balances).some((amount) => Math.abs(amount) >= 1),
+      )
+      .sort((left, right) => {
         if (left.isCurrentUser === right.isCurrentUser) return 0;
         return left.isCurrentUser ? -1 : 1;
-      }),
-    [group?.memberBalances],
-  );
+      });
+  }, [group]);
   const sortedShareMembers = useMemo(
     () =>
       Array.from(reportsSharesQuery.data?.memberShares ?? []).sort(
@@ -268,24 +321,24 @@ function RouteComponent() {
                             className="flex items-center gap-2 rounded-2xl bg-[#f8fafc] px-4 py-3"
                           >
                             {amount > 0 ? (
-                              <ArrowDownLeft className="size-4 shrink-0 text-emerald-600" />
-                            ) : (
                               <ArrowUpRight className="size-4 shrink-0 text-rose-600" />
+                            ) : (
+                              <ArrowDownLeft className="size-4 shrink-0 text-emerald-600" />
                             )}
                             <p className="min-w-0 flex-1 text-sm text-[#334155]">
                               {amount > 0
-                                ? t.reports.youOwe(
+                                ? t.reports.owesYou(
                                     formatMoney(currency, Math.abs(amount)),
                                   )
-                                : t.reports.owesYou(
+                                : t.reports.youOwe(
                                     formatMoney(currency, Math.abs(amount)),
                                   )}
                             </p>
                             <span
                               className={
                                 amount > 0
-                                  ? 'text-sm font-semibold text-emerald-600'
-                                  : 'text-sm font-semibold text-rose-600'
+                                  ? 'text-sm font-semibold text-rose-600'
+                                  : 'text-sm font-semibold text-emerald-600'
                               }
                             >
                               {amount > 0 ? '+' : ''}

@@ -80,11 +80,8 @@ function summarizeGroup(
     };
   }
 
-  const balanceByMember = new Map<string, Record<string, number>>();
-
-  for (const member of group.GroupMember) {
-    balanceByMember.set(member.id, {});
-  }
+  const creditsByCounterparty = new Map<string, number>();
+  const debtsByCounterparty = new Map<string, number>();
 
   for (const expense of group.Expense) {
     if (expense.participants.length === 0) continue;
@@ -93,54 +90,93 @@ function summarizeGroup(
       expense.payers.length > 0
         ? expense.payers
         : [{ memberId: expense.paidById, amount: expense.amount ?? 0 }];
-    for (const payer of payerEntries) {
-      const payerBalances = balanceByMember.get(payer.memberId);
-      if (payerBalances) {
-        payerBalances[expense.currency] =
-          (payerBalances[expense.currency] ?? 0) + payer.amount;
+    const totalPaid = payerEntries.reduce(
+      (total, payer) => total + payer.amount,
+      0,
+    );
+
+    const currentPayer = payerEntries.find(
+      (payer) => payer.memberId === currentMember.id,
+    );
+    if (currentPayer) {
+      for (const participant of expense.participants) {
+        if (participant.memberId === currentMember.id) continue;
+
+        const amount = normalizeAmount(
+          totalPaid > 0
+            ? (participant.share * currentPayer.amount) / totalPaid
+            : 0,
+        );
+        if (amount <= 0) continue;
+
+        const key = `${participant.memberId}:${expense.currency}`;
+        creditsByCounterparty.set(
+          key,
+          normalizeAmount((creditsByCounterparty.get(key) ?? 0) + amount),
+        );
       }
     }
 
-    for (const participant of expense.participants) {
-      const participantBalances = balanceByMember.get(participant.memberId);
-      if (participantBalances) {
-        participantBalances[expense.currency] =
-          (participantBalances[expense.currency] ?? 0) - participant.share;
+    const currentParticipation = expense.participants.find(
+      (participant) => participant.memberId === currentMember.id,
+    );
+    if (currentParticipation) {
+      for (const payer of payerEntries) {
+        if (payer.memberId === currentMember.id) continue;
+
+        const amount = normalizeAmount(
+          totalPaid > 0
+            ? (currentParticipation.share * payer.amount) / totalPaid
+            : 0,
+        );
+        if (amount <= 0) continue;
+
+        const key = `${payer.memberId}:${expense.currency}`;
+        debtsByCounterparty.set(
+          key,
+          normalizeAmount((debtsByCounterparty.get(key) ?? 0) + amount),
+        );
       }
     }
   }
 
   const participantBalances: HomeParticipantBalance[] = [];
   const totalsByCurrency: Record<string, number> = {};
+  const currencyKeys = new Set<string>([
+    ...Array.from(creditsByCounterparty.keys()),
+    ...Array.from(debtsByCounterparty.keys()),
+  ]);
 
-  for (const member of group.GroupMember) {
-    if (member.id === currentMember.id) continue;
+  for (const key of currencyKeys) {
+    const [memberId, currency] = key.split(':');
+    const member = group.GroupMember.find((item) => item.id === memberId);
+    if (!member) continue;
 
-    const balances = balanceByMember.get(member.id) ?? {};
-    for (const [currency, rawValue] of Object.entries(balances)) {
-      if (Math.abs(rawValue) < 0.01) continue;
+    const credits = creditsByCounterparty.get(key) ?? 0;
+    const debts = debtsByCounterparty.get(key) ?? 0;
+    const rawValue = normalizeAmount(credits - debts);
+    if (Math.abs(rawValue) < 0.01) continue;
 
-      const amount = normalizeAmount(Math.abs(rawValue));
-      const direction: HomeParticipantBalance['direction'] =
-        rawValue < 0 ? 'theyOweYou' : 'youOweThem';
+    const amount = normalizeAmount(Math.abs(rawValue));
+    const direction: HomeParticipantBalance['direction'] =
+      rawValue > 0 ? 'theyOweYou' : 'youOweThem';
 
-      participantBalances.push({
-        memberId: member.id,
-        memberName: member.name,
-        currency,
-        amount,
-        direction,
-        label:
-          direction === 'theyOweYou'
-            ? `Te debe ${amount.toLocaleString()} ${currency}`
-            : `Debes ${amount.toLocaleString()} ${currency}`,
-      });
+    participantBalances.push({
+      memberId: member.id,
+      memberName: member.name,
+      currency,
+      amount,
+      direction,
+      label:
+        direction === 'theyOweYou'
+          ? `Te debe ${amount.toLocaleString()} ${currency}`
+          : `Debes ${amount.toLocaleString()} ${currency}`,
+    });
 
-      const signedAmount = direction === 'theyOweYou' ? amount : -amount;
-      totalsByCurrency[currency] = normalizeAmount(
-        (totalsByCurrency[currency] ?? 0) + signedAmount,
-      );
-    }
+    totalsByCurrency[currency] = normalizeAmount(
+      (totalsByCurrency[currency] ?? 0) +
+        (direction === 'theyOweYou' ? amount : -amount),
+    );
   }
 
   return {

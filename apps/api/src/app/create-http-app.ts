@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 
 import { auth } from '~/infrastructure/auth/better-auth.config';
@@ -11,7 +10,6 @@ import { createMcpHttpRouter } from './mcp-http-routes';
 export function createHttpApp(): Hono {
   const app = new Hono();
 
-  app.use(logger());
   app.use(secureHeaders());
 
   app.get('/', (c) => c.json({ service: 'vornway-api', status: 'ok' }));

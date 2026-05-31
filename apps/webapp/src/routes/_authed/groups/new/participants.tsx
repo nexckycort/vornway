@@ -487,21 +487,21 @@ function RouteComponent() {
           }
         }}
       >
-        <DrawerContent>
-          <DrawerHeader className="px-4">
-            <DrawerTitle className="text-[2rem] leading-tight tracking-tight">
+        <DrawerContent className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden rounded-t-[32px] pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+          <DrawerHeader className="px-4 pt-3">
+            <DrawerTitle className="text-[1.75rem] leading-[1.05] tracking-tight">
               ¡{createdGroup?.name ?? 'Grupo'} creado!
             </DrawerTitle>
-            <DrawerDescription>
+            <DrawerDescription className="text-sm leading-6">
               Ya puedes compartir el enlace e invitar a más personas.
             </DrawerDescription>
           </DrawerHeader>
 
-          <div className="space-y-5 px-4 pb-4">
-            <div className="flex items-center justify-center pt-1">
-              <div className="relative h-24 w-32">
-                <div className="absolute right-1 top-1 size-[4.5rem] rounded-[30px] bg-primary" />
-                <div className="absolute left-2 top-2 size-[4.75rem] overflow-hidden rounded-[28px] border-[3px] border-white bg-[#f8fafc] shadow-[0_14px_28px_rgba(15,23,42,0.14)]">
+          <div className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pb-4">
+            <div className="flex justify-center pt-1">
+              <div className="relative h-20 w-28">
+                <div className="absolute right-1 top-1 size-[3.75rem] rounded-[24px] bg-primary" />
+                <div className="absolute left-2 top-2 size-[4rem] overflow-hidden rounded-[22px] border-[3px] border-white bg-[#f8fafc] shadow-[0_14px_28px_rgba(15,23,42,0.14)]">
                   {draft?.image?.dataUrl ? (
                     <img
                       src={draft.image.dataUrl}
@@ -511,7 +511,7 @@ function RouteComponent() {
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-[#fff4f7] text-primary">
-                      <UserPlus className="size-7" />
+                      <UserPlus className="size-6" />
                     </div>
                   )}
                 </div>
@@ -519,21 +519,21 @@ function RouteComponent() {
             </div>
 
             <div>
-              <p className="text-[1.05rem] font-semibold text-[#0f172a]">
+              <p className="text-[1rem] font-semibold text-[#0f172a]">
                 Comparte el enlace del grupo
               </p>
 
-              <div className="mt-3 flex items-center gap-3">
+              <div className="mt-2 flex items-center gap-3">
                 <input
                   readOnly
                   value={createdInviteLink}
-                  className="h-12 min-w-0 flex-1 rounded-full border border-[#e2e8f0] bg-[#fafafa] px-4 text-sm text-[#334155] outline-none"
+                  className="h-11 min-w-0 flex-1 rounded-full border border-[#e2e8f0] bg-[#fafafa] px-4 text-sm text-[#334155] outline-none"
                 />
 
                 <Button
                   type="button"
                   variant="outline"
-                  className={`h-12 shrink-0 rounded-full px-4 transition-all ${
+                  className={`h-11 shrink-0 rounded-full px-4 transition-all ${
                     isLinkCopied
                       ? 'scale-105 border-primary bg-primary/10 text-primary'
                       : ''
@@ -554,7 +554,7 @@ function RouteComponent() {
               <Button
                 type="button"
                 variant="ghost"
-                className="mt-3 h-11 w-full rounded-full border border-[#e2e8f0] text-[#334155]"
+                className="mt-2 h-11 w-full rounded-full border border-[#e2e8f0] text-[#334155]"
                 onClick={async () => {
                   if (navigator.share) {
                     await navigator.share({
@@ -573,11 +573,11 @@ function RouteComponent() {
               </Button>
             </div>
 
-            <div className="rounded-[26px] bg-white p-4">
-              <p className="text-lg font-semibold text-[#0f172a]">
+            <div className="rounded-[24px] bg-white p-4">
+              <p className="text-base font-semibold text-[#0f172a]">
                 ¿Qué puedes hacer ahora?
               </p>
-              <ul className="mt-3 space-y-2 text-sm leading-6 text-[#334155]">
+              <ul className="mt-2 space-y-1.5 text-sm leading-6 text-[#334155]">
                 <li>
                   <span className="font-semibold text-[#0f172a]">Invita</span> a
                   más personas cuando quieras

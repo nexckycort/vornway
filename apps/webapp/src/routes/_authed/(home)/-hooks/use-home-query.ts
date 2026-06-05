@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { client } from '#/lib/hc';
+import {
+  getCachedHomeSummary,
+  type HomeApiResponse,
+  upsertCachedHomeSummary,
+} from '#/lib/home-query-collection';
 import { formatCurrency, formatShortDate } from '#/lib/i18n';
 import { getHomeMessages } from '#/routes/_authed/(home)/-messages';
 
@@ -63,52 +68,6 @@ export type HomeQueryData = {
 };
 
 const homeEndpoint = client.api.home.$get;
-
-type HomeApiResponse = {
-  groups: Array<{
-    id: string;
-    name: string;
-    type: string;
-    description: string | null;
-    imageUrl: string | null;
-    createdAt: string;
-    members: Array<{
-      id: string;
-      name: string;
-      image: string | null;
-    }>;
-    currentUser: {
-      memberId: string;
-      name: string;
-      image: string | null;
-    } | null;
-    hasExpenses: boolean;
-    participantBalances: Array<{
-      memberId: string;
-      memberName: string;
-      currency: string;
-      amount: number;
-      direction: 'theyOweYou' | 'youOweThem';
-      label: string;
-    }>;
-    totalsByCurrency: Record<string, number>;
-  }>;
-  goals: Array<{
-    id: string;
-    title: string;
-    description: string | null;
-    currency: string;
-    targetAmount: number;
-    savedAmount: number;
-    progress: number;
-    endDate: string;
-    createdAt: string;
-    group: {
-      id: string;
-      name: string;
-    };
-  }>;
-};
 
 function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
   const t = getHomeMessages();
@@ -227,11 +186,35 @@ export function useHomeQuery() {
   return useQuery({
     queryKey: ['home-summary'],
     queryFn: async () => {
-      const response = await homeEndpoint();
+      const cachedHomeSummary = await getCachedHomeSummary();
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        if (cachedHomeSummary) {
+          return mapHomeData(cachedHomeSummary);
+        }
+
+        throw new Error(t.loadError);
+      }
+
+      let response: Awaited<ReturnType<typeof homeEndpoint>>;
+      try {
+        response = await homeEndpoint();
+      } catch {
+        if (cachedHomeSummary) {
+          return mapHomeData(cachedHomeSummary);
+        }
+
+        throw new Error(t.loadError);
+      }
+
       if (!response.ok) {
+        if (cachedHomeSummary) {
+          return mapHomeData(cachedHomeSummary);
+        }
+
         throw new Error(t.loadError);
       }
       const payload = (await response.json()) as HomeApiResponse;
+      await upsertCachedHomeSummary(payload);
       return mapHomeData(payload);
     },
   });

@@ -5,6 +5,11 @@ import {
 } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import {
+  type GroupExpensesPageSuccess,
+  getCachedGroupExpensesPage,
+  upsertCachedGroupExpensesPage,
+} from '#/lib/group-expenses-query-collection';
+import {
   GROUPS_LIST_REFRESH_EVENT,
   getCachedGroupSummary,
   upsertCachedGroupSummary,
@@ -87,14 +92,7 @@ function buildPendingGroupSummary(group: PendingGroup): GroupSummary {
   };
 }
 
-type GroupExpensesPageResponse = InferResponseType<
-  typeof groupExpensesEndpoint
->;
 type GroupExpenseResponse = InferResponseType<typeof groupExpenseEndpoint>;
-type GroupExpensesPageSuccess = Extract<
-  GroupExpensesPageResponse,
-  { data: unknown[]; pagination: { nextCursor: string | null } }
->;
 type GroupExpenseSuccess = Extract<GroupExpenseResponse, { id: string }>;
 type GroupReportsTotalsSuccess = {
   range: 'all' | 7 | 15 | 30;
@@ -250,6 +248,17 @@ export function useGroupExpensesInfiniteQuery(groupId: string) {
     queryKey: ['group-expenses', groupId],
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
+      const cachedPage = await getCachedGroupExpensesPage(groupId, pageParam);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        return (
+          cachedPage ??
+          ({
+            data: [],
+            pagination: { limit: PAGE_LIMIT, total: 0, nextCursor: null },
+          } as GroupExpensesPageSuccess)
+        );
+      }
+
       let response: Awaited<ReturnType<typeof groupExpensesEndpoint>>;
       try {
         response = await groupExpensesEndpoint({
@@ -260,20 +269,28 @@ export function useGroupExpensesInfiniteQuery(groupId: string) {
           },
         });
       } catch {
-        return {
-          data: [],
-          pagination: { limit: PAGE_LIMIT, total: 0, nextCursor: null },
-        } as GroupExpensesPageSuccess;
+        return (
+          cachedPage ??
+          ({
+            data: [],
+            pagination: { limit: PAGE_LIMIT, total: 0, nextCursor: null },
+          } as GroupExpensesPageSuccess)
+        );
       }
 
       if (!response.ok) {
-        return {
-          data: [],
-          pagination: { limit: PAGE_LIMIT, total: 0, nextCursor: null },
-        } as GroupExpensesPageSuccess;
+        return (
+          cachedPage ??
+          ({
+            data: [],
+            pagination: { limit: PAGE_LIMIT, total: 0, nextCursor: null },
+          } as GroupExpensesPageSuccess)
+        );
       }
 
-      return (await response.json()) as GroupExpensesPageSuccess;
+      const page = (await response.json()) as GroupExpensesPageSuccess;
+      await upsertCachedGroupExpensesPage(groupId, pageParam, page);
+      return page;
     },
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor,
   });

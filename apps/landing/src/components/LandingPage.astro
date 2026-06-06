@@ -747,7 +747,8 @@ const steps = [
 
   .image-banner {
     position: relative;
-    height: 48.375rem;
+    width: 100%;
+    aspect-ratio: 1440 / 774;
     overflow: hidden;
     background: var(--black);
   }
@@ -756,7 +757,8 @@ const steps = [
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
   }
 
   .steps {
@@ -911,10 +913,6 @@ const steps = [
 
     .group-card {
       min-height: auto;
-    }
-
-    .image-banner {
-      height: 34rem;
     }
 
     .steps {

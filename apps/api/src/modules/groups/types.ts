@@ -16,6 +16,7 @@ export type ListGroupExpensesInput = {
 export type CreateGroupExpenseInput = {
   userId: string;
   groupId: string;
+  id?: string;
   description: string;
   amount: number;
   currency: string;

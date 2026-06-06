@@ -50,6 +50,7 @@ const expenseAttachmentImageSchema = z.object({
 
 export const createGroupExpenseSchema = z
   .object({
+    id: z.string().trim().min(1).max(120).optional(),
     description: z.string().min(1).max(160),
     amount: z.number().positive(),
     currency: z.string().min(1).max(8),

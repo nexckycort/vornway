@@ -18,6 +18,7 @@ type PendingExpense = {
 
 const OFFLINE_EXPENSES_STORAGE_KEY = 'vornway.offline.pending-expenses';
 const OFFLINE_EXPENSES_EVENT = 'vornway:offline-expenses:changed';
+const EXPENSE_REQUEST_TIMEOUT_MS = 3000;
 const offlineQueueQueryClient = new QueryClient();
 const EMPTY_PENDING_EXPENSES: PendingExpense[] = [];
 
@@ -99,14 +100,45 @@ function buildLocalExpenseId() {
   return `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function buildExpenseId() {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return `expense-${crypto.randomUUID()}`;
+  }
+
+  return `expense-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function withExpenseId(payload: CreateExpensePayload): CreateExpensePayload {
+  const existingId = (payload as CreateExpensePayload & { id?: unknown }).id;
+
+  return {
+    ...payload,
+    id:
+      typeof existingId === 'string' && existingId.trim()
+        ? existingId
+        : buildExpenseId(),
+  };
+}
+
 function enqueuePendingExpense(groupId: string, payload: CreateExpensePayload) {
+  const normalizedPayload = withExpenseId(payload);
+  const existingPendingExpense = readPendingExpenses().find(
+    (expense) =>
+      expense.groupId === groupId &&
+      expense.payload.id === normalizedPayload.id,
+  );
+
+  if (existingPendingExpense) {
+    return existingPendingExpense.id;
+  }
+
   const localId = buildLocalExpenseId();
   writePendingExpenses([
     ...readPendingExpenses(),
     {
       id: localId,
       groupId,
-      payload,
+      payload: normalizedPayload,
       createdAt: new Date().toISOString(),
     },
   ]);
@@ -154,14 +186,14 @@ async function postExpenseToApi(
 ) {
   const request = createExpenseEndpoint({
     param: { id: groupId },
-    json: payload,
+    json: withExpenseId(payload),
   });
 
   const timeout = new Promise<never>((_, reject) => {
     const timer = globalThis.setTimeout(() => {
       clearTimeout(timer);
       reject(new Error('REQUEST_TIMEOUT'));
-    }, 1500);
+    }, EXPENSE_REQUEST_TIMEOUT_MS);
   });
 
   return Promise.race([request, timeout]);
@@ -240,8 +272,10 @@ export async function createExpenseOfflineFirst(
   groupId: string,
   payload: CreateExpensePayload,
 ): Promise<{ id: string; queued: boolean }> {
+  const payloadWithId = withExpenseId(payload);
+
   if (typeof window === 'undefined') {
-    const response = await postExpenseToApi(groupId, payload);
+    const response = await postExpenseToApi(groupId, payloadWithId);
     if (!response.ok) {
       throw new Error('No se pudo crear el gasto');
     }
@@ -251,12 +285,12 @@ export async function createExpenseOfflineFirst(
   }
 
   if (!navigator.onLine) {
-    const localId = enqueuePendingExpense(groupId, payload);
+    const localId = enqueuePendingExpense(groupId, payloadWithId);
     return { id: localId, queued: true };
   }
 
   try {
-    const response = await postExpenseToApi(groupId, payload);
+    const response = await postExpenseToApi(groupId, payloadWithId);
 
     if (response.ok) {
       const data = (await response.json()) as { id: string };
@@ -264,14 +298,14 @@ export async function createExpenseOfflineFirst(
     }
 
     if (response.status >= 500) {
-      const localId = enqueuePendingExpense(groupId, payload);
+      const localId = enqueuePendingExpense(groupId, payloadWithId);
       return { id: localId, queued: true };
     }
 
     const payloadError = (await response.json()) as { error?: string };
     throw new Error(payloadError.error ?? 'No se pudo crear el gasto');
   } catch {
-    const localId = enqueuePendingExpense(groupId, payload);
+    const localId = enqueuePendingExpense(groupId, payloadWithId);
     return { id: localId, queued: true };
   }
 }

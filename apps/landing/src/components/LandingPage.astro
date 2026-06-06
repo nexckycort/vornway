@@ -1,179 +1,987 @@
 ---
+const slides = [
+  {
+    title: "Liquidación",
+    description: "Liquida deudas sin cálculos manuales.",
+    image: "/figma/landing/screen-liquidacion.webp",
+    alt: "Pantalla de liquidación de deudas en Vornway",
+    active: false,
+  },
+  {
+    title: "Crear gastos",
+    description: "Registra gastos en segundos",
+    image: "/figma/landing/screen-gasto.webp",
+    alt: "Pantalla para crear un gasto en Vornway",
+    active: true,
+  },
+  {
+    title: "Balance",
+    description: "Descubre quién debe a quién rápidamente",
+    image: "/figma/landing/screen-balance.webp",
+    alt: "Pantalla de balances de grupo en Vornway",
+    active: false,
+  },
+  {
+    title: "Reportes",
+    description: "Entiende en qué se fue el dinero del grupo.",
+    image: "/figma/landing/screen-reportes.webp",
+    alt: "Pantalla de reportes de gastos en Vornway",
+    active: false,
+  },
+];
+
+const groups = [
+  {
+    title: "Viajes",
+    description:
+      "Organiza gastos de transporte, alojamiento, comida y actividades y mantén claros los balances del viaje.",
+    icon: "✈",
+    tone: "blue",
+  },
+  {
+    title: "Roomates",
+    description:
+      "Divide recibos, compras y servicios del hogar. Todo queda organizado y visible para quienes comparten la vivienda.",
+    icon: "⌂",
+    tone: "orange",
+  },
+  {
+    title: "Eventos y celebraciones",
+    description:
+      "Controla gastos de fiestas, cumpleaños y reuniones. Divide cuentas fácilmente y evita confusiones al final.",
+    icon: "✦",
+    tone: "violet",
+  },
+  {
+    title: "Amigos y salidas",
+    description:
+      "Gestiona comidas, regalos, escapadas y cualquier plan compartido. Todos pueden seguir los gastos en tiempo real.",
+    icon: "👥",
+    tone: "pink",
+  },
+  {
+    title: "Equipos y proyectos",
+    description:
+      "Centraliza gastos de actividades, eventos o viajes de trabajo. Mantén todo organizado en un solo lugar.",
+    icon: "▣",
+    tone: "green",
+  },
+];
+
+const steps = [
+  {
+    number: "1",
+    title: "Accede desde cualquier dispositivo",
+    description:
+      "No necesitas descargar nada. Ingresa a Vornway desde tu navegador y crea tu cuenta.",
+  },
+  {
+    number: "2",
+    title: "Crea un grupo e invita a tu equipo",
+    description:
+      "Ya sea un viaje, una salida o una casa compartida, comparte un enlace y reúne a todos en un mismo lugar.",
+  },
+  {
+    number: "3",
+    title: "Empieza a registrar gastos",
+    description:
+      "Divide gastos, controla balances y mantén todo organizado sin cálculos manuales.",
+  },
+];
 ---
 
-<main class="vw-page">
-  <section class="vw-hero">
-    <div class="shell vw-shell">
-      <p class="vw-badge">Vornway is live</p>
-      <h1>Split travel expenses without friction.</h1>
-      <p class="vw-lead">
-        Create groups, add expenses, track balances, and coordinate every trip
-        in one app.
-      </p>
+<main class="figma-landing">
+  <section class="hero" id="top">
+    <nav class="navbar" aria-label="Navegación principal">
+      <a class="brand" href="#top" aria-label="Vornway">
+        <img
+          class="brand-logo"
+          src="/images/logo-white.png"
+          alt="Vornway"
+          loading="eager"
+        />
+      </a>
 
-      <div class="vw-visual">
-        <div class="vw-visual-frame">
-          <img
-            src="/illustrations/trips.webp"
-            alt="Vornway app preview"
-            loading="eager"
-          />
-        </div>
+      <div class="nav-actions">
+        <a class="button button-dark" href="#features">Ver funcionalidades</a>
+        <a class="button button-primary" href="https://app.vornway.com"
+          >Abrir aplicación</a
+        >
+      </div>
+    </nav>
+
+    <div class="hero-content">
+      <div class="hero-copy">
+        <h1>Divide gastos fácilmente</h1>
+        <p>
+          Crea grupos, añade gastos, controla los saldos y coordina cada viaje
+          en una sola aplicación.
+        </p>
       </div>
 
-      <div class="vw-actions">
-        <a class="vw-button" href="https://app.vornway.com">Open app</a>
-        <p class="vw-helper">Web app + PWA for iOS and Android</p>
-      </div>
-
-      <div class="vw-features" aria-label="Main features">
-        <p>Shared expenses</p>
-        <p>Real-time balances</p>
-        <p>Invite by QR or link</p>
+      <div class="tags" aria-label="Funciones principales">
+        <span>Gastos compartidos</span>
+        <span>Saldos en tiempo real</span>
+        <span>Invita mediante QR o enlace</span>
       </div>
     </div>
+
+    <div
+      class="slider-wrap"
+      data-showcase-carousel
+      aria-label="Vista previa de funcionalidades"
+    >
+      <button class="slider-button slider-button-left" type="button" data-carousel-prev aria-label="Anterior">
+        ‹
+      </button>
+
+      <div class="slide-track">
+        {
+          slides.map((slide, index) => (
+            <article class="slide-card" data-carousel-card data-slide-index={index}>
+              <div class="slide-image">
+                <img src={slide.image} alt={slide.alt} loading={slide.active ? "eager" : "lazy"} />
+              </div>
+              <div class="slide-copy">
+                <h2>{slide.title}</h2>
+                <p>{slide.description}</p>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+
+      <button class="slider-button slider-button-right" type="button" data-carousel-next aria-label="Siguiente">
+        ›
+      </button>
+    </div>
+
+    <div class="pagination" data-carousel-pagination aria-label="Indicador de funcionalidad activa">
+      {
+        slides.map((slide, index) => (
+          <button
+            type="button"
+            data-carousel-dot
+            data-slide-index={index}
+            aria-label={`Mostrar ${slide.title}`}
+          />
+        ))
+      }
+    </div>
   </section>
+
+  <section class="groups" id="features">
+    <div class="section-title">
+      <h2>Diseñado para cualquier grupo.</h2>
+      <p>Desde un viaje entre amigos hasta una fiesta o compañeros de cuarto.</p>
+    </div>
+
+    <div class="group-grid">
+      {
+        groups.map((group) => (
+          <article class={`group-card tone-${group.tone}`}>
+            <span class="group-icon" aria-hidden="true">{group.icon}</span>
+            <div>
+              <h3>{group.title}</h3>
+              <p>{group.description}</p>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="image-banner" aria-label="Vornway en uso durante un viaje">
+    <img
+      src="/figma/landing/banner.webp"
+      alt="Grupo de amigos usando Vornway durante un viaje"
+      loading="lazy"
+    />
+  </section>
+
+  <section class="start" id="how-it-works">
+    <div class="section-title">
+      <h2>Comienza ahora</h2>
+      <p>
+        Como Vornway actualmente funciona desde una URL web y no desde una app
+        descargada. Estos son los pasos a seguir.
+      </p>
+    </div>
+
+    <div class="steps">
+      {
+        steps.map((step) => (
+          <article class="step">
+            <span>{step.number}</span>
+            <h3>{step.title}</h3>
+            <p>{step.description}</p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <footer class="footer">
+    <a class="brand footer-brand" href="#top" aria-label="Vornway">
+      <img
+        class="brand-logo"
+        src="/images/logo-white.png"
+        alt="Vornway"
+        loading="lazy"
+      />
+    </a>
+    <p>© 2026 Vornway</p>
+  </footer>
 </main>
 
+<script is:inline>
+  const carousel = document.querySelector("[data-showcase-carousel]");
+  const pagination = document.querySelector("[data-carousel-pagination]");
+
+  if (carousel && pagination) {
+    const cards = Array.from(carousel.querySelectorAll("[data-carousel-card]"));
+    const dots = Array.from(pagination.querySelectorAll("[data-carousel-dot]"));
+    const prevButton = carousel.querySelector("[data-carousel-prev]");
+    const nextButton = carousel.querySelector("[data-carousel-next]");
+    let activeIndex = 1;
+    let touchStartX = 0;
+
+    const wrap = (index) => (index + cards.length) % cards.length;
+
+    const render = () => {
+      const previousIndex = wrap(activeIndex - 1);
+      const nextIndex = wrap(activeIndex + 1);
+
+      cards.forEach((card, index) => {
+        card.classList.remove("is-prev", "is-active", "is-next", "is-hidden");
+        card.setAttribute("aria-hidden", "true");
+
+        if (index === activeIndex) {
+          card.classList.add("is-active");
+          card.removeAttribute("aria-hidden");
+        } else if (index === previousIndex) {
+          card.classList.add("is-prev");
+        } else if (index === nextIndex) {
+          card.classList.add("is-next");
+        } else {
+          card.classList.add("is-hidden");
+        }
+      });
+
+      dots.forEach((dot, index) => {
+        const isActive = index === activeIndex;
+        dot.classList.toggle("active", isActive);
+        dot.setAttribute("aria-current", isActive ? "true" : "false");
+      });
+    };
+
+    const move = (direction) => {
+      activeIndex = wrap(activeIndex + direction);
+      render();
+    };
+
+    prevButton?.addEventListener("click", () => move(-1));
+    nextButton?.addEventListener("click", () => move(1));
+
+    dots.forEach((dot) => {
+      dot.addEventListener("click", () => {
+        activeIndex = Number(dot.getAttribute("data-slide-index"));
+        render();
+      });
+    });
+
+    carousel.addEventListener(
+      "touchstart",
+      (event) => {
+        touchStartX = event.touches[0]?.clientX || 0;
+      },
+      { passive: true },
+    );
+
+    carousel.addEventListener(
+      "touchend",
+      (event) => {
+        const touchEndX = event.changedTouches[0]?.clientX || 0;
+        const distance = touchEndX - touchStartX;
+
+        if (Math.abs(distance) > 42) {
+          move(distance > 0 ? -1 : 1);
+        }
+      },
+      { passive: true },
+    );
+
+    render();
+  }
+</script>
+
 <style>
-  .vw-page {
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
+
+  .figma-landing {
+    --black: #0d0809;
+    --black-soft: #2b2224;
+    --pink: #de034d;
+    --text: #1e1e1e;
+    --muted: #4c4c4c;
+    --line: #ebebeb;
+    --page: #fafafa;
+
     min-height: 100vh;
-    background:
-      radial-gradient(
-        60rem 30rem at 50% -10rem,
-        rgba(222, 3, 77, 0.12),
-        transparent 70%
-      ),
-      #0f0f10;
-    color: #f5f5f5;
+    overflow: hidden;
+    background: var(--page);
+    color: var(--text);
+    font-family: "Poppins", "Inter", "Segoe UI", sans-serif;
+    letter-spacing: 0;
   }
 
-  .vw-hero {
+  .hero {
+    position: relative;
+    display: flex;
     min-height: 100vh;
-    display: grid;
-    place-items: center;
-    padding: 2rem 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.75rem;
+    overflow: hidden;
+    padding: 1.25rem 2rem 1.5rem;
+    background: var(--black);
+    color: #fff;
   }
 
-  .vw-shell {
-    width: min(760px, calc(100% - 2rem));
-    display: grid;
-    justify-items: center;
-    gap: 1.1rem;
-    text-align: center;
-  }
-
-  .vw-badge {
-    margin: 0;
-    width: fit-content;
-    padding: 0.45rem 0.7rem;
-    border: 1px solid rgba(245, 245, 245, 0.08);
-    border-radius: 999px;
-    color: rgba(245, 245, 245, 0.68);
-    font-size: 0.76rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-  }
-
-  .vw-shell h1 {
-    margin: 0;
-    max-width: 13ch;
-    font-size: clamp(2.5rem, 7.5vw, 5.25rem);
-    line-height: 0.98;
-    letter-spacing: -0.04em;
-    text-wrap: balance;
-  }
-
-  .vw-lead {
-    max-width: 38rem;
-    margin: 0;
-    color: rgba(245, 245, 245, 0.68);
-    font-size: clamp(1rem, 1.8vw, 1.15rem);
-    line-height: 1.65;
-    text-wrap: pretty;
-  }
-
-  .vw-visual {
-    width: min(100%, 38rem);
-    display: grid;
-    justify-items: center;
-    gap: 0.85rem;
-    margin: 0.75rem 0 0.25rem;
-  }
-
-  .vw-visual-frame {
-    width: min(100%, 26rem);
-  }
-
-  .vw-visual-frame img {
-    display: block;
+  .navbar,
+  .footer {
+    display: flex;
     width: 100%;
-    height: auto;
-    object-fit: cover;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
   }
 
-  .vw-button {
+  .brand {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    min-height: 3.2rem;
-    padding: 0.82rem 1.15rem;
-    border-radius: 999px;
-    border: 1px solid transparent;
-    font-weight: 700;
-    transition:
-      transform 160ms ease,
-      border-color 160ms ease,
-      background-color 160ms ease;
-    background: #de034d;
-    color: #fff;
-    text-decoration: none;
-    box-shadow: 0 10px 28px rgba(222, 3, 77, 0.28);
+    min-width: 0;
   }
 
-  .vw-button:hover {
+  .brand-logo {
+    display: block;
+    width: 9.25rem;
+    height: auto;
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .button {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1.25rem;
+    padding: 0.5rem 1rem;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: 0 8px 20px rgba(222, 3, 77, 0.1);
+    transition:
+      transform 180ms ease,
+      background-color 180ms ease;
+  }
+
+  .button:hover {
     transform: translateY(-1px);
   }
 
-  .vw-actions {
+  .button-dark {
+    background: var(--black-soft);
+  }
+
+  .button-primary {
+    min-height: 2.75rem;
+    background: var(--pink);
+  }
+
+  .hero-content {
     display: grid;
-    gap: 0.65rem;
     justify-items: center;
+    gap: 1.8rem;
+    text-align: center;
   }
 
-  .vw-helper {
+  .hero-copy {
+    display: grid;
+    justify-items: center;
+    gap: 0.5rem;
+  }
+
+  .hero-copy h1,
+  .section-title h2 {
     margin: 0;
-    color: rgba(245, 245, 245, 0.55);
-    font-size: 0.86rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1;
+    text-wrap: balance;
   }
 
-  .vw-features {
-    margin-top: 0.5rem;
+  .hero-copy h1 {
+    font-size: clamp(2.6rem, 5vw, 3.75rem);
+  }
+
+  .hero-copy p,
+  .section-title p {
+    margin: 0;
+    color: #ebebeb;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .tags {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.55rem;
+    gap: 1rem;
   }
 
-  .vw-features p {
+  .tags span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.75rem;
+    border: 1px solid #626262;
+    border-radius: 1rem;
+    background: var(--black-soft);
+    padding: 0.2rem 0.56rem;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .slider-wrap {
+    position: relative;
+    width: min(100%, 82rem);
+    min-height: 42rem;
+    touch-action: pan-y;
+  }
+
+  .slide-track {
+    position: relative;
+    width: 100%;
+    height: 40rem;
+  }
+
+  .slide-card {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: flex;
+    width: min(23rem, 28vw);
+    height: 38rem;
+    flex-direction: column;
+    gap: 1rem;
+    overflow: hidden;
+    border-radius: 2.5rem;
+    background: rgba(43, 34, 36, 0.8);
+    padding: 1.375rem;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%) scale(0.78);
+    transition:
+      transform 450ms ease-out,
+      opacity 450ms ease-out,
+      filter 450ms ease-out,
+      background-color 450ms ease-out,
+      box-shadow 450ms ease-out;
+    will-change: transform, opacity;
+  }
+
+  .slide-card.is-active {
+    z-index: 3;
+    background: #52001f;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 26px 70px rgba(222, 3, 77, 0.26);
+  }
+
+  .slide-card.is-prev,
+  .slide-card.is-next {
+    z-index: 2;
+    opacity: 0.55;
+    filter: blur(0.4px);
+    pointer-events: auto;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
+  }
+
+  .slide-card.is-prev {
+    transform: translate(calc(-50% - 22rem), -50%) scale(0.88);
+  }
+
+  .slide-card.is-next {
+    transform: translate(calc(-50% + 22rem), -50%) scale(0.88);
+  }
+
+  .slide-card.is-hidden {
+    z-index: 1;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.72);
+  }
+
+  .slide-image {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 2rem;
+    background: #fff;
+  }
+
+  .slide-card.is-active .slide-image {
+    background: transparent;
+  }
+
+  .slide-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+  }
+
+  .slide-copy {
+    display: grid;
+    justify-items: center;
+    gap: 0.25rem;
+    text-align: center;
+    color: #fff;
+  }
+
+  .slide-copy h2,
+  .slide-copy p {
     margin: 0;
-    padding: 0.45rem 0.7rem;
+    white-space: nowrap;
+  }
+
+  .slide-copy h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .slide-copy p {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .slider-button {
+    position: absolute;
+    top: 50%;
+    z-index: 5;
+    display: grid;
+    width: 2.5rem;
+    height: 2.75rem;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 1.25rem;
+    background: rgba(43, 34, 36, 0.8);
+    color: #fff;
+    cursor: pointer;
+    font-size: 1.5rem;
+    line-height: 1;
+    transform: translateY(-50%);
+    transition:
+      transform 180ms ease,
+      background-color 180ms ease,
+      opacity 180ms ease;
+  }
+
+  .slider-button:hover {
+    background: rgba(43, 34, 36, 0.96);
+    transform: translateY(-50%) scale(1.04);
+  }
+
+  .slider-button-left {
+    left: 0.5rem;
+  }
+
+  .slider-button-right {
+    right: 0.5rem;
+  }
+
+  .pagination {
+    display: flex;
+    gap: 0.38rem;
+    height: 0.75rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pagination button {
+    width: 0.75rem;
+    height: 0.75rem;
+    border: 0;
     border-radius: 999px;
-    border: 1px solid rgba(245, 245, 245, 0.1);
-    color: rgba(245, 245, 245, 0.72);
-    font-size: 0.82rem;
-    letter-spacing: 0.01em;
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(235, 237, 236, 0.46);
+    cursor: pointer;
+    padding: 0;
+    transition:
+      width 220ms ease,
+      background-color 220ms ease,
+      opacity 220ms ease;
   }
 
-  @media (max-width: 640px) {
-    .vw-hero {
-      padding: 1.25rem 0;
+  .pagination .active {
+    width: 1.25rem;
+    background: #fff;
+  }
+
+  .groups,
+  .start {
+    display: grid;
+    justify-items: center;
+    gap: 2.75rem;
+    padding: 5rem;
+    background: var(--page);
+  }
+
+  .section-title {
+    display: grid;
+    justify-items: center;
+    gap: 0.25rem;
+    text-align: center;
+  }
+
+  .section-title h2 {
+    color: var(--text);
+    font-size: clamp(2.25rem, 3.7vw, 3rem);
+  }
+
+  .section-title p {
+    max-width: 58rem;
+    color: var(--muted);
+  }
+
+  .group-grid {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+  }
+
+  .group-card {
+    display: grid;
+    width: min(25.85rem, 100%);
+    min-height: 8.7rem;
+    align-content: center;
+    gap: 0.625rem;
+    overflow: hidden;
+    border: 0.5px solid var(--line);
+    border-radius: 1.5rem;
+    background: #fff;
+    padding: 1rem;
+    box-shadow:
+      0 1px 2px -1px rgba(0, 0, 0, 0.1),
+      0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .group-icon {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    place-items: center;
+    border-radius: 1.5rem;
+    font-size: 1rem;
+  }
+
+  .tone-blue .group-icon {
+    background: #eef2ff;
+    color: #485fc7;
+  }
+
+  .tone-orange .group-icon {
+    background: #fff8ed;
+    color: #b86b00;
+  }
+
+  .tone-violet .group-icon {
+    background: #fdf2ff;
+    color: #9c27b0;
+  }
+
+  .tone-pink .group-icon {
+    background: #fff0f2;
+    color: var(--pink);
+  }
+
+  .tone-green .group-icon {
+    background: #ecfdf5;
+    color: #0f8d56;
+  }
+
+  .group-card h3,
+  .step h3 {
+    margin: 0;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .group-card p,
+  .step p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.35;
+  }
+
+  .image-banner {
+    position: relative;
+    height: 48.375rem;
+    overflow: hidden;
+    background: var(--black);
+  }
+
+  .image-banner img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .steps {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    gap: 1.25rem;
+  }
+
+  .step {
+    display: grid;
+    justify-items: center;
+    gap: 0.63rem;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .step span {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 1.5rem;
+    background: var(--pink);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+  }
+
+  .step p {
+    max-width: 24rem;
+  }
+
+  .footer {
+    min-height: 5.75rem;
+    padding: 1.25rem 2rem;
+    background: var(--black);
+    color: #fff;
+  }
+
+  .footer p {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 1180px) {
+    .slider-wrap {
+      min-height: 37rem;
     }
 
-    .vw-shell {
-      gap: 1rem;
+    .slide-track {
+      height: 35rem;
+    }
+
+    .slide-card {
+      width: min(20.5rem, 30vw);
+      height: 33.5rem;
+      border-radius: 2.2rem;
+    }
+
+    .slide-card.is-prev {
+      transform: translate(calc(-50% - 18rem), -50%) scale(0.88);
+    }
+
+    .slide-card.is-next {
+      transform: translate(calc(-50% + 18rem), -50%) scale(0.88);
     }
   }
 
+  @media (max-width: 820px) {
+    .hero {
+      min-height: auto;
+      gap: 2rem;
+      padding: 1rem 1rem 1.25rem;
+    }
+
+    .navbar,
+    .footer {
+      align-items: flex-start;
+    }
+
+    .nav-actions {
+      gap: 0.5rem;
+    }
+
+    .button {
+      min-height: 2.25rem;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.82rem;
+    }
+
+    .button-dark {
+      display: none;
+    }
+
+    .hero-copy h1 {
+      font-size: clamp(2.4rem, 10vw, 3.4rem);
+    }
+
+    .hero-copy p,
+    .section-title p {
+      font-size: 0.95rem;
+    }
+
+    .tags {
+      gap: 0.5rem;
+    }
+
+    .tags span {
+      font-size: 0.78rem;
+    }
+
+    .slider-wrap {
+      min-height: 33rem;
+    }
+
+    .slide-track {
+      height: 31rem;
+    }
+
+    .slide-card {
+      width: min(18.5rem, 34vw);
+      height: 29.5rem;
+      border-radius: 2rem;
+      padding: 1rem;
+    }
+
+    .slide-card.is-prev {
+      transform: translate(calc(-50% - 14.2rem), -50%) scale(0.88);
+    }
+
+    .slide-card.is-next {
+      transform: translate(calc(-50% + 14.2rem), -50%) scale(0.88);
+    }
+
+    .slide-copy p {
+      max-width: 16rem;
+      white-space: normal;
+    }
+
+    .groups,
+    .start {
+      gap: 2rem;
+      padding: 4rem 1rem;
+    }
+
+    .group-card {
+      min-height: auto;
+    }
+
+    .image-banner {
+      height: 34rem;
+    }
+
+    .steps {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .brand-logo {
+      width: 7.8rem;
+    }
+
+    .nav-actions {
+      justify-content: flex-end;
+    }
+
+    .slider-wrap {
+      min-height: 34rem;
+    }
+
+    .slide-track {
+      height: 31.8rem;
+    }
+
+    .slide-card {
+      width: min(82vw, 22rem);
+      height: 30.5rem;
+      border-radius: 2rem;
+      padding: 1rem;
+    }
+
+    .slide-card.is-active {
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .slide-card.is-prev {
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(calc(-50% - 70vw), -50%) scale(0.86);
+    }
+
+    .slide-card.is-next {
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(calc(-50% + 70vw), -50%) scale(0.86);
+    }
+
+    .slider-button-left {
+      left: 0;
+    }
+
+    .slider-button-right {
+      right: 0;
+    }
+
+    .slide-image {
+      border-radius: 1.5rem;
+    }
+
+    .footer {
+      align-items: center;
+      padding-inline: 1rem;
+    }
+
+    .footer p {
+      font-size: 0.82rem;
+    }
+  }
 </style>

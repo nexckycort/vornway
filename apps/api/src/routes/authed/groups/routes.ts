@@ -463,6 +463,7 @@ const groups = new Hono<AppContext>()
         const result = await groupsService.createExpense({
           userId,
           groupId: id,
+          id: data.id,
           description: data.description,
           amount: data.amount,
           currency: data.currency,

@@ -397,6 +397,7 @@ export function createGroupExpensesService() {
     createExpense: async ({
       userId,
       groupId,
+      id,
       description,
       amount,
       currency,
@@ -416,6 +417,24 @@ export function createGroupExpensesService() {
 
       if (!membership) {
         throw new Error('No tienes acceso a este grupo');
+      }
+
+      const normalizedExpenseId = id?.trim() || null;
+      if (normalizedExpenseId) {
+        const existingExpense = await db.expense.findUnique({
+          where: {
+            id: normalizedExpenseId,
+          },
+          select: { id: true, groupId: true },
+        });
+
+        if (existingExpense) {
+          if (existingExpense.groupId !== groupId) {
+            throw new Error('El identificador del gasto ya existe');
+          }
+
+          return { id: existingExpense.id };
+        }
       }
 
       const selectedPayerIds = getNormalizedPayerIds({
@@ -479,6 +498,7 @@ export function createGroupExpensesService() {
       const expense = await db.$transaction(async (tx) => {
         const created = await tx.expense.create({
           data: {
+            ...(normalizedExpenseId ? { id: normalizedExpenseId } : {}),
             groupId,
             paidById: normalizedPayerIds[0] ?? validPayerIds[0],
             ...(categoryId ? { categoryId } : {}),

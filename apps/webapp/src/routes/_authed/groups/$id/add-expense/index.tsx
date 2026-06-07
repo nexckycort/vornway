@@ -1404,7 +1404,7 @@ function RouteComponent() {
       </Drawer>
 
       <Drawer open={showCategoryDrawer} onOpenChange={setShowCategoryDrawer}>
-        <DrawerContent>
+        <DrawerContent className="flex max-h-[85dvh] flex-col overflow-hidden">
           <DrawerHeader>
             <DrawerTitle>Categoría</DrawerTitle>
             <DrawerDescription>
@@ -1421,7 +1421,7 @@ function RouteComponent() {
             </Button>
           </DrawerHeader>
 
-          <div className="space-y-3 px-5 pb-5">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
             <button
               type="button"
               onClick={() => {

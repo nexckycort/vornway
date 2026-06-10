@@ -48,6 +48,12 @@ const expenseAttachmentImageSchema = z.object({
   fileName: z.string().min(1).max(200).optional(),
 });
 
+const expenseSharedSplitSchema = z.object({
+  amount: z.number().positive(),
+  splitMethod: z.enum(['percentage', 'exact']),
+  splitValues: z.record(z.string(), z.number().nonnegative()).optional(),
+});
+
 export const createGroupExpenseSchema = z
   .object({
     id: z.string().trim().min(1).max(120).optional(),
@@ -60,6 +66,7 @@ export const createGroupExpenseSchema = z
     participantIds: z.array(z.string().min(1)).default([]),
     splitMethod: z.enum(['equal', 'percentage', 'exact']).default('equal'),
     exactShares: z.record(z.string(), z.number().nonnegative()).optional(),
+    sharedSplit: expenseSharedSplitSchema.optional(),
     attachmentImage: expenseAttachmentImageSchema.optional(),
     advancedDetails: z
       .object({

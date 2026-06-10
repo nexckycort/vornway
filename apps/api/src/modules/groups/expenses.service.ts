@@ -25,6 +25,7 @@ import type {
   GetGroupExpenseInput,
   GroupExpenseAdvancedDetails,
   GroupExpenseDetailResult,
+  GroupExpenseSharedSplit,
   ListGroupExpensesInput,
   ListGroupExpensesResult,
   SettleGroupDebtInput,
@@ -104,6 +105,50 @@ function readAdvancedDetails(
   return sanitizeAdvancedDetails(
     advancedDetails as GroupExpenseAdvancedDetails,
   );
+}
+
+function sanitizeSharedSplit(
+  sharedSplit: GroupExpenseSharedSplit | null | undefined,
+): GroupExpenseSharedSplit | null {
+  if (!sharedSplit) return null;
+
+  const amount = Number(sharedSplit.amount);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+
+  if (
+    sharedSplit.splitMethod !== 'percentage' &&
+    sharedSplit.splitMethod !== 'exact'
+  ) {
+    return null;
+  }
+
+  const splitValues = sharedSplit.splitValues
+    ? Object.fromEntries(
+        Object.entries(sharedSplit.splitValues)
+          .map(([memberId, value]) => [memberId, Number(value)] as const)
+          .filter(
+            ([memberId, value]) =>
+              memberId.length > 0 && Number.isFinite(value) && value >= 0,
+          ),
+      )
+    : undefined;
+
+  return {
+    amount: normalizeAmount(amount),
+    splitMethod: sharedSplit.splitMethod,
+    ...(splitValues && Object.keys(splitValues).length > 0
+      ? { splitValues }
+      : {}),
+  };
+}
+
+function readSharedSplit(metadata: unknown): GroupExpenseSharedSplit | null {
+  if (!metadata || typeof metadata !== 'object') return null;
+
+  const sharedSplit = (metadata as { sharedSplit?: unknown }).sharedSplit;
+  if (!sharedSplit || typeof sharedSplit !== 'object') return null;
+
+  return sanitizeSharedSplit(sharedSplit as GroupExpenseSharedSplit);
 }
 
 export function createGroupExpensesService() {
@@ -391,6 +436,7 @@ export function createGroupExpensesService() {
           name: participant.member.name,
           share: participant.share,
         })),
+        sharedSplit: readSharedSplit(expense.metadata),
         advancedDetails: readAdvancedDetails(expense.metadata),
       };
     },
@@ -407,6 +453,7 @@ export function createGroupExpensesService() {
       participantIds,
       splitMethod,
       exactShares,
+      sharedSplit,
       attachmentImage,
       advancedDetails,
     }: CreateGroupExpenseInput): Promise<{ id: string }> => {
@@ -494,6 +541,7 @@ export function createGroupExpensesService() {
       );
       const normalizedAdvancedDetails =
         sanitizeAdvancedDetails(advancedDetails);
+      const normalizedSharedSplit = sanitizeSharedSplit(sharedSplit);
 
       const expense = await db.$transaction(async (tx) => {
         const created = await tx.expense.create({
@@ -508,6 +556,7 @@ export function createGroupExpensesService() {
             metadata: {
               splitMethod: normalizedMethod,
               splitValues: exactShares ?? null,
+              sharedSplit: normalizedSharedSplit,
               advancedDetails: normalizedAdvancedDetails,
             },
             payers: {
@@ -676,6 +725,7 @@ export function createGroupExpensesService() {
       participantIds,
       splitMethod,
       exactShares,
+      sharedSplit,
       attachmentImage,
       advancedDetails,
     }: UpdateGroupExpenseInput): Promise<{ id: string }> => {
@@ -744,6 +794,7 @@ export function createGroupExpensesService() {
       );
       const normalizedAdvancedDetails =
         sanitizeAdvancedDetails(advancedDetails);
+      const normalizedSharedSplit = sanitizeSharedSplit(sharedSplit);
 
       const expense = await db.$transaction(async (tx) => {
         const existingExpense = await tx.expense.findFirst({
@@ -786,6 +837,7 @@ export function createGroupExpensesService() {
             metadata: {
               splitMethod: normalizedMethod,
               splitValues: exactShares ?? null,
+              sharedSplit: normalizedSharedSplit,
               advancedDetails: normalizedAdvancedDetails,
             },
             payers: {

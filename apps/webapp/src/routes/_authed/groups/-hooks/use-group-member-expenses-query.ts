@@ -1,0 +1,47 @@
+import { useInfiniteQuery } from '@tanstack/react-query';
+
+import { client, type InferResponseType } from '#/lib/hc';
+
+const PAGE_LIMIT = 20;
+const groupMemberExpensesEndpoint =
+  client.api.groups[':id'].members[':memberId'].expenses.$get;
+
+type GroupMemberExpensesPageResponse = InferResponseType<
+  typeof groupMemberExpensesEndpoint
+>;
+
+export type GroupMemberExpenseItem = Extract<
+  GroupMemberExpensesPageResponse,
+  { data: unknown[]; pagination: { nextCursor: string | null } }
+>['data'][number];
+
+type GroupMemberExpensesPageSuccess = Extract<
+  GroupMemberExpensesPageResponse,
+  { data: unknown[]; pagination: { nextCursor: string | null } }
+>;
+
+export function useGroupMemberExpensesInfiniteQuery(
+  groupId: string,
+  memberId: string,
+) {
+  return useInfiniteQuery({
+    queryKey: ['group-member-expenses', groupId, memberId],
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }) => {
+      const response = await groupMemberExpensesEndpoint({
+        param: { id: groupId, memberId },
+        query: {
+          limit: String(PAGE_LIMIT),
+          ...(pageParam ? { cursor: pageParam } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('No se pudieron cargar los gastos del participante');
+      }
+
+      return (await response.json()) as GroupMemberExpensesPageSuccess;
+    },
+    getNextPageParam: (lastPage) => lastPage.pagination.nextCursor,
+  });
+}

@@ -349,6 +349,37 @@ const groups = new Hono<AppContext>()
     },
   )
   .get(
+    '/:id/members/:memberId/expenses',
+    zValidator('param', groupMemberParamsSchema),
+    zValidator('query', listGroupExpensesQuerySchema),
+    async (c) => {
+      const { id, memberId } = c.req.valid('param');
+      const query = c.req.valid('query');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.listGroupMemberExpenses({
+          userId,
+          groupId: id,
+          memberId,
+          limit: query.limit,
+          cursor: query.cursor,
+        });
+        return c.json(result);
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message === 'Grupo no encontrado') {
+            return c.json({ error: error.message }, 404);
+          }
+          if (error.message === 'Participante no encontrado') {
+            return c.json({ error: error.message }, 404);
+          }
+        }
+        throw error;
+      }
+    },
+  )
+  .get(
     '/:id/expenses/:expenseId',
     zValidator('param', groupExpenseParamsSchema),
     async (c) => {

@@ -292,6 +292,7 @@ function RouteComponent() {
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
+  const [sharedAmount, setSharedAmount] = useState('');
   const [currency, setCurrency] = useState('COP');
   const [paidByIds, setPaidByIds] = useState<string[]>([]);
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -400,6 +401,7 @@ function RouteComponent() {
 
       setDescription(expense.description);
       setAmount(expense.amount.toString());
+      setSharedAmount('');
       setCurrency(expense.currency);
       setCategoryId(expense.category?.id ?? null);
       setPaidByIds(
@@ -464,8 +466,16 @@ function RouteComponent() {
 
   const parsedAmount = Number(amount);
   const normalizedAmount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
+  const parsedSharedAmount = Number(sharedAmount);
+  const normalizedSharedAmount =
+    Number.isFinite(parsedSharedAmount) && parsedSharedAmount > 0
+      ? parsedSharedAmount
+      : 0;
   const selectedCount = participantIds.length;
   const equalShare = selectedCount > 0 ? normalizedAmount / selectedCount : 0;
+  const sharedShare =
+    selectedCount > 0 ? normalizedSharedAmount / selectedCount : 0;
+  const totalAmount = normalizedAmount + normalizedSharedAmount;
 
   const participantComputedAmounts = useMemo(() => {
     const result: Record<string, number> = {};
@@ -474,22 +484,23 @@ function RouteComponent() {
       const rawValue = Number(participantValues[memberId] ?? '0');
 
       if (splitMethod === 'percentage') {
-        result[memberId] = normalizedAmount * (rawValue / 100);
+        result[memberId] = normalizedAmount * (rawValue / 100) + sharedShare;
         continue;
       }
 
       if (splitMethod === 'exact') {
-        result[memberId] = rawValue;
+        result[memberId] = rawValue + sharedShare;
         continue;
       }
 
-      result[memberId] = equalShare;
+      result[memberId] = equalShare + sharedShare;
     }
 
     return result;
   }, [
     equalShare,
     normalizedAmount,
+    sharedShare,
     participantIds,
     participantValues,
     splitMethod,
@@ -518,7 +529,7 @@ function RouteComponent() {
 
   const canSubmit =
     description.trim().length > 0 &&
-    normalizedAmount > 0 &&
+    totalAmount > 0 &&
     paidByIds.length > 0 &&
     splitIsValid;
 
@@ -653,14 +664,23 @@ function RouteComponent() {
 
     try {
       const exactShares =
-        splitMethod === 'equal'
+        selectedCount === 0 ||
+        (splitMethod === 'equal' && normalizedSharedAmount === 0)
           ? undefined
           : Object.fromEntries(
               participantIds.map((memberId) => [
                 memberId,
-                Number(participantValues[memberId] ?? '0'),
+                normalizedSharedAmount > 0
+                  ? (participantComputedAmounts[memberId] ?? 0)
+                  : Number(participantValues[memberId] ?? '0'),
               ]),
             );
+      const payloadSplitMethod =
+        selectedCount > 0 &&
+        normalizedSharedAmount > 0 &&
+        splitMethod !== 'equal'
+          ? 'exact'
+          : splitMethod;
 
       const advancedDetailsPayload =
         advancedDetailsEnabled && normalizedAdvancedDetails
@@ -669,12 +689,12 @@ function RouteComponent() {
 
       const payload = {
         description: description.trim(),
-        amount: normalizedAmount,
+        amount: totalAmount,
         currency,
         ...(categoryId ? { categoryId } : {}),
         paidByIds,
         participantIds,
-        splitMethod,
+        splitMethod: payloadSplitMethod,
         exactShares,
         ...(advancedDetailsEnabled && attachmentDataUrl
           ? {
@@ -823,6 +843,27 @@ function RouteComponent() {
           />
         </label>
 
+        <label className="block rounded-xl border border-gray-200 px-4 py-3.5">
+          <span className="text-xs text-gray-500">Compartido por igual</span>
+          <div className="mt-1 flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-500">
+              {getCurrencySymbol(currency)}
+            </span>
+            <input
+              value={sharedAmount}
+              onChange={(event) => setSharedAmount(event.target.value)}
+              inputMode="decimal"
+              placeholder="Servicio, propina, bebida..."
+              className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
+            />
+            {normalizedSharedAmount > 0 && selectedCount > 0 ? (
+              <span className="shrink-0 text-xs text-gray-500">
+                +{formatMoney(currency, sharedShare)} c/u
+              </span>
+            ) : null}
+          </div>
+        </label>
+
         <button
           type="button"
           onClick={() => setShowCategoryDrawer(true)}
@@ -951,10 +992,13 @@ function RouteComponent() {
             <span className="text-sm font-medium text-gray-900">Todos</span>
             <span className="ml-auto text-sm text-gray-500">
               {splitMethod === 'equal'
-                ? formatMoney(currency, equalShare || 0)
+                ? formatMoney(currency, equalShare + sharedShare || 0)
                 : splitMethod === 'percentage'
-                  ? `${splitSum.toFixed(2)}%`
-                  : formatMoney(currency, splitSum || 0)}
+                  ? `${splitSum.toFixed(2)}% · +${formatMoney(currency, normalizedSharedAmount)}`
+                  : formatMoney(
+                      currency,
+                      splitSum + normalizedSharedAmount || 0,
+                    )}
             </span>
           </button>
 
@@ -1007,7 +1051,7 @@ function RouteComponent() {
                   {selected ? (
                     splitMethod === 'equal' ? (
                       <span className="shrink-0 text-sm font-medium text-gray-900">
-                        {formatMoney(currency, equalShare || 0)}
+                        {formatMoney(currency, equalShare + sharedShare || 0)}
                       </span>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -1056,7 +1100,7 @@ function RouteComponent() {
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
             {splitMethod === 'percentage'
               ? 'La suma de porcentajes debe ser 100.'
-              : 'La suma de montos debe coincidir con el total.'}
+              : 'La suma de montos debe coincidir con el monto base.'}
           </div>
         ) : null}
 
@@ -1070,8 +1114,8 @@ function RouteComponent() {
           {selectedCount === 0
             ? 'Gasto personal'
             : splitMethod === 'percentage'
-              ? `${selectedCount} participantes · ${splitSum.toFixed(2)}%`
-              : `${selectedCount} participantes · ${formatMoney(currency, splitMethod === 'equal' ? equalShare || 0 : splitSum || 0)} por persona`}
+              ? `${selectedCount} participantes · ${splitSum.toFixed(2)}% base · total ${formatMoney(currency, totalAmount)}`
+              : `${selectedCount} participantes · total ${formatMoney(currency, totalAmount)} · ${formatMoney(currency, splitMethod === 'equal' ? equalShare + sharedShare || 0 : splitSum + normalizedSharedAmount || 0)} repartido`}
         </p>
       </div>
 

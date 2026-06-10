@@ -279,6 +279,9 @@ export type GroupsService = {
   listGroupExpenses: (
     input: ListGroupExpensesInput,
   ) => Promise<ListGroupExpensesResult>;
+  listGroupMemberExpenses: (
+    input: ListGroupMemberExpensesInput,
+  ) => Promise<ListGroupMemberExpensesResult>;
   getGroupReportsTotals: (
     input: GroupReportsTotalsInput,
   ) => Promise<GroupReportsTotalsResult>;
@@ -525,6 +528,27 @@ export type GroupExpenseDetailResult = {
 
 export type ListGroupExpensesResult = {
   data: GroupExpenseListItem[];
+  pagination: {
+    limit: number;
+    total: number;
+    nextCursor: string | null;
+  };
+};
+
+export type ListGroupMemberExpensesInput = {
+  userId: string;
+  groupId: string;
+  memberId: string;
+  limit: number;
+  cursor?: string;
+};
+
+export type GroupMemberExpenseListItem = GroupExpenseListItem & {
+  participants: GroupExpenseParticipant[];
+};
+
+export type ListGroupMemberExpensesResult = {
+  data: GroupMemberExpenseListItem[];
   pagination: {
     limit: number;
     total: number;

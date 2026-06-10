@@ -571,9 +571,17 @@ function RouteComponent() {
                   const isCreator = group.ownerId === memberIdentity?.userId;
 
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={member.memberId}
-                      className="flex items-center gap-3 rounded-2xl bg-[#f8fafc] px-3 py-2.5"
+                      onClick={() =>
+                        void navigate({
+                          to: '/groups/$id/member/$memberId',
+                          params: { id, memberId: member.memberId },
+                          state: flowState,
+                        })
+                      }
+                      className="native-tap flex w-full items-center gap-3 rounded-2xl bg-[#f8fafc] px-3 py-2.5 text-left transition-colors hover:bg-[#eef2f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111]/15"
                     >
                       {memberIdentity?.image ? (
                         <img
@@ -607,12 +615,15 @@ function RouteComponent() {
                         </p>
                       </div>
 
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-[#132238]">
-                          {formatMoney(selectedCurrency, amount)}
-                        </p>
+                      <div className="flex items-center gap-2 text-right">
+                        <div>
+                          <p className="text-sm font-semibold text-[#132238]">
+                            {formatMoney(selectedCurrency, amount)}
+                          </p>
+                        </div>
+                        <ChevronRight className="size-4 shrink-0 text-[#94a3b8]" />
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>

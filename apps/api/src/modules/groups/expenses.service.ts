@@ -28,6 +28,8 @@ import type {
   GroupExpenseSharedSplit,
   ListGroupExpensesInput,
   ListGroupExpensesResult,
+  ListGroupMemberExpensesInput,
+  ListGroupMemberExpensesResult,
   SettleGroupDebtInput,
   UpdateGroupExpenseInput,
 } from './types';
@@ -319,6 +321,198 @@ export function createGroupExpensesService() {
                 : null,
               paidBy: row.paidBy,
               paidByMembers,
+              category: row.category,
+              participantCount: row._count.participants,
+              currentUserBalance,
+            };
+          })(),
+        })),
+        pagination: {
+          limit,
+          total,
+          nextCursor,
+        },
+      };
+    },
+    listGroupMemberExpenses: async ({
+      userId,
+      groupId,
+      memberId,
+      limit,
+      cursor,
+    }: ListGroupMemberExpensesInput): Promise<ListGroupMemberExpensesResult> => {
+      const group = await db.group.findFirst({
+        where: {
+          ...buildGroupAccessWhere(userId, groupId),
+          type: {
+            not: 'meta',
+          },
+        },
+        select: {
+          id: true,
+          GroupMember: {
+            select: {
+              id: true,
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!group) {
+        throw new Error('Grupo no encontrado');
+      }
+
+      const targetMember = group.GroupMember.find(
+        (member) => member.id === memberId,
+      );
+
+      if (!targetMember) {
+        throw new Error('Participante no encontrado');
+      }
+
+      const currentMember =
+        group.GroupMember.find((member) => member.userId === userId) ?? null;
+
+      const where: NonNullable<
+        Parameters<typeof db.expense.findMany>[0]
+      >['where'] = {
+        ...buildExpenseBaseWhere(groupId),
+        OR: [
+          { paidById: memberId },
+          { payers: { some: { memberId } } },
+          { participants: { some: { memberId } } },
+        ],
+      };
+
+      const [total, rows] = await Promise.all([
+        db.expense.count({ where }),
+        db.expense.findMany({
+          where,
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+          take: limit + 1,
+          orderBy: [{ date: 'desc' }, { id: 'desc' }],
+          select: {
+            id: true,
+            description: true,
+            amount: true,
+            attachment: true,
+            currency: true,
+            date: true,
+            notes: true,
+            status: true,
+            deletedAt: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+                icon: true,
+                color: true,
+              },
+            },
+            paidBy: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            payers: {
+              select: {
+                memberId: true,
+                amount: true,
+                member: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+              orderBy: [{ id: 'asc' }],
+            },
+            participants: {
+              select: {
+                memberId: true,
+                share: true,
+                member: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+            _count: {
+              select: {
+                participants: true,
+              },
+            },
+          },
+        }),
+      ]);
+
+      const hasNextPage = rows.length > limit;
+      const pageRows = hasNextPage ? rows.slice(0, limit) : rows;
+      const nextCursor = hasNextPage
+        ? (pageRows[pageRows.length - 1]?.id ?? null)
+        : null;
+
+      return {
+        data: pageRows.map((row) => ({
+          ...(() => {
+            const isSettlement = Boolean(row.notes?.includes('[SETTLEMENT:'));
+            const isPersonal = !isSettlement && row.participants.length === 0;
+            const currentParticipation = currentMember
+              ? row.participants.find(
+                  (participant) => participant.memberId === currentMember.id,
+                )
+              : null;
+            const currentPayer = currentMember
+              ? row.payers.find((payer) => payer.memberId === currentMember.id)
+              : null;
+            let currentUserBalance: number | null = null;
+
+            if (
+              !isPersonal &&
+              currentMember &&
+              (currentPayer || currentParticipation)
+            ) {
+              currentUserBalance = 0;
+              if (currentPayer) {
+                currentUserBalance += currentPayer.amount;
+              }
+              if (currentParticipation) {
+                currentUserBalance -= currentParticipation.share;
+              }
+              currentUserBalance = normalizeAmount(currentUserBalance);
+            }
+
+            const paidByMembers = row.payers.map((payer) => ({
+              memberId: payer.memberId,
+              name: payer.member.name,
+              amount: payer.amount,
+            }));
+            const participants = row.participants.map((participant) => ({
+              memberId: participant.memberId,
+              name: participant.member.name,
+              share: participant.share,
+            }));
+
+            return {
+              id: row.id,
+              description: row.description,
+              amount: row.amount,
+              attachmentUrl: resolveExpenseAttachmentUrl(row.attachment),
+              currency: row.currency,
+              date: row.date,
+              isDeleted: row.status === 'DELETED' || Boolean(row.deletedAt),
+              isSettlement,
+              isPersonal,
+              expenseType: 'standard' as const,
+              subExpenseCount: 0,
+              settlementToName: isSettlement
+                ? (row.participants[0]?.member.name ?? null)
+                : null,
+              paidBy: row.paidBy,
+              paidByMembers,
+              participants,
               category: row.category,
               participantCount: row._count.participants,
               currentUserBalance,

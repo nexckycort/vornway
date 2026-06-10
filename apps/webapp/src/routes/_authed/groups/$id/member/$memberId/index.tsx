@@ -1,9 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { MobilePageLayout } from '#/components/mobile-page-layout';
-import { Button } from '#/components/ui/button';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import {
@@ -28,12 +27,41 @@ function RouteComponent() {
   const { flowState } = useGroupFlowNavigation(id);
   const groupQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupMemberExpensesInfiniteQuery(id, memberId);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const member = groupQuery.data?.members.find((item) => item.id === memberId);
   const expenses = useMemo(
     () => expensesQuery.data?.pages.flatMap((page) => page.data) ?? [],
     [expensesQuery.data?.pages],
   );
+  const hasNextPageRef = useRef(expensesQuery.hasNextPage);
+  const isFetchingRef = useRef(expensesQuery.isFetching);
+  const fetchNextPageRef = useRef(expensesQuery.fetchNextPage);
+  hasNextPageRef.current = expensesQuery.hasNextPage;
+  isFetchingRef.current = expensesQuery.isFetching;
+  fetchNextPageRef.current = expensesQuery.fetchNextPage;
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (!first?.isIntersecting) return;
+        if (!hasNextPageRef.current || isFetchingRef.current) return;
+        void fetchNextPageRef.current();
+      },
+      {
+        root: null,
+        rootMargin: '240px 0px',
+        threshold: 0,
+      },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   const handleBack = () => {
     void navigate({
@@ -155,18 +183,14 @@ function RouteComponent() {
                 </div>
               ) : null}
 
-              {expensesQuery.hasNextPage ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="mt-4 w-full"
-                  disabled={expensesQuery.isFetchingNextPage}
-                  onClick={() => void expensesQuery.fetchNextPage()}
-                >
-                  {expensesQuery.isFetchingNextPage
-                    ? 'Cargando…'
-                    : 'Cargar más'}
-                </Button>
+              {expenses.length > 0 ? (
+                <div ref={loadMoreRef} className="h-8" />
+              ) : null}
+
+              {expensesQuery.isFetchingNextPage ? (
+                <p className="mt-2 text-center text-sm text-[#64748b]">
+                  Cargando más…
+                </p>
               ) : null}
             </section>
           </>

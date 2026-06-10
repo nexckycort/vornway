@@ -644,6 +644,7 @@ export function createGroupExpensesService() {
       categoryId,
       paidById,
       paidByIds,
+      payers,
       participantIds,
       splitMethod,
       exactShares,
@@ -723,6 +724,7 @@ export function createGroupExpensesService() {
         createPayerShares({
           amount,
           payerIds: validPayerIds,
+          payers,
         });
 
       const { shares: participantShares, normalizedMethod } = createSplitShares(
@@ -916,6 +918,7 @@ export function createGroupExpensesService() {
       categoryId,
       paidById,
       paidByIds,
+      payers,
       participantIds,
       splitMethod,
       exactShares,
@@ -977,6 +980,7 @@ export function createGroupExpensesService() {
         createPayerShares({
           amount,
           payerIds: validPayerIds,
+          payers,
         });
       const { shares: participantShares, normalizedMethod } = createSplitShares(
         {

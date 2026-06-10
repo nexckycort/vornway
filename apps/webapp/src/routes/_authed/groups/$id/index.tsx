@@ -99,15 +99,25 @@ function RouteComponent() {
       ]),
     );
     const localExpenses: ExpenseItem[] = pendingExpenses.map((expense) => {
+      const expensePayload = expense.payload as typeof expense.payload & {
+        payers?: Array<{
+          memberId: string;
+          amount: number;
+        }>;
+      };
       const primaryPayerId =
-        expense.payload.paidByIds?.[0] ?? expense.payload.paidById ?? '';
-      const payerIds = expense.payload.paidByIds?.length
-        ? expense.payload.paidByIds
-        : expense.payload.paidById
-          ? [expense.payload.paidById]
+        expensePayload.paidByIds?.[0] ?? expensePayload.paidById ?? '';
+      const payerIds = expensePayload.paidByIds?.length
+        ? expensePayload.paidByIds
+        : expensePayload.paidById
+          ? [expensePayload.paidById]
           : [];
+      const payerAmounts = new Map<string, number>(
+        expensePayload.payers?.map((payer) => [payer.memberId, payer.amount]) ??
+          [],
+      );
       const payerShare =
-        payerIds.length > 0 ? expense.payload.amount / payerIds.length : 0;
+        payerIds.length > 0 ? expensePayload.amount / payerIds.length : 0;
 
       return {
         id: expense.id,
@@ -123,9 +133,9 @@ function RouteComponent() {
                 categoriesById.get(expense.payload.categoryId)?.color ?? null,
             }
           : null,
-        description: expense.payload.description,
-        amount: expense.payload.amount,
-        currency: expense.payload.currency,
+        description: expensePayload.description,
+        amount: expensePayload.amount,
+        currency: expensePayload.currency,
         date: expense.createdAt,
         isDeleted: false,
         isSettlement: false,
@@ -140,9 +150,9 @@ function RouteComponent() {
         paidByMembers: payerIds.map((memberId) => ({
           memberId,
           name: membersById.get(memberId) ?? 'Miembro',
-          amount: Number(payerShare.toFixed(2)),
+          amount: Number((payerAmounts.get(memberId) ?? payerShare).toFixed(2)),
         })),
-        participantCount: expense.payload.participantIds?.length ?? 0,
+        participantCount: expensePayload.participantIds?.length ?? 0,
         currentUserBalance: null,
         attachmentUrl: null,
         syncStatus: 'pending',

@@ -128,6 +128,7 @@ export function createSplitShares(input: {
 export function createPayerShares(input: {
   amount: number;
   payerIds: string[];
+  payers?: Array<{ memberId: string; amount: number }>;
 }) {
   const uniquePayerIds = Array.from(
     new Set(input.payerIds.map((memberId) => memberId.trim()).filter(Boolean)),
@@ -146,6 +147,19 @@ export function createPayerShares(input: {
       shares: {
         [uniquePayerIds[0] as string]: normalizeAmount(input.amount),
       } as Record<string, number>,
+    };
+  }
+
+  if (input.payers && input.payers.length > 0) {
+    const shares = Object.fromEntries(
+      input.payers
+        .filter((payer) => uniquePayerIds.includes(payer.memberId))
+        .map((payer) => [payer.memberId, normalizeAmount(payer.amount)]),
+    ) as Record<string, number>;
+
+    return {
+      payerIds: uniquePayerIds,
+      shares,
     };
   }
 

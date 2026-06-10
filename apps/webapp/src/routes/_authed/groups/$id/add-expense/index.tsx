@@ -362,6 +362,26 @@ function RouteComponent() {
   const isCustomCategoryIcon = newCategoryIcon === customCategoryIconId;
   const customCategoryIcon = newCategoryCustomIcon.trim();
   const trimmedNewCategoryName = newCategoryName.trim();
+  const restoredPayerValues = useMemo(
+    () =>
+      expense
+        ? Object.fromEntries(
+            (expense.paidByMembers.length > 0
+              ? expense.paidByMembers
+              : [
+                  {
+                    memberId: expense.paidBy.id,
+                    amount: expense.amount,
+                  },
+                ]
+            ).map((payer) => [
+              payer.memberId,
+              formatEditableNumber(payer.amount),
+            ]),
+          )
+        : null,
+    [expense],
+  );
 
   useEffect(() => {
     const node = amountInputRef.current;
@@ -421,22 +441,7 @@ function RouteComponent() {
           ? expense.paidByMembers.map((payer) => payer.memberId)
           : [expense.paidBy.id],
       );
-      setPayerValues(
-        Object.fromEntries(
-          (expense.paidByMembers.length > 0
-            ? expense.paidByMembers
-            : [
-                {
-                  memberId: expense.paidBy.id,
-                  amount: expense.amount,
-                },
-              ]
-          ).map((payer) => [
-            payer.memberId,
-            formatEditableNumber(payer.amount),
-          ]),
-        ),
-      );
+      setPayerValues(restoredPayerValues ?? {});
       setParticipantIds(
         expense.participants.map((participant) => participant.memberId),
       );
@@ -481,7 +486,7 @@ function RouteComponent() {
     didInitializePayersRef.current = true;
     setPaidByIds([groupQuery.data.myMembership?.id ?? members[0]?.id ?? '']);
     setParticipantIds(members.map((member) => member.id));
-  }, [expense, groupQuery.data, isEditMode, members]);
+  }, [expense, groupQuery.data, isEditMode, members, restoredPayerValues]);
 
   useEffect(() => {
     if (splitMethod === 'equal') return;
@@ -532,6 +537,14 @@ function RouteComponent() {
 
   useEffect(() => {
     setPayerValues((current) => {
+      if (
+        isEditMode &&
+        restoredPayerValues &&
+        Object.keys(current).length === 0
+      ) {
+        return restoredPayerValues;
+      }
+
       if (paidByIds.length <= 1) {
         return paidByIds[0]
           ? {
@@ -552,7 +565,7 @@ function RouteComponent() {
 
       return next;
     });
-  }, [normalizedAmount, paidByIds]);
+  }, [isEditMode, normalizedAmount, paidByIds, restoredPayerValues]);
 
   const participantComputedAmounts = useMemo(() => {
     const result: Record<string, number> = {};
@@ -1086,8 +1099,8 @@ function RouteComponent() {
                       </p>
                       <p className="text-xs text-gray-500">Cuánto pagó</p>
                     </div>
-                    <div className="flex min-w-[112px] items-center justify-end gap-1">
-                      <span className="text-sm text-gray-500">
+                    <div className="flex min-w-[128px] items-center justify-end rounded-full bg-gray-50 px-3 py-2">
+                      <span className="w-5 shrink-0 text-sm text-gray-500">
                         {getCurrencySymbol(currency)}
                       </span>
                       <input
@@ -1100,7 +1113,7 @@ function RouteComponent() {
                         }
                         inputMode="decimal"
                         placeholder="0"
-                        className="w-full bg-transparent text-right text-sm font-medium text-gray-900 outline-none placeholder:text-gray-400"
+                        className="w-full min-w-0 bg-transparent text-right text-sm font-medium text-gray-900 outline-none placeholder:text-gray-400"
                       />
                     </div>
                   </label>

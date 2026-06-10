@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { API_URL } from '#/config/env';
 import { removeCachedGroupListItem } from '#/lib/groups-list-query-collection';
 import type { InferRequestType, InferResponseType } from '#/lib/hc';
 import { client } from '#/lib/hc';
@@ -13,6 +12,7 @@ const updateExpenseEndpoint =
 const updateGroupEndpoint = client.api.groups[':id'].$patch;
 const updateGroupSettingsEndpoint = client.api.groups[':id'].settings.$patch;
 const deleteGroupEndpoint = client.api.groups[':id'].$delete;
+const exportGroupCsvEndpoint = client.api.groups[':id'].export.$get;
 const settleDebtEndpoint = client.api.groups[':id'].settlements.$post;
 const addMemberEndpoint = client.api.groups[':id'].members.$post;
 const createCategoryEndpoint = client.api.groups[':id'].categories.$post;
@@ -228,8 +228,8 @@ export function useDeleteGroupMutation(groupId: string) {
 export function useExportGroupCsvMutation(groupId: string, groupName: string) {
   return useMutation({
     mutationFn: async () => {
-      const response = await fetch(`${API_URL}/groups/${groupId}/export`, {
-        credentials: 'include',
+      const response = await exportGroupCsvEndpoint({
+        param: { id: groupId },
       });
 
       if (!response.ok) {

@@ -293,6 +293,7 @@ function RouteComponent() {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [sharedAmount, setSharedAmount] = useState('');
+  const [sharedSplitEnabled, setSharedSplitEnabled] = useState(false);
   const [currency, setCurrency] = useState('COP');
   const [paidByIds, setPaidByIds] = useState<string[]>([]);
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -402,6 +403,7 @@ function RouteComponent() {
       setDescription(expense.description);
       setAmount(expense.amount.toString());
       setSharedAmount('');
+      setSharedSplitEnabled(false);
       setCurrency(expense.currency);
       setCategoryId(expense.category?.id ?? null);
       setPaidByIds(
@@ -445,13 +447,20 @@ function RouteComponent() {
     setParticipantValues((current) => {
       const next: Record<string, string> = {};
       const selectedCount = participantIds.length;
+      const sharedValue = Number(sharedSplitEnabled ? sharedAmount || 0 : 0);
+      const normalizedSharedValue =
+        Number.isFinite(sharedValue) && sharedValue > 0 ? sharedValue : 0;
+      const baseAmount = Math.max(
+        Number(amount || 0) - normalizedSharedValue,
+        0,
+      );
       const defaultValue =
         splitMethod === 'percentage'
           ? selectedCount > 0
             ? 100 / selectedCount
             : 0
           : selectedCount > 0
-            ? Number(amount || 0) / selectedCount
+            ? baseAmount / selectedCount
             : 0;
 
       for (const participantId of participantIds) {
@@ -462,20 +471,22 @@ function RouteComponent() {
 
       return next;
     });
-  }, [amount, participantIds, splitMethod]);
+  }, [amount, participantIds, sharedAmount, sharedSplitEnabled, splitMethod]);
 
   const parsedAmount = Number(amount);
   const normalizedAmount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
-  const parsedSharedAmount = Number(sharedAmount);
+  const parsedSharedAmount = Number(sharedSplitEnabled ? sharedAmount : 0);
   const normalizedSharedAmount =
     Number.isFinite(parsedSharedAmount) && parsedSharedAmount > 0
       ? parsedSharedAmount
       : 0;
   const selectedCount = participantIds.length;
+  const sharedAmountExceedsTotal =
+    selectedCount > 0 && normalizedSharedAmount > normalizedAmount;
+  const baseAmount = Math.max(normalizedAmount - normalizedSharedAmount, 0);
   const equalShare = selectedCount > 0 ? normalizedAmount / selectedCount : 0;
   const sharedShare =
     selectedCount > 0 ? normalizedSharedAmount / selectedCount : 0;
-  const totalAmount = normalizedAmount + normalizedSharedAmount;
 
   const participantComputedAmounts = useMemo(() => {
     const result: Record<string, number> = {};
@@ -484,7 +495,7 @@ function RouteComponent() {
       const rawValue = Number(participantValues[memberId] ?? '0');
 
       if (splitMethod === 'percentage') {
-        result[memberId] = normalizedAmount * (rawValue / 100) + sharedShare;
+        result[memberId] = baseAmount * (rawValue / 100) + sharedShare;
         continue;
       }
 
@@ -493,13 +504,13 @@ function RouteComponent() {
         continue;
       }
 
-      result[memberId] = equalShare + sharedShare;
+      result[memberId] = equalShare;
     }
 
     return result;
   }, [
+    baseAmount,
     equalShare,
-    normalizedAmount,
     sharedShare,
     participantIds,
     participantValues,
@@ -515,21 +526,23 @@ function RouteComponent() {
 
   const splitIsValid =
     selectedCount === 0 ||
-    (splitMethod === 'equal'
-      ? true
-      : splitMethod === 'percentage'
-        ? Math.abs(splitSum - 100) < 0.01 &&
-          participantIds.every(
-            (memberId) => Number(participantValues[memberId] ?? 0) > 0,
-          )
-        : Math.abs(splitSum - normalizedAmount) < 0.01 &&
-          participantIds.every(
-            (memberId) => Number(participantValues[memberId] ?? 0) > 0,
-          ));
+    (!sharedAmountExceedsTotal &&
+      (splitMethod === 'equal'
+        ? true
+        : splitMethod === 'percentage'
+          ? Math.abs(splitSum - 100) < 0.01 &&
+            participantIds.every(
+              (memberId) => Number(participantValues[memberId] ?? 0) > 0,
+            )
+          : Math.abs(splitSum + normalizedSharedAmount - normalizedAmount) <
+              0.01 &&
+            participantIds.every(
+              (memberId) => Number(participantValues[memberId] ?? 0) > 0,
+            )));
 
   const canSubmit =
     description.trim().length > 0 &&
-    totalAmount > 0 &&
+    normalizedAmount > 0 &&
     paidByIds.length > 0 &&
     splitIsValid;
 
@@ -570,8 +583,18 @@ function RouteComponent() {
     setSplitMethod(nextMethod);
     if (nextMethod === 'equal') {
       setParticipantValues({});
+      setSharedAmount('');
+      setSharedSplitEnabled(false);
     }
     setShowSplitDrawer(false);
+  };
+
+  const toggleSharedSplit = () => {
+    if (sharedSplitEnabled) {
+      setSharedAmount('');
+    }
+
+    setSharedSplitEnabled(!sharedSplitEnabled);
   };
 
   const setCurrencyAndClose = (nextCurrency: string) => {
@@ -664,8 +687,7 @@ function RouteComponent() {
 
     try {
       const exactShares =
-        selectedCount === 0 ||
-        (splitMethod === 'equal' && normalizedSharedAmount === 0)
+        selectedCount === 0 || splitMethod === 'equal'
           ? undefined
           : Object.fromEntries(
               participantIds.map((memberId) => [
@@ -689,7 +711,7 @@ function RouteComponent() {
 
       const payload = {
         description: description.trim(),
-        amount: totalAmount,
+        amount: normalizedAmount,
         currency,
         ...(categoryId ? { categoryId } : {}),
         paidByIds,
@@ -843,27 +865,6 @@ function RouteComponent() {
           />
         </label>
 
-        <label className="block rounded-xl border border-gray-200 px-4 py-3.5">
-          <span className="text-xs text-gray-500">Compartido por igual</span>
-          <div className="mt-1 flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-500">
-              {getCurrencySymbol(currency)}
-            </span>
-            <input
-              value={sharedAmount}
-              onChange={(event) => setSharedAmount(event.target.value)}
-              inputMode="decimal"
-              placeholder="Servicio, propina, bebida..."
-              className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
-            />
-            {normalizedSharedAmount > 0 && selectedCount > 0 ? (
-              <span className="shrink-0 text-xs text-gray-500">
-                +{formatMoney(currency, sharedShare)} c/u
-              </span>
-            ) : null}
-          </div>
-        </label>
-
         <button
           type="button"
           onClick={() => setShowCategoryDrawer(true)}
@@ -992,7 +993,7 @@ function RouteComponent() {
             <span className="text-sm font-medium text-gray-900">Todos</span>
             <span className="ml-auto text-sm text-gray-500">
               {splitMethod === 'equal'
-                ? formatMoney(currency, equalShare + sharedShare || 0)
+                ? formatMoney(currency, equalShare || 0)
                 : splitMethod === 'percentage'
                   ? `${splitSum.toFixed(2)}% · +${formatMoney(currency, normalizedSharedAmount)}`
                   : formatMoney(
@@ -1001,6 +1002,58 @@ function RouteComponent() {
                     )}
             </span>
           </button>
+
+          {splitMethod !== 'equal' ? (
+            <div className="mt-4 rounded-2xl border border-gray-200 px-4 py-3">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={toggleSharedSplit}
+                  className={`flex size-6 shrink-0 items-center justify-center rounded ${
+                    sharedSplitEnabled ? 'bg-rose-500' : 'bg-gray-300'
+                  }`}
+                  aria-pressed={sharedSplitEnabled}
+                  aria-label="Activar compartido por igual"
+                >
+                  {sharedSplitEnabled ? (
+                    <Check className="size-4 text-white" />
+                  ) : (
+                    <Plus className="size-4 text-white" />
+                  )}
+                </button>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900">
+                    Compartido por igual
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Servicio, propina o algo para todos
+                  </p>
+                </div>
+
+                {sharedSplitEnabled ? (
+                  <label className="flex h-10 min-w-0 max-w-[9rem] items-center gap-2 rounded-full border border-gray-200 px-3">
+                    <span className="text-xs font-medium text-gray-500">
+                      {getCurrencySymbol(currency)}
+                    </span>
+                    <input
+                      value={sharedAmount}
+                      onChange={(event) => setSharedAmount(event.target.value)}
+                      inputMode="decimal"
+                      placeholder="0"
+                      className="min-w-0 flex-1 bg-transparent text-right text-sm text-gray-900 outline-none placeholder:text-gray-400"
+                    />
+                  </label>
+                ) : null}
+              </div>
+
+              {normalizedSharedAmount > 0 && selectedCount > 0 ? (
+                <p className="mt-2 text-xs text-gray-500">
+                  +{formatMoney(currency, sharedShare)} por persona
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="mt-4 space-y-3">
             {members.map((member) => {
@@ -1051,7 +1104,7 @@ function RouteComponent() {
                   {selected ? (
                     splitMethod === 'equal' ? (
                       <span className="shrink-0 text-sm font-medium text-gray-900">
-                        {formatMoney(currency, equalShare + sharedShare || 0)}
+                        {formatMoney(currency, equalShare || 0)}
                       </span>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -1098,9 +1151,11 @@ function RouteComponent() {
 
         {!splitIsValid && selectedCount > 0 ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            {splitMethod === 'percentage'
-              ? 'La suma de porcentajes debe ser 100.'
-              : 'La suma de montos debe coincidir con el monto base.'}
+            {sharedAmountExceedsTotal
+              ? 'El monto compartido no puede ser mayor que el total.'
+              : splitMethod === 'percentage'
+                ? 'La suma de porcentajes debe ser 100.'
+                : 'La suma de montos individuales más el compartido debe coincidir con el total.'}
           </div>
         ) : null}
 
@@ -1114,8 +1169,8 @@ function RouteComponent() {
           {selectedCount === 0
             ? 'Gasto personal'
             : splitMethod === 'percentage'
-              ? `${selectedCount} participantes · ${splitSum.toFixed(2)}% base · total ${formatMoney(currency, totalAmount)}`
-              : `${selectedCount} participantes · total ${formatMoney(currency, totalAmount)} · ${formatMoney(currency, splitMethod === 'equal' ? equalShare + sharedShare || 0 : splitSum + normalizedSharedAmount || 0)} repartido`}
+              ? `${selectedCount} participantes · ${splitSum.toFixed(2)}% sobre ${formatMoney(currency, baseAmount)} · total ${formatMoney(currency, normalizedAmount)}`
+              : `${selectedCount} participantes · ${formatMoney(currency, splitMethod === 'equal' ? normalizedAmount : splitSum + normalizedSharedAmount)} de ${formatMoney(currency, normalizedAmount)}`}
         </p>
       </div>
 

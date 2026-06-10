@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   Copy,
+  Download,
   LogOut,
   Pencil,
   QrCode,
@@ -27,6 +28,7 @@ import {
 } from '#/lib/group-flow-navigation';
 import {
   useDeleteGroupMutation,
+  useExportGroupCsvMutation,
   useUnlinkMemberMutation,
   useUpdateGroupSettingsMutation,
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
@@ -59,6 +61,10 @@ function RouteComponent() {
   const deleteGroupMutation = useDeleteGroupMutation(id);
   const unlinkMemberMutation = useUnlinkMemberMutation(id);
   const updateSettingsMutation = useUpdateGroupSettingsMutation(id);
+  const exportGroupCsvMutation = useExportGroupCsvMutation(
+    id,
+    groupQuery.data?.name ?? 'grupo',
+  );
 
   const inviteLink = useMemo(() => {
     if (!groupQuery.data?.inviteCode || typeof window === 'undefined')
@@ -167,6 +173,17 @@ function RouteComponent() {
     } catch (error) {
       setShareMessage(
         error instanceof Error ? error.message : 'No se pudo salir del grupo',
+      );
+    }
+  };
+
+  const handleExportGroup = async () => {
+    try {
+      await exportGroupCsvMutation.mutateAsync();
+      setShareMessage('Exportación descargada');
+    } catch (error) {
+      setShareMessage(
+        error instanceof Error ? error.message : 'No se pudo exportar el grupo',
       );
     }
   };
@@ -303,6 +320,30 @@ function RouteComponent() {
             </span>
             <span className="flex-1 text-sm text-[#132238]">
               Crear y editar categorías
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 px-1 py-2 text-left"
+            onClick={() => {
+              void handleExportGroup();
+            }}
+            disabled={exportGroupCsvMutation.isPending}
+          >
+            <span className="flex size-9 items-center justify-center text-[#132238]">
+              <Download className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm text-[#132238]">
+                Exportar en Excel
+              </p>
+              <p className="truncate text-xs text-[#94a3b8]">
+                Descarga un CSV compatible con Excel
+              </p>
+            </div>
+            <span className="text-xs text-[#94a3b8]">
+              {exportGroupCsvMutation.isPending ? 'Exportando…' : ''}
             </span>
           </button>
 

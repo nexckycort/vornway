@@ -473,6 +473,7 @@ const groups = new Hono<AppContext>()
           participantIds: data.participantIds,
           splitMethod: data.splitMethod,
           exactShares: data.exactShares,
+          sharedSplit: data.sharedSplit,
           attachmentImage: data.attachmentImage,
           advancedDetails: data.advancedDetails,
         });
@@ -508,6 +509,7 @@ const groups = new Hono<AppContext>()
           participantIds: data.participantIds,
           splitMethod: data.splitMethod,
           exactShares: data.exactShares,
+          sharedSplit: data.sharedSplit,
           attachmentImage: data.attachmentImage,
           advancedDetails: data.advancedDetails,
         });

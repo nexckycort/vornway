@@ -57,6 +57,11 @@ import type { ExpenseAdvancedDetails } from '../-types/group-detail.types';
 
 type SplitMethod = 'equal' | 'percentage' | 'exact';
 type AdvancedDetailsType = ExpenseAdvancedDetails['type'];
+type ExpenseSharedSplit = {
+  amount: number;
+  splitMethod: Exclude<SplitMethod, 'equal'>;
+  splitValues?: Record<string, number>;
+};
 
 const splitMethods: Array<{ value: SplitMethod; label: string }> = [
   { value: 'equal', label: 'Partes iguales' },
@@ -400,10 +405,14 @@ function RouteComponent() {
     if (isEditMode) {
       if (!expense || hasInitializedFormRef.current) return;
 
+      const sharedSplit =
+        (expense as { sharedSplit?: ExpenseSharedSplit | null }).sharedSplit ??
+        null;
+
       setDescription(expense.description);
       setAmount(expense.amount.toString());
-      setSharedAmount('');
-      setSharedSplitEnabled(false);
+      setSharedAmount(sharedSplit?.amount.toString() ?? '');
+      setSharedSplitEnabled(Boolean(sharedSplit));
       setCurrency(expense.currency);
       setCategoryId(expense.category?.id ?? null);
       setPaidByIds(
@@ -414,15 +423,31 @@ function RouteComponent() {
       setParticipantIds(
         expense.participants.map((participant) => participant.memberId),
       );
-      setSplitMethod(expense.splitMethod);
+      setSplitMethod(sharedSplit?.splitMethod ?? expense.splitMethod);
       setParticipantValues(
         Object.fromEntries(
-          expense.participants.map((participant) => [
-            participant.memberId,
-            expense.splitMethod === 'percentage'
-              ? formatEditableNumber((participant.share / expense.amount) * 100)
-              : formatEditableNumber(participant.share),
-          ]),
+          expense.participants.map((participant) => {
+            const restoredSplitMethod =
+              sharedSplit?.splitMethod ?? expense.splitMethod;
+            const restoredValue =
+              sharedSplit?.splitValues?.[participant.memberId];
+            const sharedShareFallback = sharedSplit
+              ? sharedSplit.amount / Math.max(expense.participants.length, 1)
+              : 0;
+
+            return [
+              participant.memberId,
+              typeof restoredValue === 'number'
+                ? formatEditableNumber(restoredValue)
+                : restoredSplitMethod === 'percentage'
+                  ? formatEditableNumber(
+                      (participant.share / expense.amount) * 100,
+                    )
+                  : formatEditableNumber(
+                      participant.share - sharedShareFallback,
+                    ),
+            ];
+          }),
         ),
       );
       setAdvancedDetails({
@@ -703,6 +728,21 @@ function RouteComponent() {
         splitMethod !== 'equal'
           ? 'exact'
           : splitMethod;
+      const sharedSplit =
+        sharedSplitEnabled &&
+        normalizedSharedAmount > 0 &&
+        splitMethod !== 'equal'
+          ? {
+              amount: normalizedSharedAmount,
+              splitMethod,
+              splitValues: Object.fromEntries(
+                participantIds.map((memberId) => [
+                  memberId,
+                  Number(participantValues[memberId] ?? '0'),
+                ]),
+              ),
+            }
+          : undefined;
 
       const advancedDetailsPayload =
         advancedDetailsEnabled && normalizedAdvancedDetails
@@ -718,6 +758,7 @@ function RouteComponent() {
         participantIds,
         splitMethod: payloadSplitMethod,
         exactShares,
+        sharedSplit,
         ...(advancedDetailsEnabled && attachmentDataUrl
           ? {
               attachmentImage: {

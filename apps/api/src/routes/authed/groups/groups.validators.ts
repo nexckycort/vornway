@@ -63,6 +63,15 @@ export const createGroupExpenseSchema = z
     categoryId: z.string().min(1).optional(),
     paidById: z.string().min(1).optional(),
     paidByIds: z.array(z.string().min(1)).min(1).optional(),
+    payers: z
+      .array(
+        z.object({
+          memberId: z.string().min(1),
+          amount: z.number().positive(),
+        }),
+      )
+      .min(1)
+      .optional(),
     participantIds: z.array(z.string().min(1)).default([]),
     splitMethod: z.enum(['equal', 'percentage', 'exact']).default('equal'),
     exactShares: z.record(z.string(), z.number().nonnegative()).optional(),
@@ -93,6 +102,17 @@ export const createGroupExpenseSchema = z
     {
       message: 'Debes seleccionar al menos una persona que pagó',
       path: ['paidByIds'],
+    },
+  )
+  .refine(
+    (data) =>
+      !data.payers ||
+      Math.abs(
+        data.payers.reduce((sum, payer) => sum + payer.amount, 0) - data.amount,
+      ) < 0.01,
+    {
+      message: 'La suma de los pagadores debe ser igual al monto total',
+      path: ['payers'],
     },
   );
 

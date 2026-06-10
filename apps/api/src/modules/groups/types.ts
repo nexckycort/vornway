@@ -28,6 +28,10 @@ export type CreateGroupExpenseInput = {
   categoryId?: string | null;
   paidById?: string;
   paidByIds?: string[];
+  payers?: Array<{
+    memberId: string;
+    amount: number;
+  }>;
   participantIds: string[];
   splitMethod: 'equal' | 'percentage' | 'exact';
   exactShares?: Record<string, number>;

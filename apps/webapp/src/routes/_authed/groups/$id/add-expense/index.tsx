@@ -301,6 +301,7 @@ function RouteComponent() {
   const [sharedSplitEnabled, setSharedSplitEnabled] = useState(false);
   const [currency, setCurrency] = useState('COP');
   const [paidByIds, setPaidByIds] = useState<string[]>([]);
+  const [payerValues, setPayerValues] = useState<Record<string, string>>({});
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
@@ -420,6 +421,22 @@ function RouteComponent() {
           ? expense.paidByMembers.map((payer) => payer.memberId)
           : [expense.paidBy.id],
       );
+      setPayerValues(
+        Object.fromEntries(
+          (expense.paidByMembers.length > 0
+            ? expense.paidByMembers
+            : [
+                {
+                  memberId: expense.paidBy.id,
+                  amount: expense.amount,
+                },
+              ]
+          ).map((payer) => [
+            payer.memberId,
+            formatEditableNumber(payer.amount),
+          ]),
+        ),
+      );
       setParticipantIds(
         expense.participants.map((participant) => participant.memberId),
       );
@@ -513,6 +530,30 @@ function RouteComponent() {
   const sharedShare =
     selectedCount > 0 ? normalizedSharedAmount / selectedCount : 0;
 
+  useEffect(() => {
+    setPayerValues((current) => {
+      if (paidByIds.length <= 1) {
+        return paidByIds[0]
+          ? {
+              [paidByIds[0]]: formatEditableNumber(normalizedAmount),
+            }
+          : {};
+      }
+
+      const next: Record<string, string> = {};
+      const defaultValue =
+        paidByIds.length > 0 ? normalizedAmount / paidByIds.length : 0;
+
+      for (const payerId of paidByIds) {
+        next[payerId] =
+          current[payerId] ??
+          (defaultValue > 0 ? formatEditableNumber(defaultValue) : '');
+      }
+
+      return next;
+    });
+  }, [normalizedAmount, paidByIds]);
+
   const participantComputedAmounts = useMemo(() => {
     const result: Record<string, number> = {};
 
@@ -565,11 +606,24 @@ function RouteComponent() {
               (memberId) => Number(participantValues[memberId] ?? 0) > 0,
             )));
 
+  const payerSum = useMemo(() => {
+    return paidByIds.reduce((sum, memberId) => {
+      const value = Number(payerValues[memberId] ?? '0');
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+  }, [paidByIds, payerValues]);
+
+  const payerSplitIsValid =
+    paidByIds.length <= 1 ||
+    (Math.abs(payerSum - normalizedAmount) < 0.01 &&
+      paidByIds.every((memberId) => Number(payerValues[memberId] ?? 0) > 0));
+
   const canSubmit =
     description.trim().length > 0 &&
     normalizedAmount > 0 &&
     paidByIds.length > 0 &&
-    splitIsValid;
+    splitIsValid &&
+    payerSplitIsValid;
 
   const isPending = isEditMode
     ? updateExpenseMutation.isPending
@@ -750,6 +804,13 @@ function RouteComponent() {
           : null;
 
       const payload = {
+        payers:
+          paidByIds.length > 1
+            ? paidByIds.map((memberId) => ({
+                memberId,
+                amount: Number(payerValues[memberId] ?? '0'),
+              }))
+            : undefined,
         description: description.trim(),
         amount: normalizedAmount,
         currency,
@@ -1002,6 +1063,70 @@ function RouteComponent() {
               );
             })}
           </div>
+
+          {paidByIds.length > 1 ? (
+            <div className="mt-4 space-y-3">
+              {paidByIds.map((payerId) => {
+                const payer = members.find((member) => member.id === payerId);
+                if (!payer) return null;
+
+                return (
+                  <label
+                    key={payerId}
+                    className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3"
+                  >
+                    <ParticipantAvatar
+                      name={payer.name}
+                      image={payer.image}
+                      sizeClassName="size-9 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-gray-900">
+                        {payer.isCurrentUser ? 'Tú' : payer.name}
+                      </p>
+                      <p className="text-xs text-gray-500">Cuánto pagó</p>
+                    </div>
+                    <div className="flex min-w-[112px] items-center justify-end gap-1">
+                      <span className="text-sm text-gray-500">
+                        {getCurrencySymbol(currency)}
+                      </span>
+                      <input
+                        value={payerValues[payerId] ?? ''}
+                        onChange={(event) =>
+                          setPayerValues((current) => ({
+                            ...current,
+                            [payerId]: event.target.value,
+                          }))
+                        }
+                        inputMode="decimal"
+                        placeholder="0"
+                        className="w-full bg-transparent text-right text-sm font-medium text-gray-900 outline-none placeholder:text-gray-400"
+                      />
+                    </div>
+                  </label>
+                );
+              })}
+
+              <div className="flex items-center justify-between px-1 text-xs">
+                <span
+                  className={
+                    payerSplitIsValid ? 'text-gray-400' : 'text-red-500'
+                  }
+                >
+                  {payerSplitIsValid
+                    ? 'La suma de pagadores coincide con el total'
+                    : 'La suma de pagadores debe ser igual al total'}
+                </span>
+                <span
+                  className={
+                    payerSplitIsValid ? 'text-gray-500' : 'text-red-500'
+                  }
+                >
+                  {formatMoney(currency, payerSum)}
+                </span>
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <section>

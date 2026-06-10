@@ -76,6 +76,28 @@ const groups = new Hono<AppContext>()
       throw error;
     }
   })
+  .get('/:id/export', zValidator('param', groupParamsSchema), async (c) => {
+    const { id } = c.req.valid('param');
+    const { id: userId } = c.get('user');
+
+    try {
+      const result = await groupsService.exportGroupCsv({
+        userId,
+        groupId: id,
+      });
+
+      return c.body(result.content, 200, {
+        'Content-Type': result.contentType,
+        'Content-Disposition': `attachment; filename="${result.fileName}"`,
+        'Cache-Control': 'no-store',
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Grupo no encontrado') {
+        return c.json({ error: error.message }, 404);
+      }
+      throw error;
+    }
+  })
   .delete('/:id', zValidator('param', groupParamsSchema), async (c) => {
     const { id } = c.req.valid('param');
     const { id: userId } = c.get('user');

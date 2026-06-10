@@ -13,6 +13,11 @@ export type ListGroupExpensesInput = {
   cursor?: string;
 };
 
+export type ExportGroupCsvInput = {
+  userId: string;
+  groupId: string;
+};
+
 export type CreateGroupExpenseInput = {
   userId: string;
   groupId: string;
@@ -282,6 +287,7 @@ export type GroupsService = {
   listGroupMemberExpenses: (
     input: ListGroupMemberExpensesInput,
   ) => Promise<ListGroupMemberExpensesResult>;
+  exportGroupCsv: (input: ExportGroupCsvInput) => Promise<ExportGroupCsvResult>;
   getGroupReportsTotals: (
     input: GroupReportsTotalsInput,
   ) => Promise<GroupReportsTotalsResult>;
@@ -554,4 +560,10 @@ export type ListGroupMemberExpensesResult = {
     total: number;
     nextCursor: string | null;
   };
+};
+
+export type ExportGroupCsvResult = {
+  content: string;
+  contentType: string;
+  fileName: string;
 };

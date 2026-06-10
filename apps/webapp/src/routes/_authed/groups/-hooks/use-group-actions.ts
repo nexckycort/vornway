@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { API_URL } from '#/config/env';
 import { removeCachedGroupListItem } from '#/lib/groups-list-query-collection';
 import type { InferRequestType, InferResponseType } from '#/lib/hc';
 import { client } from '#/lib/hc';
@@ -90,6 +91,16 @@ function getApiErrorMessage(error: unknown, fallback: string) {
   }
 
   return getApiErrorMessage(candidate.error, fallback);
+}
+
+function slugifyFileName(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
 }
 
 export function useUpdateGroupImageMutation(groupId: string) {
@@ -210,6 +221,44 @@ export function useDeleteGroupMutation(groupId: string) {
         queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
+    },
+  });
+}
+
+export function useExportGroupCsvMutation(groupId: string, groupName: string) {
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`${API_URL}/groups/${groupId}/export`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        let payload: unknown = null;
+        try {
+          payload = await response.json();
+        } catch {
+          payload = null;
+        }
+
+        throw new Error(
+          getApiErrorMessage(payload, m['groups.settings.loadError']()),
+        );
+      }
+
+      return response.blob();
+    },
+    onSuccess: (blob) => {
+      if (typeof document === 'undefined') return;
+
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      const safeName = slugifyFileName(groupName) || 'grupo';
+      link.href = url;
+      link.download = `${safeName}-export.csv`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     },
   });
 }

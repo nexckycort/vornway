@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import {
@@ -180,9 +181,9 @@ function RouteComponent() {
   const handleExportGroup = async () => {
     try {
       await exportGroupCsvMutation.mutateAsync();
-      setShareMessage('Exportación descargada');
+      toast.success('Exportación descargada');
     } catch (error) {
-      setShareMessage(
+      toast.error(
         error instanceof Error ? error.message : 'No se pudo exportar el grupo',
       );
     }

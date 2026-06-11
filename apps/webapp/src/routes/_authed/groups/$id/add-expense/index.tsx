@@ -1099,8 +1099,8 @@ function RouteComponent() {
                       </p>
                       <p className="text-xs text-gray-500">Cuánto pagó</p>
                     </div>
-                    <div className="flex min-w-[128px] items-center justify-end rounded-full bg-gray-50 px-3 py-2">
-                      <span className="w-5 shrink-0 text-sm text-gray-500">
+                    <div className="grid min-w-[128px] grid-cols-[20px_minmax(0,1fr)] items-center gap-2 rounded-full bg-gray-50 px-3 py-2">
+                      <span className="text-sm text-gray-500">
                         {getCurrencySymbol(currency)}
                       </span>
                       <input
@@ -1113,7 +1113,7 @@ function RouteComponent() {
                         }
                         inputMode="decimal"
                         placeholder="0"
-                        className="w-full min-w-0 bg-transparent text-right text-sm font-medium text-gray-900 outline-none placeholder:text-gray-400"
+                        className="min-w-0 bg-transparent text-right text-sm font-medium text-gray-900 outline-none placeholder:text-gray-400"
                       />
                     </div>
                   </label>

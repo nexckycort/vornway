@@ -1,4 +1,5 @@
 import { db } from '~/infrastructure/database/connection';
+import { resolveUserImageUrl } from '../users/user-image.service';
 import type {
   ListNotificationsResult,
   NotificationInboxItem,
@@ -27,7 +28,7 @@ function mapNotificationRow(row: {
     groupId: row.groupId,
     expenseId: row.expenseId,
     actorName: row.actorName,
-    actorImage: row.actorImage,
+    actorImage: resolveUserImageUrl(row.actorImage, null),
     readAt: row.readAt ? row.readAt.toISOString() : null,
     createdAt: row.createdAt.toISOString(),
   };
@@ -54,7 +55,9 @@ export function createNotificationService(): NotificationService {
           ...(input.groupId ? { groupId: input.groupId } : {}),
           ...(input.expenseId ? { expenseId: input.expenseId } : {}),
           ...(input.actorName ? { actorName: input.actorName } : {}),
-          ...(input.actorImage ? { actorImage: input.actorImage } : {}),
+          ...(input.actorImage
+            ? { actorImage: resolveUserImageUrl(input.actorImage, null) }
+            : {}),
         })),
       });
     },

@@ -1,6 +1,7 @@
 import { db } from '~/infrastructure/database/connection';
 import { notificationService } from '~/modules/notifications';
 import { pushNotificationService } from '~/modules/push';
+import { resolveUserImageUrl } from '../users/user-image.service';
 import {
   deleteExpenseAttachment,
   resolveExpenseAttachmentUrl,
@@ -891,7 +892,7 @@ export function createGroupExpensesService() {
               id: true,
               name: true,
               userId: true,
-              user: { select: { image: true } },
+              user: { select: { image: true, updatedAt: true } },
             },
           }),
         ]);
@@ -904,9 +905,13 @@ export function createGroupExpensesService() {
         });
 
         if (group && recipientUserIds.length > 0) {
-          const actorImage =
-            pushMembers.find((member) => member.userId === userId)?.user
-              ?.image ?? null;
+          const actorMember = pushMembers.find(
+            (member) => member.userId === userId,
+          );
+          const actorImage = resolveUserImageUrl(
+            actorMember?.user?.image ?? null,
+            actorMember?.user?.updatedAt ?? null,
+          );
           const pushPayload = buildExpensePushPayload({
             groupId,
             groupName: group.name,

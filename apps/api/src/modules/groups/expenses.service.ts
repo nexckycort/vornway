@@ -12,6 +12,8 @@ import {
   buildGroupAccessWhere,
   createPayerShares,
   createSplitShares,
+  getDateEnd,
+  getDateStart,
   normalizeAmount,
   readSplitMethod,
 } from './helpers';
@@ -340,6 +342,10 @@ export function createGroupExpensesService() {
       memberId,
       limit,
       cursor,
+      categoryId,
+      uncategorized,
+      startDate,
+      endDate,
     }: ListGroupMemberExpensesInput): Promise<ListGroupMemberExpensesResult> => {
       const group = await db.group.findFirst({
         where: {
@@ -383,6 +389,19 @@ export function createGroupExpensesService() {
           { payers: { some: { memberId } } },
           { participants: { some: { memberId } } },
         ],
+        ...(categoryId
+          ? { categoryId }
+          : uncategorized
+            ? { categoryId: null }
+            : {}),
+        ...(startDate && endDate
+          ? {
+              date: {
+                gte: getDateStart(startDate),
+                lte: getDateEnd(endDate),
+              },
+            }
+          : {}),
       };
 
       const [total, rows] = await Promise.all([

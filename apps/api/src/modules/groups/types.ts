@@ -562,6 +562,10 @@ export type ListGroupMemberExpensesInput = {
   memberId: string;
   limit: number;
   cursor?: string;
+  categoryId?: string;
+  uncategorized?: boolean;
+  startDate?: string;
+  endDate?: string;
 };
 
 export type GroupMemberExpenseListItem = GroupExpenseListItem & {

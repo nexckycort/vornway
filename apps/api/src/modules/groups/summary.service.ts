@@ -214,31 +214,42 @@ export function createGroupSummaryService() {
         }
       }
 
-      const directDebts = Array.from(directDebtByCounterparty.entries())
-        .map(([pairKey, amount]) => {
-          const [toMemberId, currency] = pairKey.split(':');
-          return {
-            toMemberId,
-            toName: memberNameById.get(toMemberId) ?? 'Miembro',
-            currency,
-            amount: normalizeAmount(amount),
-          };
-        })
-        .filter((entry) => entry.amount > 0)
-        .sort((a, b) => b.amount - a.amount);
+      const directBalanceKeys = new Set<string>([
+        ...Array.from(directDebtByCounterparty.keys()),
+        ...Array.from(directCreditByCounterparty.keys()),
+      ]);
 
-      const directCredits = Array.from(directCreditByCounterparty.entries())
-        .map(([pairKey, amount]) => {
-          const [fromMemberId, currency] = pairKey.split(':');
-          return {
-            fromMemberId,
-            fromName: memberNameById.get(fromMemberId) ?? 'Miembro',
+      const directDebts: GroupSummaryResult['directDebts'] = [];
+      const directCredits: GroupSummaryResult['directCredits'] = [];
+
+      for (const pairKey of directBalanceKeys) {
+        const [memberId, currency] = pairKey.split(':');
+        const credits = directCreditByCounterparty.get(pairKey) ?? 0;
+        const debts = directDebtByCounterparty.get(pairKey) ?? 0;
+        const netAmount = normalizeAmount(credits - debts);
+
+        if (Math.abs(netAmount) < 0.01) continue;
+
+        if (netAmount > 0) {
+          directCredits.push({
+            fromMemberId: memberId,
+            fromName: memberNameById.get(memberId) ?? 'Miembro',
             currency,
-            amount: normalizeAmount(amount),
-          };
-        })
-        .filter((entry) => entry.amount > 0)
-        .sort((a, b) => b.amount - a.amount);
+            amount: netAmount,
+          });
+          continue;
+        }
+
+        directDebts.push({
+          toMemberId: memberId,
+          toName: memberNameById.get(memberId) ?? 'Miembro',
+          currency,
+          amount: normalizeAmount(Math.abs(netAmount)),
+        });
+      }
+
+      directDebts.sort((a, b) => b.amount - a.amount);
+      directCredits.sort((a, b) => b.amount - a.amount);
 
       const settlementDebts = myMembership
         ? group.GroupMember.flatMap((member) => {

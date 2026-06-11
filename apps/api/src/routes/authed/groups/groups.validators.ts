@@ -31,6 +31,24 @@ export const listGroupExpensesQuerySchema = z.object({
   cursor: z.string().min(1).optional(),
 });
 
+export const listGroupMemberExpensesQuerySchema = listGroupExpensesQuerySchema
+  .extend({
+    categoryId: z.string().min(1).optional(),
+    uncategorized: z.coerce.boolean().optional(),
+    startDate: z.string().date().optional(),
+    endDate: z.string().date().optional(),
+  })
+  .refine(
+    (data) =>
+      !data.startDate ||
+      !data.endDate ||
+      new Date(data.endDate) >= new Date(data.startDate),
+    {
+      message: 'La fecha final debe ser mayor o igual a la inicial',
+      path: ['endDate'],
+    },
+  );
+
 export const groupReportsTotalsQuerySchema = z
   .object({
     range: z

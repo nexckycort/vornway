@@ -16,6 +16,7 @@ import {
   groupParamsSchema,
   groupReportsTotalsQuerySchema,
   listGroupExpensesQuerySchema,
+  listGroupMemberExpensesQuerySchema,
   listGroupsQuerySchema,
   moveGroupCategoryExpensesSchema,
   searchGroupMembersQuerySchema,
@@ -373,7 +374,7 @@ const groups = new Hono<AppContext>()
   .get(
     '/:id/members/:memberId/expenses',
     zValidator('param', groupMemberParamsSchema),
-    zValidator('query', listGroupExpensesQuerySchema),
+    zValidator('query', listGroupMemberExpensesQuerySchema),
     async (c) => {
       const { id, memberId } = c.req.valid('param');
       const query = c.req.valid('query');
@@ -386,6 +387,10 @@ const groups = new Hono<AppContext>()
           memberId,
           limit: query.limit,
           cursor: query.cursor,
+          categoryId: query.categoryId,
+          uncategorized: query.uncategorized,
+          startDate: query.startDate,
+          endDate: query.endDate,
         });
         return c.json(result);
       } catch (error) {

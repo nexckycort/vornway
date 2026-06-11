@@ -18,15 +18,42 @@ import {
 } from '../../-components/group-detail.utils';
 
 export const Route = createFileRoute('/_authed/groups/$id/member/$memberId/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    categoryId:
+      typeof search.categoryId === 'string' && search.categoryId.length > 0
+        ? search.categoryId
+        : undefined,
+    categoryName:
+      typeof search.categoryName === 'string' && search.categoryName.length > 0
+        ? search.categoryName
+        : undefined,
+    uncategorized:
+      search.uncategorized === true || search.uncategorized === 'true',
+    startDate:
+      typeof search.startDate === 'string' && search.startDate.length > 0
+        ? search.startDate
+        : undefined,
+    endDate:
+      typeof search.endDate === 'string' && search.endDate.length > 0
+        ? search.endDate
+        : undefined,
+  }),
   component: RouteComponent,
 });
 
 function RouteComponent() {
   const { id, memberId } = Route.useParams();
+  const { categoryId, categoryName, uncategorized, startDate, endDate } =
+    Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const { flowState } = useGroupFlowNavigation(id);
   const groupQuery = useGroupSummaryQuery(id);
-  const expensesQuery = useGroupMemberExpensesInfiniteQuery(id, memberId);
+  const expensesQuery = useGroupMemberExpensesInfiniteQuery(id, memberId, {
+    categoryId,
+    uncategorized,
+    startDate,
+    endDate,
+  });
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const member = groupQuery.data?.members.find((item) => item.id === memberId);
@@ -82,7 +109,13 @@ function RouteComponent() {
 
   return (
     <MobilePageLayout
-      title={member ? `Gastos de ${member.name}` : 'Gastos del participante'}
+      title={
+        member
+          ? categoryName
+            ? `Gastos de ${member.name} en ${categoryName}`
+            : 'Gastos de ' + member.name
+          : 'Gastos del participante'
+      }
       onBack={handleBack}
     >
       <div className="flex flex-1 flex-col pb-8">
@@ -129,7 +162,11 @@ function RouteComponent() {
               </div>
 
               <p className="mt-4 rounded-2xl bg-[#f8fafc] px-3 py-3 text-xs text-[#64748b]">
-                Revisa solo los gastos donde esta persona pagó o participa.
+                {categoryName
+                  ? `Revisa solo los gastos de ${categoryName.toLowerCase()} donde esta persona pagó o participa.`
+                  : startDate && endDate
+                    ? 'Revisa solo los gastos de este rango donde esta persona pagó o participa.'
+                    : 'Revisa solo los gastos donde esta persona pagó o participa.'}
               </p>
             </section>
 
@@ -137,10 +174,16 @@ function RouteComponent() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-[#132238]">
-                    Gastos relacionados
+                    {categoryName
+                      ? `Gastos en ${categoryName}`
+                      : 'Gastos relacionados'}
                   </h2>
                   <p className="mt-1 text-xs text-[#64748b]">
-                    Donde pagó o participa
+                    {categoryName
+                      ? 'Solo de esta categoría'
+                      : startDate && endDate
+                        ? 'Solo de este rango de fecha'
+                        : 'Donde pagó o participa'}
                   </p>
                 </div>
                 <span className="text-xs text-[#94a3b8]">
@@ -165,7 +208,11 @@ function RouteComponent() {
                     Sin gastos para este participante
                   </p>
                   <p className="mt-1 text-xs text-[#64748b]">
-                    Cuando esté involucrado en un gasto aparecerá aquí.
+                    {categoryName
+                      ? 'Cuando esté involucrado en un gasto de esta categoría aparecerá aquí.'
+                      : startDate && endDate
+                        ? 'Cuando esté involucrado en un gasto de este rango aparecerá aquí.'
+                        : 'Cuando esté involucrado en un gasto aparecerá aquí.'}
                   </p>
                 </div>
               ) : null}

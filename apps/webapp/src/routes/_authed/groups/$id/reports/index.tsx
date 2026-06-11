@@ -745,6 +745,21 @@ function RouteComponent() {
                         void navigate({
                           to: '/groups/$id/member/$memberId',
                           params: { id, memberId: member.memberId },
+                          search: {
+                            categoryId: selectedCategory?.id ?? undefined,
+                            categoryName: selectedCategory?.name ?? undefined,
+                            uncategorized:
+                              selectedCategory != null &&
+                              selectedCategory.id == null,
+                            startDate:
+                              reportFilter.range === 'custom'
+                                ? reportFilter.startDate
+                                : undefined,
+                            endDate:
+                              reportFilter.range === 'custom'
+                                ? reportFilter.endDate
+                                : undefined,
+                          },
                           state: flowState,
                         })
                       }

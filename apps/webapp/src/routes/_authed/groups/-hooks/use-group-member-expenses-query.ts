@@ -23,15 +23,33 @@ type GroupMemberExpensesPageSuccess = Extract<
 export function useGroupMemberExpensesInfiniteQuery(
   groupId: string,
   memberId: string,
+  filter?: {
+    categoryId?: string;
+    uncategorized?: boolean;
+    startDate?: string;
+    endDate?: string;
+  },
 ) {
   return useInfiniteQuery({
-    queryKey: ['group-member-expenses', groupId, memberId],
+    queryKey: [
+      'group-member-expenses',
+      groupId,
+      memberId,
+      filter?.categoryId ?? null,
+      filter?.uncategorized ?? false,
+      filter?.startDate ?? null,
+      filter?.endDate ?? null,
+    ],
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
       const response = await groupMemberExpensesEndpoint({
         param: { id: groupId, memberId },
         query: {
           limit: String(PAGE_LIMIT),
+          ...(filter?.categoryId ? { categoryId: filter.categoryId } : {}),
+          ...(filter?.uncategorized ? { uncategorized: 'true' } : {}),
+          ...(filter?.startDate ? { startDate: filter.startDate } : {}),
+          ...(filter?.endDate ? { endDate: filter.endDate } : {}),
           ...(pageParam ? { cursor: pageParam } : {}),
         },
       });

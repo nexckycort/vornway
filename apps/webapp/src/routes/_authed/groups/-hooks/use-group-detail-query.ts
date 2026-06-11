@@ -102,6 +102,8 @@ type GroupReportsTotalsSuccess = {
   categoriesByCurrency: Record<
     string,
     Array<{
+      key: string;
+      id: string | null;
       name: string;
       icon: string | null;
       expenseCount: number;
@@ -128,6 +130,7 @@ type GroupReportsSharesSuccess = {
     name: string;
     isCurrentUser: boolean;
     shares: Record<string, number>;
+    categorySharesByCurrency: Record<string, Record<string, number>>;
   }>;
 };
 

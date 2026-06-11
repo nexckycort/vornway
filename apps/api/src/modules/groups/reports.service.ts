@@ -88,6 +88,7 @@ export function createGroupReportsService() {
         Map<
           string,
           {
+            id: string | null;
             name: string;
             icon: string | null;
             color: string | null;
@@ -146,6 +147,7 @@ export function createGroupReportsService() {
           new Map<
             string,
             {
+              id: string | null;
               name: string;
               icon: string | null;
               color: string | null;
@@ -154,6 +156,7 @@ export function createGroupReportsService() {
           >();
         const currentCategory = categoryMap.get(categoryKey);
         categoryMap.set(categoryKey, {
+          id: expense.category?.id ?? null,
           name: categoryName,
           icon: expense.category?.icon ?? null,
           color: expense.category?.color ?? null,
@@ -178,6 +181,10 @@ export function createGroupReportsService() {
             currencyKey,
             Array.from(map.values())
               .map((category, index) => ({
+                key:
+                  category.id ??
+                  `${category.name}:${category.icon ?? ''}:${category.color ?? ''}`,
+                id: category.id,
                 name: category.name,
                 icon: category.icon,
                 amount: category.amount,
@@ -327,6 +334,14 @@ export function createGroupReportsService() {
         select: {
           notes: true,
           currency: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+              icon: true,
+              color: true,
+            },
+          },
           participants: {
             select: {
               memberId: true,
@@ -338,14 +353,24 @@ export function createGroupReportsService() {
       });
 
       const sharesByMember = new Map<string, Record<string, number>>();
+      const categorySharesByMember = new Map<
+        string,
+        Record<string, Record<string, number>>
+      >();
       for (const member of group.GroupMember) {
         sharesByMember.set(member.id, {});
+        categorySharesByMember.set(member.id, {});
       }
 
       for (const expense of expenses) {
         if (expense.notes?.includes('[DELETED]')) continue;
         if (expense.notes?.includes('[SETTLEMENT:')) continue;
         if (expense.participants.length === 0) continue;
+
+        const categoryName = expense.category?.name?.trim() || 'Sin categoría';
+        const categoryKey =
+          expense.category?.id ??
+          `${categoryName}:${expense.category?.icon ?? ''}:${expense.category?.color ?? ''}`;
 
         for (const participant of expense.participants) {
           const memberShares = sharesByMember.get(participant.memberId);
@@ -354,6 +379,18 @@ export function createGroupReportsService() {
           memberShares[expense.currency] = normalizeAmount(
             (memberShares[expense.currency] ?? 0) + participant.share,
           );
+
+          const memberCategoryShares = categorySharesByMember.get(
+            participant.memberId,
+          );
+          if (!memberCategoryShares) continue;
+
+          const currencyCategoryShares =
+            memberCategoryShares[expense.currency] ?? {};
+          currencyCategoryShares[categoryKey] = normalizeAmount(
+            (currencyCategoryShares[categoryKey] ?? 0) + participant.share,
+          );
+          memberCategoryShares[expense.currency] = currencyCategoryShares;
         }
       }
 
@@ -364,6 +401,7 @@ export function createGroupReportsService() {
           name: member.name,
           isCurrentUser: member.userId === userId,
           shares: sharesByMember.get(member.id) ?? {},
+          categorySharesByCurrency: categorySharesByMember.get(member.id) ?? {},
         })),
       };
     },

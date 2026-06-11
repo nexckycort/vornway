@@ -59,6 +59,9 @@ function RouteComponent() {
   const groupQuery = useGroupSummaryQuery(id);
   const [selectedCurrency, setSelectedCurrency] = useState<string>('COP');
   const [selectedRange, setSelectedRange] = useState<TotalsRange>('all');
+  const [selectedCategoryKey, setSelectedCategoryKey] = useState<string | null>(
+    null,
+  );
   const activeTab = tab;
   const group = groupQuery.data;
   const reportsSharesQuery = useGroupReportsSharesQuery(
@@ -130,18 +133,41 @@ function RouteComponent() {
         return left.isCurrentUser ? -1 : 1;
       });
   }, [group]);
-  const sortedShareMembers = useMemo(
-    () =>
-      Array.from(reportsSharesQuery.data?.memberShares ?? []).sort(
-        (left, right) => {
-          if (left.isCurrentUser === right.isCurrentUser) return 0;
-          return left.isCurrentUser ? -1 : 1;
-        },
-      ),
-    [reportsSharesQuery.data?.memberShares],
-  );
   const categoryBreakdown =
     reportsTotalsQuery.data?.categoriesByCurrency[selectedCurrency] ?? [];
+  const selectedCategory = useMemo(
+    () =>
+      categoryBreakdown.find(
+        (category) => category.key === selectedCategoryKey,
+      ) ?? null,
+    [categoryBreakdown, selectedCategoryKey],
+  );
+  const sortedShareMembers = useMemo(
+    () =>
+      Array.from(reportsSharesQuery.data?.memberShares ?? [])
+        .map((member) => ({
+          ...member,
+          visibleShare:
+            selectedCategoryKey == null
+              ? (member.shares[selectedCurrency] ?? 0)
+              : (member.categorySharesByCurrency[selectedCurrency]?.[
+                  selectedCategoryKey
+                ] ?? 0),
+        }))
+        .filter((member) => Math.abs(member.visibleShare) > 0)
+        .sort((left, right) => {
+          if (left.isCurrentUser !== right.isCurrentUser) {
+            return left.isCurrentUser ? -1 : 1;
+          }
+
+          return right.visibleShare - left.visibleShare;
+        }),
+    [
+      reportsSharesQuery.data?.memberShares,
+      selectedCategoryKey,
+      selectedCurrency,
+    ],
+  );
   const categoryTotal =
     reportsTotalsQuery.data?.totalsByCurrency[selectedCurrency] ?? 0;
   const expenseCount =
@@ -173,6 +199,16 @@ function RouteComponent() {
 
     setSelectedCurrency(availableCurrencies[0] ?? 'COP');
   }, [availableCurrencies, selectedCurrency]);
+
+  useEffect(() => {
+    if (selectedCategoryKey == null) return;
+    if (
+      categoryBreakdown.some((category) => category.key === selectedCategoryKey)
+    )
+      return;
+
+    setSelectedCategoryKey(null);
+  }, [categoryBreakdown, selectedCategoryKey]);
 
   if (groupQuery.isLoading) {
     return (
@@ -488,10 +524,33 @@ function RouteComponent() {
               </div>
 
               <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategoryKey(null)}
+                  className={[
+                    'inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium transition-colors',
+                    selectedCategoryKey == null
+                      ? 'border-primary/20 bg-primary/10 text-primary'
+                      : 'border-[#e2e8f0] bg-white text-[#334155]',
+                  ].join(' ')}
+                >
+                  Todas
+                </button>
                 {categoryBreakdown.map((entry) => (
-                  <span
-                    key={entry.name}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-xs font-medium text-[#334155]"
+                  <button
+                    type="button"
+                    key={entry.key}
+                    onClick={() =>
+                      setSelectedCategoryKey((current) =>
+                        current === entry.key ? null : entry.key,
+                      )
+                    }
+                    className={[
+                      'inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium transition-colors',
+                      selectedCategoryKey === entry.key
+                        ? 'border-primary/20 bg-primary/10 text-primary'
+                        : 'border-[#e2e8f0] bg-white text-[#334155]',
+                    ].join(' ')}
                   >
                     <span
                       className="flex size-7 items-center justify-center rounded-full"
@@ -516,7 +575,7 @@ function RouteComponent() {
                     <span className="text-[#64748b]">
                       {formatMoney(selectedCurrency, entry.amount)}
                     </span>
-                  </span>
+                  </button>
                 ))}
               </div>
             </section>
@@ -554,8 +613,28 @@ function RouteComponent() {
                     {t.reports.participants}
                   </h3>
                   <p className="mt-1 text-xs text-[#64748b]">
-                    Parte en {selectedCurrency}
+                    {selectedCategory
+                      ? `${selectedCategory.name} · ${selectedCurrency}`
+                      : `Parte en ${selectedCurrency}`}
                   </p>
+                  {selectedCategory ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
+                        <span
+                          className="size-2 rounded-full"
+                          style={{ backgroundColor: selectedCategory.fill }}
+                        />
+                        Filtrando por {selectedCategory.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCategoryKey(null)}
+                        className="text-[11px] font-medium text-[#64748b] underline underline-offset-2"
+                      >
+                        Ver todas
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
                 <span className="text-xs text-[#94a3b8]">
                   {t.reports.peopleCount(sortedShareMembers.length)}
@@ -567,7 +646,7 @@ function RouteComponent() {
                   const memberIdentity = group.members.find(
                     (item) => item.id === member.memberId,
                   );
-                  const amount = member.shares[selectedCurrency] ?? 0;
+                  const amount = member.visibleShare;
                   const isCreator = group.ownerId === memberIdentity?.userId;
 
                   return (

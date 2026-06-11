@@ -466,6 +466,8 @@ export type GroupReportsTotalsResult = {
   categoriesByCurrency: Record<
     string,
     Array<{
+      key: string;
+      id: string | null;
       name: string;
       icon: string | null;
       amount: number;
@@ -491,6 +493,7 @@ export type GroupReportsSharesResult = {
     name: string;
     isCurrentUser: boolean;
     shares: Record<string, number>;
+    categorySharesByCurrency: Record<string, Record<string, number>>;
   }>;
 };
 

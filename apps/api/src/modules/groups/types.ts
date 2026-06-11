@@ -574,6 +574,9 @@ export type GroupMemberExpenseListItem = GroupExpenseListItem & {
 
 export type ListGroupMemberExpensesResult = {
   data: GroupMemberExpenseListItem[];
+  summary: {
+    spentByCurrency: Record<string, number>;
+  };
   pagination: {
     limit: number;
     total: number;

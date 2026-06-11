@@ -404,7 +404,7 @@ export function createGroupExpensesService() {
           : {}),
       };
 
-      const [total, rows] = await Promise.all([
+      const [total, rows, summaryRows] = await Promise.all([
         db.expense.count({ where }),
         db.expense.findMany({
           where,
@@ -465,6 +465,20 @@ export function createGroupExpensesService() {
             },
           },
         }),
+        db.expense.findMany({
+          where,
+          select: {
+            currency: true,
+            participants: {
+              where: {
+                memberId,
+              },
+              select: {
+                share: true,
+              },
+            },
+          },
+        }),
       ]);
 
       const hasNextPage = rows.length > limit;
@@ -472,6 +486,18 @@ export function createGroupExpensesService() {
       const nextCursor = hasNextPage
         ? (pageRows[pageRows.length - 1]?.id ?? null)
         : null;
+      const spentByCurrency = summaryRows.reduce<Record<string, number>>(
+        (accumulator, row) => {
+          const share = row.participants[0]?.share ?? 0;
+          if (share <= 0) return accumulator;
+
+          accumulator[row.currency] = normalizeAmount(
+            (accumulator[row.currency] ?? 0) + share,
+          );
+          return accumulator;
+        },
+        {},
+      );
 
       return {
         data: pageRows.map((row) => ({
@@ -538,6 +564,9 @@ export function createGroupExpensesService() {
             };
           })(),
         })),
+        summary: {
+          spentByCurrency,
+        },
         pagination: {
           limit,
           total,

@@ -15,10 +15,16 @@ export type GroupMemberExpenseItem = Extract<
   { data: unknown[]; pagination: { nextCursor: string | null } }
 >['data'][number];
 
-type GroupMemberExpensesPageSuccess = Extract<
+type GroupMemberExpensesPageBase = Extract<
   GroupMemberExpensesPageResponse,
   { data: unknown[]; pagination: { nextCursor: string | null } }
 >;
+
+type GroupMemberExpensesPageSuccess = GroupMemberExpensesPageBase & {
+  summary: {
+    spentByCurrency: Record<string, number>;
+  };
+};
 
 export function useGroupMemberExpensesInfiniteQuery(
   groupId: string,

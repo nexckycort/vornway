@@ -61,6 +61,18 @@ function RouteComponent() {
     () => expensesQuery.data?.pages.flatMap((page) => page.data) ?? [],
     [expensesQuery.data?.pages],
   );
+  const spentByCurrency = useMemo(
+    () => expensesQuery.data?.pages[0]?.summary.spentByCurrency ?? {},
+    [expensesQuery.data?.pages],
+  );
+  const summaryEntries = useMemo(
+    () =>
+      Object.entries(spentByCurrency).sort((left, right) => {
+        if (left[0] === right[0]) return 0;
+        return left[0].localeCompare(right[0]);
+      }),
+    [spentByCurrency],
+  );
   const hasNextPageRef = useRef(expensesQuery.hasNextPage);
   const isFetchingRef = useRef(expensesQuery.isFetching);
   const fetchNextPageRef = useRef(expensesQuery.fetchNextPage);
@@ -113,7 +125,7 @@ function RouteComponent() {
         member
           ? categoryName
             ? `Gastos de ${member.name} en ${categoryName}`
-            : 'Gastos de ' + member.name
+            : `Gastos de ${member.name}`
           : 'Gastos del participante'
       }
       onBack={handleBack}
@@ -168,6 +180,41 @@ function RouteComponent() {
                     ? 'Revisa solo los gastos de este rango donde esta persona pagó o participa.'
                     : 'Revisa solo los gastos donde esta persona pagó o participa.'}
               </p>
+            </section>
+
+            <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-semibold text-[#132238]">
+                    Consolidado
+                  </h2>
+                  <p className="mt-1 text-xs text-[#64748b]">
+                    Total que ha gastado en este filtro
+                  </p>
+                </div>
+              </div>
+
+              {summaryEntries.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {summaryEntries.map(([currency, amount]) => (
+                    <div
+                      key={currency}
+                      className="rounded-2xl bg-[#f8fafc] px-4 py-3"
+                    >
+                      <p className="text-xs font-medium text-[#64748b]">
+                        Total en {currency}
+                      </p>
+                      <p className="mt-1 text-lg font-semibold text-[#132238]">
+                        {formatMoney(currency, amount)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-[#f8fafc] px-4 py-4 text-sm text-[#64748b]">
+                  Aún no hay total acumulado para este filtro.
+                </div>
+              )}
             </section>
 
             <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">

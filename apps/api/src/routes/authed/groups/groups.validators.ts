@@ -1,5 +1,7 @@
 import * as z from 'zod';
 
+const dateRangeValueSchema = z.string().datetime({ offset: true });
+
 export const listGroupsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   cursor: z.string().min(1).optional(),
@@ -35,8 +37,8 @@ export const listGroupMemberExpensesQuerySchema = listGroupExpensesQuerySchema
   .extend({
     categoryId: z.string().min(1).optional(),
     uncategorized: z.coerce.boolean().optional(),
-    startDate: z.string().date().optional(),
-    endDate: z.string().date().optional(),
+    startDate: dateRangeValueSchema.optional(),
+    endDate: dateRangeValueSchema.optional(),
   })
   .refine(
     (data) =>
@@ -51,18 +53,9 @@ export const listGroupMemberExpensesQuerySchema = listGroupExpensesQuerySchema
 
 export const groupReportsTotalsQuerySchema = z
   .object({
-    range: z
-      .union([
-        z.literal('all'),
-        z.literal('custom'),
-        z.coerce
-          .number()
-          .int()
-          .refine((value) => [7, 15, 30].includes(value)),
-      ])
-      .default('all'),
-    startDate: z.string().date().optional(),
-    endDate: z.string().date().optional(),
+    range: z.enum(['all', 'custom']).default('all'),
+    startDate: dateRangeValueSchema.optional(),
+    endDate: dateRangeValueSchema.optional(),
   })
   .refine(
     (data) =>

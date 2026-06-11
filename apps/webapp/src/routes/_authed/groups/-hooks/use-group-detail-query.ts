@@ -95,7 +95,7 @@ function buildPendingGroupSummary(group: PendingGroup): GroupSummary {
 type GroupExpenseResponse = InferResponseType<typeof groupExpenseEndpoint>;
 type GroupExpenseSuccess = Extract<GroupExpenseResponse, { id: string }>;
 type GroupReportsTotalsSuccess = {
-  range: 'all' | 7 | 15 | 30 | 'custom';
+  range: 'all' | 'custom';
   startDate?: string;
   endDate?: string;
   totalsByCurrency: Record<string, number>;
@@ -116,7 +116,7 @@ type GroupReportsTotalsSuccess = {
 };
 
 type GroupReportsBalancesSuccess = {
-  range: 'all' | 7 | 15 | 30 | 'custom';
+  range: 'all' | 'custom';
   startDate?: string;
   endDate?: string;
   memberBalances: Array<{
@@ -128,7 +128,7 @@ type GroupReportsBalancesSuccess = {
 };
 
 type GroupReportsSharesSuccess = {
-  range: 'all' | 7 | 15 | 30 | 'custom';
+  range: 'all' | 'custom';
   startDate?: string;
   endDate?: string;
   memberShares: Array<{
@@ -371,7 +371,7 @@ export function usePinnedGroupExpensesQuery(
 export function useGroupReportsTotalsQuery(
   groupId: string,
   filter: {
-    range: 'all' | 7 | 15 | 30 | 'custom';
+    range: 'all' | 'custom';
     startDate?: string;
     endDate?: string;
   },
@@ -409,7 +409,7 @@ export function useGroupReportsTotalsQuery(
 export function useGroupReportsBalancesQuery(
   groupId: string,
   filter: {
-    range: 'all' | 7 | 15 | 30 | 'custom';
+    range: 'all' | 'custom';
     startDate?: string;
     endDate?: string;
   },
@@ -447,7 +447,7 @@ export function useGroupReportsBalancesQuery(
 export function useGroupReportsSharesQuery(
   groupId: string,
   filter: {
-    range: 'all' | 7 | 15 | 30 | 'custom';
+    range: 'all' | 'custom';
     startDate?: string;
     endDate?: string;
   },

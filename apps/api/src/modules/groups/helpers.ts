@@ -1,8 +1,5 @@
 import type { Prisma } from '~/generated/prisma/client';
 
-const REPORT_TIME_ZONE = 'America/Bogota';
-const REPORT_UTC_OFFSET = '-05:00';
-
 export function normalizeAmount(value: number): number {
   return Number(value.toFixed(2));
 }
@@ -60,7 +57,7 @@ export function buildActiveExpenseWhere(
 
 export function buildReportExpenseWhere(input: {
   groupId?: string;
-  range: 'all' | 7 | 15 | 30 | 'custom';
+  range: 'all' | 'custom';
   startDate?: string;
   endDate?: string;
 }) {
@@ -75,10 +72,6 @@ export function buildReportExpenseWhere(input: {
       gte: getDateStart(input.startDate),
       lte: getDateEnd(input.endDate),
     };
-  } else if (input.range !== 'all' && input.range !== 'custom') {
-    dateWhere = {
-      gte: getDaysAgoStart(input.range),
-    };
   }
 
   return {
@@ -88,29 +81,12 @@ export function buildReportExpenseWhere(input: {
   } as Prisma.ExpenseWhereInput;
 }
 
-export function getDaysAgoStart(days: 7 | 15 | 30) {
-  const start = getDateStart(getCurrentReportDate());
-  start.setUTCDate(start.getUTCDate() - days);
-  return start;
-}
-
 export function getDateStart(value: string) {
-  return new Date(`${value}T00:00:00.000${REPORT_UTC_OFFSET}`);
+  return new Date(value);
 }
 
 export function getDateEnd(value: string) {
-  return new Date(`${value}T23:59:59.999${REPORT_UTC_OFFSET}`);
-}
-
-function getCurrentReportDate() {
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: REPORT_TIME_ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-
-  return formatter.format(new Date());
+  return new Date(value);
 }
 
 export function createSplitShares(input: {

@@ -1,5 +1,8 @@
 import type { Prisma } from '~/generated/prisma/client';
 
+const REPORT_TIME_ZONE = 'America/Bogota';
+const REPORT_UTC_OFFSET = '-05:00';
+
 export function normalizeAmount(value: number): number {
   return Number(value.toFixed(2));
 }
@@ -86,18 +89,28 @@ export function buildReportExpenseWhere(input: {
 }
 
 export function getDaysAgoStart(days: 7 | 15 | 30) {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - days);
+  const start = getDateStart(getCurrentReportDate());
+  start.setUTCDate(start.getUTCDate() - days);
   return start;
 }
 
 export function getDateStart(value: string) {
-  return new Date(`${value}T00:00:00.000Z`);
+  return new Date(`${value}T00:00:00.000${REPORT_UTC_OFFSET}`);
 }
 
 export function getDateEnd(value: string) {
-  return new Date(`${value}T23:59:59.999Z`);
+  return new Date(`${value}T23:59:59.999${REPORT_UTC_OFFSET}`);
+}
+
+function getCurrentReportDate() {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: REPORT_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+  return formatter.format(new Date());
 }
 
 export function createSplitShares(input: {

@@ -57,18 +57,31 @@ export function buildActiveExpenseWhere(
 
 export function buildReportExpenseWhere(input: {
   groupId?: string;
-  range: 'all' | 7 | 15 | 30;
+  range: 'all' | 7 | 15 | 30 | 'custom';
+  startDate?: string;
+  endDate?: string;
 }) {
+  let dateWhere: Prisma.ExpenseWhereInput['date'] | undefined;
+
+  if (
+    input.range === 'custom' &&
+    typeof input.startDate === 'string' &&
+    typeof input.endDate === 'string'
+  ) {
+    dateWhere = {
+      gte: getDateStart(input.startDate),
+      lte: getDateEnd(input.endDate),
+    };
+  } else if (input.range !== 'all' && input.range !== 'custom') {
+    dateWhere = {
+      gte: getDaysAgoStart(input.range),
+    };
+  }
+
   return {
     ...(input.groupId ? { groupId: input.groupId } : {}),
     ...buildDeletedExpenseWhere(),
-    ...(input.range === 'all'
-      ? {}
-      : {
-          date: {
-            gte: getDaysAgoStart(input.range),
-          },
-        }),
+    ...(dateWhere ? { date: dateWhere } : {}),
   } as Prisma.ExpenseWhereInput;
 }
 
@@ -77,6 +90,14 @@ export function getDaysAgoStart(days: 7 | 15 | 30) {
   start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - days);
   return start;
+}
+
+export function getDateStart(value: string) {
+  return new Date(`${value}T00:00:00.000Z`);
+}
+
+export function getDateEnd(value: string) {
+  return new Date(`${value}T23:59:59.999Z`);
 }
 
 export function createSplitShares(input: {

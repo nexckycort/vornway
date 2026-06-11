@@ -95,7 +95,9 @@ function buildPendingGroupSummary(group: PendingGroup): GroupSummary {
 type GroupExpenseResponse = InferResponseType<typeof groupExpenseEndpoint>;
 type GroupExpenseSuccess = Extract<GroupExpenseResponse, { id: string }>;
 type GroupReportsTotalsSuccess = {
-  range: 'all' | 7 | 15 | 30;
+  range: 'all' | 7 | 15 | 30 | 'custom';
+  startDate?: string;
+  endDate?: string;
   totalsByCurrency: Record<string, number>;
   expenseCountByCurrency: Record<string, number>;
   currentUserSpentByCurrency: Record<string, number>;
@@ -114,7 +116,9 @@ type GroupReportsTotalsSuccess = {
 };
 
 type GroupReportsBalancesSuccess = {
-  range: 'all' | 7 | 15 | 30;
+  range: 'all' | 7 | 15 | 30 | 'custom';
+  startDate?: string;
+  endDate?: string;
   memberBalances: Array<{
     memberId: string;
     name: string;
@@ -124,7 +128,9 @@ type GroupReportsBalancesSuccess = {
 };
 
 type GroupReportsSharesSuccess = {
-  range: 'all' | 7 | 15 | 30;
+  range: 'all' | 7 | 15 | 30 | 'custom';
+  startDate?: string;
+  endDate?: string;
   memberShares: Array<{
     memberId: string;
     name: string;
@@ -364,18 +370,30 @@ export function usePinnedGroupExpensesQuery(
 
 export function useGroupReportsTotalsQuery(
   groupId: string,
-  range: 'all' | 7 | 15 | 30,
+  filter: {
+    range: 'all' | 7 | 15 | 30 | 'custom';
+    startDate?: string;
+    endDate?: string;
+  },
   enabled: boolean,
 ) {
   return useQuery({
-    queryKey: ['group-reports-totals', groupId, range],
+    queryKey: [
+      'group-reports-totals',
+      groupId,
+      filter.range,
+      filter.startDate ?? null,
+      filter.endDate ?? null,
+    ],
     enabled,
     placeholderData: (previous) => previous,
     queryFn: async () => {
       const response = await groupReportsTotalsEndpoint({
         param: { id: groupId },
         query: {
-          range: String(range),
+          range: String(filter.range),
+          ...(filter.startDate ? { startDate: filter.startDate } : {}),
+          ...(filter.endDate ? { endDate: filter.endDate } : {}),
         },
       });
 
@@ -390,17 +408,31 @@ export function useGroupReportsTotalsQuery(
 
 export function useGroupReportsBalancesQuery(
   groupId: string,
-  range: 'all' | 7 | 15 | 30,
+  filter: {
+    range: 'all' | 7 | 15 | 30 | 'custom';
+    startDate?: string;
+    endDate?: string;
+  },
   enabled: boolean,
 ) {
   return useQuery({
-    queryKey: ['group-reports-balances', groupId, range],
+    queryKey: [
+      'group-reports-balances',
+      groupId,
+      filter.range,
+      filter.startDate ?? null,
+      filter.endDate ?? null,
+    ],
     enabled,
     placeholderData: (previous) => previous,
     queryFn: async () => {
       const response = await groupReportsBalancesEndpoint({
         param: { id: groupId },
-        query: { range: String(range) },
+        query: {
+          range: String(filter.range),
+          ...(filter.startDate ? { startDate: filter.startDate } : {}),
+          ...(filter.endDate ? { endDate: filter.endDate } : {}),
+        },
       });
 
       if (!response.ok) {
@@ -414,17 +446,31 @@ export function useGroupReportsBalancesQuery(
 
 export function useGroupReportsSharesQuery(
   groupId: string,
-  range: 'all' | 7 | 15 | 30,
+  filter: {
+    range: 'all' | 7 | 15 | 30 | 'custom';
+    startDate?: string;
+    endDate?: string;
+  },
   enabled: boolean,
 ) {
   return useQuery({
-    queryKey: ['group-reports-shares', groupId, range],
+    queryKey: [
+      'group-reports-shares',
+      groupId,
+      filter.range,
+      filter.startDate ?? null,
+      filter.endDate ?? null,
+    ],
     enabled,
     placeholderData: (previous) => previous,
     queryFn: async () => {
       const response = await groupReportsSharesEndpoint({
         param: { id: groupId },
-        query: { range: String(range) },
+        query: {
+          range: String(filter.range),
+          ...(filter.startDate ? { startDate: filter.startDate } : {}),
+          ...(filter.endDate ? { endDate: filter.endDate } : {}),
+        },
       });
 
       if (!response.ok) {

@@ -31,17 +31,40 @@ export const listGroupExpensesQuerySchema = z.object({
   cursor: z.string().min(1).optional(),
 });
 
-export const groupReportsTotalsQuerySchema = z.object({
-  range: z
-    .union([
-      z.literal('all'),
-      z.coerce
-        .number()
-        .int()
-        .refine((value) => [7, 15, 30].includes(value)),
-    ])
-    .default('all'),
-});
+export const groupReportsTotalsQuerySchema = z
+  .object({
+    range: z
+      .union([
+        z.literal('all'),
+        z.literal('custom'),
+        z.coerce
+          .number()
+          .int()
+          .refine((value) => [7, 15, 30].includes(value)),
+      ])
+      .default('all'),
+    startDate: z.string().date().optional(),
+    endDate: z.string().date().optional(),
+  })
+  .refine(
+    (data) =>
+      data.range !== 'custom' ||
+      (Boolean(data.startDate) && Boolean(data.endDate)),
+    {
+      message: 'Debes enviar fecha inicial y final',
+      path: ['startDate'],
+    },
+  )
+  .refine(
+    (data) =>
+      !data.startDate ||
+      !data.endDate ||
+      new Date(data.endDate) >= new Date(data.startDate),
+    {
+      message: 'La fecha final debe ser mayor o igual a la inicial',
+      path: ['endDate'],
+    },
+  );
 
 const expenseAttachmentImageSchema = z.object({
   dataUrl: z.string().min(1).max(15_000_000),

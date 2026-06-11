@@ -452,7 +452,7 @@ export type GroupExpenseListItem = {
 export type GroupReportsTotalsInput = {
   userId: string;
   groupId: string;
-  range: 'all' | 7 | 15 | 30 | 'custom';
+  range: 'all' | 'custom';
   startDate?: string;
   endDate?: string;
 };
@@ -461,7 +461,7 @@ export type GroupReportsBalancesInput = GroupReportsTotalsInput;
 export type GroupReportsSharesInput = GroupReportsTotalsInput;
 
 export type GroupReportsTotalsResult = {
-  range: 'all' | 7 | 15 | 30 | 'custom';
+  range: 'all' | 'custom';
   startDate?: string;
   endDate?: string;
   totalsByCurrency: Record<string, number>;
@@ -481,7 +481,7 @@ export type GroupReportsTotalsResult = {
 };
 
 export type GroupReportsBalancesResult = {
-  range: 'all' | 7 | 15 | 30 | 'custom';
+  range: 'all' | 'custom';
   startDate?: string;
   endDate?: string;
   memberBalances: Array<{
@@ -493,7 +493,7 @@ export type GroupReportsBalancesResult = {
 };
 
 export type GroupReportsSharesResult = {
-  range: 'all' | 7 | 15 | 30 | 'custom';
+  range: 'all' | 'custom';
   startDate?: string;
   endDate?: string;
   memberShares: Array<{

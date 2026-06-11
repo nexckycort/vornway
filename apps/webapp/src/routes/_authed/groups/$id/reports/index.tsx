@@ -57,6 +57,28 @@ function toDateInputValue(value: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function toDayBoundaryIso(
+  value: string,
+  boundary: 'start' | 'end',
+): string | undefined {
+  const [year, month, day] = value.split('-').map(Number);
+
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day)
+  ) {
+    return undefined;
+  }
+
+  const date =
+    boundary === 'start'
+      ? new Date(year, month - 1, day, 0, 0, 0, 0)
+      : new Date(year, month - 1, day, 23, 59, 59, 999);
+
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 function RouteComponent() {
   const { id } = Route.useParams();
   const { tab } = Route.useSearch();
@@ -80,16 +102,16 @@ function RouteComponent() {
     if (dateFilterMode === 'day') {
       return {
         range: 'custom' as const,
-        startDate: selectedDay,
-        endDate: selectedDay,
+        startDate: toDayBoundaryIso(selectedDay, 'start'),
+        endDate: toDayBoundaryIso(selectedDay, 'end'),
       };
     }
 
     if (dateFilterMode === 'range') {
       return {
         range: 'custom' as const,
-        startDate: rangeStartDate,
-        endDate: rangeEndDate,
+        startDate: toDayBoundaryIso(rangeStartDate, 'start'),
+        endDate: toDayBoundaryIso(rangeEndDate, 'end'),
       };
     }
 

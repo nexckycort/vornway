@@ -522,26 +522,26 @@ function RouteComponent() {
             </section>
 
             <section className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-[24px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+              <div className="min-w-0 rounded-[24px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
                 <p className="text-xs font-medium text-[#64748b]">
                   {t.reports.totalGroup}
                 </p>
                 {reportsTotalsQuery.isLoading ? (
-                  <p className="mt-1 text-2xl font-semibold text-[#132238]">
+                  <p className="mt-1 break-all text-xl font-semibold leading-tight text-[#132238] sm:text-2xl">
                     …
                   </p>
                 ) : (
-                  <p className="mt-1 text-2xl font-semibold text-[#132238]">
+                  <p className="mt-1 break-all text-xl font-semibold leading-tight text-[#132238] sm:text-2xl">
                     {formatMoney(selectedCurrency, categoryTotal)}
                   </p>
                 )}
               </div>
 
-              <div className="rounded-[24px] bg-[#111111] p-4 text-white shadow-[0_8px_24px_rgba(15,23,42,0.14)]">
+              <div className="min-w-0 rounded-[24px] bg-[#111111] p-4 text-white shadow-[0_8px_24px_rgba(15,23,42,0.14)]">
                 <p className="text-xs font-medium text-white/70">
                   {t.reports.yourShare}
                 </p>
-                <p className="mt-1 text-2xl font-semibold">
+                <p className="mt-1 break-all text-xl font-semibold leading-tight sm:text-2xl">
                   {formatMoney(selectedCurrency, currentUserSpent)}
                 </p>
               </div>

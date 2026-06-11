@@ -441,7 +441,12 @@ const groups = new Hono<AppContext>()
         const result = await groupsService.getGroupReportsTotals({
           userId,
           groupId: id,
-          range: query.range === 'all' ? 'all' : (query.range as 7 | 15 | 30),
+          range:
+            query.range === 'all' || query.range === 'custom'
+              ? query.range
+              : (query.range as 7 | 15 | 30),
+          startDate: query.startDate,
+          endDate: query.endDate,
         });
 
         return c.json(result);
@@ -466,7 +471,12 @@ const groups = new Hono<AppContext>()
         const result = await groupsService.getGroupReportsBalances({
           userId,
           groupId: id,
-          range: query.range === 'all' ? 'all' : (query.range as 7 | 15 | 30),
+          range:
+            query.range === 'all' || query.range === 'custom'
+              ? query.range
+              : (query.range as 7 | 15 | 30),
+          startDate: query.startDate,
+          endDate: query.endDate,
         });
 
         return c.json(result);
@@ -491,7 +501,12 @@ const groups = new Hono<AppContext>()
         const result = await groupsService.getGroupReportsShares({
           userId,
           groupId: id,
-          range: query.range === 'all' ? 'all' : (query.range as 7 | 15 | 30),
+          range:
+            query.range === 'all' || query.range === 'custom'
+              ? query.range
+              : (query.range as 7 | 15 | 30),
+          startDate: query.startDate,
+          endDate: query.endDate,
         });
 
         return c.json(result);

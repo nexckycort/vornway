@@ -19,6 +19,8 @@ export function createGroupReportsService() {
       userId,
       groupId,
       range,
+      startDate,
+      endDate,
     }: GroupReportsTotalsInput): Promise<GroupReportsTotalsResult> => {
       const group = await db.group.findFirst({
         where: {
@@ -50,6 +52,8 @@ export function createGroupReportsService() {
         where: buildReportExpenseWhere({
           groupId: group.id,
           range,
+          startDate,
+          endDate,
         }),
         select: {
           amount: true,
@@ -169,6 +173,8 @@ export function createGroupReportsService() {
 
       return {
         range,
+        startDate,
+        endDate,
         totalsByCurrency: Object.fromEntries(currencyTotals.entries()),
         expenseCountByCurrency: Object.fromEntries(
           currencyExpenseCounts.entries(),
@@ -202,6 +208,8 @@ export function createGroupReportsService() {
       userId,
       groupId,
       range,
+      startDate,
+      endDate,
     }: GroupReportsBalancesInput): Promise<GroupReportsBalancesResult> => {
       const group = await db.group.findFirst({
         where: {
@@ -230,6 +238,8 @@ export function createGroupReportsService() {
         where: buildReportExpenseWhere({
           groupId: group.id,
           range,
+          startDate,
+          endDate,
         }),
         select: {
           amount: true,
@@ -290,6 +300,8 @@ export function createGroupReportsService() {
 
       return {
         range,
+        startDate,
+        endDate,
         memberBalances: group.GroupMember.map((member) => ({
           memberId: member.id,
           name: member.name,
@@ -302,6 +314,8 @@ export function createGroupReportsService() {
       userId,
       groupId,
       range,
+      startDate,
+      endDate,
     }: GroupReportsSharesInput): Promise<GroupReportsSharesResult> => {
       const group = await db.group.findFirst({
         where: {
@@ -330,6 +344,8 @@ export function createGroupReportsService() {
         where: buildReportExpenseWhere({
           groupId: group.id,
           range,
+          startDate,
+          endDate,
         }),
         select: {
           notes: true,
@@ -396,6 +412,8 @@ export function createGroupReportsService() {
 
       return {
         range,
+        startDate,
+        endDate,
         memberShares: group.GroupMember.map((member) => ({
           memberId: member.id,
           name: member.name,

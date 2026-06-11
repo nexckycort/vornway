@@ -26,7 +26,7 @@ export const Route = createFileRoute('/_authed/groups/$id/reports/')({
   component: RouteComponent,
 });
 
-type TotalsRange = 'all' | 7 | 15 | 30;
+type ReportDateFilterMode = 'all' | 'day' | 'range';
 
 type GroupSummaryCounterpartyFields = {
   directDebts: Array<{
@@ -50,6 +50,13 @@ const CURRENCY_META: Record<string, { flag: string; label: string }> = {
   BRL: { flag: '🇧🇷', label: 'BRL' },
 };
 
+function toDateInputValue(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function RouteComponent() {
   const { id } = Route.useParams();
   const { tab } = Route.useSearch();
@@ -57,21 +64,45 @@ function RouteComponent() {
   const navigate = useNavigate({ from: Route.fullPath });
   const { flowState, navigateToGroupRoot } = useGroupFlowNavigation(id);
   const groupQuery = useGroupSummaryQuery(id);
+  const today = useMemo(() => toDateInputValue(new Date()), []);
   const [selectedCurrency, setSelectedCurrency] = useState<string>('COP');
-  const [selectedRange, setSelectedRange] = useState<TotalsRange>('all');
+  const [dateFilterMode, setDateFilterMode] =
+    useState<ReportDateFilterMode>('all');
+  const [selectedDay, setSelectedDay] = useState<string>(today);
+  const [rangeStartDate, setRangeStartDate] = useState<string>(today);
+  const [rangeEndDate, setRangeEndDate] = useState<string>(today);
   const [selectedCategoryKey, setSelectedCategoryKey] = useState<string | null>(
     null,
   );
   const activeTab = tab;
   const group = groupQuery.data;
+  const reportFilter = useMemo(() => {
+    if (dateFilterMode === 'day') {
+      return {
+        range: 'custom' as const,
+        startDate: selectedDay,
+        endDate: selectedDay,
+      };
+    }
+
+    if (dateFilterMode === 'range') {
+      return {
+        range: 'custom' as const,
+        startDate: rangeStartDate,
+        endDate: rangeEndDate,
+      };
+    }
+
+    return { range: 'all' as const };
+  }, [dateFilterMode, rangeEndDate, rangeStartDate, selectedDay]);
   const reportsSharesQuery = useGroupReportsSharesQuery(
     id,
-    selectedRange,
+    reportFilter,
     activeTab === 'totales',
   );
   const reportsTotalsQuery = useGroupReportsTotalsQuery(
     id,
-    selectedRange,
+    reportFilter,
     activeTab === 'totales',
   );
   const availableCurrencies = useMemo(() => {
@@ -187,11 +218,13 @@ function RouteComponent() {
       }, {}),
     [categoryBreakdown],
   );
-  const totalsRangeOptions: Array<{ label: string; value: TotalsRange }> = [
+  const totalsRangeOptions: Array<{
+    label: string;
+    value: ReportDateFilterMode;
+  }> = [
     { label: t.reports.rangeAll, value: 'all' },
-    { label: t.reports.range7, value: 7 },
-    { label: t.reports.range15, value: 15 },
-    { label: t.reports.range30, value: 30 },
+    { label: 'Día', value: 'day' },
+    { label: 'Rango', value: 'range' },
   ];
   useEffect(() => {
     if (availableCurrencies.length === 0) return;
@@ -446,10 +479,10 @@ function RouteComponent() {
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => setSelectedRange(option.value)}
+                    onClick={() => setDateFilterMode(option.value)}
                     className={[
                       'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors',
-                      selectedRange === option.value
+                      dateFilterMode === option.value
                         ? 'bg-primary text-white'
                         : 'border border-[#e2e8f0] bg-white text-[#64748b]',
                     ].join(' ')}
@@ -458,6 +491,61 @@ function RouteComponent() {
                   </button>
                 ))}
               </div>
+              {dateFilterMode === 'day' ? (
+                <div className="mt-3">
+                  <label
+                    htmlFor="report-day-filter"
+                    className="block text-xs font-medium text-[#64748b]"
+                  >
+                    Fecha
+                  </label>
+                  <input
+                    id="report-day-filter"
+                    type="date"
+                    value={selectedDay}
+                    onChange={(event) => setSelectedDay(event.target.value)}
+                    className="mt-1 h-11 w-full rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm text-[#132238] outline-none transition focus:border-primary"
+                  />
+                </div>
+              ) : null}
+              {dateFilterMode === 'range' ? (
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor="report-range-start"
+                      className="block text-xs font-medium text-[#64748b]"
+                    >
+                      Desde
+                    </label>
+                    <input
+                      id="report-range-start"
+                      type="date"
+                      value={rangeStartDate}
+                      max={rangeEndDate}
+                      onChange={(event) =>
+                        setRangeStartDate(event.target.value)
+                      }
+                      className="mt-1 h-11 w-full rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm text-[#132238] outline-none transition focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="report-range-end"
+                      className="block text-xs font-medium text-[#64748b]"
+                    >
+                      Hasta
+                    </label>
+                    <input
+                      id="report-range-end"
+                      type="date"
+                      value={rangeEndDate}
+                      min={rangeStartDate}
+                      onChange={(event) => setRangeEndDate(event.target.value)}
+                      className="mt-1 h-11 w-full rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm text-[#132238] outline-none transition focus:border-primary"
+                    />
+                  </div>
+                </div>
+              ) : null}
             </section>
 
             <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">

@@ -37,6 +37,7 @@ export const listGroupMemberExpensesQuerySchema = listGroupExpensesQuerySchema
   .extend({
     categoryId: z.string().min(1).optional(),
     uncategorized: z.coerce.boolean().optional(),
+    paidOnly: z.coerce.boolean().optional(),
     startDate: dateRangeValueSchema.optional(),
     endDate: dateRangeValueSchema.optional(),
   })

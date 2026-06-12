@@ -773,6 +773,7 @@ function RouteComponent() {
                             uncategorized:
                               selectedCategory != null &&
                               selectedCategory.id == null,
+                            paidOnly: false,
                             startDate:
                               reportFilter.range === 'custom'
                                 ? reportFilter.startDate

@@ -32,6 +32,7 @@ export function useGroupMemberExpensesInfiniteQuery(
   filter?: {
     categoryId?: string;
     uncategorized?: boolean;
+    paidOnly?: boolean;
     startDate?: string;
     endDate?: string;
   },
@@ -43,6 +44,7 @@ export function useGroupMemberExpensesInfiniteQuery(
       memberId,
       filter?.categoryId ?? null,
       filter?.uncategorized ?? false,
+      filter?.paidOnly ?? false,
       filter?.startDate ?? null,
       filter?.endDate ?? null,
     ],
@@ -54,6 +56,7 @@ export function useGroupMemberExpensesInfiniteQuery(
           limit: String(PAGE_LIMIT),
           ...(filter?.categoryId ? { categoryId: filter.categoryId } : {}),
           ...(filter?.uncategorized ? { uncategorized: 'true' } : {}),
+          ...(filter?.paidOnly ? { paidOnly: 'true' } : {}),
           ...(filter?.startDate ? { startDate: filter.startDate } : {}),
           ...(filter?.endDate ? { endDate: filter.endDate } : {}),
           ...(pageParam ? { cursor: pageParam } : {}),

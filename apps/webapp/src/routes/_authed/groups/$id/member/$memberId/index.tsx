@@ -73,6 +73,10 @@ function RouteComponent() {
     () => expensesQuery.data?.pages[0]?.summary.spentByCurrency ?? {},
     [expensesQuery.data?.pages],
   );
+  const grossPaidByCurrency = useMemo(
+    () => expensesQuery.data?.pages[0]?.summary.grossPaidByCurrency ?? {},
+    [expensesQuery.data?.pages],
+  );
   const summaryEntries = useMemo(
     () =>
       Object.entries(spentByCurrency).sort((left, right) => {
@@ -81,6 +85,16 @@ function RouteComponent() {
       }),
     [spentByCurrency],
   );
+  const grossPaidEntries = useMemo(
+    () =>
+      Object.entries(grossPaidByCurrency).sort((left, right) => {
+        if (left[0] === right[0]) return 0;
+        return left[0].localeCompare(right[0]);
+      }),
+    [grossPaidByCurrency],
+  );
+  const hasSummaryData =
+    summaryEntries.length > 0 || (paidOnly && grossPaidEntries.length > 0);
   const hasNextPageRef = useRef(expensesQuery.hasNextPage);
   const isFetchingRef = useRef(expensesQuery.isFetching);
   const fetchNextPageRef = useRef(expensesQuery.fetchNextPage);
@@ -221,21 +235,38 @@ function RouteComponent() {
                 </div>
               </div>
 
-              {summaryEntries.length > 0 ? (
+              {hasSummaryData ? (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {summaryEntries.map(([currency, amount]) => (
                     <div
-                      key={currency}
+                      key={`share-${currency}`}
                       className="rounded-2xl bg-[#f8fafc] px-4 py-3"
                     >
                       <p className="text-xs font-medium text-[#64748b]">
-                        Total en {currency}
+                        {paidOnly
+                          ? `Su parte en ${currency}`
+                          : `Total en ${currency}`}
                       </p>
                       <p className="mt-1 text-lg font-semibold text-[#132238]">
                         {formatMoney(currency, amount)}
                       </p>
                     </div>
                   ))}
+                  {paidOnly
+                    ? grossPaidEntries.map(([currency, amount]) => (
+                        <div
+                          key={`paid-${currency}`}
+                          className="rounded-2xl bg-[#eef6ff] px-4 py-3"
+                        >
+                          <p className="text-xs font-medium text-[#64748b]">
+                            Total pagado en {currency}
+                          </p>
+                          <p className="mt-1 text-lg font-semibold text-[#132238]">
+                            {formatMoney(currency, amount)}
+                          </p>
+                        </div>
+                      ))
+                    : null}
                 </div>
               ) : (
                 <div className="rounded-2xl bg-[#f8fafc] px-4 py-4 text-sm text-[#64748b]">

@@ -476,7 +476,17 @@ export function createGroupExpensesService() {
         db.expense.findMany({
           where,
           select: {
+            amount: true,
             currency: true,
+            paidById: true,
+            payers: {
+              where: {
+                memberId,
+              },
+              select: {
+                amount: true,
+              },
+            },
             participants: {
               where: {
                 memberId,
@@ -501,6 +511,20 @@ export function createGroupExpensesService() {
 
           accumulator[row.currency] = normalizeAmount(
             (accumulator[row.currency] ?? 0) + share,
+          );
+          return accumulator;
+        },
+        {},
+      );
+      const grossPaidByCurrency = summaryRows.reduce<Record<string, number>>(
+        (accumulator, row) => {
+          const payerAmount =
+            row.payers[0]?.amount ??
+            (row.paidById === memberId ? row.amount : 0);
+          if (payerAmount <= 0) return accumulator;
+
+          accumulator[row.currency] = normalizeAmount(
+            (accumulator[row.currency] ?? 0) + payerAmount,
           );
           return accumulator;
         },
@@ -574,6 +598,7 @@ export function createGroupExpensesService() {
         })),
         summary: {
           spentByCurrency,
+          grossPaidByCurrency,
         },
         pagination: {
           limit,

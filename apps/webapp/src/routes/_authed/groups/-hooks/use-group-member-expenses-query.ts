@@ -23,6 +23,7 @@ type GroupMemberExpensesPageBase = Extract<
 type GroupMemberExpensesPageSuccess = GroupMemberExpensesPageBase & {
   summary: {
     spentByCurrency: Record<string, number>;
+    grossPaidByCurrency: Record<string, number>;
   };
 };
 

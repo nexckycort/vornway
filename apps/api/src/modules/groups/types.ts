@@ -564,6 +564,7 @@ export type ListGroupMemberExpensesInput = {
   cursor?: string;
   categoryId?: string;
   uncategorized?: boolean;
+  paidOnly?: boolean;
   startDate?: string;
   endDate?: string;
 };

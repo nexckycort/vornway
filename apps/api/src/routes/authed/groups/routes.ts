@@ -389,6 +389,7 @@ const groups = new Hono<AppContext>()
           cursor: query.cursor,
           categoryId: query.categoryId,
           uncategorized: query.uncategorized,
+          paidOnly: query.paidOnly,
           startDate: query.startDate,
           endDate: query.endDate,
         });

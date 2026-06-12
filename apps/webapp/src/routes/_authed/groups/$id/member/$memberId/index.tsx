@@ -29,6 +29,7 @@ export const Route = createFileRoute('/_authed/groups/$id/member/$memberId/')({
         : undefined,
     uncategorized:
       search.uncategorized === true || search.uncategorized === 'true',
+    paidOnly: search.paidOnly === true || search.paidOnly === 'true',
     startDate:
       typeof search.startDate === 'string' && search.startDate.length > 0
         ? search.startDate
@@ -43,14 +44,21 @@ export const Route = createFileRoute('/_authed/groups/$id/member/$memberId/')({
 
 function RouteComponent() {
   const { id, memberId } = Route.useParams();
-  const { categoryId, categoryName, uncategorized, startDate, endDate } =
-    Route.useSearch();
+  const {
+    categoryId,
+    categoryName,
+    uncategorized,
+    paidOnly,
+    startDate,
+    endDate,
+  } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const { flowState } = useGroupFlowNavigation(id);
   const groupQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupMemberExpensesInfiniteQuery(id, memberId, {
     categoryId,
     uncategorized,
+    paidOnly,
     startDate,
     endDate,
   });
@@ -119,6 +127,17 @@ function RouteComponent() {
     });
   };
 
+  const handleTogglePaidOnly = () => {
+    void navigate({
+      search: (current) => ({
+        ...current,
+        paidOnly: !paidOnly,
+      }),
+      replace: true,
+      state: flowState,
+    });
+  };
+
   return (
     <MobilePageLayout
       title={
@@ -174,11 +193,17 @@ function RouteComponent() {
               </div>
 
               <p className="mt-4 rounded-2xl bg-[#f8fafc] px-3 py-3 text-xs text-[#64748b]">
-                {categoryName
-                  ? `Revisa solo los gastos de ${categoryName.toLowerCase()} donde esta persona pagó o participa.`
-                  : startDate && endDate
-                    ? 'Revisa solo los gastos de este rango donde esta persona pagó o participa.'
-                    : 'Revisa solo los gastos donde esta persona pagó o participa.'}
+                {paidOnly
+                  ? categoryName
+                    ? `Revisa solo los gastos de ${categoryName.toLowerCase()} que esta persona pagó.`
+                    : startDate && endDate
+                      ? 'Revisa solo los gastos que esta persona pagó en este rango.'
+                      : 'Revisa solo los gastos que esta persona pagó.'
+                  : categoryName
+                    ? `Revisa solo los gastos de ${categoryName.toLowerCase()} donde esta persona pagó o participa.`
+                    : startDate && endDate
+                      ? 'Revisa solo los gastos de este rango donde esta persona pagó o participa.'
+                      : 'Revisa solo los gastos donde esta persona pagó o participa.'}
               </p>
             </section>
 
@@ -189,7 +214,9 @@ function RouteComponent() {
                     Consolidado
                   </h2>
                   <p className="mt-1 text-xs text-[#64748b]">
-                    Total que ha gastado en este filtro
+                    {paidOnly
+                      ? 'Total de su parte en gastos que pagó'
+                      : 'Total que ha gastado en este filtro'}
                   </p>
                 </div>
               </div>
@@ -221,21 +248,46 @@ function RouteComponent() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-[#132238]">
-                    {categoryName
-                      ? `Gastos en ${categoryName}`
-                      : 'Gastos relacionados'}
+                    {paidOnly
+                      ? categoryName
+                        ? `Gastos pagados en ${categoryName}`
+                        : 'Gastos que pagó'
+                      : categoryName
+                        ? `Gastos en ${categoryName}`
+                        : 'Gastos relacionados'}
                   </h2>
                   <p className="mt-1 text-xs text-[#64748b]">
-                    {categoryName
-                      ? 'Solo de esta categoría'
-                      : startDate && endDate
-                        ? 'Solo de este rango de fecha'
-                        : 'Donde pagó o participa'}
+                    {paidOnly
+                      ? categoryName
+                        ? 'Solo pagados por esta persona en esta categoría'
+                        : startDate && endDate
+                          ? 'Solo los que pagó en este rango de fecha'
+                          : 'Solo los que pagó'
+                      : categoryName
+                        ? 'Solo de esta categoría'
+                        : startDate && endDate
+                          ? 'Solo de este rango de fecha'
+                          : 'Donde pagó o participa'}
                   </p>
                 </div>
                 <span className="text-xs text-[#94a3b8]">
                   {expenses.length} gasto{expenses.length === 1 ? '' : 's'}
                 </span>
+              </div>
+
+              <div className="mb-4 flex">
+                <button
+                  type="button"
+                  onClick={handleTogglePaidOnly}
+                  className={[
+                    'inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                    paidOnly
+                      ? 'border-[#132238] bg-[#132238] text-white'
+                      : 'border-[#cbd5e1] bg-white text-[#475569]',
+                  ].join(' ')}
+                >
+                  Solo los que pagó
+                </button>
               </div>
 
               {expensesQuery.isLoading ? (
@@ -255,11 +307,17 @@ function RouteComponent() {
                     Sin gastos para este participante
                   </p>
                   <p className="mt-1 text-xs text-[#64748b]">
-                    {categoryName
-                      ? 'Cuando esté involucrado en un gasto de esta categoría aparecerá aquí.'
-                      : startDate && endDate
-                        ? 'Cuando esté involucrado en un gasto de este rango aparecerá aquí.'
-                        : 'Cuando esté involucrado en un gasto aparecerá aquí.'}
+                    {paidOnly
+                      ? categoryName
+                        ? 'Cuando pague un gasto de esta categoría aparecerá aquí.'
+                        : startDate && endDate
+                          ? 'Cuando pague un gasto en este rango aparecerá aquí.'
+                          : 'Cuando pague un gasto aparecerá aquí.'
+                      : categoryName
+                        ? 'Cuando esté involucrado en un gasto de esta categoría aparecerá aquí.'
+                        : startDate && endDate
+                          ? 'Cuando esté involucrado en un gasto de este rango aparecerá aquí.'
+                          : 'Cuando esté involucrado en un gasto aparecerá aquí.'}
                   </p>
                 </div>
               ) : null}

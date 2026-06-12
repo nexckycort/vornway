@@ -345,6 +345,7 @@ export function createGroupExpensesService() {
       cursor,
       categoryId,
       uncategorized,
+      paidOnly,
       startDate,
       endDate,
     }: ListGroupMemberExpensesInput): Promise<ListGroupMemberExpensesResult> => {
@@ -385,11 +386,17 @@ export function createGroupExpensesService() {
         Parameters<typeof db.expense.findMany>[0]
       >['where'] = {
         ...buildExpenseBaseWhere(groupId),
-        OR: [
-          { paidById: memberId },
-          { payers: { some: { memberId } } },
-          { participants: { some: { memberId } } },
-        ],
+        ...(paidOnly
+          ? {
+              OR: [{ paidById: memberId }, { payers: { some: { memberId } } }],
+            }
+          : {
+              OR: [
+                { paidById: memberId },
+                { payers: { some: { memberId } } },
+                { participants: { some: { memberId } } },
+              ],
+            }),
         ...(categoryId
           ? { categoryId }
           : uncategorized

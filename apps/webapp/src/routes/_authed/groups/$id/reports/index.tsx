@@ -15,18 +15,21 @@ import {
 import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import { CategoryIcon } from '../-components/category-icon';
 import { formatMoney, getInitials } from '../-components/group-detail.utils';
+import {
+  buildChartConfig,
+  buildReportFilter,
+  deriveAvailableCurrencies,
+  deriveBalanceMembers,
+  deriveShareMembers,
+  findSelectedCategory,
+  parseReportsSearch,
+  toDateInputValue,
+} from './-reports.utils';
 
 export const Route = createFileRoute('/_authed/groups/$id/reports/')({
-  validateSearch: (search: Record<string, unknown>) => ({
-    tab:
-      search.tab === 'totales' || search.tab === 'balance'
-        ? search.tab
-        : 'balance',
-  }),
+  validateSearch: parseReportsSearch,
   component: RouteComponent,
 });
-
-type ReportDateFilterMode = 'all' | 'day' | 'range';
 
 type GroupSummaryCounterpartyFields = {
   directDebts: Array<{
@@ -50,34 +53,7 @@ const CURRENCY_META: Record<string, { flag: string; label: string }> = {
   BRL: { flag: '🇧🇷', label: 'BRL' },
 };
 
-function toDateInputValue(value: Date) {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, '0');
-  const day = String(value.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function toDayBoundaryIso(
-  value: string,
-  boundary: 'start' | 'end',
-): string | undefined {
-  const [year, month, day] = value.split('-').map(Number);
-
-  if (
-    !Number.isInteger(year) ||
-    !Number.isInteger(month) ||
-    !Number.isInteger(day)
-  ) {
-    return undefined;
-  }
-
-  const date =
-    boundary === 'start'
-      ? new Date(year, month - 1, day, 0, 0, 0, 0)
-      : new Date(year, month - 1, day, 23, 59, 59, 999);
-
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
-}
+type ReportDateFilterMode = 'all' | 'day' | 'range';
 
 function RouteComponent() {
   const { id } = Route.useParams();
@@ -98,25 +74,16 @@ function RouteComponent() {
   );
   const activeTab = tab;
   const group = groupQuery.data;
-  const reportFilter = useMemo(() => {
-    if (dateFilterMode === 'day') {
-      return {
-        range: 'custom' as const,
-        startDate: toDayBoundaryIso(selectedDay, 'start'),
-        endDate: toDayBoundaryIso(selectedDay, 'end'),
-      };
-    }
-
-    if (dateFilterMode === 'range') {
-      return {
-        range: 'custom' as const,
-        startDate: toDayBoundaryIso(rangeStartDate, 'start'),
-        endDate: toDayBoundaryIso(rangeEndDate, 'end'),
-      };
-    }
-
-    return { range: 'all' as const };
-  }, [dateFilterMode, rangeEndDate, rangeStartDate, selectedDay]);
+  const reportFilter = useMemo(
+    () =>
+      buildReportFilter({
+        dateFilterMode,
+        rangeEndDate,
+        rangeStartDate,
+        selectedDay,
+      }),
+    [dateFilterMode, rangeEndDate, rangeStartDate, selectedDay],
+  );
   const reportsSharesQuery = useGroupReportsSharesQuery(
     id,
     reportFilter,
@@ -127,94 +94,34 @@ function RouteComponent() {
     reportFilter,
     activeTab === 'totales',
   );
-  const availableCurrencies = useMemo(() => {
-    const currencies = new Set<string>();
-
-    for (const entry of Object.keys(
-      reportsTotalsQuery.data?.totalsByCurrency ?? group?.totals ?? {},
-    )) {
-      currencies.add(entry);
-    }
-
-    return Array.from(currencies);
-  }, [group?.totals, reportsTotalsQuery.data?.totalsByCurrency]);
-  const sortedBalanceMembers = useMemo(() => {
-    if (!group) return [];
-    const summary = group as typeof group & GroupSummaryCounterpartyFields;
-    const currentMemberId =
-      group.members.find((member) => member.isCurrentUser)?.id ?? null;
-
-    const memberMap = new Map<
-      string,
-      {
-        memberId: string;
-        name: string;
-        isCurrentUser: boolean;
-        balances: Record<string, number>;
-      }
-    >();
-
-    for (const member of group.members) {
-      memberMap.set(member.id, {
-        memberId: member.id,
-        name: member.name,
-        isCurrentUser: currentMemberId === member.id,
-        balances: {},
-      });
-    }
-
-    for (const debt of summary.directDebts) {
-      const member = memberMap.get(debt.toMemberId);
-      if (!member) continue;
-      member.balances[debt.currency] =
-        (member.balances[debt.currency] ?? 0) - debt.amount;
-    }
-
-    for (const credit of summary.directCredits) {
-      const member = memberMap.get(credit.fromMemberId);
-      if (!member) continue;
-      member.balances[credit.currency] =
-        (member.balances[credit.currency] ?? 0) + credit.amount;
-    }
-
-    return Array.from(memberMap.values())
-      .filter((member) =>
-        Object.values(member.balances).some((amount) => Math.abs(amount) >= 1),
-      )
-      .sort((left, right) => {
-        if (left.isCurrentUser === right.isCurrentUser) return 0;
-        return left.isCurrentUser ? -1 : 1;
-      });
-  }, [group]);
+  const availableCurrencies = useMemo(
+    () =>
+      deriveAvailableCurrencies({
+        groupTotals: group?.totals,
+        reportTotals: reportsTotalsQuery.data?.totalsByCurrency,
+      }),
+    [group?.totals, reportsTotalsQuery.data?.totalsByCurrency],
+  );
+  const sortedBalanceMembers = useMemo(
+    () =>
+      deriveBalanceMembers(
+        group ? (group as typeof group & GroupSummaryCounterpartyFields) : null,
+      ),
+    [group],
+  );
   const categoryBreakdown =
     reportsTotalsQuery.data?.categoriesByCurrency[selectedCurrency] ?? [];
   const selectedCategory = useMemo(
-    () =>
-      categoryBreakdown.find(
-        (category) => category.key === selectedCategoryKey,
-      ) ?? null,
+    () => findSelectedCategory(categoryBreakdown, selectedCategoryKey),
     [categoryBreakdown, selectedCategoryKey],
   );
   const sortedShareMembers = useMemo(
     () =>
-      Array.from(reportsSharesQuery.data?.memberShares ?? [])
-        .map((member) => ({
-          ...member,
-          visibleShare:
-            selectedCategoryKey == null
-              ? (member.shares[selectedCurrency] ?? 0)
-              : (member.categorySharesByCurrency[selectedCurrency]?.[
-                  selectedCategoryKey
-                ] ?? 0),
-        }))
-        .filter((member) => Math.abs(member.visibleShare) > 0)
-        .sort((left, right) => {
-          if (left.isCurrentUser !== right.isCurrentUser) {
-            return left.isCurrentUser ? -1 : 1;
-          }
-
-          return right.visibleShare - left.visibleShare;
-        }),
+      deriveShareMembers({
+        memberShares: reportsSharesQuery.data?.memberShares,
+        selectedCategoryKey,
+        selectedCurrency,
+      }),
     [
       reportsSharesQuery.data?.memberShares,
       selectedCategoryKey,
@@ -228,16 +135,7 @@ function RouteComponent() {
   const currentUserSpent =
     reportsTotalsQuery.data?.currentUserSpentByCurrency[selectedCurrency] ?? 0;
   const chartConfig = useMemo(
-    () =>
-      categoryBreakdown.reduce<
-        Record<string, { label: string; color: string }>
-      >((accumulator, entry) => {
-        accumulator[entry.name] = {
-          label: entry.name,
-          color: entry.fill,
-        };
-        return accumulator;
-      }, {}),
+    () => buildChartConfig(categoryBreakdown),
     [categoryBreakdown],
   );
   const totalsRangeOptions: Array<{

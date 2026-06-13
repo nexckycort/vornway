@@ -19,6 +19,11 @@ import {
   readSplitMethod,
 } from './helpers';
 import {
+  buildMemberExpenseSummary,
+  buildMemberExpenseWhere,
+  mapMemberExpenseListItem,
+} from './member-expense-report';
+import {
   buildExpensePushPayload,
   getExpensePushRecipientUserIds,
 } from './push-notifications';
@@ -382,35 +387,15 @@ export function createGroupExpensesService() {
       const currentMember =
         group.GroupMember.find((member) => member.userId === userId) ?? null;
 
-      const where: NonNullable<
-        Parameters<typeof db.expense.findMany>[0]
-      >['where'] = {
-        ...buildExpenseBaseWhere(groupId),
-        ...(paidOnly
-          ? {
-              OR: [{ paidById: memberId }, { payers: { some: { memberId } } }],
-            }
-          : {
-              OR: [
-                { paidById: memberId },
-                { payers: { some: { memberId } } },
-                { participants: { some: { memberId } } },
-              ],
-            }),
-        ...(categoryId
-          ? { categoryId }
-          : uncategorized
-            ? { categoryId: null }
-            : {}),
-        ...(startDate && endDate
-          ? {
-              date: {
-                gte: getDateStart(startDate),
-                lte: getDateEnd(endDate),
-              },
-            }
-          : {}),
-      };
+      const where = buildMemberExpenseWhere({
+        baseWhere: buildExpenseBaseWhere(groupId),
+        categoryId,
+        endDate,
+        memberId,
+        paidOnly,
+        startDate,
+        uncategorized,
+      });
 
       const [total, rows, summaryRows] = await Promise.all([
         db.expense.count({ where }),
@@ -504,98 +489,13 @@ export function createGroupExpensesService() {
       const nextCursor = hasNextPage
         ? (pageRows[pageRows.length - 1]?.id ?? null)
         : null;
-      const spentByCurrency = summaryRows.reduce<Record<string, number>>(
-        (accumulator, row) => {
-          const share = row.participants[0]?.share ?? 0;
-          if (share <= 0) return accumulator;
-
-          accumulator[row.currency] = normalizeAmount(
-            (accumulator[row.currency] ?? 0) + share,
-          );
-          return accumulator;
-        },
-        {},
-      );
-      const grossPaidByCurrency = summaryRows.reduce<Record<string, number>>(
-        (accumulator, row) => {
-          const payerAmount =
-            row.payers[0]?.amount ??
-            (row.paidById === memberId ? row.amount : 0);
-          if (payerAmount <= 0) return accumulator;
-
-          accumulator[row.currency] = normalizeAmount(
-            (accumulator[row.currency] ?? 0) + payerAmount,
-          );
-          return accumulator;
-        },
-        {},
-      );
+      const { spentByCurrency, grossPaidByCurrency } =
+        buildMemberExpenseSummary(summaryRows, memberId);
 
       return {
-        data: pageRows.map((row) => ({
-          ...(() => {
-            const isSettlement = Boolean(row.notes?.includes('[SETTLEMENT:'));
-            const isPersonal = !isSettlement && row.participants.length === 0;
-            const currentParticipation = currentMember
-              ? row.participants.find(
-                  (participant) => participant.memberId === currentMember.id,
-                )
-              : null;
-            const currentPayer = currentMember
-              ? row.payers.find((payer) => payer.memberId === currentMember.id)
-              : null;
-            let currentUserBalance: number | null = null;
-
-            if (
-              !isPersonal &&
-              currentMember &&
-              (currentPayer || currentParticipation)
-            ) {
-              currentUserBalance = 0;
-              if (currentPayer) {
-                currentUserBalance += currentPayer.amount;
-              }
-              if (currentParticipation) {
-                currentUserBalance -= currentParticipation.share;
-              }
-              currentUserBalance = normalizeAmount(currentUserBalance);
-            }
-
-            const paidByMembers = row.payers.map((payer) => ({
-              memberId: payer.memberId,
-              name: payer.member.name,
-              amount: payer.amount,
-            }));
-            const participants = row.participants.map((participant) => ({
-              memberId: participant.memberId,
-              name: participant.member.name,
-              share: participant.share,
-            }));
-
-            return {
-              id: row.id,
-              description: row.description,
-              amount: row.amount,
-              attachmentUrl: resolveExpenseAttachmentUrl(row.attachment),
-              currency: row.currency,
-              date: row.date,
-              isDeleted: row.status === 'DELETED' || Boolean(row.deletedAt),
-              isSettlement,
-              isPersonal,
-              expenseType: 'standard' as const,
-              subExpenseCount: 0,
-              settlementToName: isSettlement
-                ? (row.participants[0]?.member.name ?? null)
-                : null,
-              paidBy: row.paidBy,
-              paidByMembers,
-              participants,
-              category: row.category,
-              participantCount: row._count.participants,
-              currentUserBalance,
-            };
-          })(),
-        })),
+        data: pageRows.map((row) =>
+          mapMemberExpenseListItem(row, currentMember),
+        ),
         summary: {
           spentByCurrency,
           grossPaidByCurrency,

@@ -131,7 +131,6 @@ export function createGroupSummaryService() {
           expense.payers.length > 0
             ? expense.payers
             : [{ memberId: expense.paidById, amount: expense.amount }];
-        const payerIds = new Set(payerEntries.map((payer) => payer.memberId));
         const totalPaid = payerEntries.reduce(
           (total, payer) => total + payer.amount,
           0,

@@ -66,7 +66,6 @@ export function createGroupSummaryService() {
             select: {
               amount: true,
               currency: true,
-              notes: true,
               paidById: true,
               payers: {
                 select: {
@@ -123,7 +122,6 @@ export function createGroupSummaryService() {
 
       for (const expense of group.Expense) {
         if (expense.participants.length === 0) continue;
-        const isSettlement = expense.notes?.includes('[SETTLEMENT:') ?? false;
 
         const payerEntries =
           expense.payers.length > 0
@@ -165,7 +163,6 @@ export function createGroupSummaryService() {
         }
 
         if (!myMembership) continue;
-        if (isSettlement) continue;
 
         const currentPayer = payerEntries.find(
           (payer) => payer.memberId === myMembership.id,

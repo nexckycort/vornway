@@ -554,13 +554,9 @@ function RouteComponent() {
       }
 
       const next: Record<string, string> = {};
-      const defaultValue =
-        paidByIds.length > 0 ? normalizedAmount / paidByIds.length : 0;
 
       for (const payerId of paidByIds) {
-        next[payerId] =
-          current[payerId] ??
-          (defaultValue > 0 ? formatEditableNumber(defaultValue) : '');
+        next[payerId] = '';
       }
 
       return next;
@@ -1078,47 +1074,40 @@ function RouteComponent() {
           </div>
 
           {paidByIds.length > 1 ? (
-            <div className="mt-4 space-y-3">
-              {paidByIds.map((payerId) => {
-                const payer = members.find((member) => member.id === payerId);
-                if (!payer) return null;
+            <div className="mt-4 rounded-[28px] border border-gray-200 px-3 py-2">
+              <div className="space-y-1">
+                {paidByIds.map((payerId) => {
+                  const payer = members.find((member) => member.id === payerId);
+                  if (!payer) return null;
 
-                return (
-                  <label
-                    key={payerId}
-                    className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3"
-                  >
-                    <ParticipantAvatar
-                      name={payer.name}
-                      image={payer.image}
-                      sizeClassName="size-9 shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-gray-900">
-                        {payer.isCurrentUser ? 'Tú' : payer.name}
-                      </p>
-                      <p className="text-xs text-gray-500">Cuánto pagó</p>
-                    </div>
-                    <div className="grid min-w-[128px] grid-cols-[20px_minmax(0,1fr)] items-center gap-2 rounded-full bg-gray-50 px-3 py-2">
-                      <span className="text-sm text-gray-500">
-                        {getCurrencySymbol(currency)}
-                      </span>
-                      <input
-                        value={payerValues[payerId] ?? ''}
-                        onChange={(event) =>
-                          setPayerValues((current) => ({
-                            ...current,
-                            [payerId]: event.target.value,
-                          }))
-                        }
-                        inputMode="decimal"
-                        placeholder="0"
-                        className="min-w-0 bg-transparent text-right text-sm font-medium text-gray-900 outline-none placeholder:text-gray-400"
+                  return (
+                    <label
+                      key={payerId}
+                      className="flex items-center gap-3 px-1 py-1"
+                    >
+                      <ParticipantAvatar
+                        name={payer.name}
+                        image={payer.image}
+                        sizeClassName="size-9 shrink-0"
                       />
-                    </div>
-                  </label>
-                );
-              })}
+                      <div className="min-w-0 flex-1">
+                        <input
+                          value={payerValues[payerId] ?? ''}
+                          onChange={(event) =>
+                            setPayerValues((current) => ({
+                              ...current,
+                              [payerId]: event.target.value,
+                            }))
+                          }
+                          inputMode="decimal"
+                          placeholder="Total pagado"
+                          className="h-11 w-full rounded-full border border-gray-200 bg-white px-4 text-sm font-medium text-gray-900 outline-none placeholder:text-gray-400 focus:border-rose-500"
+                        />
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
 
               <div className="flex items-center justify-between px-1 text-xs">
                 <span

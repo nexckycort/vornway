@@ -4,8 +4,8 @@ import { ArrowLeft, BarChart3, FolderKanban, Users } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { Button } from '#/components/ui/button';
-import { API_URL } from '#/config/env';
 import { useAuth } from '#/contexts/auth/use-auth';
+import { client } from '#/lib/hc';
 
 type AdminStatsResponse = {
   totalUsers: number;
@@ -29,12 +29,7 @@ function RouteComponent() {
     queryKey: ['admin-stats'],
     enabled: isAllowed,
     queryFn: async () => {
-      const response = await fetch(
-        `${API_URL.replace(/\/$/, '')}/api/admin/stats`,
-        {
-          credentials: 'include',
-        },
-      );
+      const response = await client.api.admin.stats.$get();
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as {

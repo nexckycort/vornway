@@ -6,12 +6,18 @@ import { env } from '~/config/env';
 import { db } from '~/infrastructure/database/connection';
 import { resend } from '~/infrastructure/email/resend.config';
 
+const ONE_YEAR_IN_SECONDS = 60 * 60 * 24 * 365;
+
 const authConfig = {
   baseURL: env.BETTER_AUTH_URL,
   trustedOrigins: ['https://app.vornway.com'],
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),
+  session: {
+    expiresIn: ONE_YEAR_IN_SECONDS,
+    updateAge: 60 * 60 * 24,
+  },
   emailAndPassword: {
     enabled: true,
   },

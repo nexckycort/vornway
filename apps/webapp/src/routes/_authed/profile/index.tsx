@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
+  BarChart3,
   Bell,
   CalendarClock,
   Camera,
@@ -93,6 +94,8 @@ function RouteComponent() {
   const currentLocale = getCurrentLocale();
   const userName = auth.user?.name?.trim() || t.defaultUser;
   const userEmail = auth.user?.email?.trim() || t.noEmail;
+  const isStatsUser =
+    auth.user?.email?.trim().toLowerCase() === 'junior110120@gmail.com';
   const userImage = previewImageUrl ?? auth.user?.image ?? null;
   const notificationLabel = getNotificationLabel(notificationStatus, t);
   const installInstructions = getInstallInstructions();
@@ -380,6 +383,19 @@ function RouteComponent() {
               subtitle={t.securitySubtitle}
               onClick={() => setShowSessionsDialog(true)}
             />
+            {isStatsUser ? (
+              <ProfileActionRow
+                icon={<BarChart3 className="size-5" />}
+                title="Estadísticas"
+                subtitle="Usuarios y grupos creados"
+                onClick={() =>
+                  void navigate({
+                    to: '/profile/stats',
+                  })
+                }
+                trailing="Ver"
+              />
+            ) : null}
             <ProfileActionRow
               icon={<QrCode className="size-5" />}
               title={t.qrScanner}

@@ -391,7 +391,7 @@ export function useGroupReportsTotalsQuery(
       const response = await groupReportsTotalsEndpoint({
         param: { id: groupId },
         query: {
-          range: String(filter.range),
+          range: filter.range,
           ...(filter.startDate ? { startDate: filter.startDate } : {}),
           ...(filter.endDate ? { endDate: filter.endDate } : {}),
         },
@@ -429,7 +429,7 @@ export function useGroupReportsBalancesQuery(
       const response = await groupReportsBalancesEndpoint({
         param: { id: groupId },
         query: {
-          range: String(filter.range),
+          range: filter.range,
           ...(filter.startDate ? { startDate: filter.startDate } : {}),
           ...(filter.endDate ? { endDate: filter.endDate } : {}),
         },
@@ -467,7 +467,7 @@ export function useGroupReportsSharesQuery(
       const response = await groupReportsSharesEndpoint({
         param: { id: groupId },
         query: {
-          range: String(filter.range),
+          range: filter.range,
           ...(filter.startDate ? { startDate: filter.startDate } : {}),
           ...(filter.endDate ? { endDate: filter.endDate } : {}),
         },

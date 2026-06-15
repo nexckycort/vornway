@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 
 import { authMiddleware } from '~/shared/middlewares/auth.middleware';
+import adminRoutes from './admin/routes';
 import converterRoutes from './converter/routes';
 import goalsRoutes from './goals/routes';
 import groupsRoutes from './groups/routes';
@@ -22,6 +23,7 @@ const app = new Hono()
   .route('/notifications', notificationsRoutes)
   .route('/push', pushRoutes)
   .route('/users', usersRoutes)
+  .route('/admin', adminRoutes)
   .route('/groups', groupsRoutes);
 
 export default app;

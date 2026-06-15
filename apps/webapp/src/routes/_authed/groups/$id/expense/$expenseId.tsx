@@ -152,6 +152,14 @@ function RouteComponent() {
   const participants = expense?.participants ?? [];
   const advancedDetails = expense?.advancedDetails ?? null;
   const attachmentUrl = expense?.attachmentUrl ?? null;
+  const categoryLabel = expense?.category?.name ?? null;
+  const categoryColor = expense?.category?.color ?? '#0f766e';
+  const categoryChipStyle = expense?.category?.color
+    ? {
+        backgroundColor: `${expense.category.color}1a`,
+        color: categoryColor,
+      }
+    : undefined;
   const mapEmbedUrl =
     advancedDetails?.mapEmbedUrl ??
     getGoogleMapsEmbedUrl(advancedDetails?.mapUrl ?? null);
@@ -248,6 +256,22 @@ function RouteComponent() {
                 <p className="mt-1 text-2xl font-semibold tracking-tight text-[#202124]">
                   {formatAmount(expense.currency, expense.amount)}
                 </p>
+                {!isSettlement && categoryLabel ? (
+                  <div className="mt-3 flex justify-center">
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold leading-none"
+                      style={categoryChipStyle}
+                    >
+                      <CategoryIcon
+                        icon={expense.category?.icon}
+                        color={categoryColor}
+                        className="size-3.5"
+                        fallback={<span className="text-[10px]">•</span>}
+                      />
+                      {categoryLabel}
+                    </span>
+                  </div>
+                ) : null}
                 <p className="mt-3 text-xs text-[#202124]">
                   <span>{formatDate(expense.date)}</span>
                   <span className="mx-1 text-[#9ca3af]">•</span>

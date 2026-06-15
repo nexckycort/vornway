@@ -35,6 +35,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
+import { Skeleton } from '#/components/ui/skeleton';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { client } from '#/lib/hc';
 import { compressImageFileToDataUrl } from '#/lib/image-compression';
@@ -235,6 +236,35 @@ function ParticipantAvatar({
   );
 }
 
+function AddExpenseSkeleton({
+  onBack,
+  title,
+}: {
+  onBack: () => void;
+  title: string;
+}) {
+  return (
+    <MobilePageLayout title={title} onBack={onBack}>
+      <div className="space-y-5 px-2 pb-6">
+        <div className="space-y-3">
+          <div className="flex items-baseline justify-between gap-4">
+            <Skeleton className="h-10 w-28 rounded-xl" />
+            <Skeleton className="h-14 flex-1 rounded-2xl" />
+          </div>
+          <Skeleton className="h-5 w-36 rounded-full" />
+        </div>
+
+        <Skeleton className="h-14 rounded-xl" />
+        <Skeleton className="h-14 rounded-xl" />
+        <Skeleton className="h-14 rounded-xl" />
+        <Skeleton className="h-14 rounded-xl" />
+        <Skeleton className="h-14 rounded-xl" />
+        <Skeleton className="h-14 rounded-xl" />
+      </div>
+    </MobilePageLayout>
+  );
+}
+
 function AdvancedDetailsInput({
   label,
   value,
@@ -332,10 +362,12 @@ function RouteComponent() {
   const attachmentFileNameRef = useRef<string | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
   const hasInitializedFormRef = useRef(false);
   const [isAmountAnimating, setIsAmountAnimating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
+  const descriptionInputRef = useRef<HTMLInputElement | null>(null);
   const customCategoryIconInputRef = useRef<HTMLInputElement | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   const submitLockRef = useRef(false);
@@ -424,7 +456,7 @@ function RouteComponent() {
 
   useEffect(() => {
     if (isEditMode) {
-      if (!expense || hasInitializedFormRef.current) return;
+      if (!expense) return;
 
       const sharedSplit =
         (expense as { sharedSplit?: ExpenseSharedSplit | null }).sharedSplit ??
@@ -633,6 +665,8 @@ function RouteComponent() {
     paidByIds.length > 0 &&
     splitIsValid &&
     payerSplitIsValid;
+  const showDescriptionError =
+    hasTriedSubmit && description.trim().length === 0;
 
   const isPending = isEditMode
     ? updateExpenseMutation.isPending
@@ -767,7 +801,16 @@ function RouteComponent() {
   };
 
   const handleSubmit = async () => {
-    if (!canSubmit || submitLockRef.current) return;
+    if (submitLockRef.current) return;
+
+    setHasTriedSubmit(true);
+
+    if (!canSubmit) {
+      if (description.trim().length === 0) {
+        descriptionInputRef.current?.focus();
+      }
+      return;
+    }
 
     submitLockRef.current = true;
     setIsSubmitting(true);
@@ -871,16 +914,10 @@ function RouteComponent() {
 
   if (isLoading) {
     return (
-      <MobilePageLayout
+      <AddExpenseSkeleton
         title={isEditMode ? 'Editar gasto' : 'Nuevo gasto'}
         onBack={() => navigateToGroupRoot(true)}
-      >
-        <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-gray-500">
-            {isEditMode ? 'Cargando gasto...' : 'Cargando grupo...'}
-          </p>
-        </div>
-      </MobilePageLayout>
+      />
     );
   }
 
@@ -967,14 +1004,28 @@ function RouteComponent() {
       </div>
 
       <div className="space-y-5 px-2 pb-6">
-        <label className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3.5">
+        <label
+          className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 ${
+            showDescriptionError ? 'border-red-300' : 'border-gray-200'
+          }`}
+        >
           <input
+            ref={descriptionInputRef}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             placeholder="Cena con amigos"
-            className="w-full bg-transparent text-gray-700 outline-none placeholder:text-gray-400"
+            aria-invalid={showDescriptionError}
+            className={`w-full bg-transparent outline-none placeholder:text-gray-400 ${
+              showDescriptionError ? 'text-red-700' : 'text-gray-700'
+            }`}
           />
         </label>
+
+        {showDescriptionError ? (
+          <p className="-mt-3 px-4 text-xs font-medium text-red-600">
+            Agrega un nombre al gasto
+          </p>
+        ) : null}
 
         <button
           type="button"
@@ -1346,7 +1397,7 @@ function RouteComponent() {
         <Button
           type="button"
           onClick={handleSubmit}
-          disabled={!canSubmit || isSubmitLocked}
+          disabled={isSubmitLocked}
           className="h-14 w-full rounded-full bg-rose-500 text-base font-medium text-white hover:bg-rose-500/90"
         >
           {isSubmitLocked

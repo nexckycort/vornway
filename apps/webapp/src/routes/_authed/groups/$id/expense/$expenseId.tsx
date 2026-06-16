@@ -104,6 +104,7 @@ function normalizeExpense(
     attachmentUrl: expense.attachmentUrl ?? fallback?.attachmentUrl ?? null,
     advancedDetails:
       expense.advancedDetails ?? fallback?.advancedDetails ?? null,
+    sharedSplit: expense.sharedSplit ?? fallback?.sharedSplit ?? null,
     participantCount:
       expense.participantCount ??
       expense.participants?.length ??
@@ -151,6 +152,9 @@ function RouteComponent() {
   const paidByMembers = expense?.paidByMembers ?? [];
   const participants = expense?.participants ?? [];
   const advancedDetails = expense?.advancedDetails ?? null;
+  const sharedSplit = expense?.sharedSplit ?? null;
+  const sharedSplitItems = sharedSplit?.items ?? [];
+  const sharedSplitAmount = sharedSplit?.amount ?? 0;
   const attachmentUrl = expense?.attachmentUrl ?? null;
   const categoryLabel = expense?.category?.name ?? null;
   const categoryColor = expense?.category?.color ?? '#0f766e';
@@ -338,6 +342,32 @@ function RouteComponent() {
                           />
                         );
                       })}
+                    </div>
+                  </>
+                ) : null}
+
+                {!isSettlement && sharedSplitItems.length > 0 ? (
+                  <>
+                    <p className="mb-4 mt-7 text-xs font-medium text-[#444444]">
+                      Gastos compartidos
+                    </p>
+                    <div className="space-y-4 rounded-3xl bg-[#fafafa] p-4">
+                      {sharedSplitItems.map((item, index) => (
+                        <DetailLine
+                          key={`${item.name}-${index}`}
+                          label={item.name}
+                          value={formatAmount(expense.currency, item.amount)}
+                        />
+                      ))}
+                      <div className="h-px bg-[#e5e7eb]" />
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-[11px] font-medium text-[#94a3b8]">
+                          Total compartido
+                        </p>
+                        <p className="text-sm font-semibold text-[#202124]">
+                          {formatAmount(expense.currency, sharedSplitAmount)}
+                        </p>
+                      </div>
                     </div>
                   </>
                 ) : null}

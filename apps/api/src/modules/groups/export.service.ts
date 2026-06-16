@@ -50,6 +50,7 @@ function readSharedSplit(metadata: unknown): GroupExpenseSharedSplit | null {
     amount?: unknown;
     splitMethod?: unknown;
     splitValues?: unknown;
+    items?: unknown;
   };
 
   if (
@@ -73,6 +74,31 @@ function readSharedSplit(metadata: unknown): GroupExpenseSharedSplit | null {
             ),
           )
         : undefined,
+    items: Array.isArray(candidate.items)
+      ? candidate.items.flatMap((item) => {
+          if (!item || typeof item !== 'object') return [];
+
+          const entry = item as {
+            name?: unknown;
+            amount?: unknown;
+          };
+
+          if (
+            typeof entry.name !== 'string' ||
+            typeof entry.amount !== 'number' ||
+            entry.name.trim().length === 0
+          ) {
+            return [];
+          }
+
+          return [
+            {
+              name: entry.name.trim(),
+              amount: normalizeAmount(entry.amount),
+            },
+          ];
+        })
+      : undefined,
   };
 }
 

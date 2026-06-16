@@ -62,6 +62,16 @@ type ExpenseSharedSplit = {
   amount: number;
   splitMethod: Exclude<SplitMethod, 'equal'>;
   splitValues?: Record<string, number>;
+  items?: Array<{
+    name: string;
+    amount: number;
+  }>;
+};
+
+type SharedExpenseItem = {
+  id: string;
+  name: string;
+  amount: string;
 };
 
 const splitMethods: Array<{ value: SplitMethod; label: string }> = [
@@ -313,6 +323,19 @@ function formatEditableNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
+function createSharedExpenseItem(
+  partial?: Partial<Pick<SharedExpenseItem, 'name' | 'amount'>>,
+): SharedExpenseItem {
+  return {
+    id:
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    name: partial?.name ?? '',
+    amount: partial?.amount ?? '',
+  };
+}
+
 function RouteComponent() {
   const { id } = Route.useParams();
   const { expenseId } = Route.useSearch();
@@ -327,8 +350,9 @@ function RouteComponent() {
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
-  const [sharedAmount, setSharedAmount] = useState('');
-  const [sharedSplitEnabled, setSharedSplitEnabled] = useState(false);
+  const [sharedExpenseItems, setSharedExpenseItems] = useState<
+    SharedExpenseItem[]
+  >([]);
   const [currency, setCurrency] = useState('COP');
   const [paidByIds, setPaidByIds] = useState<string[]>([]);
   const [payerValues, setPayerValues] = useState<Record<string, string>>({});
@@ -414,6 +438,21 @@ function RouteComponent() {
         : null,
     [expense],
   );
+  const normalizedSharedExpenseItems = useMemo(
+    () =>
+      sharedExpenseItems.map((item) => ({
+        ...item,
+        normalizedAmount: Number(item.amount || 0),
+      })),
+    [sharedExpenseItems],
+  );
+  const normalizedSharedAmount = normalizedSharedExpenseItems.reduce(
+    (sum, item) =>
+      Number.isFinite(item.normalizedAmount) && item.normalizedAmount > 0
+        ? sum + item.normalizedAmount
+        : sum,
+    0,
+  );
 
   useEffect(() => {
     const node = amountInputRef.current;
@@ -464,8 +503,23 @@ function RouteComponent() {
 
       setDescription(expense.description);
       setAmount(expense.amount.toString());
-      setSharedAmount(sharedSplit?.amount.toString() ?? '');
-      setSharedSplitEnabled(Boolean(sharedSplit));
+      setSharedExpenseItems(
+        sharedSplit?.items && sharedSplit.items.length > 0
+          ? sharedSplit.items.map((item) =>
+              createSharedExpenseItem({
+                name: item.name,
+                amount: formatEditableNumber(item.amount),
+              }),
+            )
+          : sharedSplit
+            ? [
+                createSharedExpenseItem({
+                  name: '',
+                  amount: formatEditableNumber(sharedSplit.amount),
+                }),
+              ]
+            : [],
+      );
       setCurrency(expense.currency);
       setCategoryId(expense.category?.id ?? null);
       setPaidByIds(
@@ -485,9 +539,10 @@ function RouteComponent() {
               sharedSplit?.splitMethod ?? expense.splitMethod;
             const restoredValue =
               sharedSplit?.splitValues?.[participant.memberId];
-            const sharedShareFallback = sharedSplit
-              ? sharedSplit.amount / Math.max(expense.participants.length, 1)
-              : 0;
+            const sharedShareFallback =
+              sharedSplit?.amount && expense.participants.length > 0
+                ? sharedSplit.amount / expense.participants.length
+                : 0;
 
             return [
               participant.memberId,
@@ -526,11 +581,8 @@ function RouteComponent() {
     setParticipantValues((current) => {
       const next: Record<string, string> = {};
       const selectedCount = participantIds.length;
-      const sharedValue = Number(sharedSplitEnabled ? sharedAmount || 0 : 0);
-      const normalizedSharedValue =
-        Number.isFinite(sharedValue) && sharedValue > 0 ? sharedValue : 0;
       const baseAmount = Math.max(
-        Number(amount || 0) - normalizedSharedValue,
+        Number(amount || 0) - normalizedSharedAmount,
         0,
       );
       const defaultValue =
@@ -550,15 +602,10 @@ function RouteComponent() {
 
       return next;
     });
-  }, [amount, participantIds, sharedAmount, sharedSplitEnabled, splitMethod]);
+  }, [amount, normalizedSharedAmount, participantIds, splitMethod]);
 
   const parsedAmount = Number(amount);
   const normalizedAmount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
-  const parsedSharedAmount = Number(sharedSplitEnabled ? sharedAmount : 0);
-  const normalizedSharedAmount =
-    Number.isFinite(parsedSharedAmount) && parsedSharedAmount > 0
-      ? parsedSharedAmount
-      : 0;
   const selectedCount = participantIds.length;
   const sharedAmountExceedsTotal =
     selectedCount > 0 && normalizedSharedAmount > normalizedAmount;
@@ -658,17 +705,25 @@ function RouteComponent() {
     paidByIds.length <= 1 ||
     (Math.abs(payerSum - normalizedAmount) < 0.01 &&
       paidByIds.every((memberId) => Number(payerValues[memberId] ?? 0) > 0));
+  const sharedExpenseItemsAreValid = normalizedSharedExpenseItems.every(
+    (item) => item.name.trim().length > 0 && item.normalizedAmount > 0,
+  );
 
   const canSubmit =
     description.trim().length > 0 &&
     normalizedAmount > 0 &&
     paidByIds.length > 0 &&
     selectedCount > 0 &&
+    sharedExpenseItemsAreValid &&
     splitIsValid &&
     payerSplitIsValid;
   const showDescriptionError =
     hasTriedSubmit && description.trim().length === 0;
   const showParticipantsError = hasTriedSubmit && selectedCount === 0;
+  const showSharedExpenseItemsError =
+    hasTriedSubmit &&
+    sharedExpenseItems.length > 0 &&
+    !sharedExpenseItemsAreValid;
 
   const isPending = isEditMode
     ? updateExpenseMutation.isPending
@@ -707,18 +762,35 @@ function RouteComponent() {
     setSplitMethod(nextMethod);
     if (nextMethod === 'equal') {
       setParticipantValues({});
-      setSharedAmount('');
-      setSharedSplitEnabled(false);
+      setSharedExpenseItems([]);
     }
     setShowSplitDrawer(false);
   };
 
-  const toggleSharedSplit = () => {
-    if (sharedSplitEnabled) {
-      setSharedAmount('');
-    }
+  const addSharedExpenseItem = () => {
+    setSharedExpenseItems((current) => [...current, createSharedExpenseItem()]);
+  };
 
-    setSharedSplitEnabled(!sharedSplitEnabled);
+  const updateSharedExpenseItem = (
+    itemId: string,
+    patch: Partial<Pick<SharedExpenseItem, 'name' | 'amount'>>,
+  ) => {
+    setSharedExpenseItems((current) =>
+      current.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              ...patch,
+            }
+          : item,
+      ),
+    );
+  };
+
+  const removeSharedExpenseItem = (itemId: string) => {
+    setSharedExpenseItems((current) =>
+      current.filter((item) => item.id !== itemId),
+    );
   };
 
   const setCurrencyAndClose = (nextCurrency: string) => {
@@ -837,7 +909,7 @@ function RouteComponent() {
           ? 'exact'
           : splitMethod;
       const sharedSplit =
-        sharedSplitEnabled &&
+        sharedExpenseItems.length > 0 &&
         normalizedSharedAmount > 0 &&
         splitMethod !== 'equal'
           ? {
@@ -849,6 +921,15 @@ function RouteComponent() {
                   Number(participantValues[memberId] ?? '0'),
                 ]),
               ),
+              items: normalizedSharedExpenseItems
+                .filter(
+                  (item) =>
+                    item.name.trim().length > 0 && item.normalizedAmount > 0,
+                )
+                .map((item) => ({
+                  name: item.name.trim(),
+                  amount: item.normalizedAmount,
+                })),
             }
           : undefined;
 
@@ -1235,44 +1316,69 @@ function RouteComponent() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={toggleSharedSplit}
-                  className={`flex size-6 shrink-0 items-center justify-center rounded ${
-                    sharedSplitEnabled ? 'bg-rose-500' : 'bg-gray-300'
-                  }`}
-                  aria-pressed={sharedSplitEnabled}
-                  aria-label="Activar compartido por igual"
+                  onClick={addSharedExpenseItem}
+                  className="flex size-6 shrink-0 items-center justify-center rounded bg-rose-500"
+                  aria-label="Agregar gasto compartido"
                 >
-                  {sharedSplitEnabled ? (
-                    <Check className="size-4 text-white" />
-                  ) : (
-                    <Plus className="size-4 text-white" />
-                  )}
+                  <Plus className="size-4 text-white" />
                 </button>
 
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900">
-                    Compartido por igual
+                    Gasto compartido
                   </p>
                   <p className="text-xs text-gray-500">
                     Servicio, propina o algo para todos
                   </p>
                 </div>
-
-                {sharedSplitEnabled ? (
-                  <label className="flex h-10 min-w-0 max-w-[9rem] items-center gap-2 rounded-full border border-gray-200 px-3">
-                    <span className="text-xs font-medium text-gray-500">
-                      {getCurrencySymbol(currency)}
-                    </span>
-                    <input
-                      value={sharedAmount}
-                      onChange={(event) => setSharedAmount(event.target.value)}
-                      inputMode="decimal"
-                      placeholder="0"
-                      className="min-w-0 flex-1 bg-transparent text-right text-sm text-gray-900 outline-none placeholder:text-gray-400"
-                    />
-                  </label>
-                ) : null}
               </div>
+
+              {sharedExpenseItems.length > 0 ? (
+                <div className="mt-4 space-y-3">
+                  {sharedExpenseItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="grid grid-cols-[minmax(0,1fr)_7rem_2.5rem] items-center gap-2"
+                    >
+                      <input
+                        value={item.name}
+                        onChange={(event) =>
+                          updateSharedExpenseItem(item.id, {
+                            name: event.target.value,
+                          })
+                        }
+                        placeholder="Nombre del gasto compartido"
+                        className="h-11 rounded-full border border-gray-200 px-4 text-sm text-gray-900 outline-none placeholder:text-gray-400"
+                      />
+                      <input
+                        value={item.amount}
+                        onChange={(event) =>
+                          updateSharedExpenseItem(item.id, {
+                            amount: event.target.value,
+                          })
+                        }
+                        inputMode="decimal"
+                        placeholder="0"
+                        className="h-11 rounded-full border border-gray-200 px-4 text-right text-sm text-gray-900 outline-none placeholder:text-gray-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeSharedExpenseItem(item.id)}
+                        className="flex size-10 items-center justify-center rounded-full border border-gray-200 text-gray-500"
+                        aria-label="Eliminar gasto compartido"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {showSharedExpenseItemsError ? (
+                <p className="mt-3 text-xs font-medium text-red-600">
+                  Completa el nombre y valor de cada gasto compartido
+                </p>
+              ) : null}
 
               {normalizedSharedAmount > 0 && selectedCount > 0 ? (
                 <p className="mt-2 text-xs text-gray-500">

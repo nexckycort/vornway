@@ -511,10 +511,16 @@ export type GroupExpenseParticipant = {
   share: number;
 };
 
+export type GroupExpenseSharedSplitItem = {
+  name: string;
+  amount: number;
+};
+
 export type GroupExpenseSharedSplit = {
   amount: number;
   splitMethod: 'percentage' | 'exact';
   splitValues?: Record<string, number>;
+  items?: GroupExpenseSharedSplitItem[];
 };
 
 export type GroupExpenseDetailResult = {

@@ -29,6 +29,15 @@ export type ExpenseItem = {
   currentUserBalance: number | null;
   attachmentUrl: string | null;
   advancedDetails?: ExpenseAdvancedDetails | null;
+  sharedSplit?: {
+    amount: number;
+    splitMethod: 'percentage' | 'exact';
+    splitValues?: Record<string, number>;
+    items?: Array<{
+      name: string;
+      amount: number;
+    }>;
+  } | null;
   syncStatus?: 'pending';
 };
 

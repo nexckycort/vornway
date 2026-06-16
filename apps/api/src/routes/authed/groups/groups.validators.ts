@@ -87,6 +87,15 @@ const expenseSharedSplitSchema = z.object({
   amount: z.number().positive(),
   splitMethod: z.enum(['percentage', 'exact']),
   splitValues: z.record(z.string(), z.number().nonnegative()).optional(),
+  items: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(160),
+        amount: z.number().positive(),
+      }),
+    )
+    .min(1)
+    .optional(),
 });
 
 export const createGroupExpenseSchema = z

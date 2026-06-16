@@ -117,15 +117,30 @@ function sanitizeSharedSplit(
 ): GroupExpenseSharedSplit | null {
   if (!sharedSplit) return null;
 
-  const amount = Number(sharedSplit.amount);
-  if (!Number.isFinite(amount) || amount <= 0) return null;
-
   if (
     sharedSplit.splitMethod !== 'percentage' &&
     sharedSplit.splitMethod !== 'exact'
   ) {
     return null;
   }
+
+  const items = sharedSplit.items
+    ?.map((item) => ({
+      name: item.name.trim(),
+      amount: normalizeAmount(Number(item.amount)),
+    }))
+    .filter(
+      (item) =>
+        item.name.length > 0 && Number.isFinite(item.amount) && item.amount > 0,
+    );
+
+  const normalizedItems = items && items.length > 0 ? items : undefined;
+
+  const fallbackAmount = Number(sharedSplit.amount);
+  const amount = normalizedItems
+    ? normalizedItems.reduce((sum, item) => sum + item.amount, 0)
+    : fallbackAmount;
+  if (!Number.isFinite(amount) || amount <= 0) return null;
 
   const splitValues = sharedSplit.splitValues
     ? Object.fromEntries(
@@ -144,6 +159,7 @@ function sanitizeSharedSplit(
     ...(splitValues && Object.keys(splitValues).length > 0
       ? { splitValues }
       : {}),
+    ...(normalizedItems ? { items: normalizedItems } : {}),
   };
 }
 

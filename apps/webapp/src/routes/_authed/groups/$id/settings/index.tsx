@@ -23,6 +23,7 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer';
 import { Switch } from '#/components/ui/switch';
+import { useAuth } from '#/contexts/auth/use-auth';
 import {
   keepGroupFlowState,
   useGroupFlowNavigation,
@@ -42,6 +43,7 @@ export const Route = createFileRoute('/_authed/groups/$id/settings/')({
 function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { navigateToGroupRoot, returnTo } = useGroupFlowNavigation(id);
   const editFlowState = useMemo(
     () => keepGroupFlowState(returnTo, { groupEditReturn: 'history-back' }),
@@ -223,6 +225,8 @@ function RouteComponent() {
 
   const group = groupQuery.data;
   const isOwner = group.isOwner;
+  const canManageAdvancedExpenseDetails =
+    user?.email?.trim().toLowerCase() === 'junior110120@gmail.com';
 
   return (
     <MobilePageLayout title="Ajustes" onBack={goBack}>
@@ -348,29 +352,31 @@ function RouteComponent() {
             </span>
           </button>
 
-          <div className="flex w-full min-w-0 items-center gap-3 overflow-hidden px-1 py-2 text-left">
-            <span className="flex size-9 items-center justify-center text-[#132238]">
-              <Sparkles className="size-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm text-[#132238]">
-                Detalles avanzados de gastos
-              </p>
-              <p className="truncate text-xs text-[#94a3b8]">
-                Lugares, contactos, reservas y notas por gasto
-              </p>
+          {canManageAdvancedExpenseDetails ? (
+            <div className="flex w-full min-w-0 items-center gap-3 overflow-hidden px-1 py-2 text-left">
+              <span className="flex size-9 items-center justify-center text-[#132238]">
+                <Sparkles className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm text-[#132238]">
+                  Detalles avanzados de gastos
+                </p>
+                <p className="truncate text-xs text-[#94a3b8]">
+                  Lugares, contactos, reservas y notas por gasto
+                </p>
+              </div>
+              <Switch
+                checked={group.advancedExpenseDetailsEnabled}
+                disabled={updateSettingsMutation.isPending}
+                onCheckedChange={(checked) => {
+                  updateSettingsMutation.mutate({
+                    advancedExpenseDetailsEnabled: checked,
+                  });
+                }}
+                aria-label="Activar detalles avanzados de gastos"
+              />
             </div>
-            <Switch
-              checked={group.advancedExpenseDetailsEnabled}
-              disabled={updateSettingsMutation.isPending}
-              onCheckedChange={(checked) => {
-                updateSettingsMutation.mutate({
-                  advancedExpenseDetailsEnabled: checked,
-                });
-              }}
-              aria-label="Activar detalles avanzados de gastos"
-            />
-          </div>
+          ) : null}
         </section>
 
         <div className="-mx-4 mt-1 border-t border-[#e5e7eb] px-4 pt-4">

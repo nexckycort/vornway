@@ -20,6 +20,7 @@ import { Route as AuthedGoalsIndexRouteImport } from './routes/_authed/goals/ind
 import { Route as AuthedhomeIndexRouteImport } from './routes/_authed/(home)/index'
 import { Route as AuthedGroupsNewRouteImport } from './routes/_authed/groups/new'
 import { Route as AuthedProfileStatsIndexRouteImport } from './routes/_authed/profile/stats/index'
+import { Route as AuthedProfileFeedbackIndexRouteImport } from './routes/_authed/profile/feedback/index'
 import { Route as AuthedIInviteCodeIndexRouteImport } from './routes/_authed/i/$inviteCode/index'
 import { Route as AuthedGroupsNewIndexRouteImport } from './routes/_authed/groups/new/index'
 import { Route as AuthedGroupsIdIndexRouteImport } from './routes/_authed/groups/$id/index'
@@ -89,6 +90,12 @@ const AuthedProfileStatsIndexRoute = AuthedProfileStatsIndexRouteImport.update({
   path: '/profile/stats/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedProfileFeedbackIndexRoute =
+  AuthedProfileFeedbackIndexRouteImport.update({
+    id: '/profile/feedback/',
+    path: '/profile/feedback/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedIInviteCodeIndexRoute = AuthedIInviteCodeIndexRouteImport.update({
   id: '/i/$inviteCode/',
   path: '/i/$inviteCode/',
@@ -190,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/groups/$id/': typeof AuthedGroupsIdIndexRoute
   '/groups/new/': typeof AuthedGroupsNewIndexRoute
   '/i/$inviteCode/': typeof AuthedIInviteCodeIndexRoute
+  '/profile/feedback/': typeof AuthedProfileFeedbackIndexRoute
   '/profile/stats/': typeof AuthedProfileStatsIndexRoute
   '/groups/$id/expense/$expenseId': typeof AuthedGroupsIdExpenseExpenseIdRoute
   '/groups/$id/add-expense/': typeof AuthedGroupsIdAddExpenseIndexRoute
@@ -215,6 +223,7 @@ export interface FileRoutesByTo {
   '/groups/$id': typeof AuthedGroupsIdIndexRoute
   '/groups/new': typeof AuthedGroupsNewIndexRoute
   '/i/$inviteCode': typeof AuthedIInviteCodeIndexRoute
+  '/profile/feedback': typeof AuthedProfileFeedbackIndexRoute
   '/profile/stats': typeof AuthedProfileStatsIndexRoute
   '/groups/$id/expense/$expenseId': typeof AuthedGroupsIdExpenseExpenseIdRoute
   '/groups/$id/add-expense': typeof AuthedGroupsIdAddExpenseIndexRoute
@@ -244,6 +253,7 @@ export interface FileRoutesById {
   '/_authed/groups/$id/': typeof AuthedGroupsIdIndexRoute
   '/_authed/groups/new/': typeof AuthedGroupsNewIndexRoute
   '/_authed/i/$inviteCode/': typeof AuthedIInviteCodeIndexRoute
+  '/_authed/profile/feedback/': typeof AuthedProfileFeedbackIndexRoute
   '/_authed/profile/stats/': typeof AuthedProfileStatsIndexRoute
   '/_authed/groups/$id/expense/$expenseId': typeof AuthedGroupsIdExpenseExpenseIdRoute
   '/_authed/groups/$id/add-expense/': typeof AuthedGroupsIdAddExpenseIndexRoute
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/groups/$id/'
     | '/groups/new/'
     | '/i/$inviteCode/'
+    | '/profile/feedback/'
     | '/profile/stats/'
     | '/groups/$id/expense/$expenseId'
     | '/groups/$id/add-expense/'
@@ -297,6 +308,7 @@ export interface FileRouteTypes {
     | '/groups/$id'
     | '/groups/new'
     | '/i/$inviteCode'
+    | '/profile/feedback'
     | '/profile/stats'
     | '/groups/$id/expense/$expenseId'
     | '/groups/$id/add-expense'
@@ -325,6 +337,7 @@ export interface FileRouteTypes {
     | '/_authed/groups/$id/'
     | '/_authed/groups/new/'
     | '/_authed/i/$inviteCode/'
+    | '/_authed/profile/feedback/'
     | '/_authed/profile/stats/'
     | '/_authed/groups/$id/expense/$expenseId'
     | '/_authed/groups/$id/add-expense/'
@@ -417,6 +430,13 @@ declare module '@tanstack/react-router' {
       path: '/profile/stats'
       fullPath: '/profile/stats/'
       preLoaderRoute: typeof AuthedProfileStatsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/profile/feedback/': {
+      id: '/_authed/profile/feedback/'
+      path: '/profile/feedback'
+      fullPath: '/profile/feedback/'
+      preLoaderRoute: typeof AuthedProfileFeedbackIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/i/$inviteCode/': {
@@ -555,6 +575,7 @@ interface AuthedRouteChildren {
   AuthedGoalsNewIndexRoute: typeof AuthedGoalsNewIndexRoute
   AuthedGroupsIdIndexRoute: typeof AuthedGroupsIdIndexRoute
   AuthedIInviteCodeIndexRoute: typeof AuthedIInviteCodeIndexRoute
+  AuthedProfileFeedbackIndexRoute: typeof AuthedProfileFeedbackIndexRoute
   AuthedProfileStatsIndexRoute: typeof AuthedProfileStatsIndexRoute
   AuthedGroupsIdExpenseExpenseIdRoute: typeof AuthedGroupsIdExpenseExpenseIdRoute
   AuthedGroupsIdAddExpenseIndexRoute: typeof AuthedGroupsIdAddExpenseIndexRoute
@@ -579,6 +600,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedGoalsNewIndexRoute: AuthedGoalsNewIndexRoute,
   AuthedGroupsIdIndexRoute: AuthedGroupsIdIndexRoute,
   AuthedIInviteCodeIndexRoute: AuthedIInviteCodeIndexRoute,
+  AuthedProfileFeedbackIndexRoute: AuthedProfileFeedbackIndexRoute,
   AuthedProfileStatsIndexRoute: AuthedProfileStatsIndexRoute,
   AuthedGroupsIdExpenseExpenseIdRoute: AuthedGroupsIdExpenseExpenseIdRoute,
   AuthedGroupsIdAddExpenseIndexRoute: AuthedGroupsIdAddExpenseIndexRoute,

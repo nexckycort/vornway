@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
+  AlertCircle,
   BarChart3,
   Bell,
   CalendarClock,
@@ -9,6 +10,7 @@ import {
   Download,
   Languages,
   LaptopMinimal,
+  Lightbulb,
   LogOut,
   QrCode,
   Shield,
@@ -384,6 +386,28 @@ function RouteComponent() {
               title={t.security}
               subtitle={t.securitySubtitle}
               onClick={() => setShowSessionsDialog(true)}
+            />
+            <ProfileActionRow
+              icon={<AlertCircle className="size-5" />}
+              title="Reportar error"
+              subtitle="Algo no funcionó como esperabas"
+              onClick={() =>
+                void navigate({
+                  to: '/profile/feedback',
+                  search: { type: 'BUG' },
+                })
+              }
+            />
+            <ProfileActionRow
+              icon={<Lightbulb className="size-5" />}
+              title="Pedir funcionalidad"
+              subtitle="Comparte una mejora o idea nueva"
+              onClick={() =>
+                void navigate({
+                  to: '/profile/feedback',
+                  search: { type: 'FEATURE_REQUEST' },
+                })
+              }
             />
             {isStatsUser && (
               <ProfileActionRow

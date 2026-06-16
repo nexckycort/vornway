@@ -371,19 +371,21 @@ function RouteComponent() {
                 trailing={isInstallable ? t.common.install : t.common.manual}
               />
             ) : null}
-            <ProfileActionRow
-              icon={<Languages className="size-5" />}
-              title={t.language}
-              subtitle={languages[currentLocale]}
-              onClick={() => setShowLanguageDrawer(true)}
-            />
+            {isStatsUser && (
+              <ProfileActionRow
+                icon={<Languages className="size-5" />}
+                title={t.language}
+                subtitle={languages[currentLocale]}
+                onClick={() => setShowLanguageDrawer(true)}
+              />
+            )}
             <ProfileActionRow
               icon={<Shield className="size-5" />}
               title={t.security}
               subtitle={t.securitySubtitle}
               onClick={() => setShowSessionsDialog(true)}
             />
-            {isStatsUser ? (
+            {isStatsUser && (
               <ProfileActionRow
                 icon={<BarChart3 className="size-5" />}
                 title="Estadísticas"
@@ -395,7 +397,7 @@ function RouteComponent() {
                 }
                 trailing="Ver"
               />
-            ) : null}
+            )}
             <ProfileActionRow
               icon={<QrCode className="size-5" />}
               title={t.qrScanner}

@@ -632,20 +632,20 @@ function RouteComponent() {
   }, [participantIds, participantValues]);
 
   const splitIsValid =
-    selectedCount === 0 ||
-    (!sharedAmountExceedsTotal &&
-      (splitMethod === 'equal'
-        ? true
-        : splitMethod === 'percentage'
-          ? Math.abs(splitSum - 100) < 0.01 &&
-            participantIds.every(
-              (memberId) => Number(participantValues[memberId] ?? 0) > 0,
-            )
-          : Math.abs(splitSum + normalizedSharedAmount - normalizedAmount) <
-              0.01 &&
-            participantIds.every(
-              (memberId) => Number(participantValues[memberId] ?? 0) > 0,
-            )));
+    selectedCount > 0 &&
+    !sharedAmountExceedsTotal &&
+    (splitMethod === 'equal'
+      ? true
+      : splitMethod === 'percentage'
+        ? Math.abs(splitSum - 100) < 0.01 &&
+          participantIds.every(
+            (memberId) => Number(participantValues[memberId] ?? 0) > 0,
+          )
+        : Math.abs(splitSum + normalizedSharedAmount - normalizedAmount) <
+            0.01 &&
+          participantIds.every(
+            (memberId) => Number(participantValues[memberId] ?? 0) > 0,
+          ));
 
   const payerSum = useMemo(() => {
     return paidByIds.reduce((sum, memberId) => {
@@ -663,10 +663,12 @@ function RouteComponent() {
     description.trim().length > 0 &&
     normalizedAmount > 0 &&
     paidByIds.length > 0 &&
+    selectedCount > 0 &&
     splitIsValid &&
     payerSplitIsValid;
   const showDescriptionError =
     hasTriedSubmit && description.trim().length === 0;
+  const showParticipantsError = hasTriedSubmit && selectedCount === 0;
 
   const isPending = isEditMode
     ? updateExpenseMutation.isPending
@@ -1197,6 +1199,12 @@ function RouteComponent() {
             </button>
           </div>
 
+          {showParticipantsError ? (
+            <p className="mb-3 text-xs font-medium text-red-600">
+              Debes elegir al menos una persona con quien dividir el gasto
+            </p>
+          ) : null}
+
           <button
             type="button"
             onClick={toggleAllParticipants}
@@ -1353,19 +1361,6 @@ function RouteComponent() {
               );
             })}
           </div>
-
-          <button
-            type="button"
-            onClick={toggleAllParticipants}
-            className="mt-4 flex w-full items-center justify-center gap-2 py-3 text-gray-600"
-          >
-            <Plus className="size-4" />
-            <span className="text-sm">
-              {selectedCount === members.length && members.length > 0
-                ? 'Quitar participantes'
-                : 'Agregar participantes'}
-            </span>
-          </button>
         </section>
 
         {!splitIsValid && selectedCount > 0 ? (
@@ -1386,7 +1381,7 @@ function RouteComponent() {
 
         <p className="text-xs text-gray-500">
           {selectedCount === 0
-            ? 'Gasto personal'
+            ? 'Selecciona al menos una persona para dividir este gasto'
             : splitMethod === 'percentage'
               ? `${selectedCount} participantes · ${splitSum.toFixed(2)}% sobre ${formatMoney(currency, baseAmount)} · total ${formatMoney(currency, normalizedAmount)}`
               : `${selectedCount} participantes · ${formatMoney(currency, splitMethod === 'equal' ? normalizedAmount : splitSum + normalizedSharedAmount)} de ${formatMoney(currency, normalizedAmount)}`}

@@ -125,6 +125,56 @@ function getMemberMeta(
   return members?.find((member) => member.id === memberId) ?? null;
 }
 
+function getSharedParticipantAmount(input: {
+  sharedSplit: ExpenseItem['sharedSplit'];
+  participantId: string;
+  participantTotalShare: number;
+  participantCount: number;
+}) {
+  const {
+    sharedSplit,
+    participantId,
+    participantTotalShare,
+    participantCount,
+  } = input;
+  if (!sharedSplit || sharedSplit.amount <= 0 || participantCount <= 0) {
+    return {
+      directAmount: participantTotalShare,
+      sharedAmount: 0,
+    };
+  }
+
+  const equalSharedAmount = sharedSplit.amount / participantCount;
+
+  if (sharedSplit.splitMethod === 'exact') {
+    return {
+      directAmount: sharedSplit.splitValues?.[participantId] ?? 0,
+      sharedAmount: equalSharedAmount,
+    };
+  }
+
+  if (sharedSplit.splitMethod === 'percentage') {
+    const percentage = sharedSplit.splitValues?.[participantId];
+    if (typeof percentage === 'number') {
+      const baseAmount = Math.max(participantTotalShare - equalSharedAmount, 0);
+      const estimatedDirectFromPercentage =
+        percentage >= 0 && percentage <= 100
+          ? baseAmount
+          : participantTotalShare;
+
+      return {
+        directAmount: estimatedDirectFromPercentage,
+        sharedAmount: equalSharedAmount,
+      };
+    }
+  }
+
+  return {
+    directAmount: Math.max(participantTotalShare - equalSharedAmount, 0),
+    sharedAmount: equalSharedAmount,
+  };
+}
+
 function RouteComponent() {
   const { id, expenseId } = Route.useParams();
   const navigate = useNavigate();
@@ -329,6 +379,28 @@ function RouteComponent() {
                           participant.memberId,
                           groupSummaryQuery.data?.members,
                         );
+                        const {
+                          directAmount: directParticipantAmount,
+                          sharedAmount: sharedParticipantAmount,
+                        } = getSharedParticipantAmount({
+                          sharedSplit,
+                          participantId: participant.memberId,
+                          participantTotalShare: participant.share,
+                          participantCount: participants.length,
+                        });
+                        const participantBreakdown =
+                          sharedParticipantAmount > 0
+                            ? [
+                                `Gasto ${formatAmount(
+                                  expense.currency,
+                                  directParticipantAmount,
+                                )}`,
+                                `Compartido ${formatAmount(
+                                  expense.currency,
+                                  sharedParticipantAmount,
+                                )}`,
+                              ]
+                            : undefined;
 
                         return (
                           <MemberLine
@@ -339,6 +411,7 @@ function RouteComponent() {
                               expense.currency,
                               participant.share,
                             )}
+                            detail={participantBreakdown}
                           />
                         );
                       })}
@@ -516,10 +589,12 @@ function MemberLine({
   image,
   name,
   amount,
+  detail,
 }: {
   image: string | null;
   name: string;
   amount?: string;
+  detail?: string[];
 }) {
   return (
     <div className="flex items-center gap-3">
@@ -535,9 +610,23 @@ function MemberLine({
           {getInitials(name)}
         </span>
       )}
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#202124]">
-        {name}
-      </span>
+      <div className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium text-[#202124]">
+          {name}
+        </span>
+        {detail?.length ? (
+          <div className="mt-0.5 space-y-0.5 text-xs leading-4 text-[#64748b]">
+            {detail.map((line) => (
+              <span
+                key={line}
+                className="block break-words [overflow-wrap:anywhere]"
+              >
+                {line}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
       {amount ? (
         <span className="shrink-0 text-sm font-semibold text-[#202124]">
           {amount}

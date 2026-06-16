@@ -29,6 +29,7 @@ import { Route as AuthedGoalsIdIndexRouteImport } from './routes/_authed/goals/$
 import { Route as AuthedGroupsNewParticipantsRouteImport } from './routes/_authed/groups/new/participants'
 import { Route as AuthedGroupsIdSettleRouteImport } from './routes/_authed/groups/$id/settle'
 import { Route as AuthedGroupsIdParticipantsRouteImport } from './routes/_authed/groups/$id/participants'
+import { Route as AuthedProfileStatsFeedbackIndexRouteImport } from './routes/_authed/profile/stats/feedback/index'
 import { Route as AuthedGroupsIdSettingsIndexRouteImport } from './routes/_authed/groups/$id/settings/index'
 import { Route as AuthedGroupsIdReportsIndexRouteImport } from './routes/_authed/groups/$id/reports/index'
 import { Route as AuthedGroupsIdEditIndexRouteImport } from './routes/_authed/groups/$id/edit/index'
@@ -138,6 +139,12 @@ const AuthedGroupsIdParticipantsRoute =
     path: '/groups/$id/participants',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedProfileStatsFeedbackIndexRoute =
+  AuthedProfileStatsFeedbackIndexRouteImport.update({
+    id: '/profile/stats/feedback/',
+    path: '/profile/stats/feedback/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedGroupsIdSettingsIndexRoute =
   AuthedGroupsIdSettingsIndexRouteImport.update({
     id: '/groups/$id/settings/',
@@ -204,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/groups/$id/edit/': typeof AuthedGroupsIdEditIndexRoute
   '/groups/$id/reports/': typeof AuthedGroupsIdReportsIndexRoute
   '/groups/$id/settings/': typeof AuthedGroupsIdSettingsIndexRoute
+  '/profile/stats/feedback/': typeof AuthedProfileStatsFeedbackIndexRoute
   '/groups/$id/member/$memberId/': typeof AuthedGroupsIdMemberMemberIdIndexRoute
   '/groups/$id/settings/categories/': typeof AuthedGroupsIdSettingsCategoriesIndexRoute
 }
@@ -230,6 +238,7 @@ export interface FileRoutesByTo {
   '/groups/$id/edit': typeof AuthedGroupsIdEditIndexRoute
   '/groups/$id/reports': typeof AuthedGroupsIdReportsIndexRoute
   '/groups/$id/settings': typeof AuthedGroupsIdSettingsIndexRoute
+  '/profile/stats/feedback': typeof AuthedProfileStatsFeedbackIndexRoute
   '/groups/$id/member/$memberId': typeof AuthedGroupsIdMemberMemberIdIndexRoute
   '/groups/$id/settings/categories': typeof AuthedGroupsIdSettingsCategoriesIndexRoute
 }
@@ -260,6 +269,7 @@ export interface FileRoutesById {
   '/_authed/groups/$id/edit/': typeof AuthedGroupsIdEditIndexRoute
   '/_authed/groups/$id/reports/': typeof AuthedGroupsIdReportsIndexRoute
   '/_authed/groups/$id/settings/': typeof AuthedGroupsIdSettingsIndexRoute
+  '/_authed/profile/stats/feedback/': typeof AuthedProfileStatsFeedbackIndexRoute
   '/_authed/groups/$id/member/$memberId/': typeof AuthedGroupsIdMemberMemberIdIndexRoute
   '/_authed/groups/$id/settings/categories/': typeof AuthedGroupsIdSettingsCategoriesIndexRoute
 }
@@ -289,6 +299,7 @@ export interface FileRouteTypes {
     | '/groups/$id/edit/'
     | '/groups/$id/reports/'
     | '/groups/$id/settings/'
+    | '/profile/stats/feedback/'
     | '/groups/$id/member/$memberId/'
     | '/groups/$id/settings/categories/'
   fileRoutesByTo: FileRoutesByTo
@@ -315,6 +326,7 @@ export interface FileRouteTypes {
     | '/groups/$id/edit'
     | '/groups/$id/reports'
     | '/groups/$id/settings'
+    | '/profile/stats/feedback'
     | '/groups/$id/member/$memberId'
     | '/groups/$id/settings/categories'
   id:
@@ -344,6 +356,7 @@ export interface FileRouteTypes {
     | '/_authed/groups/$id/edit/'
     | '/_authed/groups/$id/reports/'
     | '/_authed/groups/$id/settings/'
+    | '/_authed/profile/stats/feedback/'
     | '/_authed/groups/$id/member/$memberId/'
     | '/_authed/groups/$id/settings/categories/'
   fileRoutesById: FileRoutesById
@@ -495,6 +508,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedGroupsIdParticipantsRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/profile/stats/feedback/': {
+      id: '/_authed/profile/stats/feedback/'
+      path: '/profile/stats/feedback'
+      fullPath: '/profile/stats/feedback/'
+      preLoaderRoute: typeof AuthedProfileStatsFeedbackIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/groups/$id/settings/': {
       id: '/_authed/groups/$id/settings/'
       path: '/groups/$id/settings'
@@ -582,6 +602,7 @@ interface AuthedRouteChildren {
   AuthedGroupsIdEditIndexRoute: typeof AuthedGroupsIdEditIndexRoute
   AuthedGroupsIdReportsIndexRoute: typeof AuthedGroupsIdReportsIndexRoute
   AuthedGroupsIdSettingsIndexRoute: typeof AuthedGroupsIdSettingsIndexRoute
+  AuthedProfileStatsFeedbackIndexRoute: typeof AuthedProfileStatsFeedbackIndexRoute
   AuthedGroupsIdMemberMemberIdIndexRoute: typeof AuthedGroupsIdMemberMemberIdIndexRoute
   AuthedGroupsIdSettingsCategoriesIndexRoute: typeof AuthedGroupsIdSettingsCategoriesIndexRoute
 }
@@ -607,6 +628,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedGroupsIdEditIndexRoute: AuthedGroupsIdEditIndexRoute,
   AuthedGroupsIdReportsIndexRoute: AuthedGroupsIdReportsIndexRoute,
   AuthedGroupsIdSettingsIndexRoute: AuthedGroupsIdSettingsIndexRoute,
+  AuthedProfileStatsFeedbackIndexRoute: AuthedProfileStatsFeedbackIndexRoute,
   AuthedGroupsIdMemberMemberIdIndexRoute:
     AuthedGroupsIdMemberMemberIdIndexRoute,
   AuthedGroupsIdSettingsCategoriesIndexRoute:

@@ -1,6 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, BarChart3, FolderKanban, Users } from 'lucide-react';
+import {
+  ArrowLeft,
+  BarChart3,
+  FolderKanban,
+  MessageSquareWarning,
+  Users,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { Button } from '#/components/ui/button';
@@ -140,6 +146,29 @@ function RouteComponent() {
               />
             </div>
           ) : null}
+        </section>
+
+        <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-lg font-semibold text-[#0f172a]">Feedback</p>
+              <p className="mt-1 text-sm leading-6 text-[#64748b]">
+                Revisa bugs y solicitudes de funcionalidad reportadas por los
+                usuarios.
+              </p>
+            </div>
+            <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <MessageSquareWarning className="size-5" />
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            className="mt-4 h-12 w-full rounded-full"
+            onClick={() => navigate({ to: '/profile/stats/feedback' })}
+          >
+            Abrir bandeja de feedback
+          </Button>
         </section>
       </div>
     </main>

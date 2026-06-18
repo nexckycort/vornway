@@ -221,6 +221,7 @@
       "categoryNoExpensesCopy": "Prueba con otro rango o revisa otra moneda.",
       "categoryExpensesCount": "{count} gastos en esta categoría",
       "categoryShareOfGroup": "{percent} del total del grupo",
+      "dates": "Fechas",
       "withoutCategory": "Sin categoría",
       "balanceInCurrency": "Balance en {currency}",
       "peopleCount": "{count} personas",

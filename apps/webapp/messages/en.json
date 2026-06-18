@@ -221,6 +221,7 @@
       "categoryNoExpensesCopy": "Try another date range or review a different currency.",
       "categoryExpensesCount": "{count} expenses in this category",
       "categoryShareOfGroup": "{percent} of the group total",
+      "dates": "Dates",
       "withoutCategory": "Uncategorized",
       "balanceInCurrency": "Balance in {currency}",
       "peopleCount": "{count} people",

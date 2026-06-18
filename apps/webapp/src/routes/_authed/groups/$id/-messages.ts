@@ -104,6 +104,7 @@ export function getGroupDetailMessages() {
         m['groups.reports.categoryExpensesCount']({ count }),
       categoryShareOfGroup: (percent: string) =>
         m['groups.reports.categoryShareOfGroup']({ percent }),
+      dates: m['groups.reports.dates'](),
       withoutCategory: m['groups.reports.withoutCategory'](),
       balanceInCurrency: (currency: string) =>
         m['groups.reports.balanceInCurrency']({ currency }),

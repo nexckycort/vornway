@@ -1,8 +1,9 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueries } from '@tanstack/react-query';
 
 import { client, type InferResponseType } from '#/lib/hc';
 
 const PAGE_LIMIT = 20;
+const MULTI_MEMBER_LIMIT = 100;
 const groupMemberExpensesEndpoint =
   client.api.groups[':id'].members[':memberId'].expenses.$get;
 
@@ -27,16 +28,19 @@ type GroupMemberExpensesPageSuccess = GroupMemberExpensesPageBase & {
   };
 };
 
+type GroupMemberExpensesFilter = {
+  categoryId?: string;
+  uncategorized?: boolean;
+  paidOnly?: boolean;
+  startDate?: string;
+  endDate?: string;
+  enabled?: boolean;
+};
+
 export function useGroupMemberExpensesInfiniteQuery(
   groupId: string,
-  memberId: string,
-  filter?: {
-    categoryId?: string;
-    uncategorized?: boolean;
-    paidOnly?: boolean;
-    startDate?: string;
-    endDate?: string;
-  },
+  memberId: string | undefined,
+  filter?: GroupMemberExpensesFilter,
 ) {
   return useInfiniteQuery({
     queryKey: [
@@ -49,8 +53,13 @@ export function useGroupMemberExpensesInfiniteQuery(
       filter?.startDate ?? null,
       filter?.endDate ?? null,
     ],
+    enabled: Boolean(memberId) && (filter?.enabled ?? true),
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
+      if (!memberId) {
+        throw new Error('Participante no encontrado');
+      }
+
       const response = await groupMemberExpensesEndpoint({
         param: { id: groupId, memberId },
         query: {
@@ -71,5 +80,48 @@ export function useGroupMemberExpensesInfiniteQuery(
       return (await response.json()) as GroupMemberExpensesPageSuccess;
     },
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor,
+  });
+}
+
+export function useGroupMemberExpensesByMembersQuery(
+  groupId: string,
+  memberIds: string[],
+  filter?: GroupMemberExpensesFilter,
+) {
+  const stableMemberIds = Array.from(new Set(memberIds)).sort();
+
+  return useQueries({
+    queries: stableMemberIds.map((memberId) => ({
+      queryKey: [
+        'group-member-expenses-list',
+        groupId,
+        memberId,
+        filter?.categoryId ?? null,
+        filter?.uncategorized ?? false,
+        filter?.paidOnly ?? false,
+        filter?.startDate ?? null,
+        filter?.endDate ?? null,
+      ],
+      enabled: filter?.enabled ?? true,
+      queryFn: async () => {
+        const response = await groupMemberExpensesEndpoint({
+          param: { id: groupId, memberId },
+          query: {
+            limit: String(MULTI_MEMBER_LIMIT),
+            ...(filter?.categoryId ? { categoryId: filter.categoryId } : {}),
+            ...(filter?.uncategorized ? { uncategorized: 'true' } : {}),
+            ...(filter?.paidOnly ? { paidOnly: 'true' } : {}),
+            ...(filter?.startDate ? { startDate: filter.startDate } : {}),
+            ...(filter?.endDate ? { endDate: filter.endDate } : {}),
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('No se pudieron cargar los gastos del participante');
+        }
+
+        return (await response.json()) as GroupMemberExpensesPageSuccess;
+      },
+    })),
   });
 }

@@ -1,16 +1,23 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ChevronRight } from 'lucide-react';
-import { useEffect, useMemo, useRef } from 'react';
+import { Check, ChevronDown, ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { MobilePageLayout } from '#/components/mobile-page-layout';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
-import { formatCurrency, formatLongDate } from '#/lib/i18n';
+import { formatCurrency, formatLongDate, formatShortDate } from '#/lib/i18n';
 import {
   useGroupExpensesInfiniteQuery,
   useGroupReportsSharesQuery,
   useGroupReportsTotalsQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { useGroupMemberExpensesByMembersQuery } from '#/routes/_authed/groups/-hooks/use-group-member-expenses-query';
 import { CategoryIcon } from '#/routes/_authed/groups/$id/-components/category-icon';
 import {
   getExpenseEmoji,
@@ -95,7 +102,14 @@ function RouteComponent() {
     },
     true,
   );
-  const expensesQuery = useGroupExpensesInfiniteQuery(id);
+  const groupExpensesQuery = useGroupExpensesInfiniteQuery(id);
+  const [selectedParticipantIds, setSelectedParticipantIds] = useState<
+    string[]
+  >([]);
+  const [hasInitializedParticipants, setHasInitializedParticipants] =
+    useState(false);
+  const [isParticipantsDrawerOpen, setIsParticipantsDrawerOpen] =
+    useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const category = useMemo(() => {
@@ -139,21 +153,64 @@ function RouteComponent() {
         }),
     [categoryKey, currency, sharesQuery.data?.memberShares],
   );
+  const allParticipantIds = useMemo(
+    () => participantShares.map((member) => member.memberId),
+    [participantShares],
+  );
+  const isAllParticipantsSelected =
+    allParticipantIds.length > 0 &&
+    selectedParticipantIds.length === allParticipantIds.length;
+  const isParticipantFilterActive =
+    selectedParticipantIds.length > 0 &&
+    selectedParticipantIds.length < allParticipantIds.length;
+  const selectedMemberExpensesQueries = useGroupMemberExpensesByMembersQuery(
+    id,
+    selectedParticipantIds,
+    {
+      categoryId: categoryId ?? undefined,
+      uncategorized,
+      paidOnly: false,
+      startDate,
+      endDate,
+      enabled: isParticipantFilterActive,
+    },
+  );
 
-  const filteredExpenses = useMemo(() => {
+  const selectedParticipants = useMemo(
+    () =>
+      participantShares.filter((member) =>
+        selectedParticipantIds.includes(member.memberId),
+      ),
+    [participantShares, selectedParticipantIds],
+  );
+
+  useEffect(() => {
+    if (hasInitializedParticipants || allParticipantIds.length === 0) return;
+
+    setSelectedParticipantIds(allParticipantIds);
+    setHasInitializedParticipants(true);
+  }, [allParticipantIds, hasInitializedParticipants]);
+
+  useEffect(() => {
+    setSelectedParticipantIds((current) =>
+      current.filter((memberId) =>
+        participantShares.some((member) => member.memberId === memberId),
+      ),
+    );
+  }, [participantShares]);
+
+  const baseFilteredExpenses = useMemo(() => {
     const expenses =
-      expensesQuery.data?.pages.flatMap((page) => page.data) ?? [];
+      groupExpensesQuery.data?.pages.flatMap((page) => page.data) ?? [];
 
     return expenses.filter((expense) => {
       if (expense.currency !== currency) return false;
-      if (startDate && new Date(expense.date) < new Date(startDate))
+      if (startDate && new Date(expense.date) < new Date(startDate)) {
         return false;
+      }
       if (endDate && new Date(expense.date) > new Date(endDate)) return false;
 
-      if (uncategorized) {
-        return expense.category == null;
-      }
-
+      if (uncategorized) return expense.category == null;
       if (!categoryId) return expense.category?.name === categoryName;
       return expense.category?.id === categoryId;
     });
@@ -162,10 +219,57 @@ function RouteComponent() {
     categoryName,
     currency,
     endDate,
-    expensesQuery.data?.pages,
+    groupExpensesQuery.data?.pages,
     startDate,
     uncategorized,
   ]);
+
+  const selectedParticipantExpenses = useMemo(() => {
+    if (!isParticipantFilterActive) return [];
+
+    const expenseMap = new Map<string, ExpenseItem>();
+
+    for (const query of selectedMemberExpensesQueries) {
+      for (const expense of query.data?.data ?? []) {
+        if (expense.currency !== currency) continue;
+        expenseMap.set(expense.id, expense as ExpenseItem);
+      }
+    }
+
+    return Array.from(expenseMap.values()).sort((left, right) => {
+      const leftDate = new Date(left.date).getTime();
+      const rightDate = new Date(right.date).getTime();
+      return rightDate - leftDate;
+    });
+  }, [currency, isParticipantFilterActive, selectedMemberExpensesQueries]);
+
+  const filteredExpenses = isParticipantFilterActive
+    ? selectedParticipantExpenses
+    : baseFilteredExpenses;
+  const historyExpenseCount = useMemo(() => {
+    if (!isParticipantFilterActive) {
+      return category?.expenseCount ?? filteredExpenses.length;
+    }
+
+    if (selectedParticipantIds.length === 1) {
+      return (
+        selectedMemberExpensesQueries[0]?.data?.pagination.total ??
+        filteredExpenses.length
+      );
+    }
+
+    return filteredExpenses.length;
+  }, [
+    category?.expenseCount,
+    filteredExpenses.length,
+    isParticipantFilterActive,
+    selectedMemberExpensesQueries,
+    selectedParticipantIds.length,
+  ]);
+
+  const visibleParticipantShares = isParticipantFilterActive
+    ? selectedParticipants
+    : participantShares;
 
   const groupedExpenses = useMemo(() => {
     const groups = new Map<string, ExpenseItem[]>();
@@ -183,12 +287,24 @@ function RouteComponent() {
     }));
   }, [filteredExpenses]);
 
-  const hasNextPageRef = useRef(expensesQuery.hasNextPage);
-  const isFetchingRef = useRef(expensesQuery.isFetching);
-  const fetchNextPageRef = useRef(expensesQuery.fetchNextPage);
-  hasNextPageRef.current = expensesQuery.hasNextPage;
-  isFetchingRef.current = expensesQuery.isFetching;
-  fetchNextPageRef.current = expensesQuery.fetchNextPage;
+  const activeHistoryLoading = isParticipantFilterActive
+    ? selectedMemberExpensesQueries.some(
+        (query) => query.isLoading || (query.isFetching && !query.data),
+      )
+    : groupExpensesQuery.isLoading;
+  const activeHistoryFetchingNextPage = isParticipantFilterActive
+    ? false
+    : groupExpensesQuery.isFetchingNextPage;
+  const hasNextPageRef = useRef(groupExpensesQuery.hasNextPage);
+  const isFetchingRef = useRef(groupExpensesQuery.isFetching);
+  const fetchNextPageRef = useRef(groupExpensesQuery.fetchNextPage);
+  hasNextPageRef.current = isParticipantFilterActive
+    ? false
+    : groupExpensesQuery.hasNextPage;
+  isFetchingRef.current = isParticipantFilterActive
+    ? false
+    : groupExpensesQuery.isFetching;
+  fetchNextPageRef.current = groupExpensesQuery.fetchNextPage;
 
   useEffect(() => {
     const node = loadMoreRef.current;
@@ -229,6 +345,18 @@ function RouteComponent() {
     });
   };
 
+  const participantFilterLabel = !isParticipantFilterActive
+    ? t.reports.participants
+    : selectedParticipants.length === 1
+      ? (selectedParticipants[0]?.name ?? t.reports.participants)
+      : `${selectedParticipants.length} ${t.reports.participants.toLowerCase()}`;
+  const dateFilterLabel =
+    startDate && endDate
+      ? `${formatShortDate(startDate)} - ${formatShortDate(endDate)}`
+      : startDate || endDate
+        ? formatShortDate(startDate ?? endDate ?? '')
+        : t.reports.dates;
+
   return (
     <MobilePageLayout title={t.reports.categoryDetailTitle} onBack={handleBack}>
       <div className="flex flex-1 flex-col gap-4 pb-8">
@@ -256,9 +384,7 @@ function RouteComponent() {
                 {resolvedCategoryName}
               </p>
               <p className="mt-1 text-sm text-white/65">
-                {t.reports.categoryExpensesCount(
-                  category?.expenseCount ?? filteredExpenses.length,
-                )}
+                {t.reports.categoryExpensesCount(historyExpenseCount)}
               </p>
             </div>
           </div>
@@ -285,21 +411,28 @@ function RouteComponent() {
           </div>
         </section>
 
-        <section className="flex flex-wrap gap-2">
-          <span className="inline-flex rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-xs font-medium text-[#334155]">
-            {currency}
+        <section className="flex min-w-0 gap-2 pb-1">
+          <button
+            type="button"
+            onClick={() => setIsParticipantsDrawerOpen(true)}
+            className="inline-flex min-w-0 flex-1 items-center gap-1 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-sm font-medium text-[#4c4c4c] shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+          >
+            <span className="max-w-[144px] truncate">
+              {participantFilterLabel}
+            </span>
+            <ChevronDown className="size-3.5 shrink-0 text-[#71717a]" />
+          </button>
+
+          <span className="inline-flex min-w-0 flex-1 items-center gap-1 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-sm font-medium text-[#4c4c4c] shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <span className="truncate">{dateFilterLabel}</span>
+            <ChevronDown className="size-3.5 shrink-0 text-[#71717a]" />
           </span>
-          {startDate || endDate ? (
-            <span className="inline-flex rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-xs font-medium text-[#334155]">
-              {startDate && endDate
-                ? `${formatLongDate(startDate)} - ${formatLongDate(endDate)}`
-                : formatLongDate(startDate ?? endDate ?? '')}
-            </span>
-          ) : (
-            <span className="inline-flex rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-xs font-medium text-[#334155]">
-              {t.reports.rangeAll}
-            </span>
-          )}
+
+          <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-sm font-medium text-[#4c4c4c] shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <span className="text-sm leading-none">🇨🇴</span>
+            <span>{currency}</span>
+            <ChevronDown className="size-3.5 shrink-0 text-[#71717a]" />
+          </span>
         </section>
 
         <section className="rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
@@ -309,18 +442,18 @@ function RouteComponent() {
                 {t.reports.participants}
               </h2>
               <p className="mt-1 text-xs text-[#64748b]">
-                {t.reports.peopleCount(participantShares.length)}
+                {t.reports.peopleCount(visibleParticipantShares.length)}
               </p>
             </div>
           </div>
 
-          {participantShares.length === 0 ? (
+          {visibleParticipantShares.length === 0 ? (
             <p className="rounded-2xl bg-[#f8fafc] px-4 py-4 text-sm text-[#64748b]">
               {t.reports.categoryNoParticipants}
             </p>
           ) : (
             <div className="space-y-3">
-              {participantShares.map((member) => {
+              {visibleParticipantShares.map((member) => {
                 const memberIdentity = groupQuery.data?.members.find(
                   (item) => item.id === member.memberId,
                 );
@@ -373,11 +506,22 @@ function RouteComponent() {
               {t.reports.categoryHistory}
             </h2>
             <p className="mt-1 text-xs text-[#64748b]">
-              {t.reports.categoryExpensesCount(filteredExpenses.length)}
+              {t.reports.categoryExpensesCount(historyExpenseCount)}
             </p>
           </div>
 
-          {filteredExpenses.length === 0 ? (
+          {activeHistoryLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-[76px] animate-pulse rounded-2xl bg-[#f1f5f9]"
+                />
+              ))}
+            </div>
+          ) : null}
+
+          {!activeHistoryLoading && filteredExpenses.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[#e2e8f0] bg-[#fafafa] px-5 py-12 text-center">
               <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-[#f3f4f6] text-xl">
                 💸
@@ -389,7 +533,9 @@ function RouteComponent() {
                 {t.reports.categoryNoExpensesCopy}
               </p>
             </div>
-          ) : (
+          ) : null}
+
+          {!activeHistoryLoading ? (
             <div className="space-y-5">
               {groupedExpenses.map((group) => (
                 <div key={group.label}>
@@ -455,11 +601,98 @@ function RouteComponent() {
                 </div>
               ))}
             </div>
-          )}
+          ) : null}
 
           <div ref={loadMoreRef} className="h-8" />
+
+          {activeHistoryFetchingNextPage ? (
+            <p className="mt-2 text-center text-sm text-[#64748b]">
+              Cargando más…
+            </p>
+          ) : null}
         </section>
       </div>
+
+      <Drawer
+        open={isParticipantsDrawerOpen}
+        onOpenChange={setIsParticipantsDrawerOpen}
+      >
+        <DrawerContent className="max-h-[80vh] gap-0 overflow-hidden p-0">
+          <DrawerHeader className="pb-3 text-left">
+            <DrawerTitle>{t.reports.participants}</DrawerTitle>
+          </DrawerHeader>
+
+          <div className="overflow-y-auto px-4 pb-6">
+            {participantShares.map((member) => {
+              const memberIdentity = groupQuery.data?.members.find(
+                (item) => item.id === member.memberId,
+              );
+
+              return (
+                <button
+                  type="button"
+                  key={member.memberId}
+                  onClick={() => {
+                    setSelectedParticipantIds((current) =>
+                      isAllParticipantsSelected
+                        ? allParticipantIds.filter(
+                            (id) => id !== member.memberId,
+                          )
+                        : current.includes(member.memberId)
+                          ? current.length === 1
+                            ? current
+                            : current.filter((id) => id !== member.memberId)
+                          : [...current, member.memberId],
+                    );
+                  }}
+                  className="flex w-full items-center gap-3 py-3 text-left"
+                >
+                  {memberIdentity?.image ? (
+                    <img
+                      src={memberIdentity.image}
+                      alt={member.name}
+                      className="size-[18px] shrink-0 rounded-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-[#ebebeb] text-[7.5px] font-medium text-[#1e1e1e]">
+                      {getInitials(member.name)}
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm text-[#1e1e1e]">
+                      {member.name}
+                    </p>
+                  </div>
+
+                  <CheckboxMark
+                    checked={
+                      isAllParticipantsSelected ||
+                      selectedParticipantIds.includes(member.memberId)
+                    }
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </DrawerContent>
+      </Drawer>
     </MobilePageLayout>
+  );
+}
+
+function CheckboxMark({ checked }: { checked: boolean }) {
+  return (
+    <span
+      className={[
+        'flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors',
+        checked
+          ? 'border-[#de034d] bg-[#de034d] text-white'
+          : 'border-[#d4d4d8] bg-white text-transparent',
+      ].join(' ')}
+    >
+      <Check className="size-3.5" strokeWidth={3} />
+    </span>
   );
 }

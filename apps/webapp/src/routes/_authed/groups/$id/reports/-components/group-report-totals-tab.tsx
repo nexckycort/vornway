@@ -125,6 +125,15 @@ export function GroupReportTotalsTab({
     useState<PendingDrawerMode>(null);
   const [rangeCalendarMonths, setRangeCalendarMonths] = useState(1);
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const compactDateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat('es-CO', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+      }),
+    [],
+  );
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(min-width: 640px)');
@@ -155,31 +164,21 @@ export function GroupReportTotalsTab({
   const selectedDayLabel = useMemo(
     () =>
       selectedDay
-        ? selectedDay.toLocaleDateString('es-CO', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })
+        ? compactDateFormatter.format(selectedDay)
         : 'Selecciona una fecha',
-    [selectedDay],
+    [compactDateFormatter, selectedDay],
   );
   const selectedRangeLabel = useMemo(() => {
     if (!selectedRange?.from) return 'Selecciona un rango';
 
-    const from = selectedRange.from.toLocaleDateString('es-CO', {
-      day: 'numeric',
-      month: 'short',
-    });
+    const from = compactDateFormatter.format(selectedRange.from);
 
     if (!selectedRange.to) return `${from} - ...`;
 
-    const to = selectedRange.to.toLocaleDateString('es-CO', {
-      day: 'numeric',
-      month: 'short',
-    });
+    const to = compactDateFormatter.format(selectedRange.to);
 
     return `${from} - ${to}`;
-  }, [selectedRange]);
+  }, [compactDateFormatter, selectedRange]);
   const selectedPeriodLabel = useMemo(() => {
     if (dateFilterMode === 'day') return selectedDayLabel;
     if (dateFilterMode === 'range') return selectedRangeLabel;
@@ -379,6 +378,32 @@ export function GroupReportTotalsTab({
         </DrawerContent>
       </Drawer>
 
+      <section className="mt-4 grid grid-cols-2 gap-3">
+        <div className="min-w-0 rounded-[24px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+          <p className="text-xs font-medium text-[#64748b]">
+            {t.reports.totalGroup}
+          </p>
+          {reportsTotalsLoading ? (
+            <p className="mt-1 break-all text-xl font-semibold leading-tight text-[#132238] sm:text-2xl">
+              …
+            </p>
+          ) : (
+            <p className="mt-1 break-all text-xl font-semibold leading-tight text-[#132238] sm:text-2xl">
+              {formatMoney(selectedCurrency, categoryTotal)}
+            </p>
+          )}
+        </div>
+
+        <div className="min-w-0 rounded-[24px] bg-[#111111] p-4 text-white shadow-[0_8px_24px_rgba(15,23,42,0.14)]">
+          <p className="text-xs font-medium text-white/70">
+            {t.reports.yourShare}
+          </p>
+          <p className="mt-1 break-all text-xl font-semibold leading-tight sm:text-2xl">
+            {formatMoney(selectedCurrency, currentUserSpent)}
+          </p>
+        </div>
+      </section>
+
       <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
         <div className="flex items-center justify-center">
           {reportsTotalsLoading ? (
@@ -468,32 +493,6 @@ export function GroupReportTotalsTab({
               </span>
             </button>
           ))}
-        </div>
-      </section>
-
-      <section className="mt-4 grid grid-cols-2 gap-3">
-        <div className="min-w-0 rounded-[24px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
-          <p className="text-xs font-medium text-[#64748b]">
-            {t.reports.totalGroup}
-          </p>
-          {reportsTotalsLoading ? (
-            <p className="mt-1 break-all text-xl font-semibold leading-tight text-[#132238] sm:text-2xl">
-              …
-            </p>
-          ) : (
-            <p className="mt-1 break-all text-xl font-semibold leading-tight text-[#132238] sm:text-2xl">
-              {formatMoney(selectedCurrency, categoryTotal)}
-            </p>
-          )}
-        </div>
-
-        <div className="min-w-0 rounded-[24px] bg-[#111111] p-4 text-white shadow-[0_8px_24px_rgba(15,23,42,0.14)]">
-          <p className="text-xs font-medium text-white/70">
-            {t.reports.yourShare}
-          </p>
-          <p className="mt-1 break-all text-xl font-semibold leading-tight sm:text-2xl">
-            {formatMoney(selectedCurrency, currentUserSpent)}
-          </p>
         </div>
       </section>
 

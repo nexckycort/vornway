@@ -1,16 +1,29 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { DateRange } from 'react-day-picker';
 
 import { MobilePageLayout } from '#/components/mobile-page-layout';
+import { Button } from '#/components/ui/button';
+import { Calendar } from '#/components/ui/calendar';
 import {
   Drawer,
   DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '#/components/ui/dropdown-menu';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
-import { formatCurrency, formatLongDate, formatShortDate } from '#/lib/i18n';
+import { formatCurrency, formatLongDate } from '#/lib/i18n';
 import {
   useGroupExpensesInfiniteQuery,
   useGroupReportsSharesQuery,
@@ -25,6 +38,9 @@ import {
 } from '#/routes/_authed/groups/$id/-components/group-detail.utils';
 import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import type { ExpenseItem } from '#/routes/_authed/groups/$id/-types/group-detail.types';
+
+type ReportDateFilterMode = 'all' | 'day' | 'range';
+type PendingDrawerMode = Exclude<ReportDateFilterMode, 'all'> | null;
 
 export const Route = createFileRoute('/_authed/groups/$id/reports/category/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -66,6 +82,39 @@ export const Route = createFileRoute('/_authed/groups/$id/reports/category/')({
   }),
   component: RouteComponent,
 });
+
+function toDayBoundaryIso(
+  value: Date,
+  boundary: 'start' | 'end',
+): string | undefined {
+  const year = value.getFullYear();
+  const month = value.getMonth();
+  const day = value.getDate();
+
+  const date =
+    boundary === 'start'
+      ? new Date(year, month, day, 0, 0, 0, 0)
+      : new Date(year, month, day, 23, 59, 59, 999);
+
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
+function parseSearchDate(value: string | undefined) {
+  if (!value) return undefined;
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function isSameCalendarDay(left: Date | undefined, right: Date | undefined) {
+  if (!left || !right) return false;
+
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+}
 
 function RouteComponent() {
   const { id } = Route.useParams();
@@ -110,7 +159,24 @@ function RouteComponent() {
     useState(false);
   const [isParticipantsDrawerOpen, setIsParticipantsDrawerOpen] =
     useState(false);
+  const [isDateMenuOpen, setIsDateMenuOpen] = useState(false);
+  const [isDayDrawerOpen, setIsDayDrawerOpen] = useState(false);
+  const [isRangeDrawerOpen, setIsRangeDrawerOpen] = useState(false);
+  const [pendingDrawerMode, setPendingDrawerMode] =
+    useState<PendingDrawerMode>(null);
+  const [rangeCalendarMonths, setRangeCalendarMonths] = useState(1);
+  const [draftRange, setDraftRange] = useState<DateRange | undefined>();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const compactDateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat('es-CO', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+      }),
+    [],
+  );
 
   const category = useMemo(() => {
     if (!categoryKey) return null;
@@ -132,6 +198,25 @@ function RouteComponent() {
     (uncategorized ? t.reports.withoutCategory : t.reports.categoryDetailTitle);
   const resolvedCategoryIcon = category?.icon ?? categoryIcon ?? null;
   const resolvedCategoryColor = category?.fill ?? categoryColor ?? '#14b8a6';
+  const selectedStartDate = useMemo(
+    () => parseSearchDate(startDate),
+    [startDate],
+  );
+  const selectedEndDate = useMemo(() => parseSearchDate(endDate), [endDate]);
+  const dateFilterMode: ReportDateFilterMode =
+    selectedStartDate && selectedEndDate
+      ? isSameCalendarDay(selectedStartDate, selectedEndDate)
+        ? 'day'
+        : 'range'
+      : 'all';
+  const selectedDay = dateFilterMode === 'day' ? selectedStartDate : undefined;
+  const selectedRange =
+    dateFilterMode === 'range'
+      ? {
+          from: selectedStartDate,
+          to: selectedEndDate,
+        }
+      : undefined;
 
   const participantShares = useMemo(
     () =>
@@ -198,6 +283,33 @@ function RouteComponent() {
       ),
     );
   }, [participantShares]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 640px)');
+    const syncMonths = () => {
+      setRangeCalendarMonths(mediaQuery.matches ? 2 : 1);
+    };
+
+    syncMonths();
+    mediaQuery.addEventListener('change', syncMonths);
+
+    return () => {
+      mediaQuery.removeEventListener('change', syncMonths);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isDateMenuOpen || pendingDrawerMode == null) return;
+
+    if (pendingDrawerMode === 'day') {
+      setIsDayDrawerOpen(true);
+    } else {
+      setDraftRange(selectedRange);
+      setIsRangeDrawerOpen(true);
+    }
+
+    setPendingDrawerMode(null);
+  }, [isDateMenuOpen, pendingDrawerMode, selectedRange]);
 
   const baseFilteredExpenses = useMemo(() => {
     const expenses =
@@ -350,12 +462,88 @@ function RouteComponent() {
     : selectedParticipants.length === 1
       ? (selectedParticipants[0]?.name ?? t.reports.participants)
       : `${selectedParticipants.length} ${t.reports.participants.toLowerCase()}`;
-  const dateFilterLabel =
-    startDate && endDate
-      ? `${formatShortDate(startDate)} - ${formatShortDate(endDate)}`
-      : startDate || endDate
-        ? formatShortDate(startDate ?? endDate ?? '')
-        : t.reports.dates;
+  const dateFilterLabel = useMemo(() => {
+    if (dateFilterMode === 'day' && selectedDay) {
+      return compactDateFormatter.format(selectedDay);
+    }
+
+    if (dateFilterMode === 'range' && selectedRange?.from) {
+      const from = compactDateFormatter.format(selectedRange.from);
+      if (!selectedRange.to) return `${from} - ...`;
+
+      return `${from} - ${compactDateFormatter.format(selectedRange.to)}`;
+    }
+
+    return t.reports.dates;
+  }, [
+    compactDateFormatter,
+    dateFilterMode,
+    selectedDay,
+    selectedRange,
+    t.reports.dates,
+  ]);
+
+  const handleDateFilterModeChange = (value: ReportDateFilterMode) => {
+    if (value === 'day') {
+      setIsRangeDrawerOpen(false);
+      setPendingDrawerMode('day');
+      setIsDateMenuOpen(false);
+      return;
+    }
+
+    if (value === 'range') {
+      setIsDayDrawerOpen(false);
+      setPendingDrawerMode('range');
+      setIsDateMenuOpen(false);
+      return;
+    }
+
+    setPendingDrawerMode(null);
+    setIsDayDrawerOpen(false);
+    setIsRangeDrawerOpen(false);
+    setIsDateMenuOpen(false);
+    void navigate({
+      search: (current) => ({
+        ...current,
+        startDate: undefined,
+        endDate: undefined,
+      }),
+      replace: true,
+      state: flowState,
+    });
+  };
+
+  const applyDayFilter = (value: Date | undefined) => {
+    if (!value) return;
+
+    setIsDayDrawerOpen(false);
+    void navigate({
+      search: (current) => ({
+        ...current,
+        startDate: toDayBoundaryIso(value, 'start'),
+        endDate: toDayBoundaryIso(value, 'end'),
+      }),
+      replace: true,
+      state: flowState,
+    });
+  };
+
+  const applyRangeFilter = () => {
+    setIsRangeDrawerOpen(false);
+    void navigate({
+      search: (current) => ({
+        ...current,
+        startDate: draftRange?.from
+          ? toDayBoundaryIso(draftRange.from, 'start')
+          : undefined,
+        endDate: draftRange?.to
+          ? toDayBoundaryIso(draftRange.to, 'end')
+          : undefined,
+      }),
+      replace: true,
+      state: flowState,
+    });
+  };
 
   return (
     <MobilePageLayout title={t.reports.categoryDetailTitle} onBack={handleBack}>
@@ -423,10 +611,32 @@ function RouteComponent() {
             <ChevronDown className="size-3.5 shrink-0 text-[#71717a]" />
           </button>
 
-          <span className="inline-flex min-w-0 flex-1 items-center gap-1 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-sm font-medium text-[#4c4c4c] shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-            <span className="truncate">{dateFilterLabel}</span>
-            <ChevronDown className="size-3.5 shrink-0 text-[#71717a]" />
-          </span>
+          <DropdownMenu open={isDateMenuOpen} onOpenChange={setIsDateMenuOpen}>
+            <DropdownMenuTrigger className="inline-flex min-w-0 flex-1 items-center gap-1 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-sm font-medium text-[#4c4c4c] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none">
+              <span className="truncate">{dateFilterLabel}</span>
+              <ChevronDown className="size-3.5 shrink-0 text-[#71717a]" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuGroup>
+                <DropdownMenuRadioGroup
+                  value={dateFilterMode}
+                  onValueChange={(value) =>
+                    handleDateFilterModeChange(value as ReportDateFilterMode)
+                  }
+                >
+                  <DropdownMenuRadioItem value="all">
+                    {t.reports.allTime}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="day">
+                    {t.reports.day}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="range">
+                    {t.reports.range}
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-sm font-medium text-[#4c4c4c] shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <span className="text-sm leading-none">🇨🇴</span>
@@ -676,6 +886,56 @@ function RouteComponent() {
               );
             })}
           </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={isDayDrawerOpen} onOpenChange={setIsDayDrawerOpen}>
+        <DrawerContent className="gap-4 p-0">
+          <DrawerHeader>
+            <DrawerTitle>{t.reports.selectDayTitle}</DrawerTitle>
+            <DrawerDescription>
+              {t.reports.selectDayDescription}
+            </DrawerDescription>
+          </DrawerHeader>
+          <Calendar
+            mode="single"
+            selected={selectedDay}
+            onSelect={applyDayFilter}
+            captionLayout="dropdown"
+            timeZone={timeZone}
+            className="mx-auto mb-5 rounded-2xl border border-[#e2e8f0]"
+          />
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={isRangeDrawerOpen} onOpenChange={setIsRangeDrawerOpen}>
+        <DrawerContent className="max-h-[85vh] gap-0 overflow-hidden p-0">
+          <DrawerHeader>
+            <DrawerTitle>{t.reports.selectRangeTitle}</DrawerTitle>
+            <DrawerDescription>
+              {t.reports.selectRangeDescription}
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
+            <Calendar
+              mode="range"
+              selected={draftRange}
+              onSelect={setDraftRange}
+              captionLayout="dropdown"
+              numberOfMonths={rangeCalendarMonths}
+              timeZone={timeZone}
+              className="mx-auto rounded-2xl border border-[#e2e8f0]"
+            />
+          </div>
+          <DrawerFooter className="border-t border-[#e2e8f0] bg-background px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+            <Button
+              type="button"
+              className="h-12 w-full rounded-full"
+              onClick={applyRangeFilter}
+            >
+              {t.reports.applyRange}
+            </Button>
+          </DrawerFooter>
         </DrawerContent>
       </Drawer>
     </MobilePageLayout>

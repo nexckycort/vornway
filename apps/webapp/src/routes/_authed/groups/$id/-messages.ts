@@ -104,7 +104,15 @@ export function getGroupDetailMessages() {
         m['groups.reports.categoryExpensesCount']({ count }),
       categoryShareOfGroup: (percent: string) =>
         m['groups.reports.categoryShareOfGroup']({ percent }),
+      allTime: m['groups.reports.allTime'](),
       dates: m['groups.reports.dates'](),
+      day: m['groups.reports.day'](),
+      range: m['groups.reports.range'](),
+      selectDayTitle: m['groups.reports.selectDayTitle'](),
+      selectDayDescription: m['groups.reports.selectDayDescription'](),
+      selectRangeTitle: m['groups.reports.selectRangeTitle'](),
+      selectRangeDescription: m['groups.reports.selectRangeDescription'](),
+      applyRange: m['groups.reports.applyRange'](),
       withoutCategory: m['groups.reports.withoutCategory'](),
       balanceInCurrency: (currency: string) =>
         m['groups.reports.balanceInCurrency']({ currency }),

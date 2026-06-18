@@ -4,6 +4,7 @@ import { getVersionedGroupImageUrl } from './group-image.service';
 import {
   buildActiveExpenseWhere,
   buildGroupAccessWhere,
+  calculateTotalsByCurrency,
   normalizeAmount,
 } from './helpers';
 import type { GroupListItem, ListGroupsInput, ListGroupsResult } from './types';
@@ -115,6 +116,7 @@ function mapGroupListRow(
         currentMember,
       ]
     : row.GroupMember;
+  const totals = calculateTotalsByCurrency(row.Expense);
 
   const creditsByCounterparty = new Map<string, number>();
   const debtsByCounterparty = new Map<string, number>();
@@ -225,7 +227,7 @@ function mapGroupListRow(
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     participantCount: row.GroupMember.length,
-    totals: (row.totals as Record<string, number>) ?? {},
+    totals,
     members: orderedMembers.map((member) => ({
       id: member.id,
       name: member.name,

@@ -81,6 +81,35 @@ export function buildReportExpenseWhere(input: {
   } as Prisma.ExpenseWhereInput;
 }
 
+export function shouldIncludeExpenseInTotals(expense: {
+  notes?: string | null;
+  participants: Array<unknown>;
+}) {
+  if (expense.notes?.includes('[DELETED]')) return false;
+  if (expense.notes?.includes('[SETTLEMENT:')) return false;
+  return expense.participants.length > 0;
+}
+
+export function calculateTotalsByCurrency(
+  expenses: Array<{
+    amount: number;
+    currency: string;
+    notes?: string | null;
+    participants: Array<unknown>;
+  }>,
+) {
+  const totals: Record<string, number> = {};
+
+  for (const expense of expenses) {
+    if (!shouldIncludeExpenseInTotals(expense)) continue;
+    totals[expense.currency] = normalizeAmount(
+      (totals[expense.currency] ?? 0) + expense.amount,
+    );
+  }
+
+  return totals;
+}
+
 export function getDateStart(value: string) {
   return new Date(value);
 }

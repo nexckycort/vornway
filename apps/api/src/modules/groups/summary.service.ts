@@ -4,6 +4,7 @@ import { getVersionedGroupImageUrl } from './group-image.service';
 import {
   buildActiveExpenseWhere,
   buildGroupAccessWhere,
+  calculateTotalsByCurrency,
   normalizeAmount,
 } from './helpers';
 import type { GroupSummaryResult } from './types';
@@ -66,6 +67,7 @@ export function createGroupSummaryService() {
             select: {
               amount: true,
               currency: true,
+              notes: true,
               paidById: true,
               payers: {
                 select: {
@@ -90,6 +92,7 @@ export function createGroupSummaryService() {
 
       const myMembership =
         group.GroupMember.find((member) => member.userId === userId) ?? null;
+      const totals = calculateTotalsByCurrency(group.Expense);
       const groupExpenses = await db.expense.findMany({
         where: {
           groupId,
@@ -303,7 +306,7 @@ export function createGroupSummaryService() {
         createdAt: group.createdAt,
         updatedAt: group.updatedAt,
         advancedExpenseDetailsEnabled: group.advancedExpenseDetailsEnabled,
-        totals: (group.totals as Record<string, number>) ?? {},
+        totals,
         participantCount: group.GroupMember.length,
         categories: group.categories.map((category) => ({
           id: category.id,

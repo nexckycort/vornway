@@ -65,6 +65,13 @@ export const Route = createFileRoute('/_authed/groups/$id/reports/category/')({
       search.categoryColor.length > 0
         ? search.categoryColor
         : undefined,
+    expenseCount:
+      typeof search.expenseCount === 'number'
+        ? search.expenseCount
+        : typeof search.expenseCount === 'string' &&
+            search.expenseCount.trim().length > 0
+          ? Number(search.expenseCount)
+          : undefined,
     uncategorized:
       search.uncategorized === true || search.uncategorized === 'true',
     currency:
@@ -124,6 +131,7 @@ function RouteComponent() {
     categoryName,
     categoryIcon,
     categoryColor,
+    expenseCount,
     uncategorized,
     currency,
     startDate,
@@ -360,7 +368,7 @@ function RouteComponent() {
     : baseFilteredExpenses;
   const historyExpenseCount = useMemo(() => {
     if (!isParticipantFilterActive) {
-      return category?.expenseCount ?? filteredExpenses.length;
+      return category?.expenseCount ?? expenseCount ?? filteredExpenses.length;
     }
 
     if (selectedParticipantIds.length === 1) {
@@ -373,6 +381,7 @@ function RouteComponent() {
     return filteredExpenses.length;
   }, [
     category?.expenseCount,
+    expenseCount,
     filteredExpenses.length,
     isParticipantFilterActive,
     selectedMemberExpensesQueries,

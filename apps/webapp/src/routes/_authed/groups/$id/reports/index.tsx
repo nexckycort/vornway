@@ -359,6 +359,7 @@ function RouteComponent() {
                   categoryName: category.name,
                   categoryIcon: category.icon ?? undefined,
                   categoryColor: category.fill,
+                  expenseCount: category.expenseCount,
                   uncategorized: category.id == null,
                   currency: selectedCurrency,
                   startDate:

@@ -405,6 +405,12 @@ export function GroupReportTotalsTab({
       </section>
 
       <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-[#132238]">
+            Gastos por categoría
+          </h3>
+        </div>
+
         <div className="flex items-center justify-center">
           {reportsTotalsLoading ? (
             <div className="flex size-56 items-center justify-center rounded-full border border-dashed border-[#e2e8f0] bg-[#f8fafc] text-xs text-[#94a3b8]">

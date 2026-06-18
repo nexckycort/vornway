@@ -136,7 +136,7 @@ export function GroupDetailHeader({
               const meta = getCurrencyMeta(currency);
               const totalAmount = getEntryAmount(totalsEntries, currency);
               const balanceAmount = getEntryAmount(balanceEntries, currency);
-              const hasBalance = Math.abs(balanceAmount) > 0.01;
+              const hasBalance = Math.abs(balanceAmount) >= 0.01;
 
               return (
                 <article

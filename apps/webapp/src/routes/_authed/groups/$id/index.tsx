@@ -285,7 +285,20 @@ function RouteComponent() {
   );
   const primaryTotal = totalsEntries[0];
   const currentUserBalanceEntries = Object.entries(
-    group.memberBalances.find((member) => member.isCurrentUser)?.balances ?? {},
+    [
+      ...group.directCredits.map((credit) => ({
+        currency: credit.currency,
+        amount: credit.amount,
+      })),
+      ...group.directDebts.map((debt) => ({
+        currency: debt.currency,
+        amount: -debt.amount,
+      })),
+    ].reduce<Record<string, number>>((accumulator, entry) => {
+      accumulator[entry.currency] =
+        (accumulator[entry.currency] ?? 0) + entry.amount;
+      return accumulator;
+    }, {}),
   ).filter(([, amount]) => Math.abs(amount) >= 0.01);
 
   const copyText = async (value: string, label: string) => {

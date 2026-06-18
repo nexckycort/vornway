@@ -67,7 +67,6 @@ type ShareMember = {
 type GroupReportTotalsTabProps = {
   group: GroupSummary;
   t: ReturnType<typeof getGroupDetailMessages>;
-  expenseCount: number;
   dateFilterMode: ReportDateFilterMode;
   totalsRangeOptions: TotalsRangeOption[];
   selectedDay: Date | undefined;
@@ -87,14 +86,12 @@ type GroupReportTotalsTabProps = {
   currentUserSpent: number;
   selectedCategory: CategoryBreakdownEntry | null;
   sortedShareMembers: ShareMember[];
-  onSeeAll: () => void;
   onOpenMember: (memberId: string) => void;
 };
 
 export function GroupReportTotalsTab({
   group,
   t,
-  expenseCount,
   dateFilterMode,
   totalsRangeOptions,
   selectedDay,
@@ -114,7 +111,6 @@ export function GroupReportTotalsTab({
   currentUserSpent,
   selectedCategory,
   sortedShareMembers,
-  onSeeAll,
   onOpenMember,
 }: GroupReportTotalsTabProps) {
   const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
@@ -224,28 +220,6 @@ export function GroupReportTotalsTab({
 
   return (
     <>
-      <section className="mt-4 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#132238]">
-            {t.reports.expensesTitle}
-          </h2>
-          <p className="mt-1 text-xs text-[#64748b]">
-            {expenseCount
-              ? t.reports.expensesCount(expenseCount)
-              : t.reports.noExpensesPeriod}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 text-sm font-medium text-primary"
-          onClick={onSeeAll}
-        >
-          {t.reports.seeAll}
-          <ChevronRight className="size-4" />
-        </button>
-      </section>
-
       <section className="mt-4">
         <div className="flex items-center gap-2 sm:gap-3">
           <DropdownMenu

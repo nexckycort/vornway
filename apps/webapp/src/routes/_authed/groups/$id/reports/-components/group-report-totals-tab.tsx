@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { Pie, PieChart } from 'recharts';
@@ -14,6 +14,14 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '#/components/ui/dropdown-menu';
 import { CategoryIcon } from '#/routes/_authed/groups/$id/-components/category-icon';
 import {
   formatMoney,
@@ -32,6 +40,7 @@ const CURRENCY_META: Record<string, { flag: string; label: string }> = {
 };
 
 type ReportDateFilterMode = 'all' | 'day' | 'range';
+type PendingDrawerMode = Exclude<ReportDateFilterMode, 'all'> | null;
 
 type TotalsRangeOption = {
   label: string;
@@ -108,8 +117,11 @@ export function GroupReportTotalsTab({
   onSeeAll,
   onOpenMember,
 }: GroupReportTotalsTabProps) {
+  const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
   const [isDayDrawerOpen, setIsDayDrawerOpen] = useState(false);
   const [isRangeDrawerOpen, setIsRangeDrawerOpen] = useState(false);
+  const [pendingDrawerMode, setPendingDrawerMode] =
+    useState<PendingDrawerMode>(null);
   const [rangeCalendarMonths, setRangeCalendarMonths] = useState(1);
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -126,6 +138,19 @@ export function GroupReportTotalsTab({
       mediaQuery.removeEventListener('change', syncMonths);
     };
   }, []);
+
+  useEffect(() => {
+    if (isPeriodMenuOpen || pendingDrawerMode == null) return;
+
+    if (pendingDrawerMode === 'day') {
+      setIsDayDrawerOpen(true);
+    } else {
+      setIsRangeDrawerOpen(true);
+    }
+
+    setPendingDrawerMode(null);
+  }, [isPeriodMenuOpen, pendingDrawerMode]);
+
   const selectedDayLabel = useMemo(
     () =>
       selectedDay
@@ -156,6 +181,44 @@ export function GroupReportTotalsTab({
 
     return `${from} - ${to}`;
   }, [selectedRange]);
+  const selectedPeriodLabel = useMemo(() => {
+    if (dateFilterMode === 'day') return selectedDayLabel;
+    if (dateFilterMode === 'range') return selectedRangeLabel;
+
+    return (
+      totalsRangeOptions.find((option) => option.value === dateFilterMode)
+        ?.label ?? t.reports.rangeAll
+    );
+  }, [
+    dateFilterMode,
+    selectedDayLabel,
+    selectedRangeLabel,
+    t.reports.rangeAll,
+    totalsRangeOptions,
+  ]);
+
+  const handlePeriodChange = (value: ReportDateFilterMode) => {
+    onDateFilterModeChange(value);
+
+    if (value === 'day') {
+      setIsRangeDrawerOpen(false);
+      setPendingDrawerMode('day');
+      setIsPeriodMenuOpen(false);
+      return;
+    }
+
+    if (value === 'range') {
+      setIsDayDrawerOpen(false);
+      setPendingDrawerMode('range');
+      setIsPeriodMenuOpen(false);
+      return;
+    }
+
+    setPendingDrawerMode(null);
+    setIsDayDrawerOpen(false);
+    setIsRangeDrawerOpen(false);
+    setIsPeriodMenuOpen(false);
+  };
 
   return (
     <>
@@ -182,110 +245,92 @@ export function GroupReportTotalsTab({
       </section>
 
       <section className="mt-4">
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {totalsRangeOptions.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => onDateFilterModeChange(option.value)}
-              className={[
-                'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors',
-                dateFilterMode === option.value
-                  ? 'bg-primary text-white'
-                  : 'border border-[#e2e8f0] bg-white text-[#64748b]',
-              ].join(' ')}
-            >
-              {option.label}
-            </button>
-          ))}
+        <div>
+          <DropdownMenu
+            open={isPeriodMenuOpen}
+            onOpenChange={setIsPeriodMenuOpen}
+          >
+            <DropdownMenuTrigger className="inline-flex min-w-[220px] items-center justify-between gap-3 rounded-full border border-[#e2e8f0] bg-white px-5 py-3 text-left text-sm font-medium text-[#3f3f46] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition-colors hover:bg-[#fafafa] focus-visible:ring-2 focus-visible:ring-[#111111]/15">
+              <span>{selectedPeriodLabel}</span>
+              <ChevronDown className="size-4 shrink-0 text-[#71717a]" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              <DropdownMenuGroup>
+                <DropdownMenuRadioGroup
+                  value={dateFilterMode}
+                  onValueChange={(value) =>
+                    handlePeriodChange(value as ReportDateFilterMode)
+                  }
+                >
+                  {totalsRangeOptions.map((option) => (
+                    <DropdownMenuRadioItem
+                      key={option.value}
+                      value={option.value}
+                    >
+                      {option.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        {dateFilterMode === 'day' ? (
-          <div className="mt-3 rounded-[28px] border border-[#e2e8f0] bg-white p-3">
-            <p className="mb-3 text-xs font-medium text-[#64748b]">Fecha</p>
-            <button
-              type="button"
-              onClick={() => setIsDayDrawerOpen(true)}
-              className="mb-3 flex w-full items-center justify-between rounded-2xl bg-[#f8fafc] px-3 py-3 text-left text-sm text-[#132238] transition-colors hover:bg-[#eef2f7]"
-            >
-              {selectedDayLabel}
-              <span className="text-xs font-medium text-[#64748b]">
-                Abrir calendario
-              </span>
-            </button>
-            <Drawer open={isDayDrawerOpen} onOpenChange={setIsDayDrawerOpen}>
-              <DrawerContent className="gap-4 p-0">
-                <DrawerHeader>
-                  <DrawerTitle>Selecciona un día</DrawerTitle>
-                  <DrawerDescription>
-                    Elige la fecha para filtrar el reporte.
-                  </DrawerDescription>
-                </DrawerHeader>
-                <Calendar
-                  mode="single"
-                  selected={selectedDay}
-                  onSelect={(value) => {
-                    onSelectedDayChange(value);
-                    if (value) {
-                      setIsDayDrawerOpen(false);
-                    }
-                  }}
-                  captionLayout="dropdown"
-                  timeZone={timeZone}
-                  className="mx-auto mb-5 rounded-2xl border border-[#e2e8f0]"
-                />
-              </DrawerContent>
-            </Drawer>
-          </div>
-        ) : null}
-        {dateFilterMode === 'range' ? (
-          <div className="mt-3 rounded-[28px] border border-[#e2e8f0] bg-white p-3">
-            <p className="mb-3 text-xs font-medium text-[#64748b]">Rango</p>
-            <button
-              type="button"
-              onClick={() => setIsRangeDrawerOpen(true)}
-              className="mb-3 flex w-full items-center justify-between rounded-2xl bg-[#f8fafc] px-3 py-3 text-left text-sm text-[#132238] transition-colors hover:bg-[#eef2f7]"
-            >
-              {selectedRangeLabel}
-              <span className="text-xs font-medium text-[#64748b]">
-                Abrir calendario
-              </span>
-            </button>
-            <Drawer
-              open={isRangeDrawerOpen}
-              onOpenChange={setIsRangeDrawerOpen}
-            >
-              <DrawerContent className="max-h-[85vh] gap-0 overflow-hidden p-0">
-                <DrawerHeader>
-                  <DrawerTitle>Selecciona un rango</DrawerTitle>
-                  <DrawerDescription>
-                    Elige la fecha inicial y final para filtrar el reporte.
-                  </DrawerDescription>
-                </DrawerHeader>
-                <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
-                  <Calendar
-                    mode="range"
-                    selected={selectedRange}
-                    onSelect={onSelectedRangeChange}
-                    captionLayout="dropdown"
-                    numberOfMonths={rangeCalendarMonths}
-                    timeZone={timeZone}
-                    className="mx-auto rounded-2xl border border-[#e2e8f0]"
-                  />
-                </div>
-                <DrawerFooter className="border-t border-[#e2e8f0] bg-background px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
-                  <Button
-                    type="button"
-                    className="h-12 w-full rounded-full"
-                    onClick={() => setIsRangeDrawerOpen(false)}
-                  >
-                    Aplicar rango
-                  </Button>
-                </DrawerFooter>
-              </DrawerContent>
-            </Drawer>
-          </div>
-        ) : null}
       </section>
+
+      <Drawer open={isDayDrawerOpen} onOpenChange={setIsDayDrawerOpen}>
+        <DrawerContent className="gap-4 p-0">
+          <DrawerHeader>
+            <DrawerTitle>Selecciona un día</DrawerTitle>
+            <DrawerDescription>
+              Elige la fecha para filtrar el reporte.
+            </DrawerDescription>
+          </DrawerHeader>
+          <Calendar
+            mode="single"
+            selected={selectedDay}
+            onSelect={(value) => {
+              onSelectedDayChange(value);
+              if (value) {
+                setIsDayDrawerOpen(false);
+              }
+            }}
+            captionLayout="dropdown"
+            timeZone={timeZone}
+            className="mx-auto mb-5 rounded-2xl border border-[#e2e8f0]"
+          />
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={isRangeDrawerOpen} onOpenChange={setIsRangeDrawerOpen}>
+        <DrawerContent className="max-h-[85vh] gap-0 overflow-hidden p-0">
+          <DrawerHeader>
+            <DrawerTitle>Selecciona un rango</DrawerTitle>
+            <DrawerDescription>
+              Elige la fecha inicial y final para filtrar el reporte.
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
+            <Calendar
+              mode="range"
+              selected={selectedRange}
+              onSelect={onSelectedRangeChange}
+              captionLayout="dropdown"
+              numberOfMonths={rangeCalendarMonths}
+              timeZone={timeZone}
+              className="mx-auto rounded-2xl border border-[#e2e8f0]"
+            />
+          </div>
+          <DrawerFooter className="border-t border-[#e2e8f0] bg-background px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+            <Button
+              type="button"
+              className="h-12 w-full rounded-full"
+              onClick={() => setIsRangeDrawerOpen(false)}
+            >
+              Aplicar rango
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
       <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
         <div className="flex gap-2 overflow-x-auto pb-1">

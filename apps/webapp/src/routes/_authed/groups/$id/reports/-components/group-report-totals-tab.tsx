@@ -1,11 +1,26 @@
 import { ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import type { DateRange } from 'react-day-picker';
 import { Pie, PieChart } from 'recharts';
 
+import { Button } from '#/components/ui/button';
+import { Calendar } from '#/components/ui/calendar';
 import { ChartContainer } from '#/components/ui/chart';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
+import { CategoryIcon } from '#/routes/_authed/groups/$id/-components/category-icon';
+import {
+  formatMoney,
+  getInitials,
+} from '#/routes/_authed/groups/$id/-components/group-detail.utils';
 import type { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
-import { CategoryIcon } from '../../-components/category-icon';
-import { formatMoney, getInitials } from '../../-components/group-detail.utils';
-import type { GroupSummary } from '../../-types/group-detail.types';
+import type { GroupSummary } from '#/routes/_authed/groups/$id/-types/group-detail.types';
 
 const CURRENCY_META: Record<string, { flag: string; label: string }> = {
   COP: { flag: '🇨🇴', label: 'COP' },
@@ -46,13 +61,11 @@ type GroupReportTotalsTabProps = {
   expenseCount: number;
   dateFilterMode: ReportDateFilterMode;
   totalsRangeOptions: TotalsRangeOption[];
-  selectedDay: string;
-  rangeStartDate: string;
-  rangeEndDate: string;
+  selectedDay: Date | undefined;
+  selectedRange: DateRange | undefined;
   onDateFilterModeChange: (value: ReportDateFilterMode) => void;
-  onSelectedDayChange: (value: string) => void;
-  onRangeStartDateChange: (value: string) => void;
-  onRangeEndDateChange: (value: string) => void;
+  onSelectedDayChange: (value: Date | undefined) => void;
+  onSelectedRangeChange: (value: DateRange | undefined) => void;
   availableCurrencies: string[];
   selectedCurrency: string;
   onSelectedCurrencyChange: (value: string) => void;
@@ -76,12 +89,10 @@ export function GroupReportTotalsTab({
   dateFilterMode,
   totalsRangeOptions,
   selectedDay,
-  rangeStartDate,
-  rangeEndDate,
+  selectedRange,
   onDateFilterModeChange,
   onSelectedDayChange,
-  onRangeStartDateChange,
-  onRangeEndDateChange,
+  onSelectedRangeChange,
   availableCurrencies,
   selectedCurrency,
   onSelectedCurrencyChange,
@@ -97,6 +108,55 @@ export function GroupReportTotalsTab({
   onSeeAll,
   onOpenMember,
 }: GroupReportTotalsTabProps) {
+  const [isDayDrawerOpen, setIsDayDrawerOpen] = useState(false);
+  const [isRangeDrawerOpen, setIsRangeDrawerOpen] = useState(false);
+  const [rangeCalendarMonths, setRangeCalendarMonths] = useState(1);
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 640px)');
+    const syncMonths = () => {
+      setRangeCalendarMonths(mediaQuery.matches ? 2 : 1);
+    };
+
+    syncMonths();
+    mediaQuery.addEventListener('change', syncMonths);
+
+    return () => {
+      mediaQuery.removeEventListener('change', syncMonths);
+    };
+  }, []);
+  const selectedDayLabel = useMemo(
+    () =>
+      selectedDay
+        ? selectedDay.toLocaleDateString('es-CO', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+        : 'Selecciona una fecha',
+    [selectedDay],
+  );
+  const selectedRangeLabel = useMemo(() => {
+    if (!selectedRange?.from) return 'Selecciona un rango';
+
+    const from = selectedRange.from.toLocaleDateString('es-CO', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+
+    if (!selectedRange.to) return `${from} - ...`;
+
+    const to = selectedRange.to.toLocaleDateString('es-CO', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+
+    return `${from} - ${to}`;
+  }, [selectedRange]);
+
   return (
     <>
       <section className="mt-4 flex items-center justify-between gap-3">
@@ -140,56 +200,89 @@ export function GroupReportTotalsTab({
           ))}
         </div>
         {dateFilterMode === 'day' ? (
-          <div className="mt-3">
-            <label
-              htmlFor="report-day-filter"
-              className="block text-xs font-medium text-[#64748b]"
+          <div className="mt-3 rounded-[28px] border border-[#e2e8f0] bg-white p-3">
+            <p className="mb-3 text-xs font-medium text-[#64748b]">Fecha</p>
+            <button
+              type="button"
+              onClick={() => setIsDayDrawerOpen(true)}
+              className="mb-3 flex w-full items-center justify-between rounded-2xl bg-[#f8fafc] px-3 py-3 text-left text-sm text-[#132238] transition-colors hover:bg-[#eef2f7]"
             >
-              Fecha
-            </label>
-            <input
-              id="report-day-filter"
-              type="date"
-              value={selectedDay}
-              onChange={(event) => onSelectedDayChange(event.target.value)}
-              className="mt-1 h-11 w-full rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm text-[#132238] outline-none transition focus:border-primary"
-            />
+              {selectedDayLabel}
+              <span className="text-xs font-medium text-[#64748b]">
+                Abrir calendario
+              </span>
+            </button>
+            <Drawer open={isDayDrawerOpen} onOpenChange={setIsDayDrawerOpen}>
+              <DrawerContent className="gap-4 p-0">
+                <DrawerHeader>
+                  <DrawerTitle>Selecciona un día</DrawerTitle>
+                  <DrawerDescription>
+                    Elige la fecha para filtrar el reporte.
+                  </DrawerDescription>
+                </DrawerHeader>
+                <Calendar
+                  mode="single"
+                  selected={selectedDay}
+                  onSelect={(value) => {
+                    onSelectedDayChange(value);
+                    if (value) {
+                      setIsDayDrawerOpen(false);
+                    }
+                  }}
+                  captionLayout="dropdown"
+                  timeZone={timeZone}
+                  className="mx-auto mb-5 rounded-2xl border border-[#e2e8f0]"
+                />
+              </DrawerContent>
+            </Drawer>
           </div>
         ) : null}
         {dateFilterMode === 'range' ? (
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor="report-range-start"
-                className="block text-xs font-medium text-[#64748b]"
-              >
-                Desde
-              </label>
-              <input
-                id="report-range-start"
-                type="date"
-                value={rangeStartDate}
-                max={rangeEndDate}
-                onChange={(event) => onRangeStartDateChange(event.target.value)}
-                className="mt-1 h-11 w-full rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm text-[#132238] outline-none transition focus:border-primary"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="report-range-end"
-                className="block text-xs font-medium text-[#64748b]"
-              >
-                Hasta
-              </label>
-              <input
-                id="report-range-end"
-                type="date"
-                value={rangeEndDate}
-                min={rangeStartDate}
-                onChange={(event) => onRangeEndDateChange(event.target.value)}
-                className="mt-1 h-11 w-full rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm text-[#132238] outline-none transition focus:border-primary"
-              />
-            </div>
+          <div className="mt-3 rounded-[28px] border border-[#e2e8f0] bg-white p-3">
+            <p className="mb-3 text-xs font-medium text-[#64748b]">Rango</p>
+            <button
+              type="button"
+              onClick={() => setIsRangeDrawerOpen(true)}
+              className="mb-3 flex w-full items-center justify-between rounded-2xl bg-[#f8fafc] px-3 py-3 text-left text-sm text-[#132238] transition-colors hover:bg-[#eef2f7]"
+            >
+              {selectedRangeLabel}
+              <span className="text-xs font-medium text-[#64748b]">
+                Abrir calendario
+              </span>
+            </button>
+            <Drawer
+              open={isRangeDrawerOpen}
+              onOpenChange={setIsRangeDrawerOpen}
+            >
+              <DrawerContent className="max-h-[85vh] gap-0 overflow-hidden p-0">
+                <DrawerHeader>
+                  <DrawerTitle>Selecciona un rango</DrawerTitle>
+                  <DrawerDescription>
+                    Elige la fecha inicial y final para filtrar el reporte.
+                  </DrawerDescription>
+                </DrawerHeader>
+                <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
+                  <Calendar
+                    mode="range"
+                    selected={selectedRange}
+                    onSelect={onSelectedRangeChange}
+                    captionLayout="dropdown"
+                    numberOfMonths={rangeCalendarMonths}
+                    timeZone={timeZone}
+                    className="mx-auto rounded-2xl border border-[#e2e8f0]"
+                  />
+                </div>
+                <DrawerFooter className="border-t border-[#e2e8f0] bg-background px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+                  <Button
+                    type="button"
+                    className="h-12 w-full rounded-full"
+                    onClick={() => setIsRangeDrawerOpen(false)}
+                  >
+                    Aplicar rango
+                  </Button>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
           </div>
         ) : null}
       </section>

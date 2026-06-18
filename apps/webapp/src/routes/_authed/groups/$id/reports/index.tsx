@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
+import type { DateRange } from 'react-day-picker';
 
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
@@ -37,31 +38,18 @@ type GroupSummaryCounterpartyFields = {
   }>;
 };
 
-function toDateInputValue(value: Date) {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, '0');
-  const day = String(value.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function toDayBoundaryIso(
-  value: string,
+  value: Date,
   boundary: 'start' | 'end',
 ): string | undefined {
-  const [year, month, day] = value.split('-').map(Number);
-
-  if (
-    !Number.isInteger(year) ||
-    !Number.isInteger(month) ||
-    !Number.isInteger(day)
-  ) {
-    return undefined;
-  }
+  const year = value.getFullYear();
+  const month = value.getMonth();
+  const day = value.getDate();
 
   const date =
     boundary === 'start'
-      ? new Date(year, month - 1, day, 0, 0, 0, 0)
-      : new Date(year, month - 1, day, 23, 59, 59, 999);
+      ? new Date(year, month, day, 0, 0, 0, 0)
+      : new Date(year, month, day, 23, 59, 59, 999);
 
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
@@ -73,13 +61,15 @@ function RouteComponent() {
   const navigate = useNavigate({ from: Route.fullPath });
   const { flowState, navigateToGroupRoot } = useGroupFlowNavigation(id);
   const groupQuery = useGroupSummaryQuery(id);
-  const today = useMemo(() => toDateInputValue(new Date()), []);
+  const today = useMemo(() => new Date(), []);
   const [selectedCurrency, setSelectedCurrency] = useState<string>('COP');
   const [dateFilterMode, setDateFilterMode] =
     useState<ReportDateFilterMode>('all');
-  const [selectedDay, setSelectedDay] = useState<string>(today);
-  const [rangeStartDate, setRangeStartDate] = useState<string>(today);
-  const [rangeEndDate, setRangeEndDate] = useState<string>(today);
+  const [selectedDay, setSelectedDay] = useState<Date | undefined>(today);
+  const [selectedRange, setSelectedRange] = useState<DateRange | undefined>({
+    from: today,
+    to: today,
+  });
   const [selectedCategoryKey, setSelectedCategoryKey] = useState<string | null>(
     null,
   );
@@ -89,21 +79,27 @@ function RouteComponent() {
     if (dateFilterMode === 'day') {
       return {
         range: 'custom' as const,
-        startDate: toDayBoundaryIso(selectedDay, 'start'),
-        endDate: toDayBoundaryIso(selectedDay, 'end'),
+        startDate: selectedDay
+          ? toDayBoundaryIso(selectedDay, 'start')
+          : undefined,
+        endDate: selectedDay ? toDayBoundaryIso(selectedDay, 'end') : undefined,
       };
     }
 
     if (dateFilterMode === 'range') {
       return {
         range: 'custom' as const,
-        startDate: toDayBoundaryIso(rangeStartDate, 'start'),
-        endDate: toDayBoundaryIso(rangeEndDate, 'end'),
+        startDate: selectedRange?.from
+          ? toDayBoundaryIso(selectedRange.from, 'start')
+          : undefined,
+        endDate: selectedRange?.to
+          ? toDayBoundaryIso(selectedRange.to, 'end')
+          : undefined,
       };
     }
 
     return { range: 'all' as const };
-  }, [dateFilterMode, rangeEndDate, rangeStartDate, selectedDay]);
+  }, [dateFilterMode, selectedDay, selectedRange]);
   const reportsSharesQuery = useGroupReportsSharesQuery(
     id,
     reportFilter,
@@ -351,12 +347,10 @@ function RouteComponent() {
             dateFilterMode={dateFilterMode}
             totalsRangeOptions={totalsRangeOptions}
             selectedDay={selectedDay}
-            rangeStartDate={rangeStartDate}
-            rangeEndDate={rangeEndDate}
+            selectedRange={selectedRange}
             onDateFilterModeChange={setDateFilterMode}
             onSelectedDayChange={setSelectedDay}
-            onRangeStartDateChange={setRangeStartDate}
-            onRangeEndDateChange={setRangeEndDate}
+            onSelectedRangeChange={setSelectedRange}
             availableCurrencies={availableCurrencies}
             selectedCurrency={selectedCurrency}
             onSelectedCurrencyChange={setSelectedCurrency}

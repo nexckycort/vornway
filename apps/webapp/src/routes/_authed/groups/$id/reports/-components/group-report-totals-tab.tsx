@@ -411,7 +411,7 @@ export function GroupReportTotalsTab({
           </h3>
         </div>
 
-        <div className="flex items-center justify-center">
+        <div className="relative flex items-center justify-center">
           {reportsTotalsLoading ? (
             <div className="flex size-56 items-center justify-center rounded-full border border-dashed border-[#e2e8f0] bg-[#f8fafc] text-xs text-[#94a3b8]">
               {t.reports.loadingTotals}
@@ -432,17 +432,15 @@ export function GroupReportTotalsTab({
               </PieChart>
             </ChartContainer>
           )}
-        </div>
 
-        <div className="mt-3 flex flex-col items-center">
-          <p className="text-xs text-[#94a3b8]">{t.reports.totalGroup}</p>
-          {reportsTotalsLoading ? (
-            <p className="mt-1 text-2xl font-semibold text-[#132238]">…</p>
-          ) : (
-            <p className="mt-1 text-2xl font-semibold text-[#132238]">
-              {formatMoney(selectedCurrency, categoryTotal)}
-            </p>
-          )}
+          {!reportsTotalsLoading ? (
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <p className="text-sm text-[#64748b]">{t.reports.totalGroup}</p>
+              <p className="mt-1 text-2xl font-semibold text-[#132238]">
+                {formatMoney(selectedCurrency, categoryTotal)}
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1">

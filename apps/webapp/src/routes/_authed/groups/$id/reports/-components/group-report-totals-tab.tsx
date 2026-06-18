@@ -118,6 +118,7 @@ export function GroupReportTotalsTab({
   onOpenMember,
 }: GroupReportTotalsTabProps) {
   const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
+  const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
   const [isDayDrawerOpen, setIsDayDrawerOpen] = useState(false);
   const [isRangeDrawerOpen, setIsRangeDrawerOpen] = useState(false);
   const [pendingDrawerMode, setPendingDrawerMode] =
@@ -168,7 +169,6 @@ export function GroupReportTotalsTab({
     const from = selectedRange.from.toLocaleDateString('es-CO', {
       day: 'numeric',
       month: 'short',
-      year: 'numeric',
     });
 
     if (!selectedRange.to) return `${from} - ...`;
@@ -176,7 +176,6 @@ export function GroupReportTotalsTab({
     const to = selectedRange.to.toLocaleDateString('es-CO', {
       day: 'numeric',
       month: 'short',
-      year: 'numeric',
     });
 
     return `${from} - ${to}`;
@@ -196,6 +195,10 @@ export function GroupReportTotalsTab({
     t.reports.rangeAll,
     totalsRangeOptions,
   ]);
+  const selectedCurrencyMeta = CURRENCY_META[selectedCurrency] ?? {
+    flag: '💱',
+    label: selectedCurrency,
+  };
 
   const handlePeriodChange = (value: ReportDateFilterMode) => {
     onDateFilterModeChange(value);
@@ -245,7 +248,7 @@ export function GroupReportTotalsTab({
       </section>
 
       <section className="mt-4">
-        <div>
+        <div className="flex flex-wrap items-center gap-3">
           <DropdownMenu
             open={isPeriodMenuOpen}
             onOpenChange={setIsPeriodMenuOpen}
@@ -270,6 +273,50 @@ export function GroupReportTotalsTab({
                       {option.label}
                     </DropdownMenuRadioItem>
                   ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu
+            open={isCurrencyMenuOpen}
+            onOpenChange={setIsCurrencyMenuOpen}
+          >
+            <DropdownMenuTrigger className="inline-flex min-w-[120px] items-center justify-between gap-3 rounded-full border border-[#e2e8f0] bg-white px-4 py-3 text-left text-sm font-medium text-[#3f3f46] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition-colors hover:bg-[#fafafa] focus-visible:ring-2 focus-visible:ring-[#111111]/15">
+              <span className="inline-flex items-center gap-2">
+                <span className="text-sm leading-none">
+                  {selectedCurrencyMeta.flag}
+                </span>
+                <span>{selectedCurrencyMeta.label}</span>
+              </span>
+              <ChevronDown className="size-4 shrink-0 text-[#71717a]" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuGroup>
+                <DropdownMenuRadioGroup
+                  value={selectedCurrency}
+                  onValueChange={(value) => {
+                    onSelectedCurrencyChange(value);
+                    setIsCurrencyMenuOpen(false);
+                  }}
+                >
+                  {availableCurrencies.map((currency) => {
+                    const meta = CURRENCY_META[currency] ?? {
+                      flag: '💱',
+                      label: currency,
+                    };
+
+                    return (
+                      <DropdownMenuRadioItem key={currency} value={currency}>
+                        <span className="inline-flex items-center gap-2">
+                          <span className="text-sm leading-none">
+                            {meta.flag}
+                          </span>
+                          <span>{meta.label}</span>
+                        </span>
+                      </DropdownMenuRadioItem>
+                    );
+                  })}
                 </DropdownMenuRadioGroup>
               </DropdownMenuGroup>
             </DropdownMenuContent>
@@ -333,33 +380,7 @@ export function GroupReportTotalsTab({
       </Drawer>
 
       <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {availableCurrencies.map((currency) => {
-            const meta = CURRENCY_META[currency] ?? {
-              flag: '💱',
-              label: currency,
-            };
-
-            return (
-              <button
-                key={currency}
-                type="button"
-                onClick={() => onSelectedCurrencyChange(currency)}
-                className={[
-                  'inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors',
-                  selectedCurrency === currency
-                    ? 'border-primary/20 bg-primary/10 text-primary'
-                    : 'border-[#e2e8f0] bg-white text-[#64748b]',
-                ].join(' ')}
-              >
-                <span className="text-sm leading-none">{meta.flag}</span>
-                <span>{meta.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-3 flex items-center justify-center">
+        <div className="flex items-center justify-center">
           {reportsTotalsLoading ? (
             <div className="flex size-56 items-center justify-center rounded-full border border-dashed border-[#e2e8f0] bg-[#f8fafc] text-xs text-[#94a3b8]">
               {t.reports.loadingTotals}

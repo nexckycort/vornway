@@ -81,12 +81,10 @@ type GroupReportTotalsTabProps = {
   chartConfig: Record<string, { label: string; color: string }>;
   categoryBreakdown: CategoryBreakdownEntry[];
   categoryTotal: number;
-  selectedCategoryKey: string | null;
-  onSelectedCategoryKeyChange: (value: string | null) => void;
   currentUserSpent: number;
-  selectedCategory: CategoryBreakdownEntry | null;
   sortedShareMembers: ShareMember[];
   onOpenMember: (memberId: string) => void;
+  onOpenCategory: (category: CategoryBreakdownEntry) => void;
 };
 
 export function GroupReportTotalsTab({
@@ -106,12 +104,10 @@ export function GroupReportTotalsTab({
   chartConfig,
   categoryBreakdown,
   categoryTotal,
-  selectedCategoryKey,
-  onSelectedCategoryKeyChange,
   currentUserSpent,
-  selectedCategory,
   sortedShareMembers,
   onOpenMember,
+  onOpenCategory,
 }: GroupReportTotalsTabProps) {
   const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
   const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
@@ -402,6 +398,11 @@ export function GroupReportTotalsTab({
                   paddingAngle={3}
                   stroke="transparent"
                   fill="#94a3b8"
+                  onClick={(_, index) => {
+                    const category = categoryBreakdown[index];
+                    if (category) onOpenCategory(category);
+                  }}
+                  className="cursor-pointer"
                 />
               </PieChart>
             </ChartContainer>
@@ -418,33 +419,12 @@ export function GroupReportTotalsTab({
         </div>
 
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-          <button
-            type="button"
-            onClick={() => onSelectedCategoryKeyChange(null)}
-            className={[
-              'inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium transition-colors',
-              selectedCategoryKey == null
-                ? 'border-primary/20 bg-primary/10 text-primary'
-                : 'border-[#e2e8f0] bg-white text-[#334155]',
-            ].join(' ')}
-          >
-            Todas
-          </button>
           {categoryBreakdown.map((entry) => (
             <button
               type="button"
               key={entry.key}
-              onClick={() =>
-                onSelectedCategoryKeyChange(
-                  selectedCategoryKey === entry.key ? null : entry.key,
-                )
-              }
-              className={[
-                'inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium transition-colors',
-                selectedCategoryKey === entry.key
-                  ? 'border-primary/20 bg-primary/10 text-primary'
-                  : 'border-[#e2e8f0] bg-white text-[#334155]',
-              ].join(' ')}
+              onClick={() => onOpenCategory(entry)}
+              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-xs font-medium text-[#334155] transition-colors hover:bg-[#fafafa]"
             >
               <span
                 className="flex size-7 items-center justify-center rounded-full"
@@ -481,28 +461,8 @@ export function GroupReportTotalsTab({
               {t.reports.participants}
             </h3>
             <p className="mt-1 text-xs text-[#64748b]">
-              {selectedCategory
-                ? `${selectedCategory.name} · ${selectedCurrency}`
-                : `Parte en ${selectedCurrency}`}
+              {`Parte en ${selectedCurrency}`}
             </p>
-            {selectedCategory ? (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
-                  <span
-                    className="size-2 rounded-full"
-                    style={{ backgroundColor: selectedCategory.fill }}
-                  />
-                  Filtrando por {selectedCategory.name}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onSelectedCategoryKeyChange(null)}
-                  className="text-[11px] font-medium text-[#64748b] underline underline-offset-2"
-                >
-                  Ver todas
-                </button>
-              </div>
-            ) : null}
           </div>
           <span className="text-xs text-[#94a3b8]">
             {t.reports.peopleCount(sortedShareMembers.length)}

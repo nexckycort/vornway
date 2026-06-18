@@ -94,6 +94,17 @@ export function getGroupDetailMessages() {
       seeAll: m['groups.reports.seeAll'](),
       totalGroup: m['groups.reports.totalGroup'](),
       yourShare: m['groups.reports.yourShare'](),
+      categoryDetailTitle: m['groups.reports.categoryDetailTitle'](),
+      categoryMissing: m['groups.reports.categoryMissing'](),
+      categoryHistory: m['groups.reports.categoryHistory'](),
+      categoryNoParticipants: m['groups.reports.categoryNoParticipants'](),
+      categoryNoExpensesTitle: m['groups.reports.categoryNoExpensesTitle'](),
+      categoryNoExpensesCopy: m['groups.reports.categoryNoExpensesCopy'](),
+      categoryExpensesCount: (count: number) =>
+        m['groups.reports.categoryExpensesCount']({ count }),
+      categoryShareOfGroup: (percent: string) =>
+        m['groups.reports.categoryShareOfGroup']({ percent }),
+      withoutCategory: m['groups.reports.withoutCategory'](),
       balanceInCurrency: (currency: string) =>
         m['groups.reports.balanceInCurrency']({ currency }),
       peopleCount: (count: number) =>

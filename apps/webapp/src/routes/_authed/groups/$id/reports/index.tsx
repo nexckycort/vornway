@@ -70,9 +70,6 @@ function RouteComponent() {
     from: today,
     to: today,
   });
-  const [selectedCategoryKey, setSelectedCategoryKey] = useState<string | null>(
-    null,
-  );
   const activeTab = tab;
   const group = groupQuery.data;
   const reportFilter = useMemo(() => {
@@ -171,24 +168,12 @@ function RouteComponent() {
   }, [group]);
   const categoryBreakdown =
     reportsTotalsQuery.data?.categoriesByCurrency[selectedCurrency] ?? [];
-  const selectedCategory = useMemo(
-    () =>
-      categoryBreakdown.find(
-        (category) => category.key === selectedCategoryKey,
-      ) ?? null,
-    [categoryBreakdown, selectedCategoryKey],
-  );
   const sortedShareMembers = useMemo(
     () =>
       Array.from(reportsSharesQuery.data?.memberShares ?? [])
         .map((member) => ({
           ...member,
-          visibleShare:
-            selectedCategoryKey == null
-              ? (member.shares[selectedCurrency] ?? 0)
-              : (member.categorySharesByCurrency[selectedCurrency]?.[
-                  selectedCategoryKey
-                ] ?? 0),
+          visibleShare: member.shares[selectedCurrency] ?? 0,
         }))
         .filter((member) => Math.abs(member.visibleShare) > 0)
         .sort((left, right) => {
@@ -198,16 +183,10 @@ function RouteComponent() {
 
           return right.visibleShare - left.visibleShare;
         }),
-    [
-      reportsSharesQuery.data?.memberShares,
-      selectedCategoryKey,
-      selectedCurrency,
-    ],
+    [reportsSharesQuery.data?.memberShares, selectedCurrency],
   );
   const categoryTotal =
     reportsTotalsQuery.data?.totalsByCurrency[selectedCurrency] ?? 0;
-  const expenseCount =
-    reportsTotalsQuery.data?.expenseCountByCurrency[selectedCurrency] ?? 0;
   const currentUserSpent =
     reportsTotalsQuery.data?.currentUserSpentByCurrency[selectedCurrency] ?? 0;
   const chartConfig = useMemo(
@@ -237,16 +216,6 @@ function RouteComponent() {
 
     setSelectedCurrency(availableCurrencies[0] ?? 'COP');
   }, [availableCurrencies, selectedCurrency]);
-
-  useEffect(() => {
-    if (selectedCategoryKey == null) return;
-    if (
-      categoryBreakdown.some((category) => category.key === selectedCategoryKey)
-    )
-      return;
-
-    setSelectedCategoryKey(null);
-  }, [categoryBreakdown, selectedCategoryKey]);
 
   if (groupQuery.isLoading) {
     return (
@@ -343,7 +312,6 @@ function RouteComponent() {
           <GroupReportTotalsTab
             group={group}
             t={t}
-            expenseCount={expenseCount}
             dateFilterMode={dateFilterMode}
             totalsRangeOptions={totalsRangeOptions}
             selectedDay={selectedDay}
@@ -358,28 +326,41 @@ function RouteComponent() {
             chartConfig={chartConfig}
             categoryBreakdown={categoryBreakdown}
             categoryTotal={categoryTotal}
-            selectedCategoryKey={selectedCategoryKey}
-            onSelectedCategoryKeyChange={setSelectedCategoryKey}
             currentUserSpent={currentUserSpent}
-            selectedCategory={selectedCategory}
             sortedShareMembers={sortedShareMembers}
-            onSeeAll={() => {
-              void navigate({
-                to: '/groups/$id',
-                params: { id },
-                state: flowState,
-              });
-            }}
             onOpenMember={(memberId) => {
               void navigate({
                 to: '/groups/$id/member/$memberId',
                 params: { id, memberId },
                 search: {
-                  categoryId: selectedCategory?.id ?? undefined,
-                  categoryName: selectedCategory?.name ?? undefined,
-                  uncategorized:
-                    selectedCategory != null && selectedCategory.id == null,
+                  categoryId: undefined,
+                  categoryName: undefined,
+                  uncategorized: false,
                   paidOnly: false,
+                  startDate:
+                    reportFilter.range === 'custom'
+                      ? reportFilter.startDate
+                      : undefined,
+                  endDate:
+                    reportFilter.range === 'custom'
+                      ? reportFilter.endDate
+                      : undefined,
+                },
+                state: flowState,
+              });
+            }}
+            onOpenCategory={(category) => {
+              void navigate({
+                to: '/groups/$id/reports/category',
+                params: { id },
+                search: {
+                  categoryKey: category.key,
+                  categoryId: category.id ?? undefined,
+                  categoryName: category.name,
+                  categoryIcon: category.icon ?? undefined,
+                  categoryColor: category.fill,
+                  uncategorized: category.id == null,
+                  currency: selectedCurrency,
                   startDate:
                     reportFilter.range === 'custom'
                       ? reportFilter.startDate

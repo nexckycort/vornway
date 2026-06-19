@@ -112,17 +112,17 @@ const steps = [
 
     <div class="hero-content">
       <div class="hero-copy">
-        <h1>Divide gastos fácilmente</h1>
+        <h1>La forma más fácil de organizar gastos en grupo</h1>
         <p>
-          Crea grupos, añade gastos, controla los saldos y coordina cada viaje
-          en una sola aplicación.
+          Crea grupos, registra gastos compartidos y mantén el control de quién
+          pagó, quién debe y cuánto falta por saldar, todo en un solo lugar.
         </p>
       </div>
 
       <div class="tags" aria-label="Funciones principales">
-        <span>Gastos compartidos</span>
+        <span>Divide gastos fácilmente</span>
         <span>Saldos en tiempo real</span>
-        <span>Invita mediante QR o enlace</span>
+        <span>Invita por QR o enlace</span>
       </div>
     </div>
 
@@ -434,14 +434,15 @@ const steps = [
   }
 
   .hero-copy h1 {
-    font-size: clamp(2.6rem, 5vw, 3.75rem);
+    max-width: 40rem;
+    font-size: 36px;
   }
 
   .hero-copy p,
   .section-title p {
     margin: 0;
     color: #ebebeb;
-    font-size: 1rem;
+    font-size: 16px;
     font-weight: 400;
     line-height: 1.5;
     text-wrap: pretty;
@@ -578,7 +579,7 @@ const steps = [
   }
 
   .slide-copy h2 {
-    font-size: 1.25rem;
+    font-size: 20px;
     font-weight: 600;
     line-height: 1.4;
     text-wrap: balance;
@@ -586,7 +587,7 @@ const steps = [
 
   .slide-copy p {
     width: min(100%, 19rem);
-    font-size: clamp(0.82rem, 1.1vw, 1rem);
+    font-size: 16px;
     line-height: 1.45;
     text-wrap: pretty;
   }
@@ -671,7 +672,7 @@ const steps = [
 
   .section-title h2 {
     color: var(--text);
-    font-size: clamp(2.25rem, 3.7vw, 3rem);
+    font-size: 36px;
   }
 
   .section-title p {
@@ -742,7 +743,7 @@ const steps = [
   .step h3 {
     margin: 0;
     color: var(--text);
-    font-size: 1rem;
+    font-size: 20px;
     font-weight: 600;
     line-height: 1.5;
   }
@@ -751,7 +752,7 @@ const steps = [
   .step p {
     margin: 0;
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 16px;
     font-weight: 400;
     line-height: 1.35;
   }
@@ -876,12 +877,7 @@ const steps = [
     }
 
     .hero-copy h1 {
-      font-size: clamp(2.4rem, 10vw, 3.4rem);
-    }
-
-    .hero-copy p,
-    .section-title p {
-      font-size: 0.95rem;
+      max-width: 100%;
     }
 
     .tags {
@@ -917,7 +913,6 @@ const steps = [
 
     .slide-copy p {
       width: min(100%, 16rem);
-      font-size: 0.84rem;
       line-height: 1.38;
     }
 
@@ -962,13 +957,12 @@ const steps = [
     }
 
     .slide-copy h2 {
-      font-size: 1.05rem;
+      font-size: 20px;
       line-height: 1.25;
     }
 
     .slide-copy p {
       width: min(100%, 15rem);
-      font-size: 0.8rem;
       line-height: 1.35;
     }
 
@@ -1005,8 +999,5 @@ const steps = [
       padding-inline: 1rem;
     }
 
-    .footer p {
-      font-size: 0.82rem;
-    }
   }
 </style>

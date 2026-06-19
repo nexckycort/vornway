@@ -7,6 +7,8 @@ import {
 import type {
   GroupReportsBalancesInput,
   GroupReportsBalancesResult,
+  GroupReportsCategoryCountInput,
+  GroupReportsCategoryCountResult,
   GroupReportsSharesInput,
   GroupReportsSharesResult,
   GroupReportsTotalsInput,
@@ -202,6 +204,109 @@ export function createGroupReportsService() {
               .sort((left, right) => right.amount - left.amount),
           ]),
         ),
+      };
+    },
+    getGroupReportsCategoryCount: async ({
+      userId,
+      groupId,
+      range,
+      startDate,
+      endDate,
+      categoryId,
+      uncategorized,
+      currency,
+      participantIds,
+    }: GroupReportsCategoryCountInput): Promise<GroupReportsCategoryCountResult> => {
+      const group = await db.group.findFirst({
+        where: {
+          ...buildGroupAccessWhere(userId, groupId),
+          type: {
+            not: 'meta',
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!group) {
+        throw new Error('Grupo no encontrado');
+      }
+
+      const normalizedParticipantIds = Array.from(
+        new Set((participantIds ?? []).filter(Boolean)),
+      );
+
+      const expenseCount = await db.expense.count({
+        where: {
+          ...buildReportExpenseWhere({
+            groupId: group.id,
+            range,
+            startDate,
+            endDate,
+          }),
+          currency,
+          participants: {
+            some: {},
+          },
+          ...(categoryId
+            ? { categoryId }
+            : uncategorized
+              ? { categoryId: null }
+              : {}),
+          AND: [
+            ...(normalizedParticipantIds.length > 0
+              ? [
+                  {
+                    OR: [
+                      {
+                        paidById: {
+                          in: normalizedParticipantIds,
+                        },
+                      },
+                      {
+                        payers: {
+                          some: {
+                            memberId: {
+                              in: normalizedParticipantIds,
+                            },
+                          },
+                        },
+                      },
+                      {
+                        participants: {
+                          some: {
+                            memberId: {
+                              in: normalizedParticipantIds,
+                            },
+                          },
+                        },
+                      },
+                    ],
+                  },
+                ]
+              : []),
+            {
+              OR: [
+                { notes: null },
+                {
+                  notes: {
+                    not: {
+                      contains: '[SETTLEMENT:',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      });
+
+      return {
+        range,
+        startDate,
+        endDate,
+        expenseCount,
       };
     },
     getGroupReportsBalances: async ({

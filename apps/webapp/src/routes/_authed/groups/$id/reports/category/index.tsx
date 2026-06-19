@@ -26,6 +26,7 @@ import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { formatCurrency, formatLongDate } from '#/lib/i18n';
 import {
   useGroupExpensesInfiniteQuery,
+  useGroupReportsCategoryCountQuery,
   useGroupReportsSharesQuery,
   useGroupReportsTotalsQuery,
   useGroupSummaryQuery,
@@ -268,6 +269,21 @@ function RouteComponent() {
       enabled: isParticipantFilterActive,
     },
   );
+  const categoryCountQuery = useGroupReportsCategoryCountQuery(
+    id,
+    {
+      range: startDate || endDate ? 'custom' : 'all',
+      startDate,
+      endDate,
+      categoryId: categoryId ?? undefined,
+      uncategorized,
+      currency,
+      participantIds: isParticipantFilterActive
+        ? selectedParticipantIds
+        : undefined,
+    },
+    Boolean(categoryId || uncategorized),
+  );
 
   const selectedParticipants = useMemo(
     () =>
@@ -367,25 +383,20 @@ function RouteComponent() {
     ? selectedParticipantExpenses
     : baseFilteredExpenses;
   const historyExpenseCount = useMemo(() => {
+    if (typeof categoryCountQuery.data?.expenseCount === 'number') {
+      return categoryCountQuery.data.expenseCount;
+    }
+
     if (!isParticipantFilterActive) {
-      return category?.expenseCount ?? expenseCount ?? filteredExpenses.length;
+      return category?.expenseCount ?? expenseCount ?? 0;
     }
 
-    if (selectedParticipantIds.length === 1) {
-      return (
-        selectedMemberExpensesQueries[0]?.data?.pagination.total ??
-        filteredExpenses.length
-      );
-    }
-
-    return filteredExpenses.length;
+    return expenseCount ?? category?.expenseCount ?? 0;
   }, [
     category?.expenseCount,
+    categoryCountQuery.data?.expenseCount,
     expenseCount,
-    filteredExpenses.length,
     isParticipantFilterActive,
-    selectedMemberExpensesQueries,
-    selectedParticipantIds.length,
   ]);
 
   const visibleParticipantShares = isParticipantFilterActive

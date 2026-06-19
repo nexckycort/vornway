@@ -33,6 +33,8 @@ const groupExpensesEndpoint = client.api.groups[':id'].expenses.$get;
 const groupExpenseEndpoint =
   client.api.groups[':id'].expenses[':expenseId'].$get;
 const groupReportsTotalsEndpoint = client.api.groups[':id'].reports.totals.$get;
+const groupReportsCategoryCountEndpoint =
+  client.api.groups[':id'].reports['category-count'].$get;
 const groupReportsBalancesEndpoint =
   client.api.groups[':id'].reports.balances.$get;
 const groupReportsSharesEndpoint = client.api.groups[':id'].reports.shares.$get;
@@ -125,6 +127,13 @@ type GroupReportsBalancesSuccess = {
     isCurrentUser: boolean;
     balances: Record<string, number>;
   }>;
+};
+
+type GroupReportsCategoryCountSuccess = {
+  range: 'all' | 'custom';
+  startDate?: string;
+  endDate?: string;
+  expenseCount: number;
 };
 
 type GroupReportsSharesSuccess = {
@@ -440,6 +449,58 @@ export function useGroupReportsBalancesQuery(
       }
 
       return (await response.json()) as GroupReportsBalancesSuccess;
+    },
+  });
+}
+
+export function useGroupReportsCategoryCountQuery(
+  groupId: string,
+  filter: {
+    range: 'all' | 'custom';
+    startDate?: string;
+    endDate?: string;
+    categoryId?: string;
+    uncategorized?: boolean;
+    currency: string;
+    participantIds?: string[];
+  },
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: [
+      'group-reports-category-count',
+      groupId,
+      filter.range,
+      filter.startDate ?? null,
+      filter.endDate ?? null,
+      filter.categoryId ?? null,
+      filter.uncategorized ?? false,
+      filter.currency,
+      [...(filter.participantIds ?? [])].sort().join(','),
+    ],
+    enabled,
+    placeholderData: (previous) => previous,
+    queryFn: async () => {
+      const response = await groupReportsCategoryCountEndpoint({
+        param: { id: groupId },
+        query: {
+          range: filter.range,
+          currency: filter.currency,
+          ...(filter.categoryId ? { categoryId: filter.categoryId } : {}),
+          ...(filter.uncategorized ? { uncategorized: 'true' } : {}),
+          ...(filter.startDate ? { startDate: filter.startDate } : {}),
+          ...(filter.endDate ? { endDate: filter.endDate } : {}),
+          ...(filter.participantIds && filter.participantIds.length > 0
+            ? { participantIds: filter.participantIds.join(',') }
+            : {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('No se pudo cargar el total de gastos');
+      }
+
+      return (await response.json()) as GroupReportsCategoryCountSuccess;
     },
   });
 }

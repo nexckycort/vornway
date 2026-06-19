@@ -295,6 +295,9 @@ export type GroupsService = {
   getGroupReportsTotals: (
     input: GroupReportsTotalsInput,
   ) => Promise<GroupReportsTotalsResult>;
+  getGroupReportsCategoryCount: (
+    input: GroupReportsCategoryCountInput,
+  ) => Promise<GroupReportsCategoryCountResult>;
   getGroupReportsBalances: (
     input: GroupReportsBalancesInput,
   ) => Promise<GroupReportsBalancesResult>;
@@ -457,8 +460,22 @@ export type GroupReportsTotalsInput = {
   endDate?: string;
 };
 
+export type GroupReportsCategoryCountInput = GroupReportsTotalsInput & {
+  categoryId?: string;
+  uncategorized?: boolean;
+  currency: string;
+  participantIds?: string[];
+};
+
 export type GroupReportsBalancesInput = GroupReportsTotalsInput;
 export type GroupReportsSharesInput = GroupReportsTotalsInput;
+
+export type GroupReportsCategoryCountResult = {
+  range: 'all' | 'custom';
+  startDate?: string;
+  endDate?: string;
+  expenseCount: number;
+};
 
 export type GroupReportsTotalsResult = {
   range: 'all' | 'custom';

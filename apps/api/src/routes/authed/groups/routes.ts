@@ -14,6 +14,7 @@ import {
   groupMemberActionQuerySchema,
   groupMemberParamsSchema,
   groupParamsSchema,
+  groupReportsCategoryCountQuerySchema,
   groupReportsTotalsQuerySchema,
   listGroupExpensesQuerySchema,
   listGroupMemberExpensesQuerySchema,
@@ -450,6 +451,40 @@ const groups = new Hono<AppContext>()
           range: query.range,
           startDate: query.startDate,
           endDate: query.endDate,
+        });
+
+        return c.json(result);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Grupo no encontrado') {
+          return c.json({ error: error.message }, 404);
+        }
+        throw error;
+      }
+    },
+  )
+  .get(
+    '/:id/reports/category-count',
+    zValidator('param', groupParamsSchema),
+    zValidator('query', groupReportsCategoryCountQuerySchema),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      const query = c.req.valid('query');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupsService.getGroupReportsCategoryCount({
+          userId,
+          groupId: id,
+          range: query.range,
+          startDate: query.startDate,
+          endDate: query.endDate,
+          categoryId: query.categoryId,
+          uncategorized: query.uncategorized,
+          currency: query.currency,
+          participantIds: query.participantIds
+            ?.split(',')
+            .map((value) => value.trim())
+            .filter(Boolean),
         });
 
         return c.json(result);

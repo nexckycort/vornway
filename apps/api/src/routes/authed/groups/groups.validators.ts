@@ -78,6 +78,14 @@ export const groupReportsTotalsQuerySchema = z
     },
   );
 
+export const groupReportsCategoryCountQuerySchema =
+  groupReportsTotalsQuerySchema.extend({
+    categoryId: z.string().min(1).optional(),
+    uncategorized: z.coerce.boolean().optional(),
+    currency: z.string().min(1).max(8),
+    participantIds: z.string().trim().min(1).optional(),
+  });
+
 const expenseAttachmentImageSchema = z.object({
   dataUrl: z.string().min(1).max(15_000_000),
   fileName: z.string().min(1).max(200).optional(),

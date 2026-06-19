@@ -1,6 +1,6 @@
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Skeleton } from '#/components/ui/skeleton';
-import { getGroupDetailMessages } from '../../-messages';
+import { getGroupDetailMessages } from '../../../-messages';
 
 export function CategoryDetailSkeleton() {
   const t = getGroupDetailMessages();

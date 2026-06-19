@@ -39,6 +39,7 @@ import {
 } from '#/routes/_authed/groups/$id/-components/group-detail.utils';
 import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import type { ExpenseItem } from '#/routes/_authed/groups/$id/-types/group-detail.types';
+import { CategoryDetailSkeleton } from './-components/category-detail-skeleton';
 
 type ReportDateFilterMode = 'all' | 'day' | 'range';
 type PendingDrawerMode = Exclude<ReportDateFilterMode, 'all'> | null;
@@ -502,6 +503,13 @@ function RouteComponent() {
     selectedRange,
     t.reports.dates,
   ]);
+
+  const isInitialLoading =
+    groupQuery.isLoading || totalsQuery.isLoading || sharesQuery.isLoading;
+
+  if (isInitialLoading) {
+    return <CategoryDetailSkeleton />;
+  }
 
   const handleDateFilterModeChange = (value: ReportDateFilterMode) => {
     if (value === 'day') {

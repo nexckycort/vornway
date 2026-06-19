@@ -3,28 +3,36 @@ const slides = [
   {
     title: "Liquidación",
     description: "Liquida deudas sin cálculos manuales.",
-    image: "/figma/landing/screen-liquidacion.webp",
+    poster: "/figma/landing/screen-liquidacion.webp",
+    videoWebm: "/videos/settle-debt.webm",
+    videoMp4: "/videos/settle-debt.mp4",
     alt: "Pantalla de liquidación de deudas en Vornway",
     active: false,
   },
   {
     title: "Crear gastos",
     description: "Registra gastos en segundos",
-    image: "/figma/landing/screen-gasto.webp",
+    poster: "/figma/landing/screen-gasto.webp",
+    videoWebm: "/videos/create-expense.webm",
+    videoMp4: "/videos/create-expense.mp4",
     alt: "Pantalla para crear un gasto en Vornway",
     active: true,
   },
   {
     title: "Balance",
     description: "Descubre quién debe a quién rápidamente",
-    image: "/figma/landing/screen-balance.webp",
+    poster: "/figma/landing/screen-balance.webp",
+    videoWebm: "/videos/balance.webm",
+    videoMp4: "/videos/balance.mp4",
     alt: "Pantalla de balances de grupo en Vornway",
     active: false,
   },
   {
     title: "Reportes",
     description: "Entiende en qué se fue el dinero del grupo.",
-    image: "/figma/landing/screen-reportes.webp",
+    poster: "/figma/landing/screen-reportes.webp",
+    videoWebm: "/videos/report.webm",
+    videoMp4: "/videos/report.mp4",
     alt: "Pantalla de reportes de gastos en Vornway",
     active: false,
   },
@@ -140,7 +148,19 @@ const steps = [
           slides.map((slide, index) => (
             <article class="slide-card" data-carousel-card data-slide-index={index}>
               <div class="slide-image">
-                <img src={slide.image} alt={slide.alt} loading={slide.active ? "eager" : "lazy"} />
+                <video
+                  autoplay
+                  muted
+                  loop
+                  playsinline
+                  preload={slide.active ? "auto" : "metadata"}
+                  poster={slide.poster}
+                  aria-label={slide.alt}
+                  data-slide-video
+                >
+                  <source src={slide.videoWebm} type="video/webm" />
+                  <source src={slide.videoMp4} type="video/mp4" />
+                </video>
               </div>
               <div class="slide-copy">
                 <h2>{slide.title}</h2>
@@ -257,18 +277,30 @@ const steps = [
       const nextIndex = wrap(activeIndex + 1);
 
       cards.forEach((card, index) => {
+        const video = card.querySelector("[data-slide-video]");
         card.classList.remove("is-prev", "is-active", "is-next", "is-hidden");
         card.setAttribute("aria-hidden", "true");
 
         if (index === activeIndex) {
           card.classList.add("is-active");
           card.removeAttribute("aria-hidden");
+          if (video) {
+            const playPromise = video.play();
+            if (playPromise instanceof Promise) {
+              playPromise.catch(() => {});
+            }
+          }
         } else if (index === previousIndex) {
           card.classList.add("is-prev");
         } else if (index === nextIndex) {
           card.classList.add("is-next");
         } else {
           card.classList.add("is-hidden");
+        }
+
+        if (video && index !== activeIndex) {
+          video.pause();
+          video.currentTime = 0;
         }
       });
 
@@ -472,14 +504,14 @@ const steps = [
   .slider-wrap {
     position: relative;
     width: min(100%, 82rem);
-    min-height: 42rem;
+    min-height: 52rem;
     touch-action: pan-y;
   }
 
   .slide-track {
     position: relative;
     width: 100%;
-    height: 40rem;
+    height: 50rem;
   }
 
   .slide-card {
@@ -488,7 +520,7 @@ const steps = [
     left: 50%;
     display: flex;
     width: min(23rem, 28vw);
-    height: 38rem;
+    height: 48rem;
     flex-direction: column;
     gap: 1rem;
     overflow: hidden;
@@ -541,8 +573,8 @@ const steps = [
 
   .slide-image {
     position: relative;
-    flex: 1 1 auto;
-    min-height: 0;
+    flex: 0 0 auto;
+    aspect-ratio: 9 / 19.5;
     overflow: hidden;
     border-radius: 2rem;
     background: #fff;
@@ -552,7 +584,8 @@ const steps = [
     background: transparent;
   }
 
-  .slide-image img {
+  .slide-image img,
+  .slide-image video {
     display: block;
     width: 100%;
     height: 100%;
@@ -828,16 +861,16 @@ const steps = [
 
   @media (max-width: 1180px) {
     .slider-wrap {
-      min-height: 37rem;
+      min-height: 46rem;
     }
 
     .slide-track {
-      height: 35rem;
+      height: 44rem;
     }
 
     .slide-card {
       width: min(20.5rem, 30vw);
-      height: 33.5rem;
+      height: 42rem;
       border-radius: 2.2rem;
     }
 
@@ -889,16 +922,16 @@ const steps = [
     }
 
     .slider-wrap {
-      min-height: 33rem;
+      min-height: 40rem;
     }
 
     .slide-track {
-      height: 31rem;
+      height: 38rem;
     }
 
     .slide-card {
       width: min(18.5rem, 34vw);
-      height: 29.5rem;
+      height: 36rem;
       border-radius: 2rem;
       padding: 1rem;
     }
@@ -942,16 +975,16 @@ const steps = [
     }
 
     .slider-wrap {
-      min-height: 34rem;
+      min-height: 38.5rem;
     }
 
     .slide-track {
-      height: 31.8rem;
+      height: 36.5rem;
     }
 
     .slide-card {
       width: min(82vw, 22rem);
-      height: 30.5rem;
+      height: 35rem;
       border-radius: 2rem;
       padding: 1rem;
     }

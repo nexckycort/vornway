@@ -1,6 +1,6 @@
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { env } from '~/config/env';
-import { S3 } from '~/infrastructure/storage/r2';
+import { env } from '#/config/env';
+import { S3 } from '#/infrastructure/storage/r2';
 import { GROUP_IMAGE_ASSET_BASE_URL } from '../groups/group-image.service';
 
 const MAX_FEEDBACK_ATTACHMENT_BYTES = 10 * 1024 * 1024;

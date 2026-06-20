@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { env } from '~/config/env';
+import { env } from '#/config/env';
 
 export type OAuthClient = {
   client_id: string;
@@ -102,7 +102,8 @@ export async function resolveOAuthClient(
   redirectUri: string,
 ): Promise<OAuthClient | null> {
   const configured = parseConfiguredClients();
-  const knownClient = configured.byId.get(clientId) ?? dynamicClients.get(clientId);
+  const knownClient =
+    configured.byId.get(clientId) ?? dynamicClients.get(clientId);
 
   if (knownClient) {
     return knownClient.redirect_uris.includes(redirectUri) ? knownClient : null;

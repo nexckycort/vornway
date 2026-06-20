@@ -1,6 +1,6 @@
-import { db } from '~/infrastructure/database/connection';
-import { notificationService } from '~/modules/notifications';
-import { pushNotificationService } from '~/modules/push';
+import { db } from '#/infrastructure/database/connection';
+import { notificationService } from '#/modules/notifications';
+import { pushNotificationService } from '#/modules/push';
 import {
   buildActiveExpenseWhere,
   buildActiveGroupMemberWhere,

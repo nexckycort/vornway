@@ -1,8 +1,8 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 
-import { resolveGoogleMapsUrl } from '~/modules/maps/service';
-import type { AppContext } from '~/shared/types/app';
+import { resolveGoogleMapsUrl } from '#/modules/maps/service';
+import type { AppContext } from '#/shared/types/app';
 import { resolveMapUrlSchema } from './maps.validators';
 
 const maps = new Hono<AppContext>().post(

@@ -1,5 +1,9 @@
 {
   "name": "@vornway/api",
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
   "scripts": {
     "postinstall": "bun db:generate && bun build:rpc",
     "build:rpc": "tsc -p tsconfig.rpc.json",

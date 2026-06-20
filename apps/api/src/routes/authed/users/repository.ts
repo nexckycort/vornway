@@ -1,4 +1,4 @@
-import type { Tx } from '~/infrastructure/database/connection';
+import type { Tx } from '#/infrastructure/database/connection';
 
 export const userRepository = {
   updateAvatar: async (tx: Tx, input: { userId: string; imageUrl: string }) => {

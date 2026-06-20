@@ -1,4 +1,4 @@
-import { db } from '~/infrastructure/database/connection';
+import { db } from '#/infrastructure/database/connection';
 import {
   getVersionedGroupImageUrl,
   uploadGroupImage,

@@ -2,8 +2,8 @@ import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import * as z from 'zod';
 
-import { createGoalsService } from '~/modules/goals';
-import type { AppContext } from '~/shared/types/app';
+import { createGoalsService } from '#/modules/goals';
+import type { AppContext } from '#/shared/types/app';
 
 const goalsService = createGoalsService();
 

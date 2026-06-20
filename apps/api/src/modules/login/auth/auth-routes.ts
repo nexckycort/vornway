@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 
-import { auth } from '~/infrastructure/auth/better-auth.config';
+import { auth } from '#/infrastructure/auth/better-auth.config';
 
 export function createAuthProxyRouter(): Hono {
   const router = new Hono({ strict: false });

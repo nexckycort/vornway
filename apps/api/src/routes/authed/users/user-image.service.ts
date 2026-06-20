@@ -1,7 +1,7 @@
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 
-import { env } from '~/config/env';
-import { S3 } from '~/infrastructure/storage/r2';
+import { env } from '#/config/env';
+import { S3 } from '#/infrastructure/storage/r2';
 
 const MAX_USER_IMAGE_BYTES = 10 * 1024 * 1024;
 export const USER_IMAGE_ASSET_BASE_URL = 'https://assets.vornway.com';

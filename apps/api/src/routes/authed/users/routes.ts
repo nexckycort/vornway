@@ -1,6 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import type { AppContext } from '~/shared/types/app';
+import type { AppContext } from '#/shared/types/app';
 import { searchUsersQuerySchema, updateUserAvatarSchema } from './schema';
 import { userService } from './service';
 

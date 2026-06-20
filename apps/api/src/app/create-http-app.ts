@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { secureHeaders } from 'hono/secure-headers';
 
-import { auth } from '~/infrastructure/auth/better-auth.config';
+import { env } from '#/config/env';
+import { auth } from '#/infrastructure/auth/better-auth.config';
 import authedRoutes from '../routes/authed/routes';
 import publicRoutes from '../routes/public/routes';
 import { createMcpHttpRouter } from './mcp-http-routes';

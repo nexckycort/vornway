@@ -1,7 +1,7 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import { feedbackService } from '~/modules/feedback/service';
-import type { AppContext } from '~/shared/types/app';
+import { feedbackService } from '#/modules/feedback/service';
+import type { AppContext } from '#/shared/types/app';
 import { feedbackIdParamSchema } from './feedback.params';
 import {
   createFeedbackSchema,

@@ -1,7 +1,7 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import { notificationService } from '~/modules/notifications';
-import type { AppContext } from '~/shared/types/app';
+import { notificationService } from '#/modules/notifications';
+import type { AppContext } from '#/shared/types/app';
 import { listNotificationsQuerySchema } from './notifications.validators';
 
 const app = new Hono<AppContext>().get(

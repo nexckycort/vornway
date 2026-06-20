@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import { adminMiddleware } from '~/shared/middlewares/admin.middleware';
-import { authMiddleware } from '~/shared/middlewares/auth.middleware';
+import { adminMiddleware } from '#/shared/middlewares/admin.middleware';
+import { authMiddleware } from '#/shared/middlewares/auth.middleware';
 import adminRoutes from './admin/routes';
 import converterRoutes from './converter/routes';
 import feedbackRoutes from './feedback/routes';

@@ -1,5 +1,5 @@
-import { Prisma } from '~/generated/prisma/client';
-import { db } from '~/infrastructure/database/connection';
+import type { Prisma } from '#/generated/prisma/client';
+import { db } from '#/infrastructure/database/connection';
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 export const SUPPORTED_CURRENCIES = ['EUR', 'USD', 'COP'] as const;
@@ -125,7 +125,9 @@ export async function ensureCurrencyRatesFresh() {
       !Number.isFinite(copRate) ||
       copRate <= 0
     ) {
-      throw new Error('No se pudo actualizar la tasa desde el proveedor externo');
+      throw new Error(
+        'No se pudo actualizar la tasa desde el proveedor externo',
+      );
     }
 
     eurToUsd = usdRate;

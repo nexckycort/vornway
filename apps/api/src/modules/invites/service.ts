@@ -1,5 +1,5 @@
-import { db } from '~/infrastructure/database/connection';
-import { getVersionedGroupImageUrl } from '~/modules/groups/group-image.service';
+import { db } from '#/infrastructure/database/connection';
+import { getVersionedGroupImageUrl } from '#/modules/groups/group-image.service';
 import type {
   AcceptInviteInput,
   AcceptInviteResult,
@@ -11,9 +11,7 @@ export type InvitesService = {
     userId: string;
     inviteCode: string;
   }) => Promise<InvitePreviewResult>;
-  acceptInvite: (
-    input: AcceptInviteInput,
-  ) => Promise<AcceptInviteResult>;
+  acceptInvite: (input: AcceptInviteInput) => Promise<AcceptInviteResult>;
 };
 
 function normalizeName(value: string | null | undefined) {
@@ -63,10 +61,7 @@ export function createInvitesService(): InvitesService {
           name: group.name,
           type: group.type,
           description: group.description,
-          imageUrl: getVersionedGroupImageUrl(
-            group.imageUrl,
-            group.updatedAt,
-          ),
+          imageUrl: getVersionedGroupImageUrl(group.imageUrl, group.updatedAt),
           inviteCode: group.inviteCode,
           ownerName: group.owner?.name ?? null,
           memberCount: group.GroupMember.length,
@@ -126,9 +121,7 @@ export function createInvitesService(): InvitesService {
 
       const currentUserName = normalizeName(userName);
       const fallbackName =
-        currentUserName ||
-        normalizeName(userEmail?.split('@')[0]) ||
-        'Usuario';
+        currentUserName || normalizeName(userEmail?.split('@')[0]) || 'Usuario';
 
       if (memberId) {
         const selectedMember = await db.groupMember.findFirst({
@@ -196,10 +189,7 @@ export function createInvitesService(): InvitesService {
         },
       });
 
-      if (
-        !currentUserName ||
-        currentUserName.toLowerCase() === 'anonymous'
-      ) {
+      if (!currentUserName || currentUserName.toLowerCase() === 'anonymous') {
         await db.user.update({
           where: {
             id: userId,

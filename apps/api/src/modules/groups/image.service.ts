@@ -1,11 +1,11 @@
-import { db } from '~/infrastructure/database/connection';
+import { db } from '#/infrastructure/database/connection';
 import {
   deleteGroupImage,
   getVersionedGroupImageUrl,
   uploadGroupImage,
 } from './group-image.service';
-import type { UpdateGroupImageInput } from './types';
 import { buildGroupAccessWhere } from './helpers';
+import type { UpdateGroupImageInput } from './types';
 
 export function createGroupImageService() {
   return {

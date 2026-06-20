@@ -1,6 +1,6 @@
 import { hc } from 'hono/client';
-import type { AuthedRoutes } from '~/routes/authed/routes';
-import type { PublicRoutes } from '~/routes/public/routes';
+import type { AuthedRoutes } from '#/routes/authed/routes';
+import type { PublicRoutes } from '#/routes/public/routes';
 
 export type { InferRequestType, InferResponseType } from 'hono/client';
 

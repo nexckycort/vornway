@@ -5,9 +5,9 @@ import {
   sendOtpSchema,
   syncGoogleSchema,
   verifyOtpSchema,
-} from '~/modules/login/auth/schemas';
-import { createLoginService } from '~/modules/login/auth/service';
-import { createMcpAccessToken } from '~/modules/login/mcp/token';
+} from '#/modules/login/auth/schemas';
+import { createLoginService } from '#/modules/login/auth/service';
+import { createMcpAccessToken } from '#/modules/login/mcp/token';
 
 function otpStatus(
   code:

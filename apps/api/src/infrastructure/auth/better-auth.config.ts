@@ -2,9 +2,9 @@ import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { anonymous, emailOTP } from 'better-auth/plugins';
 
-import { env } from '~/config/env';
-import { db } from '~/infrastructure/database/connection';
-import { resend } from '~/infrastructure/email/resend.config';
+import { env } from '#/config/env';
+import { db } from '#/infrastructure/database/connection';
+import { resend } from '#/infrastructure/email/resend.config';
 
 const ONE_YEAR_IN_SECONDS = 60 * 60 * 24 * 365;
 

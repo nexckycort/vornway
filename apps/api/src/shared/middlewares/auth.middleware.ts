@@ -1,7 +1,7 @@
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 
-import { auth } from '~/infrastructure/auth/better-auth.config';
+import { auth } from '#/infrastructure/auth/better-auth.config';
 
 export const authMiddleware = createMiddleware(async (c, next) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });

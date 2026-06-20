@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 
-import { createHomeService } from '~/modules/home';
-import type { AppContext } from '~/shared/types/app';
+import { createHomeService } from '#/modules/home';
+import type { AppContext } from '#/shared/types/app';
 
 const homeService = createHomeService();
 

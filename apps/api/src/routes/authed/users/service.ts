@@ -1,5 +1,5 @@
-import { db } from '~/infrastructure/database/connection';
-import type { WithUserId } from '~/shared/types/app';
+import { db } from '#/infrastructure/database/connection';
+import type { WithUserId } from '#/shared/types/app';
 import { userRepository } from './repository';
 import type { SearchUsersQueryInput, UpdateUserAvatarInput } from './schema';
 import {

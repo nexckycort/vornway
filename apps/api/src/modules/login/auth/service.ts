@@ -1,5 +1,5 @@
-import { auth } from '~/infrastructure/auth/better-auth.config';
-import { db } from '~/infrastructure/database/connection';
+import { auth } from '#/infrastructure/auth/better-auth.config';
+import { db } from '#/infrastructure/database/connection';
 import type {
   LoginUser,
   SendOtpInput,
@@ -158,7 +158,11 @@ export function createLoginService(deps: LoginServiceDeps = {}): LoginService {
         });
 
         if (wasAnonymous && previousUserId && previousUserId !== user.id) {
-          await transferAndCleanupAnonymousUser(database, previousUserId, user.id);
+          await transferAndCleanupAnonymousUser(
+            database,
+            previousUserId,
+            user.id,
+          );
         }
 
         return {
@@ -199,7 +203,11 @@ export function createLoginService(deps: LoginServiceDeps = {}): LoginService {
       const { user } = session;
 
       if (wasAnonymous && previousUserId && previousUserId !== user.id) {
-        await transferAndCleanupAnonymousUser(database, previousUserId, user.id);
+        await transferAndCleanupAnonymousUser(
+          database,
+          previousUserId,
+          user.id,
+        );
       }
 
       return {

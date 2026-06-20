@@ -1,8 +1,8 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 
-import { createInvitesService } from '~/modules/invites/service';
-import type { AppContext } from '~/shared/types/app';
+import { createInvitesService } from '#/modules/invites/service';
+import type { AppContext } from '#/shared/types/app';
 import { acceptInviteSchema, inviteParamsSchema } from './invites.validators';
 
 const invitesService = createInvitesService();

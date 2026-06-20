@@ -1,7 +1,7 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import { pushNotificationService } from '~/modules/push';
-import type { AppContext } from '~/shared/types/app';
+import { pushNotificationService } from '#/modules/push';
+import type { AppContext } from '#/shared/types/app';
 import {
   pushSubscriptionSchema,
   revokePushSubscriptionSchema,

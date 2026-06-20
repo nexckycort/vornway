@@ -1,8 +1,8 @@
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { Hono } from 'hono';
 
-import { env } from '~/config/env';
-import { S3 } from '~/infrastructure/storage/r2';
+import { env } from '#/config/env';
+import { S3 } from '#/infrastructure/storage/r2';
 
 const app = new Hono().get('/groups/*', async (c) => {
   const key = c.req.param('*');
@@ -28,10 +28,13 @@ const app = new Hono().get('/groups/*', async (c) => {
     let bytes: Uint8Array<ArrayBuffer> = new Uint8Array();
 
     if (streamBody?.transformToByteArray) {
-      bytes = (await streamBody.transformToByteArray()) as Uint8Array<ArrayBuffer>;
+      bytes =
+        (await streamBody.transformToByteArray()) as Uint8Array<ArrayBuffer>;
     } else if (streamBody?.transformToWebStream) {
       const stream = streamBody.transformToWebStream();
-      bytes = new Uint8Array(await new Response(stream).arrayBuffer()) as Uint8Array<ArrayBuffer>;
+      bytes = new Uint8Array(
+        await new Response(stream).arrayBuffer(),
+      ) as Uint8Array<ArrayBuffer>;
     }
 
     if (bytes.byteLength === 0) {

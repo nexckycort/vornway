@@ -1,6 +1,6 @@
 import { createMiddleware } from 'hono/factory';
 
-import type { AppContext } from '~/shared/types/app';
+import type { AppContext } from '#/shared/types/app';
 
 export const ALLOWED_ADMIN_EMAIL = 'junior110120@gmail.com';
 

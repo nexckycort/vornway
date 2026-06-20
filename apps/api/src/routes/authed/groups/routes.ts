@@ -1,8 +1,8 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 
-import { createGroupsService } from '~/modules/groups/service';
-import type { AppContext } from '~/shared/types/app';
+import { createGroupsService } from '#/modules/groups/service';
+import type { AppContext } from '#/shared/types/app';
 import {
   addGroupMemberSchema,
   createGroupExpenseSchema,

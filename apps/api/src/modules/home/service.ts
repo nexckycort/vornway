@@ -1,5 +1,5 @@
-import { db } from '~/infrastructure/database/connection';
-import { resolveUserImageUrl } from '~/routes/authed/users/user-image.service';
+import { db } from '#/infrastructure/database/connection';
+import { resolveUserImageUrl } from '#/routes/authed/users/user-image.service';
 import { getVersionedGroupImageUrl } from '../groups/group-image.service';
 import type { HomeParticipantBalance, HomeSummary } from './types';
 

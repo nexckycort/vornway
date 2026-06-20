@@ -1,5 +1,5 @@
-import type { Prisma } from '~/generated/prisma/client';
-import { db } from '~/infrastructure/database/connection';
+import type { Prisma } from '#/generated/prisma/client';
+import { db } from '#/infrastructure/database/connection';
 import {
   deleteFeedbackAttachment,
   resolveFeedbackAttachmentUrl,

@@ -1,7 +1,7 @@
 import webpush from 'web-push';
 
-import { env } from '~/config/env';
-import { db } from '~/infrastructure/database/connection';
+import { env } from '#/config/env';
+import { db } from '#/infrastructure/database/connection';
 import type {
   PushNotificationPayload,
   PushNotificationService,
@@ -191,7 +191,12 @@ export function createPushNotificationService(
       });
 
       const uniqueSubscriptions = Array.from(
-        new Map(subscriptions.map((subscription) => [subscription.endpoint, subscription])).values(),
+        new Map(
+          subscriptions.map((subscription) => [
+            subscription.endpoint,
+            subscription,
+          ]),
+        ).values(),
       );
 
       if (uniqueSubscriptions.length === 0) {

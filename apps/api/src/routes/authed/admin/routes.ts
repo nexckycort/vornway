@@ -2,9 +2,9 @@ import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import * as z from 'zod';
 
-import { db } from '~/infrastructure/database/connection';
-import { resolveFeedbackAttachmentUrl } from '~/modules/feedback/attachment.service';
-import type { AppContext } from '~/shared/types/app';
+import { db } from '#/infrastructure/database/connection';
+import { resolveFeedbackAttachmentUrl } from '#/modules/feedback/attachment.service';
+import type { AppContext } from '#/shared/types/app';
 import { resolveUserImageUrl } from '../users/user-image.service';
 
 const listAdminFeedbackQuerySchema = z.object({

@@ -4,7 +4,7 @@ import type { AppContext } from '#/shared/types/app';
 import { searchUsersQuerySchema, updateUserAvatarSchema } from './schema';
 import { userService } from './service';
 
-const app = new Hono<AppContext>()
+const users = new Hono<AppContext>()
   .get('/search', zValidator('query', searchUsersQuerySchema), async (c) => {
     const { query } = c.req.valid('query');
     const { id: userId } = c.get('user');
@@ -35,4 +35,6 @@ const app = new Hono<AppContext>()
     }
   });
 
-export default app;
+export default users;
+
+export type UsersAppType = typeof users;

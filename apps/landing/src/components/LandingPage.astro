@@ -43,35 +43,35 @@ const groups = [
     title: "Viajes",
     description:
       "Organiza gastos de transporte, alojamiento, comida y actividades y mantén claros los balances del viaje.",
-    icon: "✈",
+    iconPath: "/icons/plane.svg",
     tone: "blue",
   },
   {
     title: "Roomates",
     description:
       "Divide recibos, compras y servicios del hogar. Todo queda organizado y visible para quienes comparten la vivienda.",
-    icon: "⌂",
+    iconPath: "/icons/house.svg",
     tone: "orange",
   },
   {
     title: "Eventos y celebraciones",
     description:
       "Controla gastos de fiestas, cumpleaños y reuniones. Divide cuentas fácilmente y evita confusiones al final.",
-    icon: "✦",
+    iconPath: "/icons/party-popper.svg",
     tone: "violet",
   },
   {
     title: "Amigos y salidas",
     description:
       "Gestiona comidas, regalos, escapadas y cualquier plan compartido. Todos pueden seguir los gastos en tiempo real.",
-    icon: "👥",
+    iconPath: "/icons/users.svg",
     tone: "pink",
   },
   {
     title: "Equipos y proyectos",
     description:
       "Centraliza gastos de actividades, eventos o viajes de trabajo. Mantén todo organizado en un solo lugar.",
-    icon: "▣",
+    iconPath: "/icons/briefcase-business.svg",
     tone: "green",
   },
 ];
@@ -206,7 +206,7 @@ const steps = [
       {
         groups.map((group) => (
           <article class={`group-card tone-${group.tone}`}>
-            <span class="group-icon" aria-hidden="true">{group.icon}</span>
+            <span class="group-icon" style={`--group-icon: url('${group.iconPath}')`} aria-hidden="true"></span>
             <div>
               <h3>{group.title}</h3>
               <p>{group.description}</p>
@@ -790,7 +790,16 @@ const steps = [
     height: 2.5rem;
     place-items: center;
     border-radius: 1.5rem;
-    font-size: 1rem;
+  }
+
+  .group-icon::before {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
+    background: currentColor;
+    content: "";
+    -webkit-mask: var(--group-icon) center / contain no-repeat;
+    mask: var(--group-icon) center / contain no-repeat;
   }
 
   .tone-blue .group-icon {

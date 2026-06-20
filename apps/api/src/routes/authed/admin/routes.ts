@@ -4,8 +4,8 @@ import * as z from 'zod';
 
 import { db } from '~/infrastructure/database/connection';
 import { resolveFeedbackAttachmentUrl } from '~/modules/feedback/attachment.service';
-import { resolveUserImageUrl } from '~/modules/users/user-image.service';
 import type { AppContext } from '~/shared/types/app';
+import { resolveUserImageUrl } from '../users/user-image.service';
 
 const listAdminFeedbackQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),

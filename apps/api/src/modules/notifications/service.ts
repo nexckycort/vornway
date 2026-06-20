@@ -1,5 +1,5 @@
 import { db } from '~/infrastructure/database/connection';
-import { resolveUserImageUrl } from '../users/user-image.service';
+import { resolveUserImageUrl } from '~/routes/authed/users/user-image.service';
 import type {
   ListNotificationsResult,
   NotificationInboxItem,

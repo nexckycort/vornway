@@ -6,3 +6,7 @@ export type AppContext = {
     session: typeof auth.$Infer.Session.session;
   };
 };
+
+export type WithUserId<T> = T & {
+  userId: string;
+};

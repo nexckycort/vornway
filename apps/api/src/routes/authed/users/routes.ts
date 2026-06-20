@@ -1,27 +1,22 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import { createUsersService } from '~/modules/users/service';
 import type { AppContext } from '~/shared/types/app';
-import {
-  searchUsersQuerySchema,
-  updateUserImageSchema,
-} from './users.validators';
-
-const usersService = createUsersService();
+import { searchUsersQuerySchema, updateUserAvatarSchema } from './schema';
+import { userService } from './service';
 
 const app = new Hono<AppContext>()
   .get('/search', zValidator('query', searchUsersQuerySchema), async (c) => {
     const { query } = c.req.valid('query');
     const { id: userId } = c.get('user');
-    const result = await usersService.searchUsers({ userId, query });
+    const result = await userService.searchUsers({ userId, query });
     return c.json(result);
   })
-  .patch('/me/image', zValidator('json', updateUserImageSchema), async (c) => {
+  .patch('/me/image', zValidator('json', updateUserAvatarSchema), async (c) => {
     const { dataUrl } = c.req.valid('json');
     const { id: userId } = c.get('user');
 
     try {
-      const result = await usersService.updateCurrentUserImage({
+      const result = await userService.updateCurrentUserImage({
         userId,
         dataUrl,
       });

@@ -1,3 +1,5 @@
+import { resolveAssetUrl } from '#/lib/asset-url';
+import { signIn, signOut, useSession } from '#/lib/auth-client';
 import {
   createContext,
   type ReactNode,
@@ -5,8 +7,6 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { resolveAssetUrl } from '#/lib/asset-url';
-import { signIn, signOut, useSession } from '#/lib/auth-client';
 
 const AUTH_USER_CACHE_KEY = 'vornway.auth.cached-user';
 
@@ -82,10 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isOnline, setIsOnline] = useState(getInitialOnlineState);
   const [loading, setLoading] = useState(false);
   const [forcedLoggedOut, setForcedLoggedOut] = useState(false);
-  const { data, isPending } = useSession();
+  const { data } = useSession();
 
-  const hasCachedUser = currentUser !== null;
-  const isAuthenticated = !forcedLoggedOut && (data !== null || hasCachedUser);
+  const isAuthenticated =
+    !forcedLoggedOut && (data !== null || currentUser !== null);
 
   const login = useCallback(async (email: string, otp: string) => {
     const result = await signIn.emailOtp({
@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        loading: (isPending && isOnline && !hasCachedUser) || loading,
+        loading: loading,
         isAuthenticated,
         login,
         logout,

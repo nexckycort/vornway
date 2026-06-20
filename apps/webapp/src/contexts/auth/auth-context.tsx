@@ -84,8 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [forcedLoggedOut, setForcedLoggedOut] = useState(false);
   const { data, isPending } = useSession();
 
-  const isAuthenticated =
-    !forcedLoggedOut && (data !== null || (!isOnline && currentUser !== null));
+  const hasCachedUser = currentUser !== null;
+  const isAuthenticated = !forcedLoggedOut && (data !== null || hasCachedUser);
 
   const login = useCallback(async (email: string, otp: string) => {
     const result = await signIn.emailOtp({
@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        loading: (isPending && isOnline) || loading,
+        loading: (isPending && isOnline && !hasCachedUser) || loading,
         isAuthenticated,
         login,
         logout,

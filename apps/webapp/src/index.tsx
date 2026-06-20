@@ -22,6 +22,10 @@ import { registerPushServiceWorker } from './lib/push-notifications';
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
 
+if (typeof document !== 'undefined') {
+  document.documentElement.lang = getCurrentLocale();
+}
+
 const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
@@ -43,15 +47,27 @@ function App() {
   const auth = useAuth();
 
   React.useEffect(() => {
-    void registerPushServiceWorker();
-    initOfflineSync();
+    const scheduleBackgroundSetup = () => {
+      void registerPushServiceWorker();
+      initOfflineSync();
+    };
+
+    if ('requestIdleCallback' in window) {
+      const idleCallbackId = window.requestIdleCallback(
+        scheduleBackgroundSetup,
+        {
+          timeout: 2000,
+        },
+      );
+
+      return () => window.cancelIdleCallback(idleCallbackId);
+    }
+
+    const timeoutId = globalThis.setTimeout(scheduleBackgroundSetup, 0);
+    return () => globalThis.clearTimeout(timeoutId);
   }, []);
 
-  React.useEffect(() => {
-    document.documentElement.lang = getCurrentLocale();
-  }, []);
-
-  if (auth.loading) return <FullscreenLoader />;
+  if (auth.loading && !auth.user) return <FullscreenLoader />;
 
   return <RouterProvider router={router} context={{ auth }} />;
 }

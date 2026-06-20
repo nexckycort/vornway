@@ -3,7 +3,7 @@ const slides = [
   {
     title: "Liquidación",
     description: "Liquida deudas sin cálculos manuales.",
-    poster: "/figma/landing/screen-liquidacion.webp",
+    poster: "/images/app-screens/screen-liquidacion.webp",
     videoWebm: "/videos/settle-debt.webm",
     videoMp4: "/videos/settle-debt.mp4",
     alt: "Pantalla de liquidación de deudas en Vornway",
@@ -12,7 +12,7 @@ const slides = [
   {
     title: "Crear gastos",
     description: "Registra gastos en segundos",
-    poster: "/figma/landing/screen-gasto.webp",
+    poster: "/images/app-screens/screen-gasto.webp",
     videoWebm: "/videos/create-expense.webm",
     videoMp4: "/videos/create-expense.mp4",
     alt: "Pantalla para crear un gasto en Vornway",
@@ -21,7 +21,7 @@ const slides = [
   {
     title: "Balance",
     description: "Descubre quién debe a quién rápidamente",
-    poster: "/figma/landing/screen-balance.webp",
+    poster: "/images/app-screens/screen-balance.webp",
     videoWebm: "/videos/balance.webm",
     videoMp4: "/videos/balance.mp4",
     alt: "Pantalla de balances de grupo en Vornway",
@@ -30,7 +30,7 @@ const slides = [
   {
     title: "Reportes",
     description: "Entiende en qué se fue el dinero del grupo.",
-    poster: "/figma/landing/screen-reportes.webp",
+    poster: "/images/app-screens/screen-reportes.webp",
     videoWebm: "/videos/report.webm",
     videoMp4: "/videos/report.mp4",
     alt: "Pantalla de reportes de gastos en Vornway",
@@ -148,8 +148,14 @@ const steps = [
           slides.map((slide, index) => (
             <article class="slide-card" data-carousel-card data-slide-index={index}>
               <div class="slide-image">
+                <img
+                  class="slide-poster"
+                  src={slide.poster}
+                  alt={slide.alt}
+                  loading={slide.active ? "eager" : "lazy"}
+                  aria-hidden="true"
+                />
                 <video
-                  autoplay
                   muted
                   loop
                   playsinline
@@ -213,7 +219,7 @@ const steps = [
 
   <section class="image-banner" aria-label="Vornway en uso durante un viaje">
     <img
-      src="/figma/landing/banner.webp"
+      src="/images/app-screens/banner.webp"
       alt="Grupo de amigos usando Vornway durante un viaje"
       loading="lazy"
     />
@@ -285,6 +291,7 @@ const steps = [
           card.classList.add("is-active");
           card.removeAttribute("aria-hidden");
           if (video) {
+            video.load();
             const playPromise = video.play();
             if (playPromise instanceof Promise) {
               playPromise.catch(() => {});
@@ -299,6 +306,7 @@ const steps = [
         }
 
         if (video && index !== activeIndex) {
+          card.classList.remove("is-video-playing");
           video.pause();
           video.currentTime = 0;
         }
@@ -310,6 +318,23 @@ const steps = [
         dot.setAttribute("aria-current", isActive ? "true" : "false");
       });
     };
+
+    cards.forEach((card) => {
+      const video = card.querySelector("[data-slide-video]");
+      if (!video) return;
+
+      video.addEventListener("playing", () => {
+        card.classList.add("is-video-playing");
+      });
+
+      video.addEventListener("pause", () => {
+        card.classList.remove("is-video-playing");
+      });
+
+      video.addEventListener("ended", () => {
+        card.classList.remove("is-video-playing");
+      });
+    });
 
     const move = (direction) => {
       activeIndex = wrap(activeIndex + direction);
@@ -584,6 +609,7 @@ const steps = [
     background: transparent;
   }
 
+  .slide-poster,
   .slide-image img,
   .slide-image video {
     display: block;
@@ -591,6 +617,26 @@ const steps = [
     height: 100%;
     object-fit: cover;
     object-position: top center;
+  }
+
+  .slide-poster,
+  .slide-image video {
+    position: absolute;
+    inset: 0;
+  }
+
+  .slide-poster {
+    z-index: 2;
+    transition: opacity 220ms ease;
+  }
+
+  .slide-card.is-video-playing .slide-poster {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .slide-image video {
+    z-index: 1;
   }
 
   .slide-copy {

@@ -98,9 +98,20 @@ const steps = [
 ];
 ---
 
+<noscript>
+  <style>
+    [data-reveal] {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+      filter: none !important;
+    }
+  </style>
+</noscript>
+
 <main class="figma-landing">
   <section class="hero" id="top">
-    <nav class="navbar" aria-label="Navegación principal">
+    <nav class="navbar" aria-label="Navegación principal" data-reveal>
       <a class="brand" href="#top" aria-label="Vornway">
         <img
           class="brand-logo"
@@ -119,7 +130,7 @@ const steps = [
     </nav>
 
     <div class="hero-content">
-      <div class="hero-copy">
+      <div class="hero-copy" data-reveal data-reveal-delay="80">
         <h1>La forma más fácil de organizar gastos en grupo</h1>
         <p>
           Crea grupos, registra gastos compartidos y mantén el control de quién
@@ -127,7 +138,7 @@ const steps = [
         </p>
       </div>
 
-      <div class="tags" aria-label="Funciones principales">
+      <div class="tags" aria-label="Funciones principales" data-reveal data-reveal-delay="180">
         <span>Divide gastos fácilmente</span>
         <span>Saldos en tiempo real</span>
         <span>Invita por QR o enlace</span>
@@ -137,6 +148,8 @@ const steps = [
     <div
       class="slider-wrap"
       data-showcase-carousel
+      data-reveal
+      data-reveal-delay="280"
       aria-label="Vista previa de funcionalidades"
     >
       <button class="slider-button slider-button-left" type="button" data-carousel-prev aria-label="Anterior">
@@ -182,7 +195,7 @@ const steps = [
       </button>
     </div>
 
-    <div class="pagination" data-carousel-pagination aria-label="Indicador de funcionalidad activa">
+    <div class="pagination" data-carousel-pagination data-reveal data-reveal-delay="360" aria-label="Indicador de funcionalidad activa">
       {
         slides.map((slide, index) => (
           <button
@@ -197,15 +210,15 @@ const steps = [
   </section>
 
   <section class="groups" id="features">
-    <div class="section-title">
+    <div class="section-title" data-reveal>
       <h2>Diseñado para cualquier grupo.</h2>
       <p>Desde un viaje entre amigos hasta una fiesta o compañeros de cuarto.</p>
     </div>
 
     <div class="group-grid">
       {
-        groups.map((group) => (
-          <article class={`group-card tone-${group.tone}`}>
+        groups.map((group, index) => (
+          <article class={`group-card tone-${group.tone}`} data-reveal data-reveal-delay={index * 80}>
             <span class="group-icon" style={`--group-icon: url('${group.iconPath}')`} aria-hidden="true"></span>
             <div>
               <h3>{group.title}</h3>
@@ -217,7 +230,7 @@ const steps = [
     </div>
   </section>
 
-  <section class="image-banner" aria-label="Vornway en uso durante un viaje">
+  <section class="image-banner" data-reveal aria-label="Vornway en uso durante un viaje">
     <img
       src="/images/app-screens/banner.webp"
       alt="Grupo de amigos usando Vornway durante un viaje"
@@ -226,7 +239,7 @@ const steps = [
   </section>
 
   <section class="start" id="how-it-works">
-    <div class="section-title">
+    <div class="section-title" data-reveal>
       <h2>Comienza ahora</h2>
       <p>
         Como Vornway actualmente funciona desde una URL web y no desde una app
@@ -236,8 +249,8 @@ const steps = [
 
     <div class="steps">
       {
-        steps.map((step) => (
-          <article class="step">
+        steps.map((step, index) => (
+          <article class="step" data-reveal data-reveal-delay={index * 90}>
             <span>{step.number}</span>
             <h3>{step.title}</h3>
             <p>{step.description}</p>
@@ -246,7 +259,7 @@ const steps = [
       }
     </div>
 
-    <a class="button button-primary start-cta" href="https://app.vornway.com">
+    <a class="button button-primary start-cta" href="https://app.vornway.com" data-reveal>
       Ir a la aplicación
     </a>
   </section>
@@ -265,6 +278,42 @@ const steps = [
 </main>
 
 <script is:inline>
+  const revealItems = Array.from(document.querySelectorAll("[data-reveal]"));
+
+  if (revealItems.length > 0) {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const reveal = (element) => {
+      if (element.hasAttribute("data-revealed")) return;
+
+      const delay = Number(element.getAttribute("data-reveal-delay") || 0);
+      element.setAttribute("data-revealed", "true");
+      element.style.setProperty("--reveal-delay", `${delay}ms`);
+      element.classList.add("is-visible");
+    };
+
+    if (prefersReducedMotion || !("IntersectionObserver" in window)) {
+      revealItems.forEach(reveal);
+    } else {
+      const revealObserver = new IntersectionObserver(
+        (entries, observer) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+
+            reveal(entry.target);
+            observer.unobserve(entry.target);
+          });
+        },
+        {
+          rootMargin: "0px 0px -14% 0px",
+          threshold: 0.12,
+        },
+      );
+
+      revealItems.forEach((item) => revealObserver.observe(item));
+    }
+  }
+
   const carousel = document.querySelector("[data-showcase-carousel]");
   const pagination = document.querySelector("[data-carousel-pagination]");
 
@@ -394,6 +443,141 @@ const steps = [
     color: var(--text);
     font-family: "Poppins", "Inter", "Segoe UI", sans-serif;
     letter-spacing: 0;
+  }
+
+  .figma-landing [data-reveal] {
+    --reveal-scale: 0.96;
+    --reveal-y: 3.75rem;
+
+    opacity: 0;
+    transform: translate3d(0, var(--reveal-y), 0) scale(var(--reveal-scale));
+    filter: blur(14px);
+    will-change: opacity, transform, filter, clip-path;
+  }
+
+  .figma-landing [data-reveal].is-visible {
+    animation: revealUp 980ms cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms) both;
+  }
+
+  .figma-landing .image-banner[data-reveal] {
+    --reveal-scale: 0.94;
+    --reveal-y: 5rem;
+  }
+
+  .figma-landing .image-banner[data-reveal] img {
+    transform: scale(1.06);
+  }
+
+  .figma-landing .image-banner[data-reveal].is-visible img {
+    animation: imageSettle 1250ms cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms) both;
+  }
+
+  .figma-landing .group-card[data-reveal],
+  .figma-landing .step[data-reveal] {
+    --reveal-scale: 0.94;
+    --reveal-y: 3rem;
+  }
+
+  .figma-landing .group-card[data-reveal].is-visible {
+    animation:
+      revealUp 980ms cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms) both,
+      softPulse 900ms ease-out calc(var(--reveal-delay, 0ms) + 180ms) both;
+  }
+
+  .figma-landing .step[data-reveal].is-visible {
+    animation: revealUp 980ms cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms) both;
+  }
+
+  .figma-landing .tags[data-reveal] span {
+    opacity: 0;
+    transform: translateY(1.25rem) scale(0.94);
+  }
+
+  .figma-landing .tags[data-reveal].is-visible span {
+    animation: chipReveal 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .figma-landing .tags[data-reveal].is-visible span:nth-child(1) {
+    animation-delay: calc(var(--reveal-delay, 0ms) + 0ms);
+  }
+
+  .figma-landing .tags[data-reveal].is-visible span:nth-child(2) {
+    animation-delay: calc(var(--reveal-delay, 0ms) + 100ms);
+  }
+
+  .figma-landing .tags[data-reveal].is-visible span:nth-child(3) {
+    animation-delay: calc(var(--reveal-delay, 0ms) + 200ms);
+  }
+
+  @keyframes revealUp {
+    from {
+      opacity: 0;
+      transform: translate3d(0, var(--reveal-y), 0) scale(var(--reveal-scale));
+      filter: blur(14px);
+    }
+
+    55% {
+      opacity: 1;
+      filter: blur(2px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes chipReveal {
+    from {
+      opacity: 0;
+      transform: translateY(1.25rem) scale(0.94);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes imageSettle {
+    from {
+      transform: scale(1.06);
+    }
+
+    to {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes softPulse {
+    0%,
+    100% {
+      box-shadow:
+        0 1px 2px -1px rgba(0, 0, 0, 0.1),
+        0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    45% {
+      box-shadow:
+        0 14px 34px rgba(222, 3, 77, 0.08),
+        0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .figma-landing [data-reveal],
+    .figma-landing [data-reveal].is-visible,
+    .figma-landing .image-banner[data-reveal] img,
+    .figma-landing .image-banner[data-reveal].is-visible img,
+    .figma-landing .tags[data-reveal] span,
+    .figma-landing .tags[data-reveal].is-visible span {
+      animation: none;
+      opacity: 1;
+      transform: none;
+      transition: none;
+      filter: none;
+    }
   }
 
   .hero {

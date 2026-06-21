@@ -24,12 +24,12 @@
         "types": "./dist/hc/index.d.ts",
         "default": "./dist/hc/index.js"
       }
-    }
-  },
-  "./hc/users": {
-    "import": {
-      "types": "./dist/hc/users.d.ts",
-      "default": "./dist/hc/users.js"
+    },
+    "./hc/users": {
+      "import": {
+        "types": "./dist/hc/users.d.ts",
+        "default": "./dist/hc/users.js"
+      }
     }
   },
   "dependencies": {

@@ -1,34 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import { usersClient } from '#/api/users';
 
-import { client } from '#/lib/hc';
-
-export type UserSearchItem = {
-  id: string;
-  name: string;
-  email: string;
-  isCurrentUser: boolean;
-};
-
-type UserSearchResponse = {
-  data: UserSearchItem[];
-};
-
-type UserSearchEndpoint = (args: {
-  query: {
-    query: string;
-  };
-}) => Promise<{
-  ok: boolean;
-  json: () => Promise<UserSearchResponse>;
-}>;
-
-const userSearchEndpoint = (client.api as unknown as {
-  users: {
-    search: {
-      $get: UserSearchEndpoint;
-    };
-  };
-}).users.search.$get;
+const userSearchEndpoint = usersClient.search.$get;
 
 export function useUserSearchQuery(query: string) {
   return useQuery({

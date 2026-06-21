@@ -26,7 +26,7 @@ import {
   useState,
 } from 'react';
 import { toast } from 'sonner';
-
+import { usersClient } from '#/api/users';
 import { Button } from '#/components/ui/button';
 import {
   Dialog,
@@ -45,7 +45,6 @@ import {
 import { useAuth } from '#/contexts/auth/use-auth';
 import { usePWAInstall } from '#/hooks/use-pwa-install';
 import { listSessions, revokeSession, useSession } from '#/lib/auth-client';
-import { client } from '#/lib/hc';
 import {
   changeLocale,
   formatDateTime,
@@ -138,7 +137,7 @@ function RouteComponent() {
 
       setPreviewImageUrl(dataUrl);
 
-      const uploadResponse = await client.api.users.me.image.$patch({
+      const uploadResponse = await usersClient.me.image.$patch({
         json: { dataUrl },
       });
 

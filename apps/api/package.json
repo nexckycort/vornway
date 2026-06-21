@@ -30,6 +30,12 @@
         "types": "./dist/hc/users.d.ts",
         "default": "./dist/hc/users.js"
       }
+    },
+    "./hc/feedback": {
+      "import": {
+        "types": "./dist/hc/feedback.d.ts",
+        "default": "./dist/hc/feedback.js"
+      }
     }
   },
   "dependencies": {

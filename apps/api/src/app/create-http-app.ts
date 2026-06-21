@@ -30,7 +30,7 @@ export function createHttpApp(): Hono {
 
   app.get('/version', (c) =>
     c.json({
-      version: process.env.VORNWAY_APP_VERSION ?? 'unknown',
+      version: process.env.APP_VERSION ?? 'unknown',
     }),
   );
 

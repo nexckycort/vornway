@@ -58,6 +58,9 @@ New API code that performs IO should use Effect.
   `DatabaseLive` from `#/infrastructure/database/layer`.
 - Keep repositories simple and DB-focused. Services decide where to wrap
   repository or external calls in Effect.
+- Repositories normally import and use `db` directly. Services should not pass
+  `db` into repository methods; pass a database handle only when the service
+  opens a transaction and needs the repository to use that `tx`.
 
 HTTP execution pattern:
 
@@ -151,7 +154,10 @@ After changing RPC routes or types, run `bun run build:rpc` from `apps/api`.
 ## Prisma And Transactions
 
 - Use `db` from `#/infrastructure/database/connection`.
-- When the service opens a transaction, pass `tx` to the repository.
+- Repository methods should use the module-level `db` by default. Do not pass
+  `db` from services just to call ordinary repository methods.
+- When the service opens a transaction, pass `tx` to the repository methods
+  that must participate in that transaction.
 - Repository types should describe the DB-adjacent shape, not necessarily the
   exact request shape.
 - If you change Prisma, add a migration when applicable and run

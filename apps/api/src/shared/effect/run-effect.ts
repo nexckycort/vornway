@@ -9,23 +9,31 @@ import type {
   ErrorStatusOf,
 } from '#/shared/errors/error-metadata';
 
-type HttpEffectResponse<A, E> =
-  | TypedResponse<A, 200, 'json'>
+type HttpSuccessStatus = 200 | 201;
+
+type HttpEffectResponse<A, E, S extends HttpSuccessStatus> =
+  | TypedResponse<A, S, 'json'>
   | TypedResponse<ErrorBody, ErrorStatusOf<E> | 500, 'json'>;
 
 export const runHttpEffect = async <
   A,
   E extends ErrorMetadata<ErrorMetadataStatus>,
+  S extends HttpSuccessStatus = 200,
 >(
   c: Context,
   effect: Effect.Effect<A, E, Database>,
-): Promise<HttpEffectResponse<A, E>> => {
+  successStatus: S = 200 as S,
+): Promise<HttpEffectResponse<A, E, S>> => {
   const exit = await Effect.runPromiseExit(
     effect.pipe(Effect.provide(DatabaseLive)),
   );
 
   if (Exit.isSuccess(exit)) {
-    return c.json(exit.value, 200) as unknown as HttpEffectResponse<A, E>;
+    return c.json(exit.value, successStatus) as unknown as HttpEffectResponse<
+      A,
+      E,
+      S
+    >;
   }
 
   const failure = Cause.failureOption(exit.cause);
@@ -39,7 +47,7 @@ export const runHttpEffect = async <
         message: error.message,
       },
       error.status,
-    ) as unknown as HttpEffectResponse<A, E>;
+    ) as unknown as HttpEffectResponse<A, E, S>;
   }
 
   return c.json(
@@ -48,5 +56,5 @@ export const runHttpEffect = async <
       message: 'Error interno del servidor',
     },
     500,
-  ) as unknown as HttpEffectResponse<A, E>;
+  ) as unknown as HttpEffectResponse<A, E, S>;
 };

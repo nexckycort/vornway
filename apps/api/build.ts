@@ -8,6 +8,6 @@ await Bun.build({
   sourcemap: 'linked',
   bytecode: true,
   define: {
-    'process.env.VORNWAY_APP_VERSION': JSON.stringify(Bun.randomUUIDv7()),
+    'process.env.APP_VERSION': JSON.stringify(Bun.randomUUIDv7()),
   },
 });

@@ -1,5 +1,12 @@
+import { Effect } from 'effect';
 import { db } from '#/infrastructure/database/connection';
+import { Database } from '#/infrastructure/database/context';
 import type { WithUserId } from '#/shared/types/app';
+import {
+  UserImageUpdateError,
+  UserImageUploadError,
+  UserNotFoundError,
+} from './errors';
 import { userRepository } from './repository';
 import type { SearchUsersQueryInput, UpdateUserAvatarInput } from './schema';
 import {
@@ -51,37 +58,72 @@ export const userService = {
       })),
     };
   },
-  updateCurrentUserImage: async ({
+  updateCurrentUserImage: ({
     userId,
     dataUrl,
-  }: WithUserId<UpdateUserAvatarInput>) => {
-    const nextImageUrl = await uploadUserImage({
-      userId,
-      dataUrl,
-    });
+  }: WithUserId<UpdateUserAvatarInput>) =>
+    Effect.gen(function* () {
+      const db = yield* Database;
 
-    return await db.$transaction(async (tx) => {
-      const currentUser = await tx.user.findUnique({
-        where: { id: userId },
-        select: { image: true },
+      const nextImageUrl = yield* Effect.tryPromise({
+        try: () =>
+          uploadUserImage({
+            userId,
+            dataUrl,
+          }),
+        catch: (cause) =>
+          new UserImageUploadError({
+            cause,
+          }),
       });
 
-      if (!currentUser) {
-        throw new Error('Usuario no encontrado');
-      }
+      const result = yield* Effect.tryPromise({
+        try: () =>
+          db.$transaction(async (tx) => {
+            const currentUser = await tx.user.findUnique({
+              where: { id: userId },
+              select: { image: true },
+            });
 
-      const updatedUser = await userRepository.updateAvatar(tx, {
-        userId,
-        imageUrl: nextImageUrl,
+            if (!currentUser) {
+              throw new UserNotFoundError({
+                userId,
+              });
+            }
+
+            const updatedUser = await userRepository.updateAvatar(tx, {
+              userId,
+              imageUrl: nextImageUrl,
+            });
+
+            return {
+              oldImageUrl: currentUser.image,
+              imageUrl: resolveUserImageUrl(
+                updatedUser.image,
+                updatedUser.updatedAt,
+              ),
+            };
+          }),
+        catch: (cause) => {
+          if (cause instanceof UserNotFoundError) {
+            return cause;
+          }
+
+          return new UserImageUpdateError({
+            cause,
+          });
+        },
       });
 
-      if (currentUser.image && currentUser.image !== nextImageUrl) {
-        await deleteUserImage(currentUser.image).catch(() => undefined);
+      if (result.oldImageUrl && result.oldImageUrl !== nextImageUrl) {
+        yield* Effect.tryPromise({
+          try: () => deleteUserImage(result.oldImageUrl!),
+          catch: () => undefined,
+        }).pipe(Effect.ignore);
       }
 
       return {
-        imageUrl: resolveUserImageUrl(updatedUser.image, updatedUser.updatedAt),
+        imageUrl: result.imageUrl,
       };
-    });
-  },
+    }).pipe(Effect.withSpan('users.update_current_user_image')),
 };

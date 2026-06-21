@@ -14,7 +14,7 @@ Each module must have:
 - `repository.ts`: DB access. Prisma queries and transaction operations live
   here.
 - `service.ts`: business rules. Orchestrates repositories, applies permissions,
-  and transforms data.
+  transforms data, and returns Effect programs for IO-heavy operations.
 - `routes.ts`: Hono HTTP entrypoint. Validates with `zValidator`, reads
   `c.req.valid`, reads user/context data from Hono, and calls the service.
 
@@ -38,6 +38,80 @@ schema.ts -> importable from routes/service when needed
   rule.
 - Service input types should come from `schema.ts` when they represent request
   data.
+
+## Effect Standard
+
+New API code that performs IO should use Effect.
+
+- Services should return `Effect.Effect<A, E, R>` for business operations with
+  DB, network, storage, or other side effects.
+- Routes should stay thin: validate input, read Hono context, call the service,
+  and execute the returned Effect with `runHttpEffect`.
+- Do not put ad-hoc `try/catch` response mapping in routes for expected domain
+  failures.
+- Use `Effect.gen` for multi-step workflows.
+- Use `Effect.tryPromise` at Promise boundaries and map failures into typed
+  domain errors.
+- Add spans with `Effect.withSpan` for important business workflows.
+- Use Effect requirements for infrastructure dependencies. The database context
+  is `Database` from `#/infrastructure/database/context`, and the live layer is
+  `DatabaseLive` from `#/infrastructure/database/layer`.
+- Keep repositories simple and DB-focused. Services decide where to wrap
+  repository or external calls in Effect.
+
+HTTP execution pattern:
+
+```ts
+return runHttpEffect(
+  c,
+  userService.updateCurrentUserImage({
+    userId,
+    dataUrl,
+  }),
+);
+```
+
+Service pattern:
+
+```ts
+const program = Effect.gen(function* () {
+  const db = yield* Database;
+
+  const row = yield* Effect.tryPromise({
+    try: () => db.user.findUnique({ where: { id: userId } }),
+    catch: (cause) => new UserLookupError({ cause }),
+  });
+
+  return row;
+}).pipe(Effect.withSpan('users.lookup'));
+```
+
+## Error Standard
+
+Expected domain failures should be typed errors, not generic exceptions.
+
+- Define module errors in `errors.ts`.
+- Use `Data.TaggedError('<ErrorName>')`.
+- Implement `ErrorMetadata<Status>` from `#/shared/errors/error-metadata`.
+- Include stable `code`, user-safe `message`, and required HTTP `status`.
+- Use literal statuses with `as const` when inference needs help.
+- `runHttpEffect` accepts failures extending `ErrorMetadata` and converts them
+  into typed HTTP JSON responses.
+
+Example:
+
+```ts
+export class UserNotFoundError
+  extends Data.TaggedError('UserNotFoundError')<{
+    userId: string;
+  }>
+  implements ErrorMetadata<404>
+{
+  readonly code = 'USER_NOT_FOUND';
+  readonly message = 'User not found';
+  readonly status = 404 as const;
+}
+```
 
 ## Hono And RPC
 

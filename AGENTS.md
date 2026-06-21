@@ -49,6 +49,10 @@ Add more files only when a subproject has real local rules, for example
 - `service.ts` contains business rules. `repository.ts` contains DB access.
   `routes.ts` only validates requests, reads user/context data, and calls
   services.
+- New API business logic that performs IO must use Effect. Services should
+  return `Effect.Effect<Success, DomainError, Requirements>` and routes should
+  execute those effects through the shared HTTP runner instead of using ad-hoc
+  `try/catch`.
 - Public routes that must be exposed to RPC clients must keep the chained router
   style described in `apps/api/README.md`.
 - Every module consumed by a client must export its Hono app type and have its
@@ -59,6 +63,9 @@ Add more files only when a subproject has real local rules, for example
 - After changing Prisma, run `bun run db:generate` in `apps/api` and add a
   migration when applicable.
 - Validate inputs with Zod and never trust client data for authorization.
+- Model domain failures with `Data.TaggedError` classes that implement shared
+  error metadata. Do not throw generic `Error` objects for expected API
+  failures.
 - Every paginated list endpoint must use cursor-based pagination with `limit`,
   optional `cursor`, and response shape `{ data, pagination: { limit, total,
   nextCursor } }`. Do not use `page`, `offset`, or `skip` as offset pagination.

@@ -1,5 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
+import { runHttpEffect } from '#/shared/effect/run-effect';
 import type { AppContext } from '#/shared/types/app';
 import { searchUsersQuerySchema, updateUserAvatarSchema } from './schema';
 import { userService } from './service';
@@ -15,24 +16,13 @@ const users = new Hono<AppContext>()
     const { dataUrl } = c.req.valid('json');
     const { id: userId } = c.get('user');
 
-    try {
-      const result = await userService.updateCurrentUserImage({
+    return runHttpEffect(
+      c,
+      userService.updateCurrentUserImage({
         userId,
         dataUrl,
-      });
-
-      return c.json(result);
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === 'Usuario no encontrado') {
-          return c.json({ error: error.message }, 404);
-        }
-
-        return c.json({ error: error.message }, 400);
-      }
-
-      throw error;
-    }
+      }),
+    );
   });
 
 export default users;

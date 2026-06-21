@@ -9,8 +9,14 @@ const users = new Hono<AppContext>()
   .get('/search', zValidator('query', searchUsersQuerySchema), async (c) => {
     const { query } = c.req.valid('query');
     const { id: userId } = c.get('user');
-    const result = await userService.searchUsers({ userId, query });
-    return c.json(result);
+
+    return runHttpEffect(
+      c,
+      userService.searchUsers({
+        userId,
+        query,
+      }),
+    );
   })
   .patch('/me/image', zValidator('json', updateUserAvatarSchema), async (c) => {
     const { dataUrl } = c.req.valid('json');

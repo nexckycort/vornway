@@ -12,6 +12,17 @@ export class UserNotFoundError
   readonly status = 404 as const;
 }
 
+export class UserSearchError
+  extends Data.TaggedError('UserSearchError')<{
+    cause: unknown;
+  }>
+  implements ErrorMetadata<500>
+{
+  readonly code = 'USER_SEARCH_FAILED';
+  readonly message = 'No se pudo buscar usuarios';
+  readonly status = 500 as const;
+}
+
 export class UserImageUploadError
   extends Data.TaggedError('UserImageUploadError')<{
     cause: unknown;

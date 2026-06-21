@@ -1,11 +1,11 @@
 import { Effect } from 'effect';
-import { db } from '#/infrastructure/database/connection';
 import { Database } from '#/infrastructure/database/context';
 import type { WithUserId } from '#/shared/types/app';
 import {
   UserImageUpdateError,
   UserImageUploadError,
   UserNotFoundError,
+  UserSearchError,
 } from './errors';
 import { userRepository } from './repository';
 import type { SearchUsersQueryInput, UpdateUserAvatarInput } from './schema';
@@ -16,47 +16,37 @@ import {
 } from './user-image.service';
 
 export const userService = {
-  searchUsers: async ({ userId, query }: WithUserId<SearchUsersQueryInput>) => {
+  searchUsers: ({ userId, query }: WithUserId<SearchUsersQueryInput>) => {
     const trimmedQuery = query.trim();
 
     if (!trimmedQuery) {
-      return { data: [] };
+      return Effect.succeed({ data: [] });
     }
 
-    const users = await db.user.findMany({
-      where: {
-        OR: [
-          {
-            name: {
-              contains: trimmedQuery,
-              mode: 'insensitive',
-            },
-          },
-          {
-            email: {
-              contains: trimmedQuery,
-              mode: 'insensitive',
-            },
-          },
-        ],
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-      },
-      orderBy: [{ name: 'asc' }, { email: 'asc' }],
-      take: 8,
-    });
+    return Effect.gen(function* () {
+      const db = yield* Database;
 
-    return {
-      data: users.map((user) => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        isCurrentUser: user.id === userId,
-      })),
-    };
+      const users = yield* Effect.tryPromise({
+        try: () =>
+          userRepository.search(db, {
+            query: trimmedQuery,
+            limit: 5,
+          }),
+        catch: (cause) =>
+          new UserSearchError({
+            cause,
+          }),
+      });
+
+      return {
+        data: users.map((user) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          isCurrentUser: user.id === userId,
+        })),
+      };
+    }).pipe(Effect.withSpan('users.search'));
   },
   updateCurrentUserImage: ({
     userId,

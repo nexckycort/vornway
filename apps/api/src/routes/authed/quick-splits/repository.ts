@@ -93,6 +93,61 @@ export const quickSplitsRepository = {
         },
       },
     }),
+  countAccessibleExpenses: (userId: string) =>
+    db.quickSplitExpense.count({
+      where: {
+        quickSplit: {
+          participants: {
+            some: {
+              userId,
+            },
+          },
+        },
+      },
+    }),
+  listAccessibleExpenses: (input: {
+    userId: string;
+    limit: number;
+    cursor?: string;
+  }) =>
+    db.quickSplitExpense.findMany({
+      where: {
+        quickSplit: {
+          participants: {
+            some: {
+              userId: input.userId,
+            },
+          },
+        },
+      },
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+      take: input.limit + 1,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        quickSplitId: true,
+        description: true,
+        amount: true,
+        currency: true,
+        createdAt: true,
+        paidBy: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        quickSplit: {
+          select: {
+            name: true,
+            _count: {
+              select: {
+                participants: true,
+              },
+            },
+          },
+        },
+      },
+    }),
   createExpense: (
     tx: Tx,
     input: {

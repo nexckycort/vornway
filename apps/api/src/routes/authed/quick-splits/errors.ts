@@ -88,3 +88,14 @@ export class QuickSplitExpenseCreateError
   readonly message = 'No se pudo crear el gasto del quick split';
   readonly status = 500 as const;
 }
+
+export class QuickSplitExpensesListError
+  extends Data.TaggedError('QuickSplitExpensesListError')<{
+    cause: unknown;
+  }>
+  implements ErrorMetadata<500>
+{
+  readonly code = 'QUICK_SPLIT_EXPENSES_LIST_FAILED';
+  readonly message = 'No se pudieron cargar los gastos con amigos';
+  readonly status = 500 as const;
+}

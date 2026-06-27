@@ -6,11 +6,48 @@ import type { AppContext } from '#/shared/types/app';
 import {
   createQuickSplitExpenseSchema,
   createQuickSplitSchema,
+  listQuickSplitExpensesQuerySchema,
+  listRecentQuickSplitExpensesQuerySchema,
   quickSplitParamsSchema,
 } from './schema';
 import { quickSplitsService } from './service';
 
+const quickSplitExpenses = new Hono<AppContext>()
+  .get(
+    '/recent',
+    zValidator('query', listRecentQuickSplitExpensesQuerySchema),
+    async (c) => {
+      const query = c.req.valid('query');
+      const { id: userId } = c.get('user');
+
+      return runHttpEffect(
+        c,
+        quickSplitsService.listRecentExpenses({
+          ...query,
+          userId,
+        }),
+      );
+    },
+  )
+  .get(
+    '/list',
+    zValidator('query', listQuickSplitExpensesQuerySchema),
+    async (c) => {
+      const query = c.req.valid('query');
+      const { id: userId } = c.get('user');
+
+      return runHttpEffect(
+        c,
+        quickSplitsService.listExpenses({
+          ...query,
+          userId,
+        }),
+      );
+    },
+  );
+
 const quickSplits = new Hono<AppContext>()
+  .route('/expenses', quickSplitExpenses)
   .post('/', zValidator('json', createQuickSplitSchema), async (c) => {
     const data = c.req.valid('json');
     const { id: userId } = c.get('user');

@@ -21,6 +21,7 @@ import { Route as AuthedhomeIndexRouteImport } from './routes/_authed/(home)/ind
 import { Route as AuthedGroupsNewRouteImport } from './routes/_authed/groups/new'
 import { Route as AuthedExpensesQuickSplitRouteImport } from './routes/_authed/expenses/quick-split'
 import { Route as AuthedExpensesNewRouteImport } from './routes/_authed/expenses/new'
+import { Route as AuthedExpensesFriendsRouteImport } from './routes/_authed/expenses/friends'
 import { Route as AuthedProfileStatsIndexRouteImport } from './routes/_authed/profile/stats/index'
 import { Route as AuthedProfileFeedbackIndexRouteImport } from './routes/_authed/profile/feedback/index'
 import { Route as AuthedIInviteCodeIndexRouteImport } from './routes/_authed/i/$inviteCode/index'
@@ -98,6 +99,11 @@ const AuthedExpensesQuickSplitRoute =
 const AuthedExpensesNewRoute = AuthedExpensesNewRouteImport.update({
   id: '/expenses/new',
   path: '/expenses/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedExpensesFriendsRoute = AuthedExpensesFriendsRouteImport.update({
+  id: '/expenses/friends',
+  path: '/expenses/friends',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedProfileStatsIndexRoute = AuthedProfileStatsIndexRouteImport.update({
@@ -211,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedhomeIndexRoute
   '/converter': typeof AuthedConverterRoute
   '/notifications': typeof AuthedNotificationsRoute
+  '/expenses/friends': typeof AuthedExpensesFriendsRoute
   '/expenses/new': typeof AuthedExpensesNewRoute
   '/expenses/quick-split': typeof AuthedExpensesQuickSplitRoute
   '/groups/new': typeof AuthedGroupsNewRouteWithChildren
@@ -242,6 +249,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthedhomeIndexRoute
   '/converter': typeof AuthedConverterRoute
   '/notifications': typeof AuthedNotificationsRoute
+  '/expenses/friends': typeof AuthedExpensesFriendsRoute
   '/expenses/new': typeof AuthedExpensesNewRoute
   '/expenses/quick-split': typeof AuthedExpensesQuickSplitRoute
   '/goals': typeof AuthedGoalsIndexRoute
@@ -274,6 +282,7 @@ export interface FileRoutesById {
   '/_public': typeof PublicRouteWithChildren
   '/_authed/converter': typeof AuthedConverterRoute
   '/_authed/notifications': typeof AuthedNotificationsRoute
+  '/_authed/expenses/friends': typeof AuthedExpensesFriendsRoute
   '/_authed/expenses/new': typeof AuthedExpensesNewRoute
   '/_authed/expenses/quick-split': typeof AuthedExpensesQuickSplitRoute
   '/_authed/groups/new': typeof AuthedGroupsNewRouteWithChildren
@@ -308,6 +317,7 @@ export interface FileRouteTypes {
     | '/'
     | '/converter'
     | '/notifications'
+    | '/expenses/friends'
     | '/expenses/new'
     | '/expenses/quick-split'
     | '/groups/new'
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/'
     | '/converter'
     | '/notifications'
+    | '/expenses/friends'
     | '/expenses/new'
     | '/expenses/quick-split'
     | '/goals'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
     | '/_public'
     | '/_authed/converter'
     | '/_authed/notifications'
+    | '/_authed/expenses/friends'
     | '/_authed/expenses/new'
     | '/_authed/expenses/quick-split'
     | '/_authed/groups/new'
@@ -488,6 +500,13 @@ declare module '@tanstack/react-router' {
       path: '/expenses/new'
       fullPath: '/expenses/new'
       preLoaderRoute: typeof AuthedExpensesNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/expenses/friends': {
+      id: '/_authed/expenses/friends'
+      path: '/expenses/friends'
+      fullPath: '/expenses/friends'
+      preLoaderRoute: typeof AuthedExpensesFriendsRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/profile/stats/': {
@@ -643,6 +662,7 @@ const AuthedGroupsNewRouteWithChildren = AuthedGroupsNewRoute._addFileChildren(
 interface AuthedRouteChildren {
   AuthedConverterRoute: typeof AuthedConverterRoute
   AuthedNotificationsRoute: typeof AuthedNotificationsRoute
+  AuthedExpensesFriendsRoute: typeof AuthedExpensesFriendsRoute
   AuthedExpensesNewRoute: typeof AuthedExpensesNewRoute
   AuthedExpensesQuickSplitRoute: typeof AuthedExpensesQuickSplitRoute
   AuthedGroupsNewRoute: typeof AuthedGroupsNewRouteWithChildren
@@ -672,6 +692,7 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedConverterRoute: AuthedConverterRoute,
   AuthedNotificationsRoute: AuthedNotificationsRoute,
+  AuthedExpensesFriendsRoute: AuthedExpensesFriendsRoute,
   AuthedExpensesNewRoute: AuthedExpensesNewRoute,
   AuthedExpensesQuickSplitRoute: AuthedExpensesQuickSplitRoute,
   AuthedGroupsNewRoute: AuthedGroupsNewRouteWithChildren,

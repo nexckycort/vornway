@@ -22,6 +22,23 @@ export const quickSplitParamsSchema = z.object({
   id: z.string().min(1),
 });
 
+export const listRecentQuickSplitExpensesQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(10).default(3),
+});
+
+export type ListRecentQuickSplitExpensesQueryInput = z.infer<
+  typeof listRecentQuickSplitExpensesQuerySchema
+>;
+
+export const listQuickSplitExpensesQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(12),
+  cursor: z.string().trim().min(1).optional(),
+});
+
+export type ListQuickSplitExpensesQueryInput = z.infer<
+  typeof listQuickSplitExpensesQuerySchema
+>;
+
 export const createQuickSplitExpenseSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -77,4 +94,32 @@ export type CreateQuickSplitExpenseResult = {
     share: number;
   }>;
   createdAt: string;
+};
+
+export type QuickSplitExpenseFeedItem = {
+  id: string;
+  quickSplitId: string;
+  quickSplitName: string;
+  description: string;
+  amount: number;
+  currency: string;
+  participantCount: number;
+  paidBy: {
+    id: string;
+    name: string;
+  };
+  createdAt: string;
+};
+
+export type ListRecentQuickSplitExpensesResult = {
+  data: QuickSplitExpenseFeedItem[];
+};
+
+export type ListQuickSplitExpensesResult = {
+  data: QuickSplitExpenseFeedItem[];
+  pagination: {
+    limit: number;
+    total: number;
+    nextCursor: string | null;
+  };
 };

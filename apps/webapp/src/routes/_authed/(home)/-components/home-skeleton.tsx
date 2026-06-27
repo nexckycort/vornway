@@ -24,7 +24,19 @@ export function HomeSkeleton() {
         <Skeleton className="h-[118px] rounded-[24px]" />
       </section>
 
-      <HomeSection title={t.recentGroups} className="mt-7" viewAllTo="/groups">
+      <HomeSection
+        title={t.recentExpenses}
+        className="mt-7"
+        viewAllTo="/expenses/friends"
+      >
+        <div className="flex flex-col gap-4">
+          <HomeExpenseSkeleton />
+          <HomeExpenseSkeleton />
+          <HomeExpenseSkeleton />
+        </div>
+      </HomeSection>
+
+      <HomeSection title={t.recentGroups} className="mt-8" viewAllTo="/groups">
         <div className="flex flex-col gap-4">
           <HomeTripSkeleton />
           <HomeTripSkeleton />
@@ -63,6 +75,29 @@ function HomeTripSkeleton() {
         <Skeleton className="h-5 w-36 rounded-full" />
         <Skeleton className="h-3 w-full rounded-full" />
         <Skeleton className="h-3 w-4/5 rounded-full" />
+      </div>
+    </div>
+  );
+}
+
+function HomeExpenseSkeleton() {
+  return (
+    <div className="rounded-[24px] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+      <div className="flex items-center gap-3">
+        <Skeleton className="size-11 rounded-2xl" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-4 w-32 rounded-full" />
+              <Skeleton className="h-3 w-28 rounded-full" />
+              <Skeleton className="h-3 w-16 rounded-full" />
+            </div>
+            <div className="space-y-2 text-right">
+              <Skeleton className="h-4 w-16 rounded-full" />
+              <Skeleton className="h-3 w-14 rounded-full" />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

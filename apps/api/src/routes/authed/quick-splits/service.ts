@@ -7,6 +7,7 @@ import {
   QuickSplitExpenseParticipantsInvalidError,
   QuickSplitExpensePayerInvalidError,
   QuickSplitExpenseSharesInvalidError,
+  QuickSplitExpensesListError,
   QuickSplitNotFoundError,
   QuickSplitParticipantsNotFoundError,
   QuickSplitParticipantsRequiredError,
@@ -17,6 +18,11 @@ import type {
   CreateQuickSplitExpenseResult,
   CreateQuickSplitInput,
   CreateQuickSplitResult,
+  ListQuickSplitExpensesQueryInput,
+  ListQuickSplitExpensesResult,
+  ListRecentQuickSplitExpensesQueryInput,
+  ListRecentQuickSplitExpensesResult,
+  QuickSplitExpenseFeedItem,
 } from './schema';
 
 function normalizeAmount(value: number): number {
@@ -49,6 +55,40 @@ function createEqualShares(input: {
   });
 
   return shares;
+}
+
+function mapQuickSplitExpenseFeedItem(input: {
+  id: string;
+  quickSplitId: string;
+  description: string;
+  amount: number;
+  currency: string;
+  createdAt: Date;
+  paidBy: {
+    id: string;
+    name: string;
+  };
+  quickSplit: {
+    name: string;
+    _count: {
+      participants: number;
+    };
+  };
+}): QuickSplitExpenseFeedItem {
+  return {
+    id: input.id,
+    quickSplitId: input.quickSplitId,
+    quickSplitName: input.quickSplit.name,
+    description: input.description,
+    amount: input.amount,
+    currency: input.currency,
+    participantCount: input.quickSplit._count.participants,
+    paidBy: {
+      id: input.paidBy.id,
+      name: input.paidBy.name,
+    },
+    createdAt: input.createdAt.toISOString(),
+  };
 }
 
 function createExactShares(input: {
@@ -110,6 +150,63 @@ function createExactShares(input: {
 }
 
 export const quickSplitsService = {
+  listRecentExpenses: Effect.fn('quick_splits.list_recent_expenses')(
+    function* ({
+      userId,
+      limit,
+    }: ListRecentQuickSplitExpensesQueryInput & {
+      userId: string;
+    }) {
+      yield* Database;
+
+      const rows = yield* Effect.tryPromise({
+        try: () =>
+          quickSplitsRepository.listAccessibleExpenses({
+            userId,
+            limit,
+          }),
+        catch: (cause) => new QuickSplitExpensesListError({ cause }),
+      });
+
+      return {
+        data: rows.slice(0, limit).map(mapQuickSplitExpenseFeedItem),
+      } satisfies ListRecentQuickSplitExpensesResult;
+    },
+  ),
+  listExpenses: Effect.fn('quick_splits.list_expenses')(function* ({
+    userId,
+    limit,
+    cursor,
+  }: ListQuickSplitExpensesQueryInput & {
+    userId: string;
+  }) {
+    yield* Database;
+
+    const [total, rows] = yield* Effect.tryPromise({
+      try: () =>
+        Promise.all([
+          quickSplitsRepository.countAccessibleExpenses(userId),
+          quickSplitsRepository.listAccessibleExpenses({
+            userId,
+            limit,
+            cursor,
+          }),
+        ]),
+      catch: (cause) => new QuickSplitExpensesListError({ cause }),
+    });
+
+    const hasNextPage = rows.length > limit;
+    const data = hasNextPage ? rows.slice(0, limit) : rows;
+
+    return {
+      data: data.map(mapQuickSplitExpenseFeedItem),
+      pagination: {
+        limit,
+        total,
+        nextCursor: hasNextPage ? (data.at(-1)?.id ?? null) : null,
+      },
+    } satisfies ListQuickSplitExpensesResult;
+  }),
   create: ({
     id,
     userId,

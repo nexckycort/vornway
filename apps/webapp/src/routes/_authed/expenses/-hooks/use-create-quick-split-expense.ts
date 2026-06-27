@@ -69,7 +69,10 @@ export function useCreateQuickSplitExpenseMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['home-summary'] });
       void queryClient.invalidateQueries({
-        queryKey: ['home-recent-expenses'],
+        queryKey: ['home-recent-quick-split-expenses'],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['quick-split-expenses'],
       });
     },
   });

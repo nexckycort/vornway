@@ -1,17 +1,13 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '#/components/ui/button';
 import { useAuth } from '#/contexts/auth/use-auth';
-import {
-  getPendingExpensesForGroup,
-  subscribePendingExpenses,
-} from '#/lib/offline-expense-query-collection';
 import { HomeAction } from '#/routes/_authed/(home)/-components/home-action';
 import { homeIcons } from '#/routes/_authed/(home)/-components/home-icons';
 import { HomeSection } from '#/routes/_authed/(home)/-components/home-section';
 import { HomeSkeleton } from '#/routes/_authed/(home)/-components/home-skeleton';
 import { RecentExpenseCard } from '#/routes/_authed/(home)/-components/recent-expense-card';
+import { SavingGoalCard } from '#/routes/_authed/(home)/-components/saving-goal-card';
 import { TripCard } from '#/routes/_authed/(home)/-components/trip-card';
 import {
   emptyHomeData,
@@ -20,21 +16,10 @@ import {
 import { useHomeRecentExpensesQuery } from '#/routes/_authed/(home)/-hooks/use-home-recent-expenses-query';
 import { useNotificationsSummaryQuery } from '#/routes/_authed/(home)/-hooks/use-notifications-summary-query';
 import { getHomeMessages } from '#/routes/_authed/(home)/-messages';
-import type { ExpenseItem } from '#/routes/_authed/groups/$id/-types/group-detail.types';
 
 export const Route = createFileRoute('/_authed/(home)/')({
   component: RouteComponent,
 });
-
-function compareExpenseDate(
-  left: { expense: ExpenseItem },
-  right: { expense: ExpenseItem },
-) {
-  return (
-    new Date(right.expense.date).getTime() -
-    new Date(left.expense.date).getTime()
-  );
-}
 
 function RouteComponent() {
   const navigate = useNavigate();
@@ -43,72 +28,13 @@ function RouteComponent() {
   const homeQuery = useHomeQuery();
   const notificationsSummaryQuery = useNotificationsSummaryQuery();
   const data = homeQuery.data ?? emptyHomeData;
-  const recentExpensesQuery = useHomeRecentExpensesQuery(data.recentGroups);
+  const recentExpensesQuery = useHomeRecentExpensesQuery();
   const userName = user?.name?.trim() || t.fallbackUser;
   const BellIcon = homeIcons.bell;
   const PlusIcon = homeIcons.plus;
   const hasGroups = data.trips.length > 0;
   const hasUnreadNotifications =
     (notificationsSummaryQuery.data?.unreadCount ?? 0) > 0;
-  const [pendingRecentExpenses, setPendingRecentExpenses] = useState<
-    Array<{
-      id: string;
-      groupId: string;
-      groupName: string;
-      syncStatus: 'pending';
-      expense: ExpenseItem;
-    }>
-  >([]);
-
-  useEffect(() => {
-    const readPendingRecentExpenses = () =>
-      data.recentGroups.flatMap((group) =>
-        getPendingExpensesForGroup(group.id).map((expense) => ({
-          id: expense.id,
-          groupId: group.id,
-          groupName: group.name,
-          syncStatus: 'pending' as const,
-          expense: {
-            id: expense.id,
-            category: null,
-            description: expense.payload.description,
-            amount: expense.payload.amount,
-            currency: expense.payload.currency,
-            date: expense.createdAt,
-            isDeleted: false,
-            isSettlement: false,
-            isPersonal: false,
-            expenseType: 'standard' as const,
-            subExpenseCount: 0,
-            settlementToName: null,
-            paidBy: {
-              id: expense.payload.paidByIds?.[0] ?? '',
-              name: 'Tú',
-            },
-            paidByMembers: [],
-            participantCount: expense.payload.participantIds?.length ?? 0,
-            currentUserBalance: null,
-            attachmentUrl: null,
-          },
-        })),
-      );
-
-    setPendingRecentExpenses(readPendingRecentExpenses());
-    return subscribePendingExpenses(() => {
-      setPendingRecentExpenses(readPendingRecentExpenses());
-    });
-  }, [data.recentGroups]);
-  const recentExpenses = useMemo(() => {
-    const merged = [
-      ...pendingRecentExpenses,
-      ...recentExpensesQuery.data.filter(
-        (item) =>
-          !pendingRecentExpenses.some((pending) => pending.id === item.id),
-      ),
-    ];
-
-    return merged.sort(compareExpenseDate).slice(0, 3);
-  }, [pendingRecentExpenses, recentExpensesQuery.data]);
 
   const handleCreateExpense = () => {
     void navigate({ to: '/expenses/new' });
@@ -216,21 +142,13 @@ function RouteComponent() {
               ) : (
                 <>
                   <HomeSection
-                    title={t.recentGroups}
+                    title={t.recentExpenses}
                     className="mt-7"
-                    viewAllTo="/groups"
+                    viewAllTo="/expenses/friends"
                   >
-                    <div className="flex flex-col gap-4">
-                      {data.trips.map((trip) => (
-                        <TripCard key={trip.id} trip={trip} />
-                      ))}
-                    </div>
-                  </HomeSection>
-
-                  <HomeSection title={t.recentExpenses} className="mt-8">
-                    {recentExpenses.length > 0 ? (
+                    {recentExpensesQuery.data.length > 0 ? (
                       <div className="flex flex-col gap-4">
-                        {recentExpenses.map((item) => (
+                        {recentExpensesQuery.data.map((item) => (
                           <RecentExpenseCard key={item.id} item={item} />
                         ))}
                       </div>
@@ -254,6 +172,48 @@ function RouteComponent() {
                           className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"
                         >
                           {t.createExpense}
+                        </button>
+                      </div>
+                    )}
+                  </HomeSection>
+
+                  <HomeSection
+                    title={t.recentGroups}
+                    className="mt-8"
+                    viewAllTo="/groups"
+                  >
+                    <div className="flex flex-col gap-4">
+                      {data.trips.map((trip) => (
+                        <TripCard key={trip.id} trip={trip} />
+                      ))}
+                    </div>
+                  </HomeSection>
+
+                  <HomeSection
+                    title={t.savingGoals}
+                    className="mt-8"
+                    viewAllTo="/goals"
+                  >
+                    {data.savingGoals.length > 0 ? (
+                      <div className="flex flex-col gap-4">
+                        {data.savingGoals.map((goal) => (
+                          <SavingGoalCard key={goal.id} goal={goal} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-[28px] border border-dashed border-[#e5e7eb] bg-white px-5 py-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                        <p className="text-base font-semibold text-[#111827]">
+                          {t.savingGoals}
+                        </p>
+                        <p className="mt-2 text-sm text-[#6b7280]">
+                          {t.createGoal}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => void navigate({ to: '/goals/new' })}
+                          className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"
+                        >
+                          {t.createGoal}
                         </button>
                       </div>
                     )}

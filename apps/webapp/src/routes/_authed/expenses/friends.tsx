@@ -1,4 +1,9 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  Outlet,
+  useNavigate,
+  useRouterState,
+} from '@tanstack/react-router';
 import { Plus, UsersRound } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
 
@@ -14,8 +19,15 @@ export const Route = createFileRoute('/_authed/expenses/friends')({
 function RouteComponent() {
   const t = getHomeMessages();
   const navigate = useNavigate();
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const expensesQuery = useQuickSplitExpensesInfiniteQuery();
+
+  if (pathname !== '/expenses/friends') {
+    return <Outlet />;
+  }
 
   const expenses = useMemo(
     () => expensesQuery.data?.pages.flatMap((page) => page.data) ?? [],

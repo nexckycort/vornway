@@ -93,6 +93,98 @@ export const quickSplitsRepository = {
         },
       },
     }),
+  findAccessibleExpenseDetail: (input: {
+    quickSplitId: string;
+    expenseId: string;
+    userId: string;
+  }) =>
+    db.quickSplitExpense.findFirst({
+      where: {
+        id: input.expenseId,
+        quickSplitId: input.quickSplitId,
+        quickSplit: {
+          participants: {
+            some: {
+              userId: input.userId,
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        quickSplitId: true,
+        description: true,
+        amount: true,
+        currency: true,
+        splitMethod: true,
+        createdAt: true,
+        paidBy: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            updatedAt: true,
+          },
+        },
+        quickSplit: {
+          select: {
+            name: true,
+            participants: {
+              select: {
+                userId: true,
+                role: true,
+                user: {
+                  select: {
+                    name: true,
+                    image: true,
+                    updatedAt: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        participants: {
+          select: {
+            userId: true,
+            share: true,
+          },
+          orderBy: [{ userId: 'asc' }],
+        },
+      },
+    }),
+  findAccessibleExpense: (input: {
+    quickSplitId: string;
+    expenseId: string;
+    userId: string;
+  }) =>
+    db.quickSplitExpense.findFirst({
+      where: {
+        id: input.expenseId,
+        quickSplitId: input.quickSplitId,
+        quickSplit: {
+          participants: {
+            some: {
+              userId: input.userId,
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        quickSplitId: true,
+      },
+    }),
+  deleteExpense: (tx: Tx, expenseId: string) =>
+    tx.quickSplitExpense.delete({
+      where: {
+        id: expenseId,
+      },
+      select: {
+        id: true,
+        quickSplitId: true,
+      },
+    }),
   countAccessibleExpenses: (userId: string) =>
     db.quickSplitExpense.count({
       where: {

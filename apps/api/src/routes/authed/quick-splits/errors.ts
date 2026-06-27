@@ -89,6 +89,17 @@ export class QuickSplitExpenseCreateError
   readonly status = 500 as const;
 }
 
+export class QuickSplitExpenseNotFoundError
+  extends Data.TaggedError('QuickSplitExpenseNotFoundError')<{
+    expenseId: string;
+  }>
+  implements ErrorMetadata<404>
+{
+  readonly code = 'QUICK_SPLIT_EXPENSE_NOT_FOUND';
+  readonly message = 'Gasto con amigos no encontrado';
+  readonly status = 404 as const;
+}
+
 export class QuickSplitExpensesListError
   extends Data.TaggedError('QuickSplitExpensesListError')<{
     cause: unknown;
@@ -97,5 +108,27 @@ export class QuickSplitExpensesListError
 {
   readonly code = 'QUICK_SPLIT_EXPENSES_LIST_FAILED';
   readonly message = 'No se pudieron cargar los gastos con amigos';
+  readonly status = 500 as const;
+}
+
+export class QuickSplitExpenseDetailError
+  extends Data.TaggedError('QuickSplitExpenseDetailError')<{
+    cause: unknown;
+  }>
+  implements ErrorMetadata<500>
+{
+  readonly code = 'QUICK_SPLIT_EXPENSE_DETAIL_FAILED';
+  readonly message = 'No se pudo cargar el detalle del gasto con amigos';
+  readonly status = 500 as const;
+}
+
+export class QuickSplitExpenseDeleteError
+  extends Data.TaggedError('QuickSplitExpenseDeleteError')<{
+    cause: unknown;
+  }>
+  implements ErrorMetadata<500>
+{
+  readonly code = 'QUICK_SPLIT_EXPENSE_DELETE_FAILED';
+  readonly message = 'No se pudo eliminar el gasto con amigos';
   readonly status = 500 as const;
 }

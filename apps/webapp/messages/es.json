@@ -52,6 +52,7 @@
   },
   "bottomBar": {
     "home": "Inicio",
+    "friends": "Amigos",
     "groups": "Espacios",
     "goals": "Metas",
     "profile": "Perfil"

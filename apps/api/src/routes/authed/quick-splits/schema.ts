@@ -22,6 +22,11 @@ export const quickSplitParamsSchema = z.object({
   id: z.string().min(1),
 });
 
+export const quickSplitExpenseParamsSchema = z.object({
+  id: z.string().min(1),
+  expenseId: z.string().min(1),
+});
+
 export const listRecentQuickSplitExpensesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(10).default(3),
 });
@@ -122,4 +127,31 @@ export type ListQuickSplitExpensesResult = {
     total: number;
     nextCursor: string | null;
   };
+};
+
+export type QuickSplitExpenseDetailResult = {
+  id: string;
+  quickSplitId: string;
+  quickSplitName: string;
+  description: string;
+  amount: number;
+  currency: string;
+  splitMethod: 'equal' | 'exact';
+  createdAt: string;
+  paidBy: {
+    id: string;
+    name: string;
+    image: string | null;
+  };
+  participants: Array<{
+    userId: string;
+    name: string;
+    image: string | null;
+    share: number;
+    role: string;
+  }>;
+};
+
+export type DeleteQuickSplitExpenseResult = {
+  id: string;
 };

@@ -8,6 +8,7 @@ import {
   createQuickSplitSchema,
   listQuickSplitExpensesQuerySchema,
   listRecentQuickSplitExpensesQuerySchema,
+  quickSplitExpenseParamsSchema,
   quickSplitParamsSchema,
 } from './schema';
 import { quickSplitsService } from './service';
@@ -78,6 +79,40 @@ const quickSplits = new Hono<AppContext>()
           quickSplitId: id,
         }),
         201,
+      );
+    },
+  )
+  .get(
+    '/:id/expenses/:expenseId',
+    zValidator('param', quickSplitExpenseParamsSchema),
+    async (c) => {
+      const { id, expenseId } = c.req.valid('param');
+      const { id: userId } = c.get('user');
+
+      return runHttpEffect(
+        c,
+        quickSplitsService.getExpenseDetail({
+          quickSplitId: id,
+          expenseId,
+          userId,
+        }),
+      );
+    },
+  )
+  .delete(
+    '/:id/expenses/:expenseId',
+    zValidator('param', quickSplitExpenseParamsSchema),
+    async (c) => {
+      const { id, expenseId } = c.req.valid('param');
+      const { id: userId } = c.get('user');
+
+      return runHttpEffect(
+        c,
+        quickSplitsService.deleteExpense({
+          quickSplitId: id,
+          expenseId,
+          userId,
+        }),
       );
     },
   );

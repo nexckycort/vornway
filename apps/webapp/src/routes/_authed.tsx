@@ -1,10 +1,10 @@
-import { BottomAppBar } from '#/components/bottom-app-bar';
 import {
   createFileRoute,
   Outlet,
   redirect,
   useRouterState,
 } from '@tanstack/react-router';
+import { BottomAppBar } from '#/components/bottom-app-bar';
 
 export const Route = createFileRoute('/_authed')({
   component: AuthedLayout,
@@ -25,6 +25,7 @@ export const Route = createFileRoute('/_authed')({
 
 const MAIN_VIEWS = new Set([
   '/',
+  '/expenses/friends',
   '/groups',
   '/groups/',
   '/goals',

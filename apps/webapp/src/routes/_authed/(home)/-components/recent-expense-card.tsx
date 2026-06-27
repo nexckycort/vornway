@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { Clock3, UsersRound } from 'lucide-react';
 import type { HomeRecentExpense } from '#/routes/_authed/(home)/-hooks/use-home-recent-expenses-query';
 import {
@@ -11,7 +12,11 @@ type RecentExpenseCardProps = {
 
 export function RecentExpenseCard({ item }: RecentExpenseCardProps) {
   return (
-    <div className="rounded-[24px] border border-[#e5e7eb] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+    <Link
+      to="/expenses/friends/$quickSplitId/$expenseId"
+      params={{ quickSplitId: item.quickSplitId, expenseId: item.id }}
+      className="block rounded-[24px] border border-[#e5e7eb] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] transition-transform active:translate-y-px"
+    >
       <div className="flex min-w-0 items-center gap-3">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff1f5] text-primary">
           <UsersRound className="size-5" />
@@ -43,6 +48,6 @@ export function RecentExpenseCard({ item }: RecentExpenseCardProps) {
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

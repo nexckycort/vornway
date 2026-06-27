@@ -52,7 +52,8 @@
   },
   "bottomBar": {
     "home": "Home",
-    "spaces": "Spaces",
+    "friends": "Friends",
+    "groups": "Spaces",
     "goals": "Goals",
     "profile": "Profile"
   },

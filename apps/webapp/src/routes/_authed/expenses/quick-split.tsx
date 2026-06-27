@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ChevronDown, ChevronLeft, PencilLine, Search, X } from 'lucide-react';
+import { ChevronDown, PencilLine, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import { Checkbox } from '#/components/ui/checkbox';
 import {
@@ -17,17 +18,26 @@ import { cn } from '#/lib/utils';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
 import { useCreateQuickSplitExpenseMutation } from './-hooks/use-create-quick-split-expense';
 import { useExpenseEntryData } from './-hooks/use-expense-entry-data';
+import { useQuickSplitExpenseQuery } from './-hooks/use-quick-split-expense-query';
 import { getQuickSplitMessages } from './-messages';
 
 export const Route = createFileRoute('/_authed/expenses/quick-split')({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { friendIds: string[] } => ({
+  ): {
+    friendIds: string[];
+    quickSplitId?: string;
+    expenseId?: string;
+  } => ({
     friendIds: Array.isArray(search.friendIds)
       ? search.friendIds.filter(
           (value): value is string => typeof value === 'string',
         )
       : [],
+    quickSplitId:
+      typeof search.quickSplitId === 'string' ? search.quickSplitId : undefined,
+    expenseId:
+      typeof search.expenseId === 'string' ? search.expenseId : undefined,
   }),
   component: RouteComponent,
 });
@@ -43,6 +53,16 @@ const currencyOptions = [
   { code: 'USD', name: 'Dólar estadounidense', flag: '🇺🇸' },
   { code: 'EUR', name: 'Euro', flag: '🇪🇺' },
 ] as const;
+
+function readCurrencyCode(
+  value: string,
+): (typeof currencyOptions)[number]['code'] | null {
+  if (value === 'COP' || value === 'USD' || value === 'EUR') {
+    return value;
+  }
+
+  return null;
+}
 
 function toInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -69,12 +89,14 @@ function areIdsEqual(left: string[], right: string[]): boolean {
 }
 
 function RouteComponent() {
-  const { friendIds } = Route.useSearch();
+  const { friendIds, quickSplitId, expenseId } = Route.useSearch();
   const navigate = useNavigate();
   const t = getQuickSplitMessages();
   const { user } = useAuth();
   const { recentFriends } = useExpenseEntryData();
   const createExpenseMutation = useCreateQuickSplitExpenseMutation();
+  const expenseQuery = useQuickSplitExpenseQuery(quickSplitId, expenseId);
+  const isEditMode = Boolean(quickSplitId && expenseId);
   const currentUserId = user?.id ?? '';
   const currentUserName = user?.name?.trim() || 'Tú';
   const [currency, setCurrency] =
@@ -131,6 +153,29 @@ function RouteComponent() {
       setPaidByUserId(currentUserId);
     }
   }, [currentUserId, paidByUserId]);
+
+  useEffect(() => {
+    if (!isEditMode || !expenseQuery.data) {
+      return;
+    }
+
+    setDescription(expenseQuery.data.description);
+    setAmountInput(formatAmountInput(String(expenseQuery.data.amount)));
+    setCurrency(readCurrencyCode(expenseQuery.data.currency) ?? 'COP');
+    setPaidByUserId(expenseQuery.data.paidBy.id);
+    setSelectedFriends(
+      expenseQuery.data.participants
+        .filter((participant) => participant.userId !== currentUserId)
+        .map((participant) => ({
+          id: participant.userId,
+          name: participant.name,
+          email: '',
+        })),
+    );
+    setSplitWithUserIds(
+      expenseQuery.data.participants.map((participant) => participant.userId),
+    );
+  }, [currentUserId, expenseQuery.data, isEditMode]);
 
   useEffect(() => {
     if (friendIds.length === 0 || recentFriends.length === 0) {
@@ -201,6 +246,9 @@ function RouteComponent() {
     return !selectedFriends.some((friend) => friend.id === candidate.id);
   });
 
+  const isLoading = isEditMode && expenseQuery.isLoading;
+  const isLoadingError = isEditMode && expenseQuery.isError;
+
   const toggleSplitUser = (userId: string, checked: boolean) => {
     setSplitWithUserIds((current) => {
       if (checked) {
@@ -258,7 +306,11 @@ function RouteComponent() {
 
     try {
       await createExpenseMutation.mutateAsync({
-        name: description.trim(),
+        quickSplitId,
+        expenseId,
+        name:
+          (isEditMode ? expenseQuery.data?.quickSplitName : undefined) ??
+          description.trim(),
         description: description.trim(),
         participantUserIds: selectedFriends.map((friend) => friend.id),
         amount,
@@ -267,121 +319,175 @@ function RouteComponent() {
         expenseParticipantUserIds: splitWithUserIds,
       });
 
-      toast.success(t.createSuccess);
-      await navigate({ to: '/' });
+      toast.success(isEditMode ? t.updateSuccess : t.createSuccess);
+      await navigate(
+        isEditMode
+          ? {
+              to: '/expenses/friends/$quickSplitId/$expenseId',
+              params: {
+                quickSplitId: quickSplitId!,
+                expenseId: expenseId!,
+              },
+            }
+          : { to: '/' },
+      );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t.createError);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : isEditMode
+            ? t.updateError
+            : t.createError,
+      );
     }
   };
 
+  const handleBack = () => {
+    void navigate(
+      isEditMode && quickSplitId && expenseId
+        ? {
+            to: '/expenses/friends/$quickSplitId/$expenseId',
+            params: { quickSplitId, expenseId },
+          }
+        : { to: '/expenses/new' },
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <MobilePageLayout
+        title={isEditMode ? 'Editar gasto' : t.title}
+        onBack={handleBack}
+      >
+        <QuickSplitExpenseSkeleton />
+      </MobilePageLayout>
+    );
+  }
+
+  if (isLoadingError) {
+    return (
+      <MobilePageLayout
+        title={isEditMode ? 'Editar gasto' : t.title}
+        onBack={handleBack}
+      >
+        <div className="flex flex-1 flex-col justify-center bg-white px-2">
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {expenseQuery.error instanceof Error
+              ? expenseQuery.error.message
+              : t.updateError}
+          </div>
+          <button
+            type="button"
+            onClick={handleBack}
+            className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"
+          >
+            Volver
+          </button>
+        </div>
+      </MobilePageLayout>
+    );
+  }
+
   return (
-    <main className="min-h-dvh bg-white font-sans text-[#111827]">
-      <div className="mx-auto flex min-h-dvh w-full max-w-[412px] flex-col overflow-hidden rounded-[30px] bg-white">
-        <header className="border-b border-[#f3f4f6] px-4 pb-3 pt-2">
-          <div className="relative flex items-start justify-center">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              className="absolute left-0 top-1 rounded-full border-[#ebebeb] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.05)]"
-              onClick={() => navigate({ to: '/expenses/new' })}
-            >
-              <span className="sr-only">Volver</span>
-              <ChevronLeft className="size-4" />
-            </Button>
+    <MobilePageLayout
+      title={isEditMode ? 'Editar gasto' : t.title}
+      onBack={handleBack}
+    >
+      <div className="px-2 pb-6">
+        {!isEditMode ? (
+          <p className="mb-3 text-center text-xs font-normal leading-4 text-[#4c4c4c]">
+            {t.step}
+          </p>
+        ) : null}
 
-            <div className="min-w-0 py-7 text-center">
-              <p className="text-xs font-normal leading-4 text-[#4c4c4c]">
-                {t.step}
-              </p>
-              <h1 className="mt-0.5 text-sm font-semibold leading-5 text-[#1e1e1e]">
-                {t.title}
-              </h1>
-            </div>
-          </div>
-
-          <div className="-mx-4 mt-1 h-2 overflow-hidden bg-[#ebebeb]">
-            <div className="h-full w-3/4 rounded-r-full bg-[linear-gradient(90deg,#ffc8da_0%,#fd407f_39.32%,#d000bf_100%)]" />
-          </div>
-        </header>
-
-        <div className="bg-[#fafafa] px-4 py-8">
+        <div className="flex items-baseline justify-between gap-4">
           <section>
-            <div className="flex items-start justify-between gap-4">
-              <button
-                type="button"
-                onClick={() => setShowCurrencyDrawer(true)}
-                className="flex items-center gap-2 text-[36px] font-medium leading-10 tracking-[-0.03em] text-[#1e1e1e]"
-              >
-                <span>{currency}</span>
-                <ChevronDown className="mt-1 size-[18px] text-[#1e1e1e]" />
-              </button>
+            <button
+              type="button"
+              onClick={() => setShowCurrencyDrawer(true)}
+              className="flex items-center gap-1 text-left"
+            >
+              <span className="text-4xl font-light text-gray-900">
+                {selectedCurrency.code}
+              </span>
+              <ChevronDown className="size-5 text-gray-600" />
+            </button>
+          </section>
 
+          <label className="min-w-0 flex-1 text-right">
+            <span className="sr-only">{t.amountLabel}</span>
+            <input
+              inputMode="numeric"
+              value={amountInput}
+              onChange={(event) =>
+                setAmountInput(formatAmountInput(event.target.value))
+              }
+              placeholder="0"
+              className="w-full bg-transparent text-right text-[36px] font-light leading-10 tracking-[-0.03em] text-[#1e1e1e] outline-none placeholder:text-[#cbd5e1]"
+            />
+          </label>
+        </div>
+
+        <div className="mt-1 flex items-center gap-1.5">
+          <span className="text-base">{selectedCurrency.flag}</span>
+          <span className="text-sm text-gray-500">{selectedCurrency.name}</span>
+        </div>
+      </div>
+
+      <div className="space-y-5 px-2 pb-24">
+        <section className="overflow-hidden rounded-[24px] border border-[#ebebeb] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <div className="px-4 py-4">
+            <div className="flex h-11 items-center gap-2 rounded-[24px] border border-[#ebebeb] bg-[#fafafa] px-4">
+              <PencilLine className="size-4 text-[#626262]" />
               <input
-                inputMode="numeric"
-                value={amountInput}
-                onChange={(event) =>
-                  setAmountInput(formatAmountInput(event.target.value))
-                }
-                placeholder="$0"
-                className="min-w-0 flex-1 bg-transparent text-right text-[36px] font-normal leading-10 tracking-[-0.03em] text-[#1e1e1e] outline-none placeholder:text-[#cbd5e1]"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder={t.descriptionPlaceholder}
+                className="w-full bg-transparent text-base font-normal text-[#1e1e1e] outline-none placeholder:text-[#94a3b8]"
+                maxLength={200}
               />
             </div>
+          </div>
 
-            <div className="mt-2 flex items-center gap-1.5 text-xs text-[#797979]">
-              <span className="text-[12px]">{selectedCurrency.flag}</span>
-              <span>{selectedCurrency.name}</span>
-            </div>
-          </section>
+          {!isEditMode ? (
+            <>
+              <div className="h-px bg-[#f1f5f9]" />
 
-          <section className="mt-8 overflow-hidden rounded-[24px] border border-[#ebebeb] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-            <div className="px-4 pt-4">
-              <div className="flex h-11 items-center gap-2 rounded-[24px] border border-[#ebebeb] bg-[#fafafa] px-4">
-                <PencilLine className="size-4 text-[#626262]" />
-                <input
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  placeholder={t.descriptionPlaceholder}
-                  className="w-full bg-transparent text-base font-normal text-[#1e1e1e] outline-none placeholder:text-[#94a3b8]"
-                  maxLength={200}
-                />
-              </div>
-            </div>
-
-            <div className="mt-4 h-px bg-[#f1f5f9]" />
-
-            <div className="px-4 py-4">
-              <div className="flex items-center gap-3">
-                <div className="flex size-10 items-center justify-center rounded-full bg-[#fff8ed] text-[#ff7a00]">
-                  <Search className="size-4" />
+              <div className="px-4 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-full bg-[#fff8ed] text-[#ff7a00]">
+                    <Search className="size-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-normal leading-4 text-[#626262]">
+                      {t.friendsLabel}
+                    </p>
+                    <input
+                      value={friendInput}
+                      onChange={(event) => setFriendInput(event.target.value)}
+                      placeholder={t.friendsPlaceholder}
+                      className="mt-0.5 h-5 w-full bg-transparent text-sm font-semibold text-[#1e1e1e] outline-none placeholder:font-normal placeholder:text-[#94a3b8]"
+                    />
+                  </div>
+                  <Search className="size-4 text-[#b0b0b0]" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-normal leading-4 text-[#626262]">
-                    {t.friendsLabel}
-                  </p>
-                  <input
-                    value={friendInput}
-                    onChange={(event) => setFriendInput(event.target.value)}
-                    placeholder={t.friendsPlaceholder}
-                    className="mt-0.5 h-5 w-full bg-transparent text-sm font-semibold text-[#1e1e1e] outline-none placeholder:font-normal placeholder:text-[#94a3b8]"
-                  />
-                </div>
-                <Search className="size-4 text-[#b0b0b0]" />
               </div>
-            </div>
-          </section>
+            </>
+          ) : null}
+        </section>
 
-          <div className="px-4">
+        {!isEditMode ? (
+          <div className="px-2">
             {debouncedFriendInput &&
             !searchQuery.isFetching &&
             availableSearchResults.length === 0 ? (
-              <p className="mt-3 text-sm text-[#64748b]">
+              <p className="mt-1 text-sm text-[#64748b]">
                 {t.friendsSearchEmpty}
               </p>
             ) : null}
 
             {availableSearchResults.length > 0 ? (
-              <section className="mt-3 flex flex-col gap-2">
+              <section className="mt-2 flex flex-col gap-2">
                 {availableSearchResults.map((candidate) => (
                   <button
                     key={candidate.id}
@@ -406,9 +512,9 @@ function RouteComponent() {
               </section>
             ) : null}
           </div>
-        </div>
+        ) : null}
 
-        <div className="flex-1 overflow-y-auto bg-white px-4 pb-8 pt-5">
+        <section className="space-y-5 rounded-[24px] border border-[#ebebeb] bg-white px-4 py-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
           {selectedFriends.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-[#e2e8f0] px-4 py-5 text-sm text-[#64748b]">
               {t.friendsEmpty}
@@ -419,11 +525,16 @@ function RouteComponent() {
                 <button
                   key={friend.id}
                   type="button"
-                  onClick={() => handleRemoveFriend(friend.id)}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#fecdd3] bg-[#fff5f6] px-3 py-2 text-sm font-medium text-[#9f1239]"
+                  onClick={() => !isEditMode && handleRemoveFriend(friend.id)}
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium',
+                    isEditMode
+                      ? 'border border-[#ebebeb] bg-[#f8fafc] text-[#475569]'
+                      : 'border border-[#fecdd3] bg-[#fff5f6] text-[#9f1239]',
+                  )}
                 >
                   <span>{friend.name}</span>
-                  <X className="size-3.5" />
+                  {!isEditMode ? <X className="size-3.5" /> : null}
                 </button>
               ))}
             </div>
@@ -431,11 +542,12 @@ function RouteComponent() {
 
           {people.length > 1 ? (
             <>
-              <section className="mt-6">
-                <h2 className="text-base font-medium leading-6 text-[#1e1e1e]">
-                  {t.payerLabel}
-                </h2>
-                <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+              <section>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-sm text-gray-600">{t.payerLabel}</p>
+                </div>
+
+                <div className="flex gap-3 overflow-x-auto pb-1">
                   {people.map((person) => {
                     const isSelected = paidByUserId === person.id;
 
@@ -444,25 +556,28 @@ function RouteComponent() {
                         key={person.id}
                         type="button"
                         onClick={() => setPaidByUserId(person.id)}
-                        className={cn(
-                          'flex min-w-[60px] max-w-[80px] flex-col items-center gap-0.5 text-center',
-                          !isSelected && 'opacity-50',
-                        )}
+                        className="flex min-w-[72px] flex-col items-center"
                       >
-                        <span
-                          className={cn(
-                            'flex size-8 items-center justify-center rounded-full text-xs font-medium transition-colors',
+                        <div
+                          className={`flex size-11 items-center justify-center overflow-hidden rounded-full border-2 ${
                             isSelected
-                              ? 'border-2 border-[#ff658a] bg-white text-[#111827]'
-                              : 'bg-[#ebebeb] text-[#111827]',
-                          )}
+                              ? 'border-rose-500'
+                              : 'border-transparent'
+                          }`}
                         >
-                          {toInitials(person.name)}
+                          <ParticipantAvatar name={person.name} />
+                        </div>
+                        <span
+                          className={`mt-1 inline-flex size-4 items-center justify-center rounded-full border text-[10px] font-semibold ${
+                            isSelected
+                              ? 'border-rose-500 bg-rose-500 text-white'
+                              : 'border-gray-300 bg-white text-transparent'
+                          }`}
+                        >
+                          {isSelected ? '•' : '•'}
                         </span>
-                        <span className="line-clamp-2 w-full text-xs leading-4 text-[#1e1e1e]">
-                          {person.isCurrentUser
-                            ? `${person.name} (Tú)`
-                            : person.name}
+                        <span className="mt-1.5 max-w-[60px] truncate text-xs text-gray-600">
+                          {person.isCurrentUser ? 'Tú' : person.name}
                         </span>
                       </button>
                     );
@@ -470,24 +585,22 @@ function RouteComponent() {
                 </div>
               </section>
 
-              <section className="mt-6">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-base font-medium leading-6 text-[#1e1e1e]">
-                    {t.splitLabel}
-                  </h2>
+              <section>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-sm text-gray-600">{t.splitLabel}</p>
                   <button
                     type="button"
                     onClick={() =>
                       setSplitWithUserIds(people.map((person) => person.id))
                     }
-                    className="inline-flex items-center gap-1 text-sm font-medium text-primary"
+                    className="inline-flex items-center gap-1 text-rose-500"
                   >
-                    <span>Partes iguales</span>
+                    <span className="text-sm font-medium">Partes iguales</span>
                     <ChevronDown className="size-4" />
                   </button>
                 </div>
 
-                <div className="mt-3 flex flex-col gap-4">
+                <div className="space-y-4">
                   <label className="flex items-center gap-4">
                     <Checkbox
                       checked={splitWithUserIds.length === people.length}
@@ -514,9 +627,7 @@ function RouteComponent() {
                             toggleSplitUser(person.id, Boolean(nextChecked))
                           }
                         />
-                        <span className="flex size-8 items-center justify-center rounded-full bg-[#ebebeb] text-xs font-medium text-[#111827]">
-                          {toInitials(person.name)}
-                        </span>
+                        <ParticipantAvatar name={person.name} />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-normal text-[#1e1e1e]">
                             {person.isCurrentUser
@@ -540,18 +651,30 @@ function RouteComponent() {
               </section>
             </>
           ) : null}
-        </div>
+        </section>
 
-        <div className="border-t border-[#ebebeb] bg-white px-4 py-3">
-          <Button
-            type="button"
-            onClick={() => void handleSubmit()}
-            disabled={!canSubmit}
-            className="h-10 w-full rounded-[20px] text-base font-medium shadow-[0_8px_20px_rgba(222,3,77,0.1)]"
-          >
-            {createExpenseMutation.isPending ? t.submitPending : t.submit}
-          </Button>
-        </div>
+        {expenseQuery.data?.quickSplitName && isEditMode ? (
+          <p className="px-2 text-xs text-gray-500">
+            Editando dentro de {expenseQuery.data.quickSplitName}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-gray-200 bg-white px-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4">
+        <Button
+          type="button"
+          onClick={() => void handleSubmit()}
+          disabled={!canSubmit}
+          className="h-14 w-full rounded-full bg-rose-500 text-base font-medium text-white hover:bg-rose-500/90"
+        >
+          {createExpenseMutation.isPending
+            ? isEditMode
+              ? t.savePending
+              : t.submitPending
+            : isEditMode
+              ? t.save
+              : t.submit}
+        </Button>
       </div>
 
       <Drawer open={showCurrencyDrawer} onOpenChange={setShowCurrencyDrawer}>
@@ -588,6 +711,50 @@ function RouteComponent() {
           </div>
         </DrawerContent>
       </Drawer>
-    </main>
+    </MobilePageLayout>
+  );
+}
+
+function ParticipantAvatar({ name }: { name: string }) {
+  return (
+    <span className="flex size-9 items-center justify-center rounded-full bg-[#ebebeb] text-xs font-medium text-[#111827]">
+      {toInitials(name)}
+    </span>
+  );
+}
+
+function QuickSplitExpenseSkeleton() {
+  return (
+    <>
+      <div className="space-y-3 px-2 pb-6">
+        <div className="flex items-baseline justify-between gap-4">
+          <div className="h-10 w-24 rounded-xl bg-[#e5e7eb]" />
+          <div className="h-10 w-40 rounded-xl bg-[#e5e7eb]" />
+        </div>
+        <div className="h-4 w-40 rounded-full bg-[#e5e7eb]" />
+      </div>
+
+      <div className="space-y-5 px-2 pb-24">
+        <div className="rounded-[24px] border border-[#ebebeb] bg-white px-4 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <div className="h-11 rounded-[24px] bg-[#f3f4f6]" />
+        </div>
+        <div className="rounded-[24px] border border-[#ebebeb] bg-white px-4 py-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <div className="space-y-4">
+            <div className="h-4 w-24 rounded-full bg-[#e5e7eb]" />
+            <div className="flex gap-3">
+              <div className="size-11 rounded-full bg-[#e5e7eb]" />
+              <div className="size-11 rounded-full bg-[#e5e7eb]" />
+              <div className="size-11 rounded-full bg-[#e5e7eb]" />
+            </div>
+            <div className="h-4 w-24 rounded-full bg-[#e5e7eb]" />
+            <div className="space-y-3">
+              <div className="h-11 rounded-xl bg-[#f3f4f6]" />
+              <div className="h-11 rounded-xl bg-[#f3f4f6]" />
+              <div className="h-11 rounded-xl bg-[#f3f4f6]" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

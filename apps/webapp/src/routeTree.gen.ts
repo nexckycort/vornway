@@ -38,6 +38,7 @@ import { Route as AuthedGroupsIdReportsIndexRouteImport } from './routes/_authed
 import { Route as AuthedGroupsIdEditIndexRouteImport } from './routes/_authed/groups/$id/edit/index'
 import { Route as AuthedGroupsIdAddExpenseIndexRouteImport } from './routes/_authed/groups/$id/add-expense/index'
 import { Route as AuthedGroupsIdExpenseExpenseIdRouteImport } from './routes/_authed/groups/$id/expense/$expenseId'
+import { Route as AuthedExpensesFriendsQuickSplitIdExpenseIdRouteImport } from './routes/_authed/expenses/friends/$quickSplitId/$expenseId'
 import { Route as AuthedGroupsIdSettingsCategoriesIndexRouteImport } from './routes/_authed/groups/$id/settings/categories/index'
 import { Route as AuthedGroupsIdReportsCategoryIndexRouteImport } from './routes/_authed/groups/$id/reports/category/index'
 import { Route as AuthedGroupsIdMemberMemberIdIndexRouteImport } from './routes/_authed/groups/$id/member/$memberId/index'
@@ -194,6 +195,12 @@ const AuthedGroupsIdExpenseExpenseIdRoute =
     path: '/groups/$id/expense/$expenseId',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedExpensesFriendsQuickSplitIdExpenseIdRoute =
+  AuthedExpensesFriendsQuickSplitIdExpenseIdRouteImport.update({
+    id: '/$quickSplitId/$expenseId',
+    path: '/$quickSplitId/$expenseId',
+    getParentRoute: () => AuthedExpensesFriendsRoute,
+  } as any)
 const AuthedGroupsIdSettingsCategoriesIndexRoute =
   AuthedGroupsIdSettingsCategoriesIndexRouteImport.update({
     id: '/groups/$id/settings/categories/',
@@ -217,7 +224,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedhomeIndexRoute
   '/converter': typeof AuthedConverterRoute
   '/notifications': typeof AuthedNotificationsRoute
-  '/expenses/friends': typeof AuthedExpensesFriendsRoute
+  '/expenses/friends': typeof AuthedExpensesFriendsRouteWithChildren
   '/expenses/new': typeof AuthedExpensesNewRoute
   '/expenses/quick-split': typeof AuthedExpensesQuickSplitRoute
   '/groups/new': typeof AuthedGroupsNewRouteWithChildren
@@ -235,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/i/$inviteCode/': typeof AuthedIInviteCodeIndexRoute
   '/profile/feedback/': typeof AuthedProfileFeedbackIndexRoute
   '/profile/stats/': typeof AuthedProfileStatsIndexRoute
+  '/expenses/friends/$quickSplitId/$expenseId': typeof AuthedExpensesFriendsQuickSplitIdExpenseIdRoute
   '/groups/$id/expense/$expenseId': typeof AuthedGroupsIdExpenseExpenseIdRoute
   '/groups/$id/add-expense/': typeof AuthedGroupsIdAddExpenseIndexRoute
   '/groups/$id/edit/': typeof AuthedGroupsIdEditIndexRoute
@@ -249,7 +257,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthedhomeIndexRoute
   '/converter': typeof AuthedConverterRoute
   '/notifications': typeof AuthedNotificationsRoute
-  '/expenses/friends': typeof AuthedExpensesFriendsRoute
+  '/expenses/friends': typeof AuthedExpensesFriendsRouteWithChildren
   '/expenses/new': typeof AuthedExpensesNewRoute
   '/expenses/quick-split': typeof AuthedExpensesQuickSplitRoute
   '/goals': typeof AuthedGoalsIndexRoute
@@ -266,6 +274,7 @@ export interface FileRoutesByTo {
   '/i/$inviteCode': typeof AuthedIInviteCodeIndexRoute
   '/profile/feedback': typeof AuthedProfileFeedbackIndexRoute
   '/profile/stats': typeof AuthedProfileStatsIndexRoute
+  '/expenses/friends/$quickSplitId/$expenseId': typeof AuthedExpensesFriendsQuickSplitIdExpenseIdRoute
   '/groups/$id/expense/$expenseId': typeof AuthedGroupsIdExpenseExpenseIdRoute
   '/groups/$id/add-expense': typeof AuthedGroupsIdAddExpenseIndexRoute
   '/groups/$id/edit': typeof AuthedGroupsIdEditIndexRoute
@@ -282,7 +291,7 @@ export interface FileRoutesById {
   '/_public': typeof PublicRouteWithChildren
   '/_authed/converter': typeof AuthedConverterRoute
   '/_authed/notifications': typeof AuthedNotificationsRoute
-  '/_authed/expenses/friends': typeof AuthedExpensesFriendsRoute
+  '/_authed/expenses/friends': typeof AuthedExpensesFriendsRouteWithChildren
   '/_authed/expenses/new': typeof AuthedExpensesNewRoute
   '/_authed/expenses/quick-split': typeof AuthedExpensesQuickSplitRoute
   '/_authed/groups/new': typeof AuthedGroupsNewRouteWithChildren
@@ -301,6 +310,7 @@ export interface FileRoutesById {
   '/_authed/i/$inviteCode/': typeof AuthedIInviteCodeIndexRoute
   '/_authed/profile/feedback/': typeof AuthedProfileFeedbackIndexRoute
   '/_authed/profile/stats/': typeof AuthedProfileStatsIndexRoute
+  '/_authed/expenses/friends/$quickSplitId/$expenseId': typeof AuthedExpensesFriendsQuickSplitIdExpenseIdRoute
   '/_authed/groups/$id/expense/$expenseId': typeof AuthedGroupsIdExpenseExpenseIdRoute
   '/_authed/groups/$id/add-expense/': typeof AuthedGroupsIdAddExpenseIndexRoute
   '/_authed/groups/$id/edit/': typeof AuthedGroupsIdEditIndexRoute
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/i/$inviteCode/'
     | '/profile/feedback/'
     | '/profile/stats/'
+    | '/expenses/friends/$quickSplitId/$expenseId'
     | '/groups/$id/expense/$expenseId'
     | '/groups/$id/add-expense/'
     | '/groups/$id/edit/'
@@ -366,6 +377,7 @@ export interface FileRouteTypes {
     | '/i/$inviteCode'
     | '/profile/feedback'
     | '/profile/stats'
+    | '/expenses/friends/$quickSplitId/$expenseId'
     | '/groups/$id/expense/$expenseId'
     | '/groups/$id/add-expense'
     | '/groups/$id/edit'
@@ -400,6 +412,7 @@ export interface FileRouteTypes {
     | '/_authed/i/$inviteCode/'
     | '/_authed/profile/feedback/'
     | '/_authed/profile/stats/'
+    | '/_authed/expenses/friends/$quickSplitId/$expenseId'
     | '/_authed/groups/$id/expense/$expenseId'
     | '/_authed/groups/$id/add-expense/'
     | '/_authed/groups/$id/edit/'
@@ -621,6 +634,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedGroupsIdExpenseExpenseIdRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/expenses/friends/$quickSplitId/$expenseId': {
+      id: '/_authed/expenses/friends/$quickSplitId/$expenseId'
+      path: '/$quickSplitId/$expenseId'
+      fullPath: '/expenses/friends/$quickSplitId/$expenseId'
+      preLoaderRoute: typeof AuthedExpensesFriendsQuickSplitIdExpenseIdRouteImport
+      parentRoute: typeof AuthedExpensesFriendsRoute
+    }
     '/_authed/groups/$id/settings/categories/': {
       id: '/_authed/groups/$id/settings/categories/'
       path: '/groups/$id/settings/categories'
@@ -645,6 +665,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthedExpensesFriendsRouteChildren {
+  AuthedExpensesFriendsQuickSplitIdExpenseIdRoute: typeof AuthedExpensesFriendsQuickSplitIdExpenseIdRoute
+}
+
+const AuthedExpensesFriendsRouteChildren: AuthedExpensesFriendsRouteChildren = {
+  AuthedExpensesFriendsQuickSplitIdExpenseIdRoute:
+    AuthedExpensesFriendsQuickSplitIdExpenseIdRoute,
+}
+
+const AuthedExpensesFriendsRouteWithChildren =
+  AuthedExpensesFriendsRoute._addFileChildren(
+    AuthedExpensesFriendsRouteChildren,
+  )
+
 interface AuthedGroupsNewRouteChildren {
   AuthedGroupsNewParticipantsRoute: typeof AuthedGroupsNewParticipantsRoute
   AuthedGroupsNewIndexRoute: typeof AuthedGroupsNewIndexRoute
@@ -662,7 +696,7 @@ const AuthedGroupsNewRouteWithChildren = AuthedGroupsNewRoute._addFileChildren(
 interface AuthedRouteChildren {
   AuthedConverterRoute: typeof AuthedConverterRoute
   AuthedNotificationsRoute: typeof AuthedNotificationsRoute
-  AuthedExpensesFriendsRoute: typeof AuthedExpensesFriendsRoute
+  AuthedExpensesFriendsRoute: typeof AuthedExpensesFriendsRouteWithChildren
   AuthedExpensesNewRoute: typeof AuthedExpensesNewRoute
   AuthedExpensesQuickSplitRoute: typeof AuthedExpensesQuickSplitRoute
   AuthedGroupsNewRoute: typeof AuthedGroupsNewRouteWithChildren
@@ -692,7 +726,7 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedConverterRoute: AuthedConverterRoute,
   AuthedNotificationsRoute: AuthedNotificationsRoute,
-  AuthedExpensesFriendsRoute: AuthedExpensesFriendsRoute,
+  AuthedExpensesFriendsRoute: AuthedExpensesFriendsRouteWithChildren,
   AuthedExpensesNewRoute: AuthedExpensesNewRoute,
   AuthedExpensesQuickSplitRoute: AuthedExpensesQuickSplitRoute,
   AuthedGroupsNewRoute: AuthedGroupsNewRouteWithChildren,

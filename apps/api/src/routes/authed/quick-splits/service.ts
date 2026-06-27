@@ -1,9 +1,13 @@
 import { Effect } from 'effect';
 import { Database } from '#/infrastructure/database/context';
+import { resolveUserImageUrl } from '#/routes/authed/users/user-image.service';
 import type { WithUserId } from '#/shared/types/app';
 import {
   QuickSplitCreateError,
   QuickSplitExpenseCreateError,
+  QuickSplitExpenseDeleteError,
+  QuickSplitExpenseDetailError,
+  QuickSplitExpenseNotFoundError,
   QuickSplitExpenseParticipantsInvalidError,
   QuickSplitExpensePayerInvalidError,
   QuickSplitExpenseSharesInvalidError,
@@ -18,10 +22,12 @@ import type {
   CreateQuickSplitExpenseResult,
   CreateQuickSplitInput,
   CreateQuickSplitResult,
+  DeleteQuickSplitExpenseResult,
   ListQuickSplitExpensesQueryInput,
   ListQuickSplitExpensesResult,
   ListRecentQuickSplitExpensesQueryInput,
   ListRecentQuickSplitExpensesResult,
+  QuickSplitExpenseDetailResult,
   QuickSplitExpenseFeedItem,
 } from './schema';
 
@@ -150,6 +156,133 @@ function createExactShares(input: {
 }
 
 export const quickSplitsService = {
+  deleteExpense: Effect.fn('quick_splits.delete_expense')(function* ({
+    quickSplitId,
+    expenseId,
+    userId,
+  }: {
+    quickSplitId: string;
+    expenseId: string;
+    userId: string;
+  }) {
+    const db = yield* Database;
+
+    const expense = yield* Effect.tryPromise({
+      try: () =>
+        quickSplitsRepository.findAccessibleExpense({
+          quickSplitId,
+          expenseId,
+          userId,
+        }),
+      catch: (cause) => new QuickSplitExpenseDeleteError({ cause }),
+    });
+
+    if (!expense) {
+      return yield* Effect.fail(
+        new QuickSplitExpenseNotFoundError({ expenseId }),
+      );
+    }
+
+    const deletedExpense = yield* Effect.tryPromise({
+      try: () =>
+        db.$transaction(async (tx) => {
+          const deleted = await quickSplitsRepository.deleteExpense(
+            tx,
+            expense.id,
+          );
+
+          await tx.quickSplit.update({
+            where: { id: deleted.quickSplitId },
+            data: {
+              updatedAt: new Date(),
+            },
+          });
+
+          return deleted;
+        }),
+      catch: (cause) => new QuickSplitExpenseDeleteError({ cause }),
+    });
+
+    return {
+      id: deletedExpense.id,
+    } satisfies DeleteQuickSplitExpenseResult;
+  }),
+  getExpenseDetail: Effect.fn('quick_splits.get_expense_detail')(function* ({
+    quickSplitId,
+    expenseId,
+    userId,
+  }: {
+    quickSplitId: string;
+    expenseId: string;
+    userId: string;
+  }) {
+    yield* Database;
+
+    const expense = yield* Effect.tryPromise({
+      try: () =>
+        quickSplitsRepository.findAccessibleExpenseDetail({
+          quickSplitId,
+          expenseId,
+          userId,
+        }),
+      catch: (cause) => new QuickSplitExpenseDetailError({ cause }),
+    });
+
+    if (!expense) {
+      return yield* Effect.fail(
+        new QuickSplitExpenseNotFoundError({ expenseId }),
+      );
+    }
+
+    const participantMeta = new Map(
+      expense.quickSplit.participants.map((participant) => [
+        participant.userId,
+        participant,
+      ]),
+    );
+    const splitMethod = readSplitMethod(expense.splitMethod);
+
+    if (!splitMethod) {
+      return yield* Effect.fail(
+        new QuickSplitExpenseDetailError({
+          cause: new Error('Invalid quick split expense split method'),
+        }),
+      );
+    }
+
+    return {
+      id: expense.id,
+      quickSplitId: expense.quickSplitId,
+      quickSplitName: expense.quickSplit.name,
+      description: expense.description,
+      amount: expense.amount,
+      currency: expense.currency,
+      splitMethod,
+      createdAt: expense.createdAt.toISOString(),
+      paidBy: {
+        id: expense.paidBy.id,
+        name: expense.paidBy.name,
+        image: resolveUserImageUrl(
+          expense.paidBy.image,
+          expense.paidBy.updatedAt,
+        ),
+      },
+      participants: expense.participants.map((participant) => {
+        const meta = participantMeta.get(participant.userId);
+
+        return {
+          userId: participant.userId,
+          name: meta?.user.name ?? 'Participante',
+          image: resolveUserImageUrl(
+            meta?.user.image,
+            meta?.user.updatedAt ?? null,
+          ),
+          share: participant.share,
+          role: meta?.role ?? 'participant',
+        };
+      }),
+    } satisfies QuickSplitExpenseDetailResult;
+  }),
   listRecentExpenses: Effect.fn('quick_splits.list_recent_expenses')(
     function* ({
       userId,

@@ -10,18 +10,24 @@ import {
   type LucideIcon,
   PiggyBank,
   UserRound,
+  UsersRound,
 } from 'lucide-react';
 
 import { getBottomAppBarMessages } from '#/components/bottom-app-bar.messages';
 import { cn } from '#/lib/utils';
 
-export type BottomAppBarIconName = 'compass' | 'home' | 'piggy-bank' | 'user';
+export type BottomAppBarIconName =
+  | 'compass'
+  | 'home'
+  | 'piggy-bank'
+  | 'user'
+  | 'users';
 
 type BottomAppBarItem = {
   id: string;
   label: string;
   icon: BottomAppBarIconName;
-  to: '/' | '/groups' | '/goals' | '/profile';
+  to: '/' | '/expenses/friends' | '/groups' | '/goals' | '/profile';
 };
 
 type BottomNavState = {
@@ -31,6 +37,7 @@ type BottomNavState = {
 const navIcons: Record<BottomAppBarIconName, LucideIcon> = {
   compass: Compass,
   home: Home,
+  users: UsersRound,
   'piggy-bank': PiggyBank,
   user: UserRound,
 };
@@ -48,6 +55,12 @@ export function BottomAppBar() {
   const bottomNavState = { bottomNavRoot: true } as never;
   const items: BottomAppBarItem[] = [
     { id: 'home', label: t.home, icon: 'home', to: '/' },
+    {
+      id: 'friends',
+      label: t.friends,
+      icon: 'users',
+      to: '/expenses/friends',
+    },
     { id: 'groups', label: t.groups, icon: 'compass', to: '/groups' },
     { id: 'goals', label: t.goals, icon: 'piggy-bank', to: '/goals' },
     { id: 'profile', label: t.profile, icon: 'user', to: '/profile' },
@@ -97,7 +110,7 @@ export function BottomAppBar() {
                 void navigateToTab(item.to);
               }}
               className={cn(
-                'flex w-[78px] flex-col items-center justify-end gap-0.5 rounded-2xl px-1.5 py-1 text-[11px] font-medium leading-4 text-[#94a3b8] transition-colors',
+                'flex min-w-0 flex-1 flex-col items-center justify-end gap-0.5 rounded-2xl px-1 py-1 text-[11px] font-medium leading-4 text-[#94a3b8] transition-colors',
                 active && 'text-primary',
               )}
             >

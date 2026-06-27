@@ -15,7 +15,7 @@
     "@types/node": "catalog:",
     "bun-types": "latest",
     "lefthook": "^2.0.12",
-    "typescript": "catalog:",
+    "typescript": "^6.0.3",
     "@types/bun": "latest"
   },
   "workspaces": {
@@ -35,7 +35,7 @@
       "resend": "^6.12.2",
       "prisma": "^7.8.0",
       "hono": "^4.12.19",
-      "typescript": "^6.0.3",
+      "typescript": "^7.0.1-rc",
       "zod": "^4.3.6"
     }
   }

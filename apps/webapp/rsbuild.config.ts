@@ -1,23 +1,12 @@
 import { paraglideRspackPlugin } from '@inlang/paraglide-js';
 import { defineConfig } from '@rsbuild/core';
-import { pluginBabel } from '@rsbuild/plugin-babel';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss';
 import { tanstackRouter } from '@tanstack/router-plugin/rspack';
 
 // Docs: https://rsbuild.rs/config/
 export default defineConfig({
-  plugins: [
-    pluginReact(),
-    pluginBabel({
-      include: /\.[jt]sx?$/,
-      exclude: [/[\\/]node_modules[\\/]/],
-      babelLoaderOptions(opts) {
-        opts.plugins?.unshift('babel-plugin-react-compiler');
-      },
-    }),
-    pluginTailwindcss(),
-  ],
+  plugins: [pluginReact(), pluginTailwindcss()],
   server: {
     host: true,
   },
@@ -31,6 +20,25 @@ export default defineConfig({
   },
   tools: {
     rspack: {
+      module: {
+        rules: [
+          {
+            test: /\.(?:js|jsx|ts|tsx)$/,
+            use: {
+              loader: 'builtin:swc-loader',
+              options: {
+                detectSyntax: 'auto',
+                jsc: {
+                  transform: {
+                    react: { runtime: 'automatic' },
+                    reactCompiler: true,
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
       plugins: [
         tanstackRouter({
           target: 'react',

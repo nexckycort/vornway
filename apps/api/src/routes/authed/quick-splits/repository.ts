@@ -249,7 +249,7 @@ export const quickSplitsRepository = {
       description: string;
       amount: number;
       currency: string;
-      splitMethod: 'equal' | 'exact';
+      splitMethod: 'equal' | 'percentage' | 'exact';
       shares: Record<string, number>;
       createdAt: Date;
     },
@@ -266,6 +266,56 @@ export const quickSplitsRepository = {
         createdAt: input.createdAt,
         updatedAt: input.createdAt,
         participants: {
+          create: Object.entries(input.shares).map(([userId, share]) => ({
+            userId,
+            share,
+          })),
+        },
+      },
+      select: {
+        id: true,
+        quickSplitId: true,
+        description: true,
+        amount: true,
+        currency: true,
+        paidByUserId: true,
+        splitMethod: true,
+        createdAt: true,
+        participants: {
+          select: {
+            userId: true,
+            share: true,
+          },
+          orderBy: [{ userId: 'asc' }],
+        },
+      },
+    }),
+  updateExpense: (
+    tx: Tx,
+    input: {
+      expenseId: string;
+      paidByUserId: string;
+      description: string;
+      amount: number;
+      currency: string;
+      splitMethod: 'equal' | 'percentage' | 'exact';
+      shares: Record<string, number>;
+      updatedAt: Date;
+    },
+  ) =>
+    tx.quickSplitExpense.update({
+      where: {
+        id: input.expenseId,
+      },
+      data: {
+        paidByUserId: input.paidByUserId,
+        description: input.description,
+        amount: input.amount,
+        currency: input.currency,
+        splitMethod: input.splitMethod,
+        updatedAt: input.updatedAt,
+        participants: {
+          deleteMany: {},
           create: Object.entries(input.shares).map(([userId, share]) => ({
             userId,
             share,

@@ -52,7 +52,10 @@ export const createQuickSplitExpenseSchema = z
     currency: z.string().trim().length(3),
     paidByUserId: z.string().min(1).optional(),
     participantUserIds: z.array(z.string().min(1)).min(1).max(20),
-    splitMethod: z.enum(['equal', 'exact']).default('equal'),
+    splitMethod: z.enum(['equal', 'percentage', 'exact']).default('equal'),
+    percentageShares: z
+      .record(z.string().min(1), z.number().positive())
+      .optional(),
     exactShares: z
       .record(z.string().min(1), z.number().nonnegative())
       .optional(),
@@ -66,6 +69,15 @@ export const createQuickSplitExpenseSchema = z
     },
   )
   .superRefine((data, ctx) => {
+    if (data.splitMethod === 'percentage' && !data.percentageShares) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'Debes enviar percentageShares cuando splitMethod es percentage',
+        path: ['percentageShares'],
+      });
+    }
+
     if (data.splitMethod === 'exact' && !data.exactShares) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -93,7 +105,7 @@ export type CreateQuickSplitExpenseResult = {
   amount: number;
   currency: string;
   paidByUserId: string;
-  splitMethod: 'equal' | 'exact';
+  splitMethod: 'equal' | 'percentage' | 'exact';
   participants: Array<{
     userId: string;
     share: number;
@@ -136,7 +148,7 @@ export type QuickSplitExpenseDetailResult = {
   description: string;
   amount: number;
   currency: string;
-  splitMethod: 'equal' | 'exact';
+  splitMethod: 'equal' | 'percentage' | 'exact';
   createdAt: string;
   paidBy: {
     id: string;

@@ -203,9 +203,14 @@ function RouteComponent() {
                 <button
                   type="button"
                   onClick={() =>
-                    toast.info(
-                      'Editar gastos con amigos estará disponible pronto',
-                    )
+                    void navigate({
+                      to: '/expenses/quick-split',
+                      search: {
+                        friendIds: [],
+                        quickSplitId,
+                        expenseId,
+                      },
+                    })
                   }
                   className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[#080202] text-sm font-semibold text-white"
                 >

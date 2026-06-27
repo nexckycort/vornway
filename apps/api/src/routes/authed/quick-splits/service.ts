@@ -35,8 +35,10 @@ function normalizeAmount(value: number): number {
   return Number(value.toFixed(2));
 }
 
-function readSplitMethod(value: string): 'equal' | 'exact' | null {
-  if (value === 'equal' || value === 'exact') {
+function readSplitMethod(
+  value: string,
+): 'equal' | 'percentage' | 'exact' | null {
+  if (value === 'equal' || value === 'percentage' || value === 'exact') {
     return value;
   }
 
@@ -151,6 +153,77 @@ function createExactShares(input: {
       }),
     );
   }
+
+  return Effect.succeed(shares);
+}
+
+function createPercentageShares(input: {
+  amount: number;
+  participantUserIds: string[];
+  percentageShares?: Record<string, number>;
+}): Effect.Effect<Record<string, number>, QuickSplitExpenseSharesInvalidError> {
+  const { amount, participantUserIds, percentageShares } = input;
+
+  if (!percentageShares) {
+    return Effect.fail(
+      new QuickSplitExpenseSharesInvalidError({
+        reason: 'missing_percentage_shares',
+      }),
+    );
+  }
+
+  const unknownUserIds = Object.keys(percentageShares).filter(
+    (userId) => !participantUserIds.includes(userId),
+  );
+
+  if (unknownUserIds.length > 0) {
+    return Effect.fail(
+      new QuickSplitExpenseSharesInvalidError({
+        reason: 'unknown_participants_in_percentage_shares',
+      }),
+    );
+  }
+
+  const percentages: Record<string, number> = {};
+
+  for (const participantUserId of participantUserIds) {
+    const percentage = percentageShares[participantUserId];
+
+    if (!Number.isFinite(percentage) || percentage <= 0) {
+      return Effect.fail(
+        new QuickSplitExpenseSharesInvalidError({
+          reason: 'invalid_participant_percentage',
+        }),
+      );
+    }
+
+    percentages[participantUserId] = normalizeAmount(percentage);
+  }
+
+  const totalPercentage = normalizeAmount(
+    Object.values(percentages).reduce((sum, value) => sum + value, 0),
+  );
+
+  if (Math.abs(totalPercentage - 100) >= 0.01) {
+    return Effect.fail(
+      new QuickSplitExpenseSharesInvalidError({
+        reason: 'percentage_total_mismatch',
+      }),
+    );
+  }
+
+  const shares: Record<string, number> = {};
+  let assigned = 0;
+
+  participantUserIds.forEach((participantUserId, index) => {
+    const share =
+      index === participantUserIds.length - 1
+        ? normalizeAmount(amount - assigned)
+        : normalizeAmount(amount * (percentages[participantUserId]! / 100));
+
+    shares[participantUserId] = share;
+    assigned = normalizeAmount(assigned + share);
+  });
 
   return Effect.succeed(shares);
 }
@@ -425,6 +498,7 @@ export const quickSplitsService = {
     paidByUserId,
     participantUserIds,
     splitMethod,
+    percentageShares,
     exactShares,
   }: CreateQuickSplitExpenseInput & {
     userId: string;
@@ -545,10 +619,16 @@ export const quickSplitsService = {
               participantUserIds: normalizedParticipantUserIds,
               exactShares,
             })
-          : createEqualShares({
-              amount: normalizedAmount,
-              participantUserIds: normalizedParticipantUserIds,
-            });
+          : splitMethod === 'percentage'
+            ? yield* createPercentageShares({
+                amount: normalizedAmount,
+                participantUserIds: normalizedParticipantUserIds,
+                percentageShares,
+              })
+            : createEqualShares({
+                amount: normalizedAmount,
+                participantUserIds: normalizedParticipantUserIds,
+              });
 
       const now = new Date();
       const expense = yield* Effect.tryPromise({
@@ -606,4 +686,173 @@ export const quickSplitsService = {
         createdAt: expense.createdAt.toISOString(),
       } satisfies CreateQuickSplitExpenseResult;
     }).pipe(Effect.withSpan('quick_splits.create_expense')),
+  updateExpense: ({
+    userId,
+    quickSplitId,
+    expenseId,
+    description,
+    amount,
+    currency,
+    paidByUserId,
+    participantUserIds,
+    splitMethod,
+    percentageShares,
+    exactShares,
+  }: CreateQuickSplitExpenseInput & {
+    userId: string;
+    quickSplitId: string;
+    expenseId: string;
+  }) =>
+    Effect.gen(function* () {
+      const db = yield* Database;
+      const existingExpense = yield* Effect.tryPromise({
+        try: () =>
+          quickSplitsRepository.findAccessibleExpense({
+            quickSplitId,
+            expenseId,
+            userId,
+          }),
+        catch: (cause) => new QuickSplitExpenseCreateError({ cause }),
+      });
+
+      if (!existingExpense) {
+        return yield* Effect.fail(
+          new QuickSplitExpenseNotFoundError({ expenseId }),
+        );
+      }
+
+      const quickSplit = yield* Effect.tryPromise({
+        try: () =>
+          quickSplitsRepository.findAccessibleQuickSplit({
+            quickSplitId,
+            userId,
+          }),
+        catch: (cause) => new QuickSplitExpenseCreateError({ cause }),
+      });
+
+      if (!quickSplit) {
+        return yield* Effect.fail(
+          new QuickSplitNotFoundError({ quickSplitId }),
+        );
+      }
+
+      const quickSplitParticipantUserIds = new Set(
+        quickSplit.participants.map((participant) => participant.userId),
+      );
+      const normalizedParticipantUserIds = Array.from(
+        new Set(
+          participantUserIds.map((participantUserId) =>
+            participantUserId.trim(),
+          ),
+        ),
+      ).filter((participantUserId) => participantUserId.length > 0);
+
+      if (normalizedParticipantUserIds.length === 0) {
+        return yield* Effect.fail(
+          new QuickSplitExpenseParticipantsInvalidError({
+            invalidUserIds: [],
+          }),
+        );
+      }
+
+      const invalidParticipantUserIds = normalizedParticipantUserIds.filter(
+        (participantUserId) =>
+          !quickSplitParticipantUserIds.has(participantUserId),
+      );
+
+      if (invalidParticipantUserIds.length > 0) {
+        return yield* Effect.fail(
+          new QuickSplitExpenseParticipantsInvalidError({
+            invalidUserIds: invalidParticipantUserIds,
+          }),
+        );
+      }
+
+      const normalizedPaidByUserId = paidByUserId?.trim() || userId;
+
+      if (!quickSplitParticipantUserIds.has(normalizedPaidByUserId)) {
+        return yield* Effect.fail(
+          new QuickSplitExpensePayerInvalidError({
+            paidByUserId: normalizedPaidByUserId,
+          }),
+        );
+      }
+
+      const normalizedDescription = description.trim();
+      const normalizedAmount = normalizeAmount(amount);
+      const normalizedCurrency = currency.trim().toUpperCase();
+
+      const shares =
+        splitMethod === 'exact'
+          ? yield* createExactShares({
+              amount: normalizedAmount,
+              participantUserIds: normalizedParticipantUserIds,
+              exactShares,
+            })
+          : splitMethod === 'percentage'
+            ? yield* createPercentageShares({
+                amount: normalizedAmount,
+                participantUserIds: normalizedParticipantUserIds,
+                percentageShares,
+              })
+            : createEqualShares({
+                amount: normalizedAmount,
+                participantUserIds: normalizedParticipantUserIds,
+              });
+
+      const now = new Date();
+      const expense = yield* Effect.tryPromise({
+        try: () =>
+          db.$transaction(async (tx) => {
+            const updatedExpense = await quickSplitsRepository.updateExpense(
+              tx,
+              {
+                expenseId,
+                paidByUserId: normalizedPaidByUserId,
+                description: normalizedDescription,
+                amount: normalizedAmount,
+                currency: normalizedCurrency,
+                splitMethod,
+                shares,
+                updatedAt: now,
+              },
+            );
+
+            await tx.quickSplit.update({
+              where: { id: quickSplitId },
+              data: {
+                updatedAt: now,
+              },
+            });
+
+            return updatedExpense;
+          }),
+        catch: (cause) => new QuickSplitExpenseCreateError({ cause }),
+      });
+
+      const updatedSplitMethod = readSplitMethod(expense.splitMethod);
+
+      if (!updatedSplitMethod) {
+        return yield* Effect.fail(
+          new QuickSplitExpenseCreateError({
+            cause: new Error('Invalid quick split expense split method'),
+          }),
+        );
+      }
+
+      return {
+        id: expense.id,
+        quickSplitId: expense.quickSplitId,
+        description: expense.description,
+        amount: expense.amount,
+        currency: expense.currency,
+        paidByUserId: expense.paidByUserId,
+        splitMethod: updatedSplitMethod,
+        participants: expense.participants.map((participant) => ({
+          userId: participant.userId,
+          share: participant.share,
+        })),
+        createdAt: expense.createdAt.toISOString(),
+      } satisfies CreateQuickSplitExpenseResult;
+    }).pipe(Effect.withSpan('quick_splits.update_expense')),
 };

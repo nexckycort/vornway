@@ -82,6 +82,26 @@ const quickSplits = new Hono<AppContext>()
       );
     },
   )
+  .put(
+    '/:id/expenses/:expenseId',
+    zValidator('param', quickSplitExpenseParamsSchema),
+    zValidator('json', createQuickSplitExpenseSchema),
+    async (c) => {
+      const { id, expenseId } = c.req.valid('param');
+      const data = c.req.valid('json');
+      const { id: userId } = c.get('user');
+
+      return runHttpEffect(
+        c,
+        quickSplitsService.updateExpense({
+          ...data,
+          userId,
+          quickSplitId: id,
+          expenseId,
+        }),
+      );
+    },
+  )
   .get(
     '/:id/expenses/:expenseId',
     zValidator('param', quickSplitExpenseParamsSchema),

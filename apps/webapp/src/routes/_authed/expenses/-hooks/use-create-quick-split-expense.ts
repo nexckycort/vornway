@@ -11,27 +11,32 @@ export type UpsertQuickSplitExpenseValues = {
   currency: string;
   paidByUserId: string;
   expenseParticipantUserIds: string[];
+  splitMethod: 'equal' | 'percentage' | 'exact';
+  percentageShares?: Record<string, number>;
+  exactShares?: Record<string, number>;
 };
 
 const createQuickSplitEndpoint = quickSplitsClient.index.$post;
 const createQuickSplitExpenseEndpoint = quickSplitsClient[':id'].expenses.$post;
-const updateQuickSplitExpenseEndpoint =
-  quickSplitsClient[':id'].expenses[':expenseId'].$put;
 
 async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
   if (values.quickSplitId && values.expenseId) {
-    const updateExpenseResponse = await updateQuickSplitExpenseEndpoint({
+    const updateExpenseResponse = await createQuickSplitExpenseEndpoint({
       param: {
         id: values.quickSplitId,
-        expenseId: values.expenseId,
       },
       json: {
+        id: values.expenseId,
         description: values.description,
         amount: values.amount,
         currency: values.currency,
         paidByUserId: values.paidByUserId,
         participantUserIds: values.expenseParticipantUserIds,
-        splitMethod: 'equal',
+        splitMethod: values.splitMethod,
+        ...(values.percentageShares
+          ? { percentageShares: values.percentageShares }
+          : {}),
+        ...(values.exactShares ? { exactShares: values.exactShares } : {}),
       },
     });
 
@@ -82,7 +87,11 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
       currency: values.currency,
       paidByUserId: values.paidByUserId,
       participantUserIds: values.expenseParticipantUserIds,
-      splitMethod: 'equal',
+      splitMethod: values.splitMethod,
+      ...(values.percentageShares
+        ? { percentageShares: values.percentageShares }
+        : {}),
+      ...(values.exactShares ? { exactShares: values.exactShares } : {}),
     },
   });
 

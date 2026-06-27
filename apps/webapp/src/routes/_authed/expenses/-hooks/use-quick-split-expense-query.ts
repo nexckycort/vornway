@@ -8,7 +8,7 @@ export type QuickSplitExpenseDetail = {
   description: string;
   amount: number;
   currency: string;
-  splitMethod: 'equal' | 'exact';
+  splitMethod: 'equal' | 'percentage' | 'exact';
   createdAt: string;
   paidBy: {
     id: string;

@@ -1010,7 +1010,7 @@ function RouteComponent() {
         ? groupQuery.error.message
         : isEditMode && expenseQuery.error instanceof Error
           ? expenseQuery.error.message
-          : 'No se pudo cargar el grupo';
+          : 'No se pudo cargar el espacio';
 
     return (
       <MobilePageLayout
@@ -1026,7 +1026,7 @@ function RouteComponent() {
             onClick={() => navigateToGroupRoot(true)}
             className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"
           >
-            Volver al grupo
+            Volver al espacio
           </button>
         </div>
       </MobilePageLayout>
@@ -1927,7 +1927,7 @@ function RouteComponent() {
               Crear categoría
             </DialogTitle>
             <DialogDescription className="px-5 text-left">
-              Agrega una nueva categoría para este grupo.
+              Agrega una nueva categoría para este espacio.
             </DialogDescription>
           </DialogHeader>
 

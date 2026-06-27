@@ -191,10 +191,10 @@ function RouteComponent() {
                     </div>
 
                     <h1 className="mt-5 text-[20px] font-semibold leading-7 text-[#202124]">
-                      Todo tu Grupo empieza aquí
+                      Todo tu espacio empieza aquí
                     </h1>
                     <p className="mt-2 max-w-[320px] text-sm leading-5 text-[#5e5e5e]">
-                      Crea tu primer Grupo, organiza tus gastos y define tus
+                      Crea tu primer espacio, organiza tus gastos y define tus
                       metas de ahorro. Vornway te acompaña en cada paso.
                     </p>
 
@@ -209,7 +209,7 @@ function RouteComponent() {
                       className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-base font-medium text-[#202124] shadow-[0_6px_16px_rgba(0,0,0,0.05)] transition-transform active:translate-y-px"
                     >
                       <PlusIcon className="mr-2 size-5" />
-                      Crear mi primer Grupo
+                      Crear espacio
                     </Link>
                   </div>
                 </div>

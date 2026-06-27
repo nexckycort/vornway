@@ -31,7 +31,7 @@ export const goalTypes: Array<{
   {
     id: 'gift',
     label: 'Regalo',
-    description: 'Fondos cálidos para detalles en grupo.',
+    description: 'Fondos cálidos para detalles en espacio.',
     emoji: '🎁',
     accent: '#f97316',
     soft: '#ffedd5',

@@ -31,7 +31,7 @@ async function fetchGroupsPage({
   });
 
   if (!response.ok) {
-    throw new Error('No se pudieron cargar los grupos');
+    throw new Error('No se pudieron cargar los espacios');
   }
 
   const page = (await response.json()) as GroupsPage;

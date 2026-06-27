@@ -66,7 +66,7 @@ function RouteComponent() {
   const updateSettingsMutation = useUpdateGroupSettingsMutation(id);
   const exportGroupCsvMutation = useExportGroupCsvMutation(
     id,
-    groupQuery.data?.name ?? 'grupo',
+    groupQuery.data?.name ?? 'espacio',
   );
 
   const inviteLink = useMemo(() => {
@@ -157,7 +157,9 @@ function RouteComponent() {
       void navigate({ to: '/groups', replace: true });
     } catch (error) {
       setShareMessage(
-        error instanceof Error ? error.message : 'No se pudo eliminar el grupo',
+        error instanceof Error
+          ? error.message
+          : 'No se pudo eliminar el espacio',
       );
     }
   };
@@ -166,7 +168,7 @@ function RouteComponent() {
     const memberId = groupQuery.data?.myMembership?.id;
 
     if (!memberId) {
-      setShareMessage('No se pudo salir del grupo');
+      setShareMessage('No se pudo salir del espacio');
       return;
     }
 
@@ -175,7 +177,7 @@ function RouteComponent() {
       void navigate({ to: '/groups', replace: true });
     } catch (error) {
       setShareMessage(
-        error instanceof Error ? error.message : 'No se pudo salir del grupo',
+        error instanceof Error ? error.message : 'No se pudo salir del espacio',
       );
     }
   };
@@ -186,7 +188,9 @@ function RouteComponent() {
       toast.success('Exportación descargada');
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'No se pudo exportar el grupo',
+        error instanceof Error
+          ? error.message
+          : 'No se pudo exportar el espacio',
       );
     }
   };
@@ -208,7 +212,7 @@ function RouteComponent() {
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {groupQuery.error instanceof Error
               ? groupQuery.error.message
-              : 'No se pudo cargar el grupo'}
+              : 'No se pudo cargar el espacio'}
           </div>
           <Button
             type="button"
@@ -268,7 +272,7 @@ function RouteComponent() {
                   state: editFlowState,
                 })
               }
-              aria-label="Editar grupo"
+              aria-label="Editar espacio"
             >
               <Pencil className="size-4" />
             </button>
@@ -398,7 +402,7 @@ function RouteComponent() {
             ) : (
               <LogOut className="size-5" />
             )}
-            {isOwner ? 'Eliminar grupo' : 'Salir del grupo'}
+            {isOwner ? 'Eliminar espacio' : 'Salir del espacio'}
           </button>
         </div>
 
@@ -414,8 +418,8 @@ function RouteComponent() {
           <DrawerHeader>
             <DrawerTitle>Escanea el código QR</DrawerTitle>
             <DrawerDescription>
-              Invita a tus compañeros de grupo a escanear el código para unirse
-              al grupo.
+              Invita a tus compañeros de espacio a escanear el código para
+              unirse al espacio.
             </DrawerDescription>
           </DrawerHeader>
 
@@ -440,9 +444,9 @@ function RouteComponent() {
       <Drawer open={showShareDrawer} onOpenChange={setShowShareDrawer}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Invita a tus compañeros de Grupo</DrawerTitle>
+            <DrawerTitle>Invita a tus compañeros de Espacio</DrawerTitle>
             <DrawerDescription>
-              Comienza a gestionar los gastos compartidos del Grupo
+              Comienza a gestionar los gastos compartidos del Espacio
             </DrawerDescription>
           </DrawerHeader>
 
@@ -492,10 +496,10 @@ function RouteComponent() {
       >
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Eliminar grupo</DrawerTitle>
+            <DrawerTitle>Eliminar espacio</DrawerTitle>
             <DrawerDescription>
-              Esta acción eliminará el grupo, los gastos y toda la información
-              del Grupo para todos los participantes. Esta acción no se puede
+              Esta acción eliminará el espacio, los gastos y toda la información
+              del Espacio para todos los participantes. Esta acción no se puede
               deshacer.
             </DrawerDescription>
           </DrawerHeader>
@@ -527,10 +531,10 @@ function RouteComponent() {
       >
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Salir del grupo</DrawerTitle>
+            <DrawerTitle>Salir del espacio</DrawerTitle>
             <DrawerDescription>
               Dejarás de tener acceso a los gastos, balances y actividad de este
-              Grupo y el grupo se eliminará de tu cuenta.
+              Espacio y el espacio se eliminará de tu cuenta.
             </DrawerDescription>
           </DrawerHeader>
 

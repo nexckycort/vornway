@@ -252,7 +252,7 @@ export function useExportGroupCsvMutation(groupId: string, groupName: string) {
 
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
-      const safeName = slugifyFileName(groupName) || 'grupo';
+      const safeName = slugifyFileName(groupName) || 'espacio';
       link.href = url;
       link.download = `${safeName}-export.csv`;
       document.body.append(link);

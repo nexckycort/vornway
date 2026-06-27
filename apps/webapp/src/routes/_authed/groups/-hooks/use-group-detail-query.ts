@@ -238,7 +238,7 @@ export function useGroupSummaryQuery(groupId: string) {
           return cachedGroup;
         }
 
-        throw new Error('No se pudo cargar el grupo');
+        throw new Error('No se pudo cargar el espacio');
       }
 
       if (!response.ok) {
@@ -250,7 +250,7 @@ export function useGroupSummaryQuery(groupId: string) {
           return cachedGroup;
         }
 
-        throw new Error('No se pudo cargar el grupo');
+        throw new Error('No se pudo cargar el espacio');
       }
 
       const group = (await response.json()) as unknown as GroupSummary;

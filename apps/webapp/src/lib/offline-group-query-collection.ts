@@ -349,7 +349,7 @@ export async function createGroupOfflineFirst(
   if (typeof window === 'undefined') {
     const response = await postGroupToApi(payload);
     if (!response.ok) {
-      throw new Error('No se pudo crear el grupo');
+      throw new Error('No se pudo crear el espacio');
     }
 
     const data = (await response.json()) as CreateGroupOfflineFirstResult;
@@ -377,5 +377,5 @@ export async function createGroupOfflineFirst(
   }
 
   const payloadError = (await response.json()) as { error?: string };
-  throw new Error(payloadError.error ?? 'No se pudo crear el grupo');
+  throw new Error(payloadError.error ?? 'No se pudo crear el espacio');
 }

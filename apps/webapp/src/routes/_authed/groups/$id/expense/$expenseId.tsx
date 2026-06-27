@@ -558,7 +558,7 @@ function RouteComponent() {
             <DrawerDescription>
               {isSettlement
                 ? 'Esta acción eliminará la liquidación y restaurará la deuda pendiente.'
-                : 'Esta acción eliminará el gasto del grupo.'}
+                : 'Esta acción eliminará el gasto del espacio.'}
             </DrawerDescription>
           </DrawerHeader>
           <DrawerFooter className="grid grid-cols-2">

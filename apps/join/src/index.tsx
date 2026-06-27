@@ -30,7 +30,7 @@ app.get('/:inviteCode', async (c) => {
       <InvitePage
         origin={origin}
         title="Invitación no encontrada"
-        description="Este enlace ya no es válido o el grupo fue eliminado."
+        description="Este enlace ya no es válido o el espacio fue eliminado."
         inviteCode={inviteCode}
         imageUrl={null}
         inviterName={null}
@@ -140,9 +140,9 @@ function buildInviteDescription(group: InviteGroup) {
 
 function formatGroupType(value: string) {
   const normalized = value.trim().toLowerCase();
-  if (normalized === 'viajes') return 'Grupo de viajes';
+  if (normalized === 'viajes') return 'Espacio de viajes';
   if (normalized === 'meta') return 'Meta de ahorro';
-  return `Grupo ${value}`;
+  return `Espacio ${value}`;
 }
 
 function getInviteUrl(origin: string, inviteCode: string) {
@@ -205,8 +205,8 @@ function buildInvitationImage(input: {
   <rect x="176" y="350" width="848" height="106" rx="28" fill="#FFF1F2" stroke="#FECDD3"/>
   <circle cx="226" cy="403" r="28" fill="url(#accent)"/>
   <text x="226" y="412" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-size="26" font-weight="700" fill="white">${input.notFound ? '!' : '↗'}</text>
-  <text x="280" y="394" font-family="Poppins, Arial, sans-serif" font-size="24" font-weight="700" fill="#0F172A">${input.notFound ? 'Enlace no disponible' : 'Te están invitando a un grupo'}</text>
-  <text x="280" y="426" font-family="Poppins, Arial, sans-serif" font-size="20" font-weight="500" fill="#475569">${input.notFound ? 'Pide un nuevo enlace al dueño del grupo.' : `Invitado por ${inviter}`}</text>
+  <text x="280" y="394" font-family="Poppins, Arial, sans-serif" font-size="24" font-weight="700" fill="#0F172A">${input.notFound ? 'Enlace no disponible' : 'Te están invitando a un espacio'}</text>
+  <text x="280" y="426" font-family="Poppins, Arial, sans-serif" font-size="20" font-weight="500" fill="#475569">${input.notFound ? 'Pide un nuevo enlace al dueño del espacio.' : `Invitado por ${inviter}`}</text>
 
   <text x="176" y="518" font-family="Poppins, Arial, sans-serif" font-size="19" font-weight="600" fill="#64748B">Mira gastos, saldos y participantes desde la app</text>
   <rect x="855" y="490" width="169" height="54" rx="27" fill="#E11D48"/>
@@ -456,7 +456,7 @@ function InvitePage(props: {
                     <div>
                       <div className="meta-label">Te invitó</div>
                       <div className="meta-value">
-                        {props.inviterName ?? 'Un miembro del grupo'}
+                        {props.inviterName ?? 'Un miembro del espacio'}
                       </div>
                     </div>
                   </div>
@@ -475,7 +475,7 @@ function InvitePage(props: {
                     <div>
                       <div className="meta-label">Tipo</div>
                       <div className="meta-value">
-                        {groupTypeLabel ?? 'Grupo compartido'}
+                        {groupTypeLabel ?? 'Espacio compartido'}
                       </div>
                     </div>
                   </div>
@@ -491,8 +491,8 @@ function InvitePage(props: {
                   </strong>
                   <p>
                     {props.notFound
-                      ? 'Pide un nuevo enlace al dueño del grupo.'
-                      : 'Abre la invitación para unirte y empezar a ver la actividad del grupo.'}
+                      ? 'Pide un nuevo enlace al dueño del espacio.'
+                      : 'Abre la invitación para unirte y empezar a ver la actividad del espacio.'}
                   </p>
                 </div>
 

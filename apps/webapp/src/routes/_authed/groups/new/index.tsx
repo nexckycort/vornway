@@ -157,7 +157,7 @@ function RouteComponent() {
             Atrás
           </button>
           <h1 className="text-2xl font-semibold leading-8 text-[#0f172a]">
-            Crear nuevo grupo
+            Crear espacio
           </h1>
           <p className="mt-1 text-sm text-[#64748b]">
             Puedes crearlo solo para ti o compartirlo después.
@@ -199,7 +199,7 @@ function RouteComponent() {
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Detalle breve del grupo"
+              placeholder="Detalle breve del espacio"
               className="min-h-24 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-primary"
               maxLength={400}
             />
@@ -211,7 +211,7 @@ function RouteComponent() {
                 {imageDataUrl ? (
                   <img
                     src={imageDataUrl}
-                    alt="Imagen seleccionada del grupo"
+                    alt="Imagen seleccionada del espacio"
                     className="size-full object-cover"
                   />
                 ) : (
@@ -221,7 +221,7 @@ function RouteComponent() {
 
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-[#334155]">
-                  Imagen del grupo
+                  Imagen del espacio
                 </p>
                 <p className="mt-1 text-xs leading-5 text-[#64748b]">
                   Se comprimirá automáticamente antes de guardarse.

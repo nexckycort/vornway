@@ -124,7 +124,7 @@ function RouteComponent() {
               {t.entryTitle}
             </h2>
             <p className="mt-1 text-base leading-6 text-[#626262]">
-              Elige un grupo existente, regístralo con amigos o como un gasto
+              Elige un espacio existente, regístralo con amigos o como un gasto
               personal
             </p>
           </section>

@@ -412,7 +412,7 @@ function RouteComponent() {
               <ProfileActionRow
                 icon={<BarChart3 className="size-5" />}
                 title="Estadísticas"
-                subtitle="Usuarios y grupos creados"
+                subtitle="Usuarios y espacios creados"
                 onClick={() =>
                   void navigate({
                     to: '/profile/stats',

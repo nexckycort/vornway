@@ -131,16 +131,16 @@ function RouteComponent() {
       setFormError(
         error instanceof Error
           ? error.message
-          : 'No se pudo actualizar el grupo',
+          : 'No se pudo actualizar el espacio',
       );
     }
   };
 
   if (groupQuery.isLoading) {
     return (
-      <MobilePageLayout title="Editar grupo" onBack={goBack}>
+      <MobilePageLayout title="Editar espacio" onBack={goBack}>
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-[#64748b]">Cargando grupo...</p>
+          <p className="text-sm text-[#64748b]">Cargando espacio...</p>
         </div>
       </MobilePageLayout>
     );
@@ -148,12 +148,12 @@ function RouteComponent() {
 
   if (groupQuery.isError || !groupQuery.data) {
     return (
-      <MobilePageLayout title="Editar grupo" onBack={goBack}>
+      <MobilePageLayout title="Editar espacio" onBack={goBack}>
         <div className="flex flex-1 flex-col justify-center gap-4">
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {groupQuery.error instanceof Error
               ? groupQuery.error.message
-              : 'No se pudo cargar el grupo'}
+              : 'No se pudo cargar el espacio'}
           </div>
           <Button
             type="button"
@@ -169,7 +169,7 @@ function RouteComponent() {
   }
 
   return (
-    <MobilePageLayout title="Editar grupo" onBack={goBack}>
+    <MobilePageLayout title="Editar espacio" onBack={goBack}>
       <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 pb-4">
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-[#334155]">Nombre</span>
@@ -205,7 +205,7 @@ function RouteComponent() {
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            placeholder="Detalle breve del grupo"
+            placeholder="Detalle breve del espacio"
             className="min-h-24 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-primary"
             maxLength={400}
           />
@@ -217,7 +217,7 @@ function RouteComponent() {
               {previewImageUrl ? (
                 <img
                   src={previewImageUrl}
-                  alt="Imagen seleccionada del grupo"
+                  alt="Imagen seleccionada del espacio"
                   className="size-full object-cover"
                 />
               ) : (
@@ -227,7 +227,7 @@ function RouteComponent() {
 
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-[#334155]">
-                Imagen del grupo
+                Imagen del espacio
               </p>
               <p className="mt-1 text-xs leading-5 text-[#64748b]">
                 Se comprimirá automáticamente antes de guardarse.

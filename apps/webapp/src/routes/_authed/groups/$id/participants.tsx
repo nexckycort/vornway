@@ -138,7 +138,7 @@ function RouteComponent() {
     >
       <section className="mb-5 rounded-2xl border border-[#e2e8f0] bg-white p-4">
         <p className="mb-2 text-sm font-medium text-[#132238]">
-          Compartir enlace del grupo
+          Compartir enlace del espacio
         </p>
         <div className="flex gap-2">
           <div className="min-w-0 flex-1 rounded-2xl bg-[#f8fafc] px-3 py-3">
@@ -222,7 +222,7 @@ function RouteComponent() {
                   setSelectedUserId(candidate.id);
                   setMessage(
                     candidate.isAlreadyMember
-                      ? 'Este usuario ya está agregado en el grupo'
+                      ? 'Este usuario ya está agregado en el espacio'
                       : `Usuario seleccionado: ${candidate.name}`,
                   );
                 }}
@@ -244,7 +244,7 @@ function RouteComponent() {
                   <div className="flex flex-col items-end gap-1 text-[11px] text-[#64748b]">
                     {candidate.isAlreadyMember ? (
                       <span className="rounded-full bg-[#f8fafc] px-2 py-1">
-                        Ya está en el grupo
+                        Ya está en el espacio
                       </span>
                     ) : null}
                     {candidate.isCurrentUser ? (
@@ -422,7 +422,7 @@ function RouteComponent() {
               <div className="px-5 pb-2">
                 <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   Vas a eliminar a <strong>{memberToRemove.name}</strong> del
-                  grupo.
+                  espacio.
                 </div>
               </div>
 

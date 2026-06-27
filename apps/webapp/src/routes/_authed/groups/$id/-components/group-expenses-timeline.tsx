@@ -108,7 +108,7 @@ export function GroupExpensesTimeline({
             No tienes gastos aún
           </h3>
           <p className="mt-2 text-sm text-[#64748b]">
-            Crea tu primer gasto y empieza a organizar este grupo.
+            Crea tu primer gasto y empieza a organizar este espacio.
           </p>
         </div>
       ) : null}

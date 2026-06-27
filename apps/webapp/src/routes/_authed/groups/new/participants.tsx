@@ -231,7 +231,7 @@ function RouteComponent() {
         setError(
           offlineError instanceof Error
             ? offlineError.message
-            : 'No se pudo guardar el grupo sin conexión',
+            : 'No se pudo guardar el espacio sin conexión',
         );
         setIsSavingOffline(false);
       }
@@ -262,7 +262,7 @@ function RouteComponent() {
       setError(
         submitError instanceof Error
           ? submitError.message
-          : 'No se pudo crear el grupo',
+          : 'No se pudo crear el espacio',
       );
     }
   };
@@ -271,7 +271,7 @@ function RouteComponent() {
     return (
       <MobilePageLayout title="Agregar participantes" onBack={goBack}>
         <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          Falta información del grupo. Vuelve al paso anterior.
+          Falta información del espacio. Vuelve al paso anterior.
         </p>
         <Button
           type="button"
@@ -469,7 +469,7 @@ function RouteComponent() {
               disabled={isSubmitting}
             >
               <PlusCircle data-icon="inline-start" />
-              {isSubmitting ? 'Creando…' : 'Crear grupo'}
+              {isSubmitting ? 'Creando…' : 'Crear espacio'}
             </Button>
           </div>
         </div>
@@ -490,7 +490,7 @@ function RouteComponent() {
         <DrawerContent className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden rounded-t-[32px] pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
           <DrawerHeader className="px-4 pt-3">
             <DrawerTitle className="text-[1.75rem] leading-[1.05] tracking-tight">
-              ¡{createdGroup?.name ?? 'Grupo'} creado!
+              ¡{createdGroup?.name ?? 'Espacio'} creado!
             </DrawerTitle>
             <DrawerDescription className="text-sm leading-6">
               Ya puedes compartir el enlace e invitar a más personas.
@@ -505,7 +505,7 @@ function RouteComponent() {
                   {draft?.image?.dataUrl ? (
                     <img
                       src={draft.image.dataUrl}
-                      alt={createdGroup?.name ?? 'Grupo creado'}
+                      alt={createdGroup?.name ?? 'Espacio creado'}
                       className="h-full w-full object-cover"
                       referrerPolicy="no-referrer"
                     />
@@ -520,7 +520,7 @@ function RouteComponent() {
 
             <div>
               <p className="text-[1rem] font-semibold text-[#0f172a]">
-                Comparte el enlace del grupo
+                Comparte el enlace del espacio
               </p>
 
               <div className="mt-2 flex items-center gap-3">
@@ -558,8 +558,8 @@ function RouteComponent() {
                 onClick={async () => {
                   if (navigator.share) {
                     await navigator.share({
-                      title: createdGroup?.name ?? 'Grupo',
-                      text: `Únete a ${createdGroup?.name ?? 'mi grupo'}`,
+                      title: createdGroup?.name ?? 'Espacio',
+                      text: `Únete a ${createdGroup?.name ?? 'mi espacio'}`,
                       url: createdInviteLink,
                     });
                     return;
@@ -613,7 +613,7 @@ function RouteComponent() {
               }}
               disabled={!createdGroup}
             >
-              Ir al grupo
+              Ir al espacio
             </Button>
           </div>
         </DrawerContent>

@@ -49,7 +49,7 @@ export function FeedbackForm({
           onChange={(event) => onTitleChange(event.target.value)}
           placeholder={
             type === 'BUG'
-              ? 'Ej: no carga el grupo sin conexión'
+              ? 'Ej: no carga el espacio sin conexión'
               : 'Ej: filtro por categoría en reportes'
           }
           className={`mt-2 h-12 w-full rounded-2xl border bg-white px-4 text-sm outline-none transition-colors ${

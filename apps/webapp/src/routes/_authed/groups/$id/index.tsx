@@ -266,13 +266,13 @@ function RouteComponent() {
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {groupQuery.error instanceof Error
               ? groupQuery.error.message
-              : 'No tienes acceso a este grupo'}
+              : 'No tienes acceso a este espacio'}
           </div>
           <Link
             to="/groups"
             className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"
           >
-            Volver a grupos
+            Volver a espacios
           </Link>
         </div>
       </main>
@@ -472,14 +472,14 @@ function RouteComponent() {
       <Drawer open={showQrDrawer} onOpenChange={setShowQrDrawer}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Código QR del grupo</DrawerTitle>
+            <DrawerTitle>Código QR del espacio</DrawerTitle>
             <DrawerDescription>{group.name}</DrawerDescription>
           </DrawerHeader>
 
           <div className="space-y-3 px-5 pb-5">
             <p className="text-sm text-[#64748b]">
               Escanea este código desde otro celular para abrir la invitación
-              del grupo.
+              del espacio.
             </p>
 
             {groupQrCode ? (
@@ -660,7 +660,7 @@ function RouteComponent() {
               <DrawerHeader>
                 <DrawerTitle>Eliminar gasto</DrawerTitle>
                 <DrawerDescription>
-                  Se eliminará este gasto del grupo.
+                  Se eliminará este gasto del espacio.
                 </DrawerDescription>
               </DrawerHeader>
 
@@ -731,7 +731,7 @@ function RouteComponent() {
               <div className="px-5 pb-2">
                 <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   Vas a eliminar a <strong>{memberToRemove.name}</strong> del
-                  grupo.
+                  espacio.
                 </div>
               </div>
 

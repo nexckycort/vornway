@@ -141,7 +141,7 @@ function RouteComponent() {
               />
               <StatCard
                 icon={<FolderKanban className="size-5" />}
-                label="Grupos"
+                label="Espacios"
                 value={formatNumber(statsQuery.data.totalGroups)}
               />
             </div>

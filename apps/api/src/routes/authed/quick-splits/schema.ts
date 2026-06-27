@@ -1,0 +1,80 @@
+import * as z from 'zod';
+
+export const createQuickSplitSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    name: z.string().trim().min(1).max(120),
+    description: z.string().trim().max(400).optional(),
+    participantUserIds: z.array(z.string().min(1)).min(1).max(20),
+  })
+  .refine(
+    (data) =>
+      new Set(data.participantUserIds).size === data.participantUserIds.length,
+    {
+      message: 'No puedes repetir participantes',
+      path: ['participantUserIds'],
+    },
+  );
+
+export type CreateQuickSplitInput = z.infer<typeof createQuickSplitSchema>;
+
+export const quickSplitParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
+export const createQuickSplitExpenseSchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    description: z.string().trim().min(1).max(200),
+    amount: z.number().positive(),
+    currency: z.string().trim().length(3),
+    paidByUserId: z.string().min(1).optional(),
+    participantUserIds: z.array(z.string().min(1)).min(1).max(20),
+    splitMethod: z.enum(['equal', 'exact']).default('equal'),
+    exactShares: z
+      .record(z.string().min(1), z.number().nonnegative())
+      .optional(),
+  })
+  .refine(
+    (data) =>
+      new Set(data.participantUserIds).size === data.participantUserIds.length,
+    {
+      message: 'No puedes repetir participantes',
+      path: ['participantUserIds'],
+    },
+  )
+  .superRefine((data, ctx) => {
+    if (data.splitMethod === 'exact' && !data.exactShares) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Debes enviar exactShares cuando splitMethod es exact',
+        path: ['exactShares'],
+      });
+    }
+  });
+
+export type CreateQuickSplitResult = {
+  id: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+};
+
+export type CreateQuickSplitExpenseInput = z.infer<
+  typeof createQuickSplitExpenseSchema
+>;
+
+export type CreateQuickSplitExpenseResult = {
+  id: string;
+  quickSplitId: string;
+  description: string;
+  amount: number;
+  currency: string;
+  paidByUserId: string;
+  splitMethod: 'equal' | 'exact';
+  participants: Array<{
+    userId: string;
+    share: number;
+  }>;
+  createdAt: string;
+};

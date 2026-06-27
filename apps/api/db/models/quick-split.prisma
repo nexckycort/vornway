@@ -1,0 +1,64 @@
+model QuickSplit {
+  id          String   @id
+  ownerId     String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner        User                  @relation("QuickSplitOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  participants QuickSplitParticipant[]
+  expenses     QuickSplitExpense[]
+
+  @@index([ownerId, createdAt(sort: Desc)])
+  @@map("quick_split")
+}
+
+model QuickSplitParticipant {
+  id           String     @id @default(cuid())
+  quickSplitId String
+  userId       String
+  role         String     @default("participant")
+  joinedAt     DateTime   @default(now())
+
+  quickSplit   QuickSplit @relation(fields: [quickSplitId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([quickSplitId, userId])
+  @@index([userId, joinedAt(sort: Desc)])
+  @@map("quick_split_participant")
+}
+
+model QuickSplitExpense {
+  id           String   @id @default(cuid())
+  quickSplitId String
+  paidByUserId String
+  description  String
+  amount       Float
+  currency     String
+  splitMethod  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  quickSplit   QuickSplit                  @relation(fields: [quickSplitId], references: [id], onDelete: Cascade)
+  paidBy       User                        @relation("QuickSplitExpensePaidBy", fields: [paidByUserId], references: [id], onDelete: Cascade)
+  participants QuickSplitExpenseParticipant[]
+
+  @@index([quickSplitId, createdAt(sort: Desc)])
+  @@index([paidByUserId, createdAt(sort: Desc)])
+  @@map("quick_split_expense")
+}
+
+model QuickSplitExpenseParticipant {
+  id        String   @id @default(cuid())
+  expenseId String
+  userId    String
+  share     Float
+
+  expense QuickSplitExpense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User              @relation("QuickSplitExpenseParticipantUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([expenseId, userId])
+  @@index([userId])
+  @@map("quick_split_expense_participant")
+}

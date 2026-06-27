@@ -141,41 +141,28 @@ function RouteComponent() {
                 </div>
               ) : (
                 <>
-                  <HomeSection
-                    title={t.recentExpenses}
-                    className="mt-7"
-                    viewAllTo="/expenses/friends"
-                  >
-                    {recentExpensesQuery.data.length > 0 ? (
-                      <div className="flex flex-col gap-4">
-                        {recentExpensesQuery.data.map((item) => (
-                          <RecentExpenseCard key={item.id} item={item} />
-                        ))}
-                      </div>
-                    ) : recentExpensesQuery.isLoading ? (
-                      <div className="flex flex-col gap-4">
-                        <div className="h-[84px] rounded-[24px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]" />
-                        <div className="h-[84px] rounded-[24px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]" />
-                        <div className="h-[84px] rounded-[24px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]" />
-                      </div>
-                    ) : (
-                      <div className="rounded-[28px] border border-dashed border-[#e5e7eb] bg-white px-5 py-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-                        <p className="text-base font-semibold text-[#111827]">
-                          {t.noRecentExpensesTitle}
-                        </p>
-                        <p className="mt-2 text-sm text-[#6b7280]">
-                          {t.noRecentExpensesCopy}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={handleCreateExpense}
-                          className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"
-                        >
-                          {t.createExpense}
-                        </button>
-                      </div>
-                    )}
-                  </HomeSection>
+                  {recentExpensesQuery.isLoading ||
+                  recentExpensesQuery.data.length > 0 ? (
+                    <HomeSection
+                      title={t.recentExpenses}
+                      className="mt-7"
+                      viewAllTo="/expenses/friends"
+                    >
+                      {recentExpensesQuery.data.length > 0 ? (
+                        <div className="flex flex-col gap-4">
+                          {recentExpensesQuery.data.map((item) => (
+                            <RecentExpenseCard key={item.id} item={item} />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-4">
+                          <div className="h-[84px] rounded-[24px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]" />
+                          <div className="h-[84px] rounded-[24px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]" />
+                          <div className="h-[84px] rounded-[24px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]" />
+                        </div>
+                      )}
+                    </HomeSection>
+                  ) : null}
 
                   <HomeSection
                     title={t.recentGroups}

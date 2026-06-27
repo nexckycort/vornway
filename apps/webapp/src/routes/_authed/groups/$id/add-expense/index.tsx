@@ -255,7 +255,7 @@ function AddExpenseSkeleton({
 }) {
   return (
     <MobilePageLayout title={title} onBack={onBack}>
-      <div className="space-y-5 px-2 pb-6">
+      <div className="space-y-5 px-2 pb-28">
         <div className="space-y-3">
           <div className="flex items-baseline justify-between gap-4">
             <Skeleton className="h-10 w-28 rounded-xl" />
@@ -1086,7 +1086,7 @@ function RouteComponent() {
         </div>
       </div>
 
-      <div className="space-y-5 px-2 pb-6">
+      <div className="space-y-5 px-2 pb-22">
         <label
           className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 ${
             showDescriptionError ? 'border-red-300' : 'border-gray-200'
@@ -1494,7 +1494,7 @@ function RouteComponent() {
         </p>
       </div>
 
-      <div className="px-2 pb-8">
+      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-gray-200 bg-white px-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4">
         <Button
           type="button"
           onClick={handleSubmit}

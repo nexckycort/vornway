@@ -14,6 +14,7 @@ export type HomeIconName =
   | 'home'
   | 'piggy-bank'
   | 'plus'
+  | 'move-up-right'
   | 'repeat'
   | 'shirt'
   | 'user';
@@ -60,9 +61,12 @@ export type SavingGoal = {
   tone: 'pink' | 'yellow';
 };
 
+export type HomeRecentGroup = Pick<Trip, 'id' | 'name'>;
+
 export type HomeQueryData = {
   welcomeText: string;
   actions: HomeAction[];
+  recentGroups: HomeRecentGroup[];
   trips: Trip[];
   savingGoals: SavingGoal[];
 };
@@ -73,15 +77,15 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
   const t = getHomeMessages();
   const homeActions: HomeAction[] = [
     {
-      id: 'currency-converter',
-      icon: 'repeat',
-      label: t.currencyConverter,
-      variant: 'neutral',
-    },
-    {
       id: 'create-group',
       icon: 'compass',
       label: t.createNewGroup,
+      variant: 'neutral',
+    },
+    {
+      id: 'create-expense',
+      icon: 'move-up-right',
+      label: t.createExpense,
       variant: 'primary',
     },
   ];
@@ -168,6 +172,10 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
   return {
     welcomeText: t.welcome,
     actions: homeActions,
+    recentGroups: apiData.groups.map((group) => ({
+      id: group.id,
+      name: group.name,
+    })),
     trips,
     savingGoals,
   };
@@ -176,6 +184,7 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
 const emptyHomeData: HomeQueryData = {
   welcomeText: getHomeMessages().welcome,
   actions: [],
+  recentGroups: [],
   trips: [],
   savingGoals: [],
 };

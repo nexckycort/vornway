@@ -1,21 +1,17 @@
+import { Link } from '@tanstack/react-router';
 import { cn } from '#/lib/utils';
 import type { HomeAction as HomeActionData } from '#/routes/_authed/(home)/-hooks/use-home-query';
-import { Link } from '@tanstack/react-router';
 import { homeIcons } from './home-icons';
 
 type HomeActionProps = {
   action: HomeActionData;
+  onSelect?: (action: HomeActionData) => void;
 };
 
-export function HomeAction({ action }: HomeActionProps) {
+export function HomeAction({ action, onSelect }: HomeActionProps) {
   const Icon = homeIcons[action.icon];
   const isPrimary = action.variant === 'primary';
-  const to =
-    action.id === 'create-group'
-      ? '/groups/new'
-      : action.id === 'currency-converter'
-        ? '/converter'
-        : null;
+  const to = action.id === 'create-group' ? '/groups/new' : null;
 
   const className = cn(
     'flex min-h-[118px] flex-col items-start justify-between rounded-[24px] p-4 text-left transition-transform active:translate-y-px',
@@ -42,7 +38,11 @@ export function HomeAction({ action }: HomeActionProps) {
 
   if (!to) {
     return (
-      <button type="button" className={className}>
+      <button
+        type="button"
+        className={className}
+        onClick={() => onSelect?.(action)}
+      >
         {content}
       </button>
     );

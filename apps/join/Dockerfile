@@ -28,7 +28,7 @@ FROM gcr.io/distroless/base
 
 WORKDIR /app
 
-COPY --from=build /app/dist/join join
+COPY --from=build /app/apps/join/dist/join join
 
 CMD ["./join"]
 

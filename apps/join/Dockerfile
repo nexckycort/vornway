@@ -7,7 +7,8 @@ FROM ghcr.io/pnpm/pnpm:11 AS install
 
 # Copy root workspace files + all workspace package.json
 RUN mkdir -p /temp/dev/apps/join
-COPY package.json pnpm-lock.yaml /temp/dev/
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml /temp/dev/
+COPY apps/join/package.json /temp/dev/apps/join/package.json
 
 RUN cd /temp/dev && pnpm install --ignore-scripts --frozen-lockfile
 

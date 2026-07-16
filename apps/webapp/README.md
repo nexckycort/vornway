@@ -5,7 +5,7 @@
 Install the dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 ## Get started

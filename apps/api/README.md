@@ -1,6 +1,6 @@
 To install dependencies:
 ```sh
-bun install
+pnpm install
 ```
 
 To run HTTP API:

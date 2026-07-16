@@ -6,7 +6,7 @@
     "check": "biome check --write",
     "clean": "rm -rf node_modules && rm -rf dist",
     "db:generate": "DATABASE_URL=dummy prisma generate",
-    "typecheck": "tsgo --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@prisma/adapter-pg": "catalog:",
@@ -15,7 +15,6 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@typescript/native-preview": "catalog:",
     "prisma": "catalog:",
     "typescript": "catalog:"
   }

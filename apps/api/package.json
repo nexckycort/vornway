@@ -14,9 +14,8 @@
     "db:migrate:dev": "bun run --bun prisma migrate dev --name ",
     "db:migrate": "bun run --bun prisma migrate dev",
     "db:migrate:deploy": "bun --env-file=.env prisma migrate deploy",
-    "typecheck": "tsgo --noEmit",
-    "test": "bun test",
-    "module:new": "bash scripts/create-module.sh"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
   },
   "exports": {
     "./hc": {
@@ -61,7 +60,6 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "@types/web-push": "^3.6.4",
-    "@typescript/native-preview": "catalog:",
     "prisma": "catalog:",
     "typescript": "catalog:"
   }

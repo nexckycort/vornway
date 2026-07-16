@@ -8,7 +8,7 @@
     "clean:apps": "bun run -r --parallel --filter='./apps/*' clean",
     "clean:packages": "bun run -r --parallel --filter='./packages/*' clean",
     "clean": "bun run clean:apps & bun run clean:packages & rm -rf node_modules",
-    "dev": "bun run -r --parallel --filter='./apps/*' dev"
+    "dev": "mprocs -c mprocs/dev.yaml"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
@@ -16,6 +16,7 @@
     "@types/node": "catalog:",
     "bun-types": "latest",
     "lefthook": "^2.0.12",
+    "mprocs": "^0.9.6",
     "typescript": "^7.0.2"
   },
   "workspaces": {

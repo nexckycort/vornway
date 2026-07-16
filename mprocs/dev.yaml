@@ -1,0 +1,7 @@
+procs:
+  Api:
+    shell: bun --filter @vornway/api dev
+    stop: SIGKILL
+  Web:
+    shell: bun --filter @vornway/web dev
+    stop: SIGKILL

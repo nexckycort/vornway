@@ -10,6 +10,7 @@
         "@types/node": "catalog:",
         "bun-types": "latest",
         "lefthook": "^2.0.12",
+        "mprocs": "^0.9.6",
         "typescript": "^7.0.2",
       },
     },
@@ -1725,6 +1726,8 @@
     "minimatch": ["minimatch@10.2.5", "", { "dependencies": { "brace-expansion": "^5.0.5" } }, "sha512-MULkVLfKGYDFYejP07QOurDLLQpcjk7Fw+7jXS2R2czRQzR56yHRveU5NDJEOviH+hETZKSkIk5c+T23GjFUMg=="],
 
     "minimist": ["minimist@1.2.8", "", {}, "sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA=="],
+
+    "mprocs": ["mprocs@0.9.6", "", { "bin": { "mprocs": "cli.js" } }, "sha512-sEwB5XD3/rReB47h0YbN2L5fXOLcMjF8sOEDTMr/daCLyVZfU4CegbanxO0ybiaFx0MQ/nV7yzOHmprmy2Wq9w=="],
 
     "mrmime": ["mrmime@2.0.1", "", {}, "sha512-Y3wQdFg2Va6etvQ5I82yUhGdsKrcYox6p7FfL1LbK2J4V01F9TGlepTIhnK24t7koZibmg82KGglhA1XK5IsLQ=="],
 

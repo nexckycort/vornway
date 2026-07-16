@@ -27,11 +27,11 @@ ALTER TABLE "quick_split_expense_participant" ADD COLUMN "participantId" TEXT;
 
 UPDATE "quick_split_expense_participant" qsep
 SET "participantId" = qsp."id"
-FROM "quick_split_expense" qse
-JOIN "quick_split_participant" qsp
-  ON qsp."quickSplitId" = qse."quickSplitId"
- AND qsp."userId" = qsep."userId"
-WHERE qse."id" = qsep."expenseId";
+FROM "quick_split_expense" qse,
+     "quick_split_participant" qsp
+WHERE qse."id" = qsep."expenseId"
+  AND qsp."quickSplitId" = qse."quickSplitId"
+  AND qsp."userId" = qsep."userId";
 
 ALTER TABLE "quick_split_expense_participant"
   ALTER COLUMN "participantId" SET NOT NULL;

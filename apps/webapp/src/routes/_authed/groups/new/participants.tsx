@@ -43,6 +43,7 @@ type DraftParticipant = {
   id: string;
   name: string;
   userId?: string;
+  username?: string | null;
   email?: string;
 };
 
@@ -169,6 +170,7 @@ function RouteComponent() {
       createDraftParticipant({
         name: normalizedName,
         ...(participant.userId ? { userId: participant.userId } : {}),
+        ...(participant.username ? { username: participant.username } : {}),
         ...(participant.email ? { email: participant.email } : {}),
       }),
     ]);
@@ -312,7 +314,7 @@ function RouteComponent() {
           htmlFor="participant-name"
           className="mt-2 block text-sm font-medium text-[#334155]"
         >
-          Nombre o correo
+          Nombre o usuario
         </label>
         <div className="mt-2 flex min-w-0 gap-2">
           <input
@@ -326,7 +328,7 @@ function RouteComponent() {
                 addManualParticipant();
               }
             }}
-            placeholder="Ej: Ana Pérez o ana@correo.com"
+            placeholder="Ej: Ana Pérez o ana.perez"
             className="h-12 min-w-0 flex-1 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none transition-colors focus:border-primary"
             maxLength={120}
           />
@@ -343,8 +345,8 @@ function RouteComponent() {
         </div>
 
         <p className="mt-3 text-xs text-[#64748b]">
-          Si coincide con un usuario registrado, lo verás debajo con su correo.
-          Si no, puedes crearlo solo con el nombre.
+          Si coincide con un usuario registrado, lo verás debajo con su nombre
+          de usuario. Si no, puedes crearlo solo con el nombre.
         </p>
 
         {searchQuery.isFetching && debouncedSearch ? (
@@ -375,6 +377,7 @@ function RouteComponent() {
                     createDraftParticipant({
                       name: candidate.name,
                       userId: candidate.id,
+                      username: candidate.username,
                       email: candidate.email,
                     }),
                   );
@@ -391,7 +394,9 @@ function RouteComponent() {
                       {candidate.name}
                     </p>
                     <p className="truncate text-xs text-[#64748b]">
-                      {candidate.email}
+                      {candidate.username
+                        ? `@${candidate.username}`
+                        : candidate.email}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1 text-[11px] text-[#64748b]">
@@ -425,7 +430,9 @@ function RouteComponent() {
                 </p>
                 {participant.email ? (
                   <p className="truncate text-xs text-[#64748b]">
-                    {participant.email}
+                    {participant.username
+                      ? `@${participant.username}`
+                      : participant.email}
                   </p>
                 ) : (
                   <p className="text-xs text-[#64748b]">

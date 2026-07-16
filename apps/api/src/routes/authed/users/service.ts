@@ -5,10 +5,16 @@ import {
   UserImageUpdateError,
   UserImageUploadError,
   UserNotFoundError,
+  UsernameAlreadyTakenError,
+  UsernameUpdateError,
   UserSearchError,
 } from './errors';
 import { userRepository } from './repository';
-import type { SearchUsersQueryInput, UpdateUserAvatarInput } from './schema';
+import type {
+  SearchUsersQueryInput,
+  UpdateUserAvatarInput,
+  UpdateUsernameInput,
+} from './schema';
 import {
   deleteUserImage,
   resolveUserImageUrl,
@@ -42,12 +48,59 @@ export const userService = {
         data: users.map((user) => ({
           id: user.id,
           name: user.name,
+          username: user.username,
           email: user.email,
           isCurrentUser: user.id === userId,
         })),
       };
     }).pipe(Effect.withSpan('users.search'));
   },
+  updateCurrentUserUsername: ({
+    userId,
+    username,
+  }: WithUserId<UpdateUsernameInput>) =>
+    Effect.gen(function* () {
+      const db = yield* Database;
+      const normalizedUsername = username.trim().toLowerCase();
+
+      const result = yield* Effect.tryPromise({
+        try: async () => {
+          const user = await userRepository.updateUsername(db, {
+            userId,
+            username: normalizedUsername,
+          });
+
+          return {
+            id: user.id,
+            username: user.username,
+            updatedAt: user.updatedAt,
+          };
+        },
+        catch: (cause) => {
+          if (
+            typeof cause === 'object' &&
+            cause !== null &&
+            'code' in cause &&
+            cause.code === 'P2002'
+          ) {
+            return new UsernameAlreadyTakenError({
+              username: normalizedUsername,
+            });
+          }
+
+          if (cause instanceof UsernameAlreadyTakenError) {
+            return cause;
+          }
+
+          return new UsernameUpdateError({ cause });
+        },
+      });
+
+      return {
+        id: result.id,
+        username: result.username,
+      };
+    }).pipe(Effect.withSpan('users.update_current_user_username')),
   updateCurrentUserImage: ({
     userId,
     dataUrl,

@@ -411,6 +411,7 @@ export type GroupExpenseAdvancedDetails = {
 export type GroupMemberSearchResult = {
   id: string;
   name: string;
+  username: string | null;
   email: string;
   isCurrentUser: boolean;
   isAlreadyMember: boolean;

@@ -44,3 +44,25 @@ export class UserImageUpdateError
   readonly message = 'No se pudo actualizar la imagen del usuario';
   readonly status = 500 as const;
 }
+
+export class UsernameAlreadyTakenError
+  extends Data.TaggedError('UsernameAlreadyTakenError')<{
+    username: string;
+  }>
+  implements ErrorMetadata<409>
+{
+  readonly code = 'USERNAME_ALREADY_TAKEN';
+  readonly message = 'Ese nombre de usuario ya esta en uso';
+  readonly status = 409 as const;
+}
+
+export class UsernameUpdateError
+  extends Data.TaggedError('UsernameUpdateError')<{
+    cause: unknown;
+  }>
+  implements ErrorMetadata<500>
+{
+  readonly code = 'USERNAME_UPDATE_FAILED';
+  readonly message = 'No se pudo actualizar el nombre de usuario';
+  readonly status = 500 as const;
+}

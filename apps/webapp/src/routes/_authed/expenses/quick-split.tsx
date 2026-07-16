@@ -44,6 +44,7 @@ export const Route = createFileRoute('/_authed/expenses/quick-split')({
 type SelectedFriend = {
   id: string;
   name: string;
+  username?: string | null;
   email: string;
   userId?: string;
 };
@@ -657,6 +658,7 @@ function RouteComponent() {
                       handleAddFriend({
                         id: candidate.id,
                         name: candidate.name,
+                        username: candidate.username,
                         email: candidate.email,
                         userId: candidate.id,
                       })
@@ -667,7 +669,9 @@ function RouteComponent() {
                       {candidate.name}
                     </p>
                     <p className="mt-1 truncate text-xs text-[#64748b]">
-                      {candidate.email}
+                      {candidate.username
+                        ? `@${candidate.username}`
+                        : candidate.email}
                     </p>
                   </button>
                 ))}

@@ -370,6 +370,12 @@ export function createGroupMembersService() {
         where: {
           OR: [
             {
+              username: {
+                contains: trimmedQuery,
+                mode: 'insensitive',
+              },
+            },
+            {
               name: {
                 contains: trimmedQuery,
                 mode: 'insensitive',
@@ -386,9 +392,10 @@ export function createGroupMembersService() {
         select: {
           id: true,
           name: true,
+          username: true,
           email: true,
         },
-        orderBy: [{ name: 'asc' }, { email: 'asc' }],
+        orderBy: [{ username: 'asc' }, { name: 'asc' }, { email: 'asc' }],
         take: 8,
       });
 
@@ -412,6 +419,7 @@ export function createGroupMembersService() {
         data: users.map((candidate) => ({
           id: candidate.id,
           name: candidate.name,
+          username: candidate.username,
           email: candidate.email,
           isCurrentUser: candidate.id === userId,
           isAlreadyMember: memberUserIds.has(candidate.id),

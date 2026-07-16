@@ -632,7 +632,9 @@ function RouteComponent() {
                               <span className="block truncate text-xs text-[#64748b]">
                                 {alreadyMember
                                   ? 'Ya agregado'
-                                  : candidate.email}
+                                  : candidate.username
+                                    ? `@${candidate.username}`
+                                    : candidate.email}
                               </span>
                             </span>
                           </button>

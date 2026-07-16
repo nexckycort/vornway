@@ -192,7 +192,7 @@ function RouteComponent() {
         </div>
 
         <p className="mt-2 text-xs text-[#64748b]">
-          Si encontramos un usuario registrado con ese nombre o correo, lo
+          Si encontramos un usuario registrado con ese nombre o usuario, lo
           mostraremos debajo. Si no, puedes crear el participante manualmente.
         </p>
 
@@ -238,7 +238,9 @@ function RouteComponent() {
                       {candidate.name}
                     </p>
                     <p className="truncate text-xs text-[#64748b]">
-                      {candidate.email}
+                      {candidate.username
+                        ? `@${candidate.username}`
+                        : candidate.email}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 text-[11px] text-[#64748b]">

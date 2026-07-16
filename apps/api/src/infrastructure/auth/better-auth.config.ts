@@ -14,6 +14,15 @@ const authConfig = {
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),
+  user: {
+    additionalFields: {
+      username: {
+        type: 'string',
+        required: false,
+        input: false,
+      },
+    },
+  },
   session: {
     expiresIn: ONE_YEAR_IN_SECONDS,
     updateAge: 60 * 60 * 24,

@@ -1,5 +1,3 @@
-import { resolveAssetUrl } from '#/lib/asset-url';
-import { signIn, signOut, useSession } from '#/lib/auth-client';
 import {
   createContext,
   type ReactNode,
@@ -7,15 +5,28 @@ import {
   useEffect,
   useState,
 } from 'react';
+import { resolveAssetUrl } from '#/lib/asset-url';
+import { signIn, signOut, useSession } from '#/lib/auth-client';
 
 const AUTH_USER_CACHE_KEY = 'vornway.auth.cached-user';
 
 interface User {
   id: string;
   name: string;
+  username: string | null;
   email: string;
   image: string | null;
   updatedAt: Date;
+}
+
+function readSessionUsername(sessionUser: unknown): string | null {
+  if (!sessionUser || typeof sessionUser !== 'object') {
+    return null;
+  }
+
+  const username = Reflect.get(sessionUser, 'username');
+
+  return typeof username === 'string' || username === null ? username : null;
 }
 
 function getInitialOnlineState() {
@@ -39,6 +50,10 @@ function readCachedUser(): User | null {
     return {
       id: parsed.id,
       name: parsed.name ?? '',
+      username:
+        typeof parsed.username === 'string' || parsed.username === null
+          ? parsed.username
+          : null,
       email: parsed.email,
       image: parsed.image ?? null,
       updatedAt: parsed.updatedAt ? new Date(parsed.updatedAt) : new Date(0),
@@ -70,6 +85,7 @@ export type AuthContextProps = {
   isAuthenticated: boolean;
   login: (email: string, otp: string) => Promise<void>;
   logout: () => Promise<void>;
+  refresh: () => Promise<void>;
   user: User | null;
 };
 
@@ -82,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isOnline, setIsOnline] = useState(getInitialOnlineState);
   const [loading, setLoading] = useState(false);
   const [forcedLoggedOut, setForcedLoggedOut] = useState(false);
-  const { data } = useSession();
+  const { data, refetch } = useSession();
 
   const isAuthenticated =
     !forcedLoggedOut && (data !== null || currentUser !== null);
@@ -106,6 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
+  const refresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -125,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const user = {
         id: data?.user.id ?? '',
         name: data?.user.name ?? '',
+        username: readSessionUsername(data?.user),
         email: data?.user.email ?? '',
         image: resolveAssetUrl(
           data?.user.image ?? null,
@@ -151,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated,
         login,
         logout,
+        refresh,
         user: currentUser,
       }}
     >

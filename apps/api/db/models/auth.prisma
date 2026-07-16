@@ -1,6 +1,7 @@
 model User {
   id                              String                         @id
   name                            String
+  username                        String?
   email                           String
   emailVerified                   Boolean                        @default(false)
   image                           String?
@@ -19,6 +20,7 @@ model User {
   feedbackEntries                 UserFeedback[]
 
   @@unique([email])
+  @@unique([username])
   @@map("user")
 }
 

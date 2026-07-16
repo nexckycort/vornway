@@ -5,17 +5,18 @@ WORKDIR /app
 # ---------------- install deps ----------------
 FROM ghcr.io/pnpm/pnpm:11 AS install
 
-# Copy root workspace files + all workspace package.json
+# Copy workspace config plus the join package manifest and local lockfile
 RUN mkdir -p /temp/dev/apps/join
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml /temp/dev/
+COPY pnpm-workspace.yaml /temp/dev/
 COPY apps/join/package.json /temp/dev/apps/join/package.json
+COPY apps/join/pnpm-lock.yaml /temp/dev/apps/join/pnpm-lock.yaml
 
-RUN cd /temp/dev && pnpm install --ignore-scripts --frozen-lockfile
+RUN cd /temp/dev/apps/join && pnpm install --ignore-scripts --frozen-lockfile
 
 # ---------------- build ----------------
 FROM base AS build
 
-COPY --from=install /temp/dev/node_modules node_modules
+COPY --from=install /temp/dev/apps/join/node_modules apps/join/node_modules
 
 COPY . .
 

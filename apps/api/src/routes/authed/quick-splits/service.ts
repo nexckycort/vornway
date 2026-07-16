@@ -47,64 +47,30 @@ function readSplitMethod(
 
 function createEqualShares(input: {
   amount: number;
-  participantUserIds: string[];
+  participantIds: string[];
 }): Record<string, number> {
-  const { amount, participantUserIds } = input;
+  const { amount, participantIds } = input;
   const shares: Record<string, number> = {};
-  const count = participantUserIds.length;
+  const count = participantIds.length;
   const baseShare = normalizeAmount(amount / count);
   let assigned = 0;
 
-  participantUserIds.forEach((userId, index) => {
+  participantIds.forEach((participantId, index) => {
     const share =
       index === count - 1 ? normalizeAmount(amount - assigned) : baseShare;
-    shares[userId] = share;
+    shares[participantId] = share;
     assigned = normalizeAmount(assigned + share);
   });
 
   return shares;
 }
 
-function mapQuickSplitExpenseFeedItem(input: {
-  id: string;
-  quickSplitId: string;
-  description: string;
-  amount: number;
-  currency: string;
-  createdAt: Date;
-  paidBy: {
-    id: string;
-    name: string;
-  };
-  quickSplit: {
-    name: string;
-    _count: {
-      participants: number;
-    };
-  };
-}): QuickSplitExpenseFeedItem {
-  return {
-    id: input.id,
-    quickSplitId: input.quickSplitId,
-    quickSplitName: input.quickSplit.name,
-    description: input.description,
-    amount: input.amount,
-    currency: input.currency,
-    participantCount: input.quickSplit._count.participants,
-    paidBy: {
-      id: input.paidBy.id,
-      name: input.paidBy.name,
-    },
-    createdAt: input.createdAt.toISOString(),
-  };
-}
-
 function createExactShares(input: {
   amount: number;
-  participantUserIds: string[];
+  participantIds: string[];
   exactShares?: Record<string, number>;
 }): Effect.Effect<Record<string, number>, QuickSplitExpenseSharesInvalidError> {
-  const { amount, participantUserIds, exactShares } = input;
+  const { amount, participantIds, exactShares } = input;
 
   if (!exactShares) {
     return Effect.fail(
@@ -114,11 +80,11 @@ function createExactShares(input: {
     );
   }
 
-  const unknownUserIds = Object.keys(exactShares).filter(
-    (userId) => !participantUserIds.includes(userId),
+  const unknownParticipantIds = Object.keys(exactShares).filter(
+    (participantId) => !participantIds.includes(participantId),
   );
 
-  if (unknownUserIds.length > 0) {
+  if (unknownParticipantIds.length > 0) {
     return Effect.fail(
       new QuickSplitExpenseSharesInvalidError({
         reason: 'unknown_participants_in_exact_shares',
@@ -128,8 +94,8 @@ function createExactShares(input: {
 
   const shares: Record<string, number> = {};
 
-  for (const participantUserId of participantUserIds) {
-    const share = exactShares[participantUserId];
+  for (const participantId of participantIds) {
+    const share = exactShares[participantId];
 
     if (!Number.isFinite(share) || share < 0) {
       return Effect.fail(
@@ -139,7 +105,7 @@ function createExactShares(input: {
       );
     }
 
-    shares[participantUserId] = normalizeAmount(share);
+    shares[participantId] = normalizeAmount(share);
   }
 
   const totalShares = normalizeAmount(
@@ -159,10 +125,10 @@ function createExactShares(input: {
 
 function createPercentageShares(input: {
   amount: number;
-  participantUserIds: string[];
+  participantIds: string[];
   percentageShares?: Record<string, number>;
 }): Effect.Effect<Record<string, number>, QuickSplitExpenseSharesInvalidError> {
-  const { amount, participantUserIds, percentageShares } = input;
+  const { amount, participantIds, percentageShares } = input;
 
   if (!percentageShares) {
     return Effect.fail(
@@ -172,11 +138,11 @@ function createPercentageShares(input: {
     );
   }
 
-  const unknownUserIds = Object.keys(percentageShares).filter(
-    (userId) => !participantUserIds.includes(userId),
+  const unknownParticipantIds = Object.keys(percentageShares).filter(
+    (participantId) => !participantIds.includes(participantId),
   );
 
-  if (unknownUserIds.length > 0) {
+  if (unknownParticipantIds.length > 0) {
     return Effect.fail(
       new QuickSplitExpenseSharesInvalidError({
         reason: 'unknown_participants_in_percentage_shares',
@@ -186,8 +152,8 @@ function createPercentageShares(input: {
 
   const percentages: Record<string, number> = {};
 
-  for (const participantUserId of participantUserIds) {
-    const percentage = percentageShares[participantUserId];
+  for (const participantId of participantIds) {
+    const percentage = percentageShares[participantId];
 
     if (!Number.isFinite(percentage) || percentage <= 0) {
       return Effect.fail(
@@ -197,7 +163,7 @@ function createPercentageShares(input: {
       );
     }
 
-    percentages[participantUserId] = normalizeAmount(percentage);
+    percentages[participantId] = normalizeAmount(percentage);
   }
 
   const totalPercentage = normalizeAmount(
@@ -215,17 +181,99 @@ function createPercentageShares(input: {
   const shares: Record<string, number> = {};
   let assigned = 0;
 
-  participantUserIds.forEach((participantUserId, index) => {
+  participantIds.forEach((participantId, index) => {
     const share =
-      index === participantUserIds.length - 1
+      index === participantIds.length - 1
         ? normalizeAmount(amount - assigned)
-        : normalizeAmount(amount * (percentages[participantUserId]! / 100));
+        : normalizeAmount(amount * (percentages[participantId]! / 100));
 
-    shares[participantUserId] = share;
+    shares[participantId] = share;
     assigned = normalizeAmount(assigned + share);
   });
 
   return Effect.succeed(shares);
+}
+
+function mapQuickSplitExpenseFeedItem(input: {
+  id: string;
+  quickSplitId: string;
+  description: string;
+  amount: number;
+  currency: string;
+  createdAt: Date;
+  paidByParticipant: {
+    id: string;
+    userId: string | null;
+    name: string;
+  };
+  quickSplit: {
+    name: string;
+    _count: {
+      participants: number;
+    };
+  };
+}): QuickSplitExpenseFeedItem {
+  return {
+    id: input.id,
+    quickSplitId: input.quickSplitId,
+    quickSplitName: input.quickSplit.name,
+    description: input.description,
+    amount: input.amount,
+    currency: input.currency,
+    participantCount: input.quickSplit._count.participants,
+    paidBy: {
+      id: input.paidByParticipant.id,
+      userId: input.paidByParticipant.userId,
+      name: input.paidByParticipant.name,
+    },
+    createdAt: input.createdAt.toISOString(),
+  };
+}
+
+function toCreateExpenseResult(input: {
+  id: string;
+  quickSplitId: string;
+  description: string;
+  amount: number;
+  currency: string;
+  paidByParticipantId: string;
+  splitMethod: string;
+  createdAt: Date;
+  participants: Array<{
+    participantId: string;
+    share: number;
+  }>;
+}): Effect.Effect<CreateQuickSplitExpenseResult, QuickSplitExpenseCreateError> {
+  const splitMethod = readSplitMethod(input.splitMethod);
+
+  if (!splitMethod) {
+    return Effect.fail(
+      new QuickSplitExpenseCreateError({
+        cause: new Error('Invalid quick split expense split method'),
+      }),
+    );
+  }
+
+  return Effect.succeed({
+    id: input.id,
+    quickSplitId: input.quickSplitId,
+    description: input.description,
+    amount: input.amount,
+    currency: input.currency,
+    paidByParticipantId: input.paidByParticipantId,
+    splitMethod,
+    participants: input.participants.map((participant) => ({
+      participantId: participant.participantId,
+      share: participant.share,
+    })),
+    createdAt: input.createdAt.toISOString(),
+  });
+}
+
+function normalizeParticipantIds(ids: string[]): string[] {
+  return Array.from(new Set(ids.map((id) => id.trim()))).filter(
+    (id) => id.length > 0,
+  );
 }
 
 export const quickSplitsService = {
@@ -309,7 +357,7 @@ export const quickSplitsService = {
 
     const participantMeta = new Map(
       expense.quickSplit.participants.map((participant) => [
-        participant.userId,
+        participant.id,
         participant,
       ]),
     );
@@ -333,22 +381,24 @@ export const quickSplitsService = {
       splitMethod,
       createdAt: expense.createdAt.toISOString(),
       paidBy: {
-        id: expense.paidBy.id,
-        name: expense.paidBy.name,
+        id: expense.paidByParticipant.id,
+        userId: expense.paidByParticipant.userId,
+        name: expense.paidByParticipant.name,
         image: resolveUserImageUrl(
-          expense.paidBy.image,
-          expense.paidBy.updatedAt,
+          expense.paidByParticipant.user?.image,
+          expense.paidByParticipant.user?.updatedAt ?? null,
         ),
       },
       participants: expense.participants.map((participant) => {
-        const meta = participantMeta.get(participant.userId);
+        const meta = participantMeta.get(participant.participantId);
 
         return {
-          userId: participant.userId,
-          name: meta?.user.name ?? 'Participante',
+          id: participant.participantId,
+          userId: meta?.userId ?? null,
+          name: meta?.name ?? 'Participante',
           image: resolveUserImageUrl(
-            meta?.user.image,
-            meta?.user.updatedAt ?? null,
+            meta?.user?.image,
+            meta?.user?.updatedAt ?? null,
           ),
           share: participant.share,
           role: meta?.role ?? 'participant',
@@ -418,42 +468,66 @@ export const quickSplitsService = {
     userId,
     name,
     description,
-    participantUserIds,
+    participants,
   }: WithUserId<CreateQuickSplitInput>) =>
     Effect.gen(function* () {
       const db = yield* Database;
-      const normalizedParticipantUserIds = Array.from(
-        new Set(
-          participantUserIds.map((participantUserId) =>
-            participantUserId.trim(),
-          ),
-        ),
-      ).filter(
-        (participantUserId) =>
-          participantUserId.length > 0 && participantUserId !== userId,
-      );
+      const normalizedParticipants = participants
+        .map((participant) => ({
+          clientId: participant.clientId?.trim() || undefined,
+          name: participant.name.trim(),
+          userId: participant.userId?.trim() || undefined,
+        }))
+        .filter(
+          (participant) =>
+            participant.name.length > 0 && participant.userId !== userId,
+        );
 
-      if (normalizedParticipantUserIds.length === 0) {
+      if (normalizedParticipants.length === 0) {
         return yield* Effect.fail(new QuickSplitParticipantsRequiredError({}));
       }
 
-      const participants = yield* Effect.tryPromise({
-        try: () =>
-          quickSplitsRepository.findUsersByIds(normalizedParticipantUserIds),
+      const registeredUserIds = Array.from(
+        new Set(
+          normalizedParticipants.flatMap((participant) =>
+            participant.userId ? [participant.userId] : [],
+          ),
+        ),
+      );
+
+      const registeredUsers = yield* Effect.tryPromise({
+        try: () => quickSplitsRepository.findUsersByIds(registeredUserIds),
         catch: (cause) => new QuickSplitCreateError({ cause }),
       });
 
-      if (participants.length !== normalizedParticipantUserIds.length) {
+      if (registeredUsers.length !== registeredUserIds.length) {
         const foundUserIds = new Set(
-          participants.map((participant) => participant.id),
+          registeredUsers.map((participant) => participant.id),
         );
-        const missingUserIds = normalizedParticipantUserIds.filter(
+        const missingUserIds = registeredUserIds.filter(
           (participantUserId) => !foundUserIds.has(participantUserId),
         );
 
         return yield* Effect.fail(
           new QuickSplitParticipantsNotFoundError({
             missingUserIds,
+          }),
+        );
+      }
+
+      const currentUser = yield* Effect.tryPromise({
+        try: () =>
+          db.user.findUnique({
+            where: { id: userId },
+            select: { name: true },
+          }),
+        catch: (cause) => new QuickSplitCreateError({ cause }),
+      });
+
+      if (!currentUser) {
+        return yield* Effect.fail(
+          new QuickSplitCreateError({
+            cause: new Error('Quick split owner not found'),
           }),
         );
       }
@@ -468,11 +542,10 @@ export const quickSplitsService = {
           const quickSplit = await quickSplitsRepository.create({
             id: quickSplitId,
             ownerId: userId,
+            ownerName: currentUser.name,
             name: normalizedName,
             description: normalizedDescription,
-            participantUserIds: participants.map(
-              (participant) => participant.id,
-            ),
+            participants: normalizedParticipants,
             createdAt: now,
           });
 
@@ -480,6 +553,15 @@ export const quickSplitsService = {
             id: quickSplit.id,
             name: quickSplit.name,
             description: quickSplit.description,
+            participants: quickSplit.participants.map((participant, index) => ({
+              id: participant.id,
+              ...(index > 0 && normalizedParticipants[index - 1]?.clientId
+                ? { clientId: normalizedParticipants[index - 1]!.clientId }
+                : {}),
+              userId: participant.userId,
+              name: participant.name,
+              role: participant.role,
+            })),
             createdAt: quickSplit.createdAt.toISOString(),
           } satisfies CreateQuickSplitResult;
         },
@@ -495,8 +577,8 @@ export const quickSplitsService = {
     description,
     amount,
     currency,
-    paidByUserId,
-    participantUserIds,
+    paidByParticipantId,
+    participantIds,
     splitMethod,
     percentageShares,
     exactShares,
@@ -521,18 +603,12 @@ export const quickSplitsService = {
         );
       }
 
-      const quickSplitParticipantUserIds = new Set(
-        quickSplit.participants.map((participant) => participant.userId),
+      const quickSplitParticipantIds = new Set(
+        quickSplit.participants.map((participant) => participant.id),
       );
-      const normalizedParticipantUserIds = Array.from(
-        new Set(
-          participantUserIds.map((participantUserId) =>
-            participantUserId.trim(),
-          ),
-        ),
-      ).filter((participantUserId) => participantUserId.length > 0);
+      const normalizedParticipantIds = normalizeParticipantIds(participantIds);
 
-      if (normalizedParticipantUserIds.length === 0) {
+      if (normalizedParticipantIds.length === 0) {
         return yield* Effect.fail(
           new QuickSplitExpenseParticipantsInvalidError({
             invalidUserIds: [],
@@ -540,25 +616,32 @@ export const quickSplitsService = {
         );
       }
 
-      const invalidParticipantUserIds = normalizedParticipantUserIds.filter(
-        (participantUserId) =>
-          !quickSplitParticipantUserIds.has(participantUserId),
+      const invalidParticipantIds = normalizedParticipantIds.filter(
+        (participantId) => !quickSplitParticipantIds.has(participantId),
       );
 
-      if (invalidParticipantUserIds.length > 0) {
+      if (invalidParticipantIds.length > 0) {
         return yield* Effect.fail(
           new QuickSplitExpenseParticipantsInvalidError({
-            invalidUserIds: invalidParticipantUserIds,
+            invalidUserIds: invalidParticipantIds,
           }),
         );
       }
 
-      const normalizedPaidByUserId = paidByUserId?.trim() || userId;
+      const ownerParticipantId =
+        quickSplit.participants.find(
+          (participant) => participant.userId === userId,
+        )?.id ?? null;
+      const normalizedPaidByParticipantId =
+        paidByParticipantId?.trim() || ownerParticipantId;
 
-      if (!quickSplitParticipantUserIds.has(normalizedPaidByUserId)) {
+      if (
+        !normalizedPaidByParticipantId ||
+        !quickSplitParticipantIds.has(normalizedPaidByParticipantId)
+      ) {
         return yield* Effect.fail(
           new QuickSplitExpensePayerInvalidError({
-            paidByUserId: normalizedPaidByUserId,
+            paidByUserId: normalizedPaidByParticipantId ?? userId,
           }),
         );
       }
@@ -583,32 +666,7 @@ export const quickSplitsService = {
             );
           }
 
-          const existingSplitMethod = readSplitMethod(
-            existingExpense.splitMethod,
-          );
-
-          if (!existingSplitMethod) {
-            return yield* Effect.fail(
-              new QuickSplitExpenseCreateError({
-                cause: new Error('Invalid quick split expense split method'),
-              }),
-            );
-          }
-
-          return {
-            id: existingExpense.id,
-            quickSplitId: existingExpense.quickSplitId,
-            description: existingExpense.description,
-            amount: existingExpense.amount,
-            currency: existingExpense.currency,
-            paidByUserId: existingExpense.paidByUserId,
-            splitMethod: existingSplitMethod,
-            participants: existingExpense.participants.map((participant) => ({
-              userId: participant.userId,
-              share: participant.share,
-            })),
-            createdAt: existingExpense.createdAt.toISOString(),
-          } satisfies CreateQuickSplitExpenseResult;
+          return yield* toCreateExpenseResult(existingExpense);
         }
       }
 
@@ -616,18 +674,18 @@ export const quickSplitsService = {
         splitMethod === 'exact'
           ? yield* createExactShares({
               amount: normalizedAmount,
-              participantUserIds: normalizedParticipantUserIds,
+              participantIds: normalizedParticipantIds,
               exactShares,
             })
           : splitMethod === 'percentage'
             ? yield* createPercentageShares({
                 amount: normalizedAmount,
-                participantUserIds: normalizedParticipantUserIds,
+                participantIds: normalizedParticipantIds,
                 percentageShares,
               })
             : createEqualShares({
                 amount: normalizedAmount,
-                participantUserIds: normalizedParticipantUserIds,
+                participantIds: normalizedParticipantIds,
               });
 
       const now = new Date();
@@ -639,7 +697,7 @@ export const quickSplitsService = {
               {
                 id: normalizedExpenseId,
                 quickSplitId,
-                paidByUserId: normalizedPaidByUserId,
+                paidByParticipantId: normalizedPaidByParticipantId,
                 description: normalizedDescription,
                 amount: normalizedAmount,
                 currency: normalizedCurrency,
@@ -661,30 +719,7 @@ export const quickSplitsService = {
         catch: (cause) => new QuickSplitExpenseCreateError({ cause }),
       });
 
-      const createdSplitMethod = readSplitMethod(expense.splitMethod);
-
-      if (!createdSplitMethod) {
-        return yield* Effect.fail(
-          new QuickSplitExpenseCreateError({
-            cause: new Error('Invalid quick split expense split method'),
-          }),
-        );
-      }
-
-      return {
-        id: expense.id,
-        quickSplitId: expense.quickSplitId,
-        description: expense.description,
-        amount: expense.amount,
-        currency: expense.currency,
-        paidByUserId: expense.paidByUserId,
-        splitMethod: createdSplitMethod,
-        participants: expense.participants.map((participant) => ({
-          userId: participant.userId,
-          share: participant.share,
-        })),
-        createdAt: expense.createdAt.toISOString(),
-      } satisfies CreateQuickSplitExpenseResult;
+      return yield* toCreateExpenseResult(expense);
     }).pipe(Effect.withSpan('quick_splits.create_expense')),
   updateExpense: ({
     userId,
@@ -693,8 +728,8 @@ export const quickSplitsService = {
     description,
     amount,
     currency,
-    paidByUserId,
-    participantUserIds,
+    paidByParticipantId,
+    participantIds,
     splitMethod,
     percentageShares,
     exactShares,
@@ -736,18 +771,12 @@ export const quickSplitsService = {
         );
       }
 
-      const quickSplitParticipantUserIds = new Set(
-        quickSplit.participants.map((participant) => participant.userId),
+      const quickSplitParticipantIds = new Set(
+        quickSplit.participants.map((participant) => participant.id),
       );
-      const normalizedParticipantUserIds = Array.from(
-        new Set(
-          participantUserIds.map((participantUserId) =>
-            participantUserId.trim(),
-          ),
-        ),
-      ).filter((participantUserId) => participantUserId.length > 0);
+      const normalizedParticipantIds = normalizeParticipantIds(participantIds);
 
-      if (normalizedParticipantUserIds.length === 0) {
+      if (normalizedParticipantIds.length === 0) {
         return yield* Effect.fail(
           new QuickSplitExpenseParticipantsInvalidError({
             invalidUserIds: [],
@@ -755,25 +784,32 @@ export const quickSplitsService = {
         );
       }
 
-      const invalidParticipantUserIds = normalizedParticipantUserIds.filter(
-        (participantUserId) =>
-          !quickSplitParticipantUserIds.has(participantUserId),
+      const invalidParticipantIds = normalizedParticipantIds.filter(
+        (participantId) => !quickSplitParticipantIds.has(participantId),
       );
 
-      if (invalidParticipantUserIds.length > 0) {
+      if (invalidParticipantIds.length > 0) {
         return yield* Effect.fail(
           new QuickSplitExpenseParticipantsInvalidError({
-            invalidUserIds: invalidParticipantUserIds,
+            invalidUserIds: invalidParticipantIds,
           }),
         );
       }
 
-      const normalizedPaidByUserId = paidByUserId?.trim() || userId;
+      const ownerParticipantId =
+        quickSplit.participants.find(
+          (participant) => participant.userId === userId,
+        )?.id ?? null;
+      const normalizedPaidByParticipantId =
+        paidByParticipantId?.trim() || ownerParticipantId;
 
-      if (!quickSplitParticipantUserIds.has(normalizedPaidByUserId)) {
+      if (
+        !normalizedPaidByParticipantId ||
+        !quickSplitParticipantIds.has(normalizedPaidByParticipantId)
+      ) {
         return yield* Effect.fail(
           new QuickSplitExpensePayerInvalidError({
-            paidByUserId: normalizedPaidByUserId,
+            paidByUserId: normalizedPaidByParticipantId ?? userId,
           }),
         );
       }
@@ -786,18 +822,18 @@ export const quickSplitsService = {
         splitMethod === 'exact'
           ? yield* createExactShares({
               amount: normalizedAmount,
-              participantUserIds: normalizedParticipantUserIds,
+              participantIds: normalizedParticipantIds,
               exactShares,
             })
           : splitMethod === 'percentage'
             ? yield* createPercentageShares({
                 amount: normalizedAmount,
-                participantUserIds: normalizedParticipantUserIds,
+                participantIds: normalizedParticipantIds,
                 percentageShares,
               })
             : createEqualShares({
                 amount: normalizedAmount,
-                participantUserIds: normalizedParticipantUserIds,
+                participantIds: normalizedParticipantIds,
               });
 
       const now = new Date();
@@ -808,7 +844,7 @@ export const quickSplitsService = {
               tx,
               {
                 expenseId,
-                paidByUserId: normalizedPaidByUserId,
+                paidByParticipantId: normalizedPaidByParticipantId,
                 description: normalizedDescription,
                 amount: normalizedAmount,
                 currency: normalizedCurrency,
@@ -830,29 +866,6 @@ export const quickSplitsService = {
         catch: (cause) => new QuickSplitExpenseCreateError({ cause }),
       });
 
-      const updatedSplitMethod = readSplitMethod(expense.splitMethod);
-
-      if (!updatedSplitMethod) {
-        return yield* Effect.fail(
-          new QuickSplitExpenseCreateError({
-            cause: new Error('Invalid quick split expense split method'),
-          }),
-        );
-      }
-
-      return {
-        id: expense.id,
-        quickSplitId: expense.quickSplitId,
-        description: expense.description,
-        amount: expense.amount,
-        currency: expense.currency,
-        paidByUserId: expense.paidByUserId,
-        splitMethod: updatedSplitMethod,
-        participants: expense.participants.map((participant) => ({
-          userId: participant.userId,
-          share: participant.share,
-        })),
-        createdAt: expense.createdAt.toISOString(),
-      } satisfies CreateQuickSplitExpenseResult;
+      return yield* toCreateExpenseResult(expense);
     }).pipe(Effect.withSpan('quick_splits.update_expense')),
 };

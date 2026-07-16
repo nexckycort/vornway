@@ -2,15 +2,20 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { quickSplitsClient } from '#/api/quick-splits';
 
 export type UpsertQuickSplitExpenseValues = {
+  currentUserId: string;
   quickSplitId?: string;
   expenseId?: string;
   name: string;
   description: string;
-  participantUserIds: string[];
+  participants: Array<{
+    clientId: string;
+    name: string;
+    userId?: string;
+  }>;
   amount: number;
   currency: string;
-  paidByUserId: string;
-  expenseParticipantUserIds: string[];
+  paidByParticipantId: string;
+  expenseParticipantIds: string[];
   splitMethod: 'equal' | 'percentage' | 'exact';
   percentageShares?: Record<string, number>;
   exactShares?: Record<string, number>;
@@ -18,20 +23,22 @@ export type UpsertQuickSplitExpenseValues = {
 
 const createQuickSplitEndpoint = quickSplitsClient.index.$post;
 const createQuickSplitExpenseEndpoint = quickSplitsClient[':id'].expenses.$post;
+const updateQuickSplitExpenseEndpoint =
+  quickSplitsClient[':id'].expenses[':expenseId'].$put;
 
 async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
   if (values.quickSplitId && values.expenseId) {
-    const updateExpenseResponse = await createQuickSplitExpenseEndpoint({
+    const updateExpenseResponse = await updateQuickSplitExpenseEndpoint({
       param: {
         id: values.quickSplitId,
+        expenseId: values.expenseId,
       },
       json: {
-        id: values.expenseId,
         description: values.description,
         amount: values.amount,
         currency: values.currency,
-        paidByUserId: values.paidByUserId,
-        participantUserIds: values.expenseParticipantUserIds,
+        paidByParticipantId: values.paidByParticipantId,
+        participantIds: values.expenseParticipantIds,
         splitMethod: values.splitMethod,
         ...(values.percentageShares
           ? { percentageShares: values.percentageShares }
@@ -65,7 +72,7 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
     json: {
       name: values.name,
       description: values.description,
-      participantUserIds: values.participantUserIds,
+      participants: values.participants,
     },
   });
 
@@ -78,6 +85,34 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
   }
 
   const quickSplit = await createQuickSplitResponse.json();
+  const participantIdByClientId = new Map<string, string>();
+  const currentUserParticipantId = (quickSplit.participants ?? []).find(
+    (participant) => participant.userId === values.currentUserId,
+  )?.id;
+
+  for (const participant of quickSplit.participants ?? []) {
+    if (participant.clientId) {
+      participantIdByClientId.set(participant.clientId, participant.id);
+    }
+  }
+
+  const paidByParticipantId =
+    values.paidByParticipantId === values.currentUserId
+      ? currentUserParticipantId
+      : participantIdByClientId.get(values.paidByParticipantId);
+  const expenseParticipantIds = values.expenseParticipantIds.map(
+    (participantId) =>
+      participantId === values.currentUserId
+        ? (currentUserParticipantId ?? participantId)
+        : (participantIdByClientId.get(participantId) ?? participantId),
+  );
+
+  if (
+    !paidByParticipantId ||
+    expenseParticipantIds.some((participantId) => !participantId)
+  ) {
+    throw new Error('No se pudieron mapear los participantes del gasto');
+  }
 
   const createExpenseResponse = await createQuickSplitExpenseEndpoint({
     param: { id: quickSplit.id },
@@ -85,13 +120,29 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
       description: values.description,
       amount: values.amount,
       currency: values.currency,
-      paidByUserId: values.paidByUserId,
-      participantUserIds: values.expenseParticipantUserIds,
+      paidByParticipantId,
+      participantIds: expenseParticipantIds,
       splitMethod: values.splitMethod,
       ...(values.percentageShares
-        ? { percentageShares: values.percentageShares }
+        ? {
+            percentageShares: Object.fromEntries(
+              Object.entries(values.percentageShares).map(([key, value]) => [
+                participantIdByClientId.get(key) ?? key,
+                value,
+              ]),
+            ),
+          }
         : {}),
-      ...(values.exactShares ? { exactShares: values.exactShares } : {}),
+      ...(values.exactShares
+        ? {
+            exactShares: Object.fromEntries(
+              Object.entries(values.exactShares).map(([key, value]) => [
+                participantIdByClientId.get(key) ?? key,
+                value,
+              ]),
+            ),
+          }
+        : {}),
     },
   });
 

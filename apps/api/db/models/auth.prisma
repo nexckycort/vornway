@@ -13,8 +13,6 @@ model User {
   groupMembers                    GroupMember[]
   quickSplitsOwned                QuickSplit[]                   @relation("QuickSplitOwner")
   quickSplitParticipants          QuickSplitParticipant[]
-  quickSplitExpensesPaid          QuickSplitExpense[]            @relation("QuickSplitExpensePaidBy")
-  quickSplitExpenseParticipations QuickSplitExpenseParticipant[] @relation("QuickSplitExpenseParticipantUser")
   itineraries                     Itinerary[]
   pushSubscriptions               PushSubscription[]
   notifications                   Notification[]

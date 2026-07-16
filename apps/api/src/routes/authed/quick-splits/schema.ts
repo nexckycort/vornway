@@ -5,14 +5,29 @@ export const createQuickSplitSchema = z
     id: z.string().uuid().optional(),
     name: z.string().trim().min(1).max(120),
     description: z.string().trim().max(400).optional(),
-    participantUserIds: z.array(z.string().min(1)).min(1).max(20),
+    participants: z
+      .array(
+        z.object({
+          clientId: z.string().trim().min(1).max(120).optional(),
+          name: z.string().trim().min(1).max(120),
+          userId: z.string().trim().min(1).optional(),
+        }),
+      )
+      .min(1)
+      .max(20),
   })
   .refine(
     (data) =>
-      new Set(data.participantUserIds).size === data.participantUserIds.length,
+      new Set(
+        data.participants.map((participant) =>
+          participant.userId
+            ? `user:${participant.userId}`
+            : `name:${participant.name.toLocaleLowerCase('es-CO')}`,
+        ),
+      ).size === data.participants.length,
     {
       message: 'No puedes repetir participantes',
-      path: ['participantUserIds'],
+      path: ['participants'],
     },
   );
 
@@ -50,8 +65,8 @@ export const createQuickSplitExpenseSchema = z
     description: z.string().trim().min(1).max(200),
     amount: z.number().positive(),
     currency: z.string().trim().length(3),
-    paidByUserId: z.string().min(1).optional(),
-    participantUserIds: z.array(z.string().min(1)).min(1).max(20),
+    paidByParticipantId: z.string().min(1).optional(),
+    participantIds: z.array(z.string().min(1)).min(1).max(20),
     splitMethod: z.enum(['equal', 'percentage', 'exact']).default('equal'),
     percentageShares: z
       .record(z.string().min(1), z.number().positive())
@@ -61,11 +76,10 @@ export const createQuickSplitExpenseSchema = z
       .optional(),
   })
   .refine(
-    (data) =>
-      new Set(data.participantUserIds).size === data.participantUserIds.length,
+    (data) => new Set(data.participantIds).size === data.participantIds.length,
     {
       message: 'No puedes repetir participantes',
-      path: ['participantUserIds'],
+      path: ['participantIds'],
     },
   )
   .superRefine((data, ctx) => {
@@ -91,6 +105,13 @@ export type CreateQuickSplitResult = {
   id: string;
   name: string;
   description: string | null;
+  participants: Array<{
+    id: string;
+    clientId?: string;
+    userId: string | null;
+    name: string;
+    role: string;
+  }>;
   createdAt: string;
 };
 
@@ -104,10 +125,10 @@ export type CreateQuickSplitExpenseResult = {
   description: string;
   amount: number;
   currency: string;
-  paidByUserId: string;
+  paidByParticipantId: string;
   splitMethod: 'equal' | 'percentage' | 'exact';
   participants: Array<{
-    userId: string;
+    participantId: string;
     share: number;
   }>;
   createdAt: string;
@@ -123,6 +144,7 @@ export type QuickSplitExpenseFeedItem = {
   participantCount: number;
   paidBy: {
     id: string;
+    userId: string | null;
     name: string;
   };
   createdAt: string;
@@ -152,11 +174,13 @@ export type QuickSplitExpenseDetailResult = {
   createdAt: string;
   paidBy: {
     id: string;
+    userId: string | null;
     name: string;
     image: string | null;
   };
   participants: Array<{
-    userId: string;
+    id: string;
+    userId: string | null;
     name: string;
     image: string | null;
     share: number;

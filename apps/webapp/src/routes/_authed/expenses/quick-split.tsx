@@ -45,6 +45,7 @@ type SelectedFriend = {
   id: string;
   name: string;
   email: string;
+  userId?: string;
 };
 
 type SplitMethod = 'equal' | 'percentage' | 'exact';
@@ -110,6 +111,10 @@ function RouteComponent() {
   const isEditMode = Boolean(quickSplitId && expenseId);
   const currentUserId = user?.id ?? '';
   const currentUserName = user?.name?.trim() || 'Tú';
+  const currentUserParticipantId =
+    expenseQuery.data?.participants.find(
+      (participant) => participant.userId === currentUserId,
+    )?.id ?? currentUserId;
   const [currency, setCurrency] =
     useState<(typeof currencyOptions)[number]['code']>('COP');
   const [showCurrencyDrawer, setShowCurrencyDrawer] = useState(false);
@@ -119,8 +124,8 @@ function RouteComponent() {
   const [friendInput, setFriendInput] = useState('');
   const [debouncedFriendInput, setDebouncedFriendInput] = useState('');
   const [selectedFriends, setSelectedFriends] = useState<SelectedFriend[]>([]);
-  const [paidByUserId, setPaidByUserId] = useState('');
-  const [participantUserIds, setParticipantUserIds] = useState<string[]>([]);
+  const [paidByParticipantId, setPaidByParticipantId] = useState('');
+  const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
   const [participantValues, setParticipantValues] = useState<
     Record<string, string>
@@ -137,7 +142,7 @@ function RouteComponent() {
   const people = useMemo(
     () => [
       {
-        id: currentUserId,
+        id: currentUserParticipantId,
         name: currentUserName,
         email: user?.email ?? '',
         isCurrentUser: true,
@@ -147,7 +152,7 @@ function RouteComponent() {
         isCurrentUser: false,
       })),
     ],
-    [currentUserId, currentUserName, selectedFriends, user?.email],
+    [currentUserName, currentUserParticipantId, selectedFriends, user?.email],
   );
 
   useEffect(() => {
@@ -159,10 +164,10 @@ function RouteComponent() {
   }, [friendInput]);
 
   useEffect(() => {
-    if (!paidByUserId && currentUserId) {
-      setPaidByUserId(currentUserId);
+    if (!paidByParticipantId && currentUserParticipantId) {
+      setPaidByParticipantId(currentUserParticipantId);
     }
-  }, [currentUserId, paidByUserId]);
+  }, [currentUserParticipantId, paidByParticipantId]);
 
   useEffect(() => {
     if (!isEditMode || !expenseQuery.data) {
@@ -172,24 +177,25 @@ function RouteComponent() {
     setDescription(expenseQuery.data.description);
     setAmountInput(formatAmountInput(String(expenseQuery.data.amount)));
     setCurrency(readCurrencyCode(expenseQuery.data.currency) ?? 'COP');
-    setPaidByUserId(expenseQuery.data.paidBy.id);
+    setPaidByParticipantId(expenseQuery.data.paidBy.id);
     setSelectedFriends(
       expenseQuery.data.participants
         .filter((participant) => participant.userId !== currentUserId)
         .map((participant) => ({
-          id: participant.userId,
+          id: participant.id,
           name: participant.name,
           email: '',
+          userId: participant.userId ?? undefined,
         })),
     );
-    setParticipantUserIds(
-      expenseQuery.data.participants.map((participant) => participant.userId),
+    setParticipantIds(
+      expenseQuery.data.participants.map((participant) => participant.id),
     );
     setSplitMethod(expenseQuery.data.splitMethod);
     setParticipantValues(
       Object.fromEntries(
         expenseQuery.data.participants.map((participant) => [
-          participant.userId,
+          participant.id,
           expenseQuery.data.splitMethod === 'percentage'
             ? formatEditableNumber(
                 (participant.share / expenseQuery.data.amount) * 100,
@@ -219,6 +225,7 @@ function RouteComponent() {
             id: friend.id,
             name: friend.name,
             email: '',
+            userId: undefined,
           },
         ];
       });
@@ -240,7 +247,7 @@ function RouteComponent() {
   useEffect(() => {
     const allIds = people.map((person) => person.id);
 
-    setParticipantUserIds((current) => {
+    setParticipantIds((current) => {
       const filtered = current.filter((userId) => allIds.includes(userId));
       const next =
         filtered.length === 0
@@ -258,7 +265,7 @@ function RouteComponent() {
 
     setParticipantValues((current) => {
       const next: Record<string, string> = {};
-      const selectedCount = participantUserIds.length;
+      const selectedCount = participantIds.length;
       const defaultValue =
         splitMethod === 'percentage'
           ? selectedCount > 0
@@ -268,7 +275,7 @@ function RouteComponent() {
             ? amount / selectedCount
             : 0;
 
-      for (const participantUserId of participantUserIds) {
+      for (const participantUserId of participantIds) {
         next[participantUserId] =
           current[participantUserId] ??
           (defaultValue > 0 ? formatEditableNumber(defaultValue) : '');
@@ -276,7 +283,7 @@ function RouteComponent() {
 
       return next;
     });
-  }, [amount, participantUserIds, splitMethod]);
+  }, [amount, participantIds, splitMethod]);
 
   useEffect(() => {
     if (!searchQuery.isError || searchQuery.errorUpdatedAt === 0) {
@@ -291,12 +298,12 @@ function RouteComponent() {
     return !selectedFriends.some((friend) => friend.id === candidate.id);
   });
 
-  const selectedCount = participantUserIds.length;
+  const selectedCount = participantIds.length;
   const equalShare = selectedCount > 0 ? amount / selectedCount : 0;
   const participantComputedAmounts = useMemo(() => {
     const result: Record<string, number> = {};
 
-    for (const participantUserId of participantUserIds) {
+    for (const participantUserId of participantIds) {
       const rawValue = Number(participantValues[participantUserId] ?? '0');
 
       if (splitMethod === 'percentage') {
@@ -313,14 +320,14 @@ function RouteComponent() {
     }
 
     return result;
-  }, [amount, equalShare, participantUserIds, participantValues, splitMethod]);
+  }, [amount, equalShare, participantIds, participantValues, splitMethod]);
 
   const splitSum = useMemo(() => {
-    return participantUserIds.reduce((sum, participantUserId) => {
+    return participantIds.reduce((sum, participantUserId) => {
       const value = Number(participantValues[participantUserId] ?? '0');
       return sum + (Number.isFinite(value) ? value : 0);
     }, 0);
-  }, [participantUserIds, participantValues]);
+  }, [participantIds, participantValues]);
 
   const splitIsValid =
     selectedCount > 1 &&
@@ -328,12 +335,12 @@ function RouteComponent() {
       ? true
       : splitMethod === 'percentage'
         ? Math.abs(splitSum - 100) < 0.01 &&
-          participantUserIds.every(
+          participantIds.every(
             (participantUserId) =>
               Number(participantValues[participantUserId] ?? 0) > 0,
           )
         : Math.abs(splitSum - amount) < 0.01 &&
-          participantUserIds.every(
+          participantIds.every(
             (participantUserId) =>
               Number(participantValues[participantUserId] ?? 0) > 0,
           ));
@@ -343,7 +350,7 @@ function RouteComponent() {
     amount > 0 &&
     selectedFriends.length > 0 &&
     selectedCount > 1 &&
-    paidByUserId.length > 0 &&
+    paidByParticipantId.length > 0 &&
     splitIsValid &&
     !createExpenseMutation.isPending;
 
@@ -364,7 +371,7 @@ function RouteComponent() {
     setSelectedFriends((current) =>
       current.filter((friend) => friend.id !== friendId),
     );
-    setParticipantUserIds((current) =>
+    setParticipantIds((current) =>
       current.filter((participantUserId) => participantUserId !== friendId),
     );
     setParticipantValues((current) => {
@@ -373,13 +380,13 @@ function RouteComponent() {
       return next;
     });
 
-    if (paidByUserId === friendId) {
-      setPaidByUserId(currentUserId);
+    if (paidByParticipantId === friendId) {
+      setPaidByParticipantId(currentUserParticipantId);
     }
   };
 
   const toggleParticipant = (participantId: string) => {
-    setParticipantUserIds((current) =>
+    setParticipantIds((current) =>
       current.includes(participantId)
         ? current.length <= 2
           ? current
@@ -389,9 +396,9 @@ function RouteComponent() {
   };
 
   const toggleAllParticipants = () => {
-    setParticipantUserIds((current) =>
+    setParticipantIds((current) =>
       current.length === people.length
-        ? [currentUserId]
+        ? [currentUserParticipantId]
         : people.map((person) => person.id),
     );
   };
@@ -436,22 +443,27 @@ function RouteComponent() {
 
     try {
       await createExpenseMutation.mutateAsync({
+        currentUserId,
         quickSplitId,
         expenseId,
         name:
           (isEditMode ? expenseQuery.data?.quickSplitName : undefined) ??
           description.trim(),
         description: description.trim(),
-        participantUserIds: selectedFriends.map((friend) => friend.id),
+        participants: selectedFriends.map((friend) => ({
+          clientId: friend.id,
+          name: friend.name,
+          ...(friend.userId ? { userId: friend.userId } : {}),
+        })),
         amount,
         currency,
-        paidByUserId,
-        expenseParticipantUserIds: participantUserIds,
+        paidByParticipantId,
+        expenseParticipantIds: participantIds,
         splitMethod,
         ...(splitMethod === 'percentage'
           ? {
               percentageShares: Object.fromEntries(
-                participantUserIds.map((participantUserId) => [
+                participantIds.map((participantUserId) => [
                   participantUserId,
                   Number(participantValues[participantUserId] ?? '0'),
                 ]),
@@ -461,7 +473,7 @@ function RouteComponent() {
         ...(splitMethod === 'exact'
           ? {
               exactShares: Object.fromEntries(
-                participantUserIds.map((participantUserId) => [
+                participantIds.map((participantUserId) => [
                   participantUserId,
                   Number(participantValues[participantUserId] ?? '0'),
                 ]),
@@ -646,6 +658,7 @@ function RouteComponent() {
                         id: candidate.id,
                         name: candidate.name,
                         email: candidate.email,
+                        userId: candidate.id,
                       })
                     }
                     className="rounded-[24px] border border-[#e5e7eb] bg-white px-4 py-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
@@ -700,13 +713,13 @@ function RouteComponent() {
                 </div>
                 <div className="flex gap-3 overflow-x-auto pb-1">
                   {people.map((person) => {
-                    const isSelected = paidByUserId === person.id;
+                    const isSelected = paidByParticipantId === person.id;
 
                     return (
                       <button
                         key={person.id}
                         type="button"
-                        onClick={() => setPaidByUserId(person.id)}
+                        onClick={() => setPaidByParticipantId(person.id)}
                         className="flex min-w-[72px] flex-col items-center"
                       >
                         <div
@@ -776,7 +789,7 @@ function RouteComponent() {
 
                 <div className="mt-4 space-y-3">
                   {people.map((person) => {
-                    const selected = participantUserIds.includes(person.id);
+                    const selected = participantIds.includes(person.id);
                     const computedAmount =
                       participantComputedAmounts[person.id] ?? 0;
 

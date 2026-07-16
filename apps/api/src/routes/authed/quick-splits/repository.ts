@@ -16,9 +16,14 @@ export const quickSplitsRepository = {
   create: (input: {
     id: string;
     ownerId: string;
+    ownerName: string;
     name: string;
     description: string | null;
-    participantUserIds: string[];
+    participants: Array<{
+      clientId?: string;
+      name: string;
+      userId?: string;
+    }>;
     createdAt: Date;
   }) =>
     db.quickSplit.create({
@@ -30,20 +35,20 @@ export const quickSplitsRepository = {
         createdAt: input.createdAt,
         updatedAt: input.createdAt,
         participants: {
-          createMany: {
-            data: [
-              {
-                userId: input.ownerId,
-                role: 'owner',
-                joinedAt: input.createdAt,
-              },
-              ...input.participantUserIds.map((participantUserId) => ({
-                userId: participantUserId,
-                role: 'participant',
-                joinedAt: input.createdAt,
-              })),
-            ],
-          },
+          create: [
+            {
+              userId: input.ownerId,
+              name: input.ownerName,
+              role: 'owner',
+              joinedAt: input.createdAt,
+            },
+            ...input.participants.map((participant) => ({
+              userId: participant.userId,
+              name: participant.name,
+              role: 'participant',
+              joinedAt: input.createdAt,
+            })),
+          ],
         },
       },
       select: {
@@ -51,6 +56,15 @@ export const quickSplitsRepository = {
         name: true,
         description: true,
         createdAt: true,
+        participants: {
+          select: {
+            id: true,
+            userId: true,
+            name: true,
+            role: true,
+          },
+          orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }],
+        },
       },
     }),
   findAccessibleQuickSplit: (input: { quickSplitId: string; userId: string }) =>
@@ -67,8 +81,12 @@ export const quickSplitsRepository = {
         id: true,
         participants: {
           select: {
+            id: true,
             userId: true,
+            name: true,
+            role: true,
           },
+          orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }],
         },
       },
     }),
@@ -81,15 +99,15 @@ export const quickSplitsRepository = {
         description: true,
         amount: true,
         currency: true,
-        paidByUserId: true,
+        paidByParticipantId: true,
         splitMethod: true,
         createdAt: true,
         participants: {
           select: {
-            userId: true,
+            participantId: true,
             share: true,
           },
-          orderBy: [{ userId: 'asc' }],
+          orderBy: [{ participantId: 'asc' }],
         },
       },
     }),
@@ -118,12 +136,17 @@ export const quickSplitsRepository = {
         currency: true,
         splitMethod: true,
         createdAt: true,
-        paidBy: {
+        paidByParticipant: {
           select: {
             id: true,
+            userId: true,
             name: true,
-            image: true,
-            updatedAt: true,
+            user: {
+              select: {
+                image: true,
+                updatedAt: true,
+              },
+            },
           },
         },
         quickSplit: {
@@ -131,11 +154,12 @@ export const quickSplitsRepository = {
             name: true,
             participants: {
               select: {
+                id: true,
                 userId: true,
+                name: true,
                 role: true,
                 user: {
                   select: {
-                    name: true,
                     image: true,
                     updatedAt: true,
                   },
@@ -146,10 +170,10 @@ export const quickSplitsRepository = {
         },
         participants: {
           select: {
-            userId: true,
+            participantId: true,
             share: true,
           },
-          orderBy: [{ userId: 'asc' }],
+          orderBy: [{ participantId: 'asc' }],
         },
       },
     }),
@@ -222,9 +246,10 @@ export const quickSplitsRepository = {
         amount: true,
         currency: true,
         createdAt: true,
-        paidBy: {
+        paidByParticipant: {
           select: {
             id: true,
+            userId: true,
             name: true,
           },
         },
@@ -245,7 +270,7 @@ export const quickSplitsRepository = {
     input: {
       id?: string;
       quickSplitId: string;
-      paidByUserId: string;
+      paidByParticipantId: string;
       description: string;
       amount: number;
       currency: string;
@@ -258,7 +283,7 @@ export const quickSplitsRepository = {
       data: {
         ...(input.id ? { id: input.id } : {}),
         quickSplitId: input.quickSplitId,
-        paidByUserId: input.paidByUserId,
+        paidByParticipantId: input.paidByParticipantId,
         description: input.description,
         amount: input.amount,
         currency: input.currency,
@@ -266,10 +291,12 @@ export const quickSplitsRepository = {
         createdAt: input.createdAt,
         updatedAt: input.createdAt,
         participants: {
-          create: Object.entries(input.shares).map(([userId, share]) => ({
-            userId,
-            share,
-          })),
+          create: Object.entries(input.shares).map(
+            ([participantId, share]) => ({
+              participantId,
+              share,
+            }),
+          ),
         },
       },
       select: {
@@ -278,15 +305,15 @@ export const quickSplitsRepository = {
         description: true,
         amount: true,
         currency: true,
-        paidByUserId: true,
+        paidByParticipantId: true,
         splitMethod: true,
         createdAt: true,
         participants: {
           select: {
-            userId: true,
+            participantId: true,
             share: true,
           },
-          orderBy: [{ userId: 'asc' }],
+          orderBy: [{ participantId: 'asc' }],
         },
       },
     }),
@@ -294,7 +321,7 @@ export const quickSplitsRepository = {
     tx: Tx,
     input: {
       expenseId: string;
-      paidByUserId: string;
+      paidByParticipantId: string;
       description: string;
       amount: number;
       currency: string;
@@ -308,7 +335,7 @@ export const quickSplitsRepository = {
         id: input.expenseId,
       },
       data: {
-        paidByUserId: input.paidByUserId,
+        paidByParticipantId: input.paidByParticipantId,
         description: input.description,
         amount: input.amount,
         currency: input.currency,
@@ -316,10 +343,12 @@ export const quickSplitsRepository = {
         updatedAt: input.updatedAt,
         participants: {
           deleteMany: {},
-          create: Object.entries(input.shares).map(([userId, share]) => ({
-            userId,
-            share,
-          })),
+          create: Object.entries(input.shares).map(
+            ([participantId, share]) => ({
+              participantId,
+              share,
+            }),
+          ),
         },
       },
       select: {
@@ -328,15 +357,15 @@ export const quickSplitsRepository = {
         description: true,
         amount: true,
         currency: true,
-        paidByUserId: true,
+        paidByParticipantId: true,
         splitMethod: true,
         createdAt: true,
         participants: {
           select: {
-            userId: true,
+            participantId: true,
             share: true,
           },
-          orderBy: [{ userId: 'asc' }],
+          orderBy: [{ participantId: 'asc' }],
         },
       },
     }),

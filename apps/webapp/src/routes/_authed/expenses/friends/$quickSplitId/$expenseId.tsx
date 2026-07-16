@@ -72,6 +72,7 @@ function RouteComponent() {
           participantCount: number;
           paidBy: {
             id: string;
+            userId?: string | null;
             name: string;
           };
           createdAt: string;
@@ -171,7 +172,7 @@ function RouteComponent() {
                 <div className="space-y-4">
                   <MemberLine
                     image={expense.paidBy.image}
-                    name={`${expense.paidBy.name}${expense.paidBy.id === user?.id ? ' (Tu)' : ''}`}
+                    name={`${expense.paidBy.name}${expense.paidBy.userId === user?.id ? ' (Tu)' : ''}`}
                     amount={formatAmount(expense.currency, expense.amount)}
                   />
                 </div>
@@ -182,7 +183,7 @@ function RouteComponent() {
                 <div className="space-y-5">
                   {expense.participants.map((participant) => (
                     <MemberLine
-                      key={participant.userId}
+                      key={participant.id}
                       image={participant.image}
                       name={`${participant.name}${participant.userId === user?.id ? ' (Tu)' : ''}`}
                       amount={formatAmount(expense.currency, participant.share)}

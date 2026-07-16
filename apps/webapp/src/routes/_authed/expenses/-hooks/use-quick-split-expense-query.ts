@@ -12,11 +12,13 @@ export type QuickSplitExpenseDetail = {
   createdAt: string;
   paidBy: {
     id: string;
+    userId: string | null;
     name: string;
     image: string | null;
   };
   participants: Array<{
-    userId: string;
+    id: string;
+    userId: string | null;
     name: string;
     image: string | null;
     share: number;

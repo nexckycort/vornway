@@ -147,6 +147,13 @@ export type QuickSplitExpenseFeedItem = {
     userId: string | null;
     name: string;
   };
+  participants: Array<{
+    id: string;
+    userId: string | null;
+    name: string;
+    image: string | null;
+  }>;
+  currentUserBalance: number;
   createdAt: string;
 };
 

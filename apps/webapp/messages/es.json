@@ -158,6 +158,26 @@
     "validationFriends": "Agrega al menos un amigo.",
     "validationSplit": "Selecciona al menos dos personas para dividir el gasto."
   },
+  "friendsExpenses": {
+    "title": "Amigos",
+    "newExpense": "Nuevo gasto",
+    "searchPlaceholder": "Buscar por nombre de gasto o amigo",
+    "filterAll": "Todos",
+    "filterSettled": "Sin deudas",
+    "filterOwed": "Te deben",
+    "filterOwe": "Debes",
+    "friendsTitle": "Mis amigos",
+    "addFriend": "Agregar",
+    "expensesTitle": "Listado de gastos",
+    "paidBy": "Pagado por",
+    "you": "Tú",
+    "settled": "Sin deudas pendientes",
+    "owed": "Te deben",
+    "owe": "Debes",
+    "loadError": "No se pudieron cargar los gastos con amigos.",
+    "empty": "Aún no tienes gastos con amigos.",
+    "noResults": "No encontramos gastos para esta búsqueda."
+  },
   "groups": {
     "title": "Mis espacios",
     "createNew": "Crear nuevo espacio",

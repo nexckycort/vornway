@@ -194,25 +194,48 @@ function createPercentageShares(input: {
   return Effect.succeed(shares);
 }
 
-function mapQuickSplitExpenseFeedItem(input: {
-  id: string;
-  quickSplitId: string;
-  description: string;
-  amount: number;
-  currency: string;
-  createdAt: Date;
-  paidByParticipant: {
+function mapQuickSplitExpenseFeedItem(
+  input: {
     id: string;
-    userId: string | null;
-    name: string;
-  };
-  quickSplit: {
-    name: string;
-    _count: {
-      participants: number;
+    quickSplitId: string;
+    description: string;
+    amount: number;
+    currency: string;
+    createdAt: Date;
+    paidByParticipant: {
+      id: string;
+      userId: string | null;
+      name: string;
     };
-  };
-}): QuickSplitExpenseFeedItem {
+    participants: Array<{
+      share: number;
+      participant: {
+        id: string;
+        userId: string | null;
+        name: string;
+        user: {
+          image: string | null;
+          updatedAt: Date;
+        } | null;
+      };
+    }>;
+    quickSplit: {
+      name: string;
+      _count: {
+        participants: number;
+      };
+    };
+  },
+  userId: string,
+): QuickSplitExpenseFeedItem {
+  const currentUserShare =
+    input.participants.find(({ participant }) => participant.userId === userId)
+      ?.share ?? 0;
+  const currentUserBalance =
+    input.paidByParticipant.userId === userId
+      ? input.amount - currentUserShare
+      : -currentUserShare;
+
   return {
     id: input.id,
     quickSplitId: input.quickSplitId,
@@ -226,6 +249,16 @@ function mapQuickSplitExpenseFeedItem(input: {
       userId: input.paidByParticipant.userId,
       name: input.paidByParticipant.name,
     },
+    participants: input.participants.map(({ participant }) => ({
+      id: participant.id,
+      userId: participant.userId,
+      name: participant.name,
+      image: resolveUserImageUrl(
+        participant.user?.image,
+        participant.user?.updatedAt ?? null,
+      ),
+    })),
+    currentUserBalance: normalizeAmount(currentUserBalance),
     createdAt: input.createdAt.toISOString(),
   };
 }
@@ -425,7 +458,9 @@ export const quickSplitsService = {
       });
 
       return {
-        data: rows.slice(0, limit).map(mapQuickSplitExpenseFeedItem),
+        data: rows
+          .slice(0, limit)
+          .map((row) => mapQuickSplitExpenseFeedItem(row, userId)),
       } satisfies ListRecentQuickSplitExpensesResult;
     },
   ),
@@ -455,7 +490,7 @@ export const quickSplitsService = {
     const data = hasNextPage ? rows.slice(0, limit) : rows;
 
     return {
-      data: data.map(mapQuickSplitExpenseFeedItem),
+      data: data.map((row) => mapQuickSplitExpenseFeedItem(row, userId)),
       pagination: {
         limit,
         total,

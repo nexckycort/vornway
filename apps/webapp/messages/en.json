@@ -158,6 +158,26 @@
     "validationFriends": "Add at least one friend.",
     "validationSplit": "Select at least two people to split the expense."
   },
+  "friendsExpenses": {
+    "title": "Friends",
+    "newExpense": "New expense",
+    "searchPlaceholder": "Search by expense or friend name",
+    "filterAll": "All",
+    "filterSettled": "No debt",
+    "filterOwed": "Owed to you",
+    "filterOwe": "You owe",
+    "friendsTitle": "My friends",
+    "addFriend": "Add",
+    "expensesTitle": "Expense list",
+    "paidBy": "Paid by",
+    "you": "You",
+    "settled": "No outstanding debt",
+    "owed": "You are owed",
+    "owe": "You owe",
+    "loadError": "Could not load expenses with friends.",
+    "empty": "You do not have expenses with friends yet.",
+    "noResults": "No expenses match this search."
+  },
   "spaces": {
     "title": "My spaces",
     "createNew": "Create new space",

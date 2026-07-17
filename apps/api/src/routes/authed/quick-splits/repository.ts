@@ -253,6 +253,25 @@ export const quickSplitsRepository = {
             name: true,
           },
         },
+        participants: {
+          select: {
+            share: true,
+            participant: {
+              select: {
+                id: true,
+                userId: true,
+                name: true,
+                user: {
+                  select: {
+                    image: true,
+                    updatedAt: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: [{ participantId: 'asc' }],
+        },
         quickSplit: {
           select: {
             name: true,

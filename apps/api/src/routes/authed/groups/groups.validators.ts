@@ -106,6 +106,16 @@ const expenseSharedSplitSchema = z.object({
     .optional(),
 });
 
+const expenseLineItemsSchema = z
+  .array(
+    z.object({
+      memberId: z.string().min(1),
+      description: z.string().trim().min(1).max(160),
+      amount: z.number().positive(),
+    }),
+  )
+  .max(100);
+
 export const createGroupExpenseSchema = z
   .object({
     id: z.string().trim().min(1).max(120).optional(),
@@ -127,6 +137,7 @@ export const createGroupExpenseSchema = z
     participantIds: z.array(z.string().min(1)).default([]),
     splitMethod: z.enum(['equal', 'percentage', 'exact']).default('equal'),
     exactShares: z.record(z.string(), z.number().nonnegative()).optional(),
+    lineItems: expenseLineItemsSchema.optional(),
     sharedSplit: expenseSharedSplitSchema.optional(),
     attachmentImage: expenseAttachmentImageSchema.optional(),
     advancedDetails: z
@@ -148,6 +159,36 @@ export const createGroupExpenseSchema = z
       })
       .optional(),
   })
+  .refine(
+    (data) => {
+      if (!data.lineItems || data.lineItems.length === 0) return true;
+      if (data.splitMethod !== 'exact') return false;
+
+      const totalsByMember = new Map<string, number>();
+      for (const item of data.lineItems) {
+        totalsByMember.set(
+          item.memberId,
+          (totalsByMember.get(item.memberId) ?? 0) + item.amount,
+        );
+      }
+
+      return Array.from(totalsByMember).every(([memberId, itemTotal]) => {
+        const expectedAmount =
+          data.sharedSplit?.splitValues?.[memberId] ??
+          data.exactShares?.[memberId];
+
+        return (
+          typeof expectedAmount === 'number' &&
+          Math.abs(itemTotal - expectedAmount) < 0.01
+        );
+      });
+    },
+    {
+      message:
+        'El desglose de cada participante debe coincidir con su monto individual',
+      path: ['lineItems'],
+    },
+  )
   .refine(
     (data) =>
       (data.paidByIds?.length ?? 0) > 0 || Boolean(data.paidById?.trim()),

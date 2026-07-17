@@ -21,6 +21,7 @@ import {
 import { CategoryIcon } from '../-components/category-icon';
 import { getExpenseEmoji } from '../-components/group-detail.utils';
 import type { ExpenseItem, GroupSummary } from '../-types/group-detail.types';
+import { getExpenseLineItemsMessages } from '../add-expense/-line-items-messages';
 
 export const Route = createFileRoute('/_authed/groups/$id/expense/$expenseId')({
   component: RouteComponent,
@@ -58,6 +59,20 @@ type ExpenseParticipant = {
   name: string;
   share: number;
 };
+
+type ExpenseLineItem = NonNullable<ExpenseItem['lineItems']>[number];
+
+function groupLineItemsByMember(lineItems: ExpenseLineItem[]) {
+  const grouped = new Map<string, ExpenseLineItem[]>();
+
+  for (const item of lineItems) {
+    const memberItems = grouped.get(item.memberId) ?? [];
+    memberItems.push(item);
+    grouped.set(item.memberId, memberItems);
+  }
+
+  return grouped;
+}
 
 function normalizeExpense(
   candidate: unknown,
@@ -104,6 +119,7 @@ function normalizeExpense(
     attachmentUrl: expense.attachmentUrl ?? fallback?.attachmentUrl ?? null,
     advancedDetails:
       expense.advancedDetails ?? fallback?.advancedDetails ?? null,
+    lineItems: expense.lineItems ?? fallback?.lineItems ?? [],
     sharedSplit: expense.sharedSplit ?? fallback?.sharedSplit ?? null,
     participantCount:
       expense.participantCount ??
@@ -184,6 +200,7 @@ function RouteComponent() {
   const expenseQuery = useGroupExpenseQuery(id, expenseId);
   const deleteExpenseMutation = useDeleteExpenseMutation(id);
   const [showDeleteDrawer, setShowDeleteDrawer] = useState(false);
+  const lineItemsMessages = getExpenseLineItemsMessages();
 
   const fallbackExpense = useMemo(() => {
     const cachedExpenses = queryClient.getQueryData<{
@@ -203,6 +220,8 @@ function RouteComponent() {
   const participants = expense?.participants ?? [];
   const advancedDetails = expense?.advancedDetails ?? null;
   const sharedSplit = expense?.sharedSplit ?? null;
+  const lineItems = expense?.lineItems ?? [];
+  const lineItemsByMember = groupLineItemsByMember(lineItems);
   const sharedSplitItems = sharedSplit?.items ?? [];
   const sharedSplitAmount = sharedSplit?.amount ?? 0;
   const attachmentUrl = expense?.attachmentUrl ?? null;
@@ -401,8 +420,24 @@ function RouteComponent() {
                                 )}`,
                               ]
                             : undefined;
+                        const participantLineItems =
+                          lineItemsByMember.get(participant.memberId) ?? [];
 
-                        return (
+                        return participantLineItems.length > 0 ? (
+                          <ParticipantLine
+                            key={participant.memberId}
+                            image={member?.image ?? null}
+                            name={`${participant.name}${member?.isCurrentUser ? ' (Tu)' : ''}`}
+                            amount={formatAmount(
+                              expense.currency,
+                              participant.share,
+                            )}
+                            currency={expense.currency}
+                            lineItems={participantLineItems}
+                            sharedAmount={sharedParticipantAmount}
+                            sharedItemLabel={lineItemsMessages.sharedItem}
+                          />
+                        ) : (
                           <MemberLine
                             key={participant.memberId}
                             image={member?.image ?? null}
@@ -632,6 +667,53 @@ function MemberLine({
           {amount}
         </span>
       ) : null}
+    </div>
+  );
+}
+
+function ParticipantLine({
+  image,
+  name,
+  amount,
+  currency,
+  lineItems,
+  sharedAmount,
+  sharedItemLabel,
+}: {
+  image: string | null;
+  name: string;
+  amount: string;
+  currency: string;
+  lineItems: ExpenseLineItem[];
+  sharedAmount: number;
+  sharedItemLabel: string;
+}) {
+  return (
+    <div>
+      <MemberLine image={image} name={name} amount={amount} />
+      <div className="ml-12 mt-2 flex flex-col gap-2 rounded-2xl bg-[#fafafa] px-4 py-3">
+        {lineItems.map((item, index) => (
+          <div
+            key={`${item.description}-${index}`}
+            className="flex items-start justify-between gap-3"
+          >
+            <span className="min-w-0 flex-1 break-words text-xs text-[#64748b] [overflow-wrap:anywhere]">
+              {item.description}
+            </span>
+            <span className="shrink-0 text-xs font-medium tabular-nums text-[#202124]">
+              {formatAmount(currency, item.amount)}
+            </span>
+          </div>
+        ))}
+        {sharedAmount > 0 ? (
+          <div className="flex items-center justify-between gap-3 border-t border-[#e5e7eb] pt-2">
+            <span className="text-xs text-[#64748b]">{sharedItemLabel}</span>
+            <span className="shrink-0 text-xs font-medium tabular-nums text-[#202124]">
+              {formatAmount(currency, sharedAmount)}
+            </span>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

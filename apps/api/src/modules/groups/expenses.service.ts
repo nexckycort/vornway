@@ -690,6 +690,13 @@ export function createGroupExpensesService() {
             select: {
               memberId: true,
               share: true,
+              compositeItems: {
+                select: {
+                  description: true,
+                  amount: true,
+                },
+                orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+              },
               member: {
                 select: {
                   name: true,
@@ -727,6 +734,13 @@ export function createGroupExpensesService() {
           name: participant.member.name,
           share: participant.share,
         })),
+        lineItems: expense.participants.flatMap((participant) =>
+          participant.compositeItems.map((item) => ({
+            memberId: participant.memberId,
+            description: item.description,
+            amount: item.amount,
+          })),
+        ),
         sharedSplit: readSharedSplit(expense.metadata),
         advancedDetails: readAdvancedDetails(expense.metadata),
       };
@@ -745,6 +759,7 @@ export function createGroupExpensesService() {
       participantIds,
       splitMethod,
       exactShares,
+      lineItems,
       sharedSplit,
       attachmentImage,
       advancedDetails,
@@ -817,6 +832,11 @@ export function createGroupExpensesService() {
       const validParticipantIds = Array.from(new Set(participantIds)).filter(
         (memberId) => validMemberIds.has(memberId),
       );
+      if (
+        lineItems?.some((item) => !validParticipantIds.includes(item.memberId))
+      ) {
+        throw new Error('El desglose contiene participantes inválidos');
+      }
       const { payerIds: normalizedPayerIds, shares: payerShares } =
         createPayerShares({
           amount,
@@ -871,6 +891,43 @@ export function createGroupExpensesService() {
           },
           select: { id: true },
         });
+
+        if (lineItems && lineItems.length > 0) {
+          const expenseParticipants = await tx.expenseParticipant.findMany({
+            where: { expenseId: created.id },
+            select: { id: true, memberId: true },
+          });
+          const participantIdByMemberId = new Map(
+            expenseParticipants.map((participant) => [
+              participant.memberId,
+              participant.id,
+            ]),
+          );
+
+          const compositeItems = lineItems.flatMap((item) => {
+            const expenseParticipantId = participantIdByMemberId.get(
+              item.memberId,
+            );
+
+            return expenseParticipantId
+              ? [
+                  {
+                    expenseParticipantId,
+                    description: item.description.trim(),
+                    amount: normalizeAmount(item.amount),
+                  },
+                ]
+              : [];
+          });
+
+          if (compositeItems.length !== lineItems.length) {
+            throw new Error(
+              'No se pudo relacionar el desglose con sus participantes',
+            );
+          }
+
+          await tx.compositeExpenseItem.createMany({ data: compositeItems });
+        }
 
         const group = await tx.group.findUnique({
           where: { id: groupId },
@@ -1023,6 +1080,7 @@ export function createGroupExpensesService() {
       participantIds,
       splitMethod,
       exactShares,
+      lineItems,
       sharedSplit,
       attachmentImage,
       advancedDetails,
@@ -1077,6 +1135,11 @@ export function createGroupExpensesService() {
       const validParticipantIds = Array.from(new Set(participantIds)).filter(
         (memberId) => validMemberIds.has(memberId),
       );
+      if (
+        lineItems?.some((item) => !validParticipantIds.includes(item.memberId))
+      ) {
+        throw new Error('El desglose contiene participantes inválidos');
+      }
       const { payerIds: normalizedPayerIds, shares: payerShares } =
         createPayerShares({
           amount,
@@ -1110,6 +1173,17 @@ export function createGroupExpensesService() {
             notes: true,
             status: true,
             deletedAt: true,
+            participants: {
+              select: {
+                memberId: true,
+                compositeItems: {
+                  select: {
+                    description: true,
+                    amount: true,
+                  },
+                },
+              },
+            },
           },
         });
 
@@ -1163,6 +1237,56 @@ export function createGroupExpensesService() {
               share: participantShares[memberId] ?? 0,
             })),
           });
+        }
+
+        const nextLineItems =
+          lineItems ??
+          existingExpense.participants.flatMap((participant) =>
+            participant.compositeItems.map((item) => ({
+              memberId: participant.memberId,
+              description: item.description,
+              amount: item.amount,
+            })),
+          );
+
+        if (nextLineItems.length > 0) {
+          const expenseParticipants = await tx.expenseParticipant.findMany({
+            where: { expenseId: existingExpense.id },
+            select: { id: true, memberId: true },
+          });
+          const participantIdByMemberId = new Map(
+            expenseParticipants.map((participant) => [
+              participant.memberId,
+              participant.id,
+            ]),
+          );
+          const compositeItems = nextLineItems.flatMap((item) => {
+            const expenseParticipantId = participantIdByMemberId.get(
+              item.memberId,
+            );
+
+            return expenseParticipantId
+              ? [
+                  {
+                    expenseParticipantId,
+                    description: item.description.trim(),
+                    amount: normalizeAmount(item.amount),
+                  },
+                ]
+              : [];
+          });
+
+          if (compositeItems.length !== nextLineItems.length) {
+            throw new Error(
+              'No se pudo relacionar el desglose con sus participantes',
+            );
+          }
+
+          if (compositeItems.length > 0) {
+            await tx.compositeExpenseItem.createMany({
+              data: compositeItems,
+            });
+          }
         }
 
         const group = await tx.group.findUnique({

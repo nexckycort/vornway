@@ -181,6 +181,20 @@
     "empty": "Aún no tienes gastos con amigos.",
     "noResults": "No encontramos gastos para esta búsqueda."
   },
+  "expenseLineItems": {
+    "title": "Desglose por persona",
+    "drawerTitle": "Gastos de {name}",
+    "drawerDescription": "Agrega cada consumo y calcularemos el total de esta persona.",
+    "itemCount": "{count} gastos",
+    "addItem": "Agregar gasto",
+    "itemPlaceholder": "Concepto",
+    "amountPlaceholder": "Valor",
+    "removeItem": "Eliminar ítem",
+    "sharedItem": "Gasto compartido",
+    "total": "Total",
+    "done": "Listo",
+    "validation": "Completa el concepto y valor de cada gasto individual."
+  },
   "groups": {
     "title": "Mis espacios",
     "createNew": "Crear nuevo espacio",

@@ -35,6 +35,7 @@ export type CreateGroupExpenseInput = {
   participantIds: string[];
   splitMethod: 'equal' | 'percentage' | 'exact';
   exactShares?: Record<string, number>;
+  lineItems?: GroupExpenseLineItem[];
   sharedSplit?: GroupExpenseSharedSplit | null;
   attachmentImage?: {
     dataUrl: string;
@@ -535,6 +536,12 @@ export type GroupExpenseSharedSplitItem = {
   amount: number;
 };
 
+export type GroupExpenseLineItem = {
+  memberId: string;
+  description: string;
+  amount: number;
+};
+
 export type GroupExpenseSharedSplit = {
   amount: number;
   splitMethod: 'percentage' | 'exact';
@@ -567,6 +574,7 @@ export type GroupExpenseDetailResult = {
     amount: number;
   }>;
   participants: GroupExpenseParticipant[];
+  lineItems: GroupExpenseLineItem[];
   sharedSplit: GroupExpenseSharedSplit | null;
   advancedDetails: GroupExpenseAdvancedDetails | null;
   attachmentUrl: string | null;

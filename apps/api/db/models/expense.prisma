@@ -36,7 +36,6 @@ model Expense {
   group        Group                @relation(fields: [groupId], references: [id])
   category     ExpenseCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   paidBy       GroupMember          @relation("MemberPaidExpenses", fields: [paidById], references: [id])
-  compositeItems CompositeExpenseItem[]
   payers       ExpensePayer[]
   participants ExpenseParticipant[]
 
@@ -69,20 +68,21 @@ model ExpenseParticipant {
 
   expense Expense     @relation(fields: [expenseId], references: [id])
   member  GroupMember @relation(fields: [memberId], references: [id])
+  compositeItems CompositeExpenseItem[]
 
   @@unique([expenseId, memberId])
   @@map("expense_participant")
 }
 
 model CompositeExpenseItem {
-  id          String   @id @default(cuid())
-  expenseId   String
-  description String
-  amount      Float
-  createdAt   DateTime @default(now())
+  id                   String   @id @default(cuid())
+  expenseParticipantId String
+  description          String
+  amount               Float
+  createdAt            DateTime @default(now())
 
-  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  participant ExpenseParticipant @relation(fields: [expenseParticipantId], references: [id], onDelete: Cascade)
 
-  @@index([expenseId, createdAt(sort: Asc)])
+  @@index([expenseParticipantId, createdAt(sort: Asc)])
   @@map("composite_expense_item")
 }

@@ -181,6 +181,20 @@
     "empty": "You do not have expenses with friends yet.",
     "noResults": "No expenses match this search."
   },
+  "expenseLineItems": {
+    "title": "Breakdown by person",
+    "drawerTitle": "{name}'s expenses",
+    "drawerDescription": "Add each purchase and we will calculate this person's total.",
+    "itemCount": "{count} expenses",
+    "addItem": "Add expense",
+    "itemPlaceholder": "Item",
+    "amountPlaceholder": "Amount",
+    "removeItem": "Remove item",
+    "sharedItem": "Shared expense",
+    "total": "Total",
+    "done": "Done",
+    "validation": "Complete the description and amount for every individual expense."
+  },
   "spaces": {
     "title": "My spaces",
     "createNew": "Create new space",

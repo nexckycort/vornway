@@ -55,6 +55,7 @@ import {
 } from '../-components/category-icon';
 import { formatMoney, getInitials } from '../-components/group-detail.utils';
 import type { ExpenseAdvancedDetails } from '../-types/group-detail.types';
+import { getExpenseLineItemsMessages } from './-line-items-messages';
 
 type SplitMethod = 'equal' | 'percentage' | 'exact';
 type AdvancedDetailsType = ExpenseAdvancedDetails['type'];
@@ -71,6 +72,13 @@ type ExpenseSharedSplit = {
 type SharedExpenseItem = {
   id: string;
   name: string;
+  amount: string;
+};
+
+type ExpenseLineItem = {
+  id: string;
+  memberId: string;
+  description: string;
   amount: string;
 };
 
@@ -336,11 +344,27 @@ function createSharedExpenseItem(
   };
 }
 
+function createExpenseLineItem(
+  memberId: string,
+  partial?: Partial<Pick<ExpenseLineItem, 'description' | 'amount'>>,
+): ExpenseLineItem {
+  return {
+    id:
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    memberId,
+    description: partial?.description ?? '',
+    amount: partial?.amount ?? '',
+  };
+}
+
 function RouteComponent() {
   const { id } = Route.useParams();
   const { expenseId } = Route.useSearch();
   const isEditMode = Boolean(expenseId);
   const { navigateToGroupRoot } = useGroupFlowNavigation(id);
+  const lineItemsMessages = getExpenseLineItemsMessages();
 
   const groupQuery = useGroupSummaryQuery(id);
   const expenseQuery = useGroupExpenseQuery(id, expenseId);
@@ -350,6 +374,10 @@ function RouteComponent() {
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
+  const [lineItems, setLineItems] = useState<ExpenseLineItem[]>([]);
+  const [lineItemsDrawerMemberId, setLineItemsDrawerMemberId] = useState<
+    string | null
+  >(null);
   const [sharedExpenseItems, setSharedExpenseItems] = useState<
     SharedExpenseItem[]
   >([]);
@@ -453,6 +481,31 @@ function RouteComponent() {
         : sum,
     0,
   );
+  const normalizedLineItems = useMemo(
+    () =>
+      lineItems.map((item) => ({
+        ...item,
+        normalizedAmount: Number(item.amount || 0),
+      })),
+    [lineItems],
+  );
+  const lineItemTotalsByMember = useMemo(() => {
+    const totals: Record<string, number> = {};
+
+    for (const item of normalizedLineItems) {
+      if (!Number.isFinite(item.normalizedAmount)) continue;
+      totals[item.memberId] =
+        (totals[item.memberId] ?? 0) + item.normalizedAmount;
+    }
+
+    return totals;
+  }, [normalizedLineItems]);
+  const lineItemsDrawerMember = members.find(
+    (member) => member.id === lineItemsDrawerMemberId,
+  );
+  const drawerLineItems = lineItems.filter(
+    (item) => item.memberId === lineItemsDrawerMemberId,
+  );
 
   useEffect(() => {
     const node = amountInputRef.current;
@@ -503,6 +556,14 @@ function RouteComponent() {
 
       setDescription(expense.description);
       setAmount(expense.amount.toString());
+      setLineItems(
+        (expense.lineItems ?? []).map((item) =>
+          createExpenseLineItem(item.memberId, {
+            description: item.description,
+            amount: formatEditableNumber(item.amount),
+          }),
+        ),
+      );
       setSharedExpenseItems(
         sharedSplit?.items && sharedSplit.items.length > 0
           ? sharedSplit.items.map((item) =>
@@ -595,14 +656,23 @@ function RouteComponent() {
             : 0;
 
       for (const participantId of participantIds) {
+        const itemizedTotal = lineItemTotalsByMember[participantId];
         next[participantId] =
-          current[participantId] ??
-          (defaultValue > 0 ? formatEditableNumber(defaultValue) : '');
+          splitMethod === 'exact' && itemizedTotal !== undefined
+            ? formatEditableNumber(itemizedTotal)
+            : (current[participantId] ??
+              (defaultValue > 0 ? formatEditableNumber(defaultValue) : ''));
       }
 
       return next;
     });
-  }, [amount, normalizedSharedAmount, participantIds, splitMethod]);
+  }, [
+    amount,
+    lineItemTotalsByMember,
+    normalizedSharedAmount,
+    participantIds,
+    splitMethod,
+  ]);
 
   const parsedAmount = Number(amount);
   const normalizedAmount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
@@ -708,12 +778,19 @@ function RouteComponent() {
   const sharedExpenseItemsAreValid = normalizedSharedExpenseItems.every(
     (item) => item.name.trim().length > 0 && item.normalizedAmount > 0,
   );
+  const lineItemsAreValid = normalizedLineItems.every(
+    (item) =>
+      participantIds.includes(item.memberId) &&
+      item.description.trim().length > 0 &&
+      item.normalizedAmount > 0,
+  );
 
   const canSubmit =
     description.trim().length > 0 &&
     normalizedAmount > 0 &&
     paidByIds.length > 0 &&
     selectedCount > 0 &&
+    lineItemsAreValid &&
     sharedExpenseItemsAreValid &&
     splitIsValid &&
     payerSplitIsValid;
@@ -724,6 +801,8 @@ function RouteComponent() {
     hasTriedSubmit &&
     sharedExpenseItems.length > 0 &&
     !sharedExpenseItemsAreValid;
+  const showLineItemsError =
+    hasTriedSubmit && lineItems.length > 0 && !lineItemsAreValid;
 
   const isPending = isEditMode
     ? updateExpenseMutation.isPending
@@ -735,6 +814,14 @@ function RouteComponent() {
     groupQuery.isError || (isEditMode && expenseQuery.isError);
 
   const toggleParticipant = (memberId: string) => {
+    if (participantIds.includes(memberId)) {
+      setLineItems((current) =>
+        current.filter((item) => item.memberId !== memberId),
+      );
+      if (lineItemsDrawerMemberId === memberId) {
+        setLineItemsDrawerMemberId(null);
+      }
+    }
     setParticipantIds((current) =>
       current.includes(memberId)
         ? current.filter((id) => id !== memberId)
@@ -751,6 +838,9 @@ function RouteComponent() {
   };
 
   const toggleAllParticipants = () => {
+    if (participantIds.length === members.length) {
+      setLineItems([]);
+    }
     setParticipantIds((current) =>
       current.length === members.length
         ? []
@@ -764,11 +854,34 @@ function RouteComponent() {
       setParticipantValues({});
       setSharedExpenseItems([]);
     }
+    if (nextMethod !== 'exact') {
+      setLineItems([]);
+      setLineItemsDrawerMemberId(null);
+    }
     setShowSplitDrawer(false);
   };
 
   const addSharedExpenseItem = () => {
     setSharedExpenseItems((current) => [...current, createSharedExpenseItem()]);
+  };
+
+  const addLineItem = (memberId: string) => {
+    setLineItems((current) => [...current, createExpenseLineItem(memberId)]);
+  };
+
+  const updateLineItem = (
+    itemId: string,
+    patch: Partial<Pick<ExpenseLineItem, 'description' | 'amount'>>,
+  ) => {
+    setLineItems((current) =>
+      current.map((item) =>
+        item.id === itemId ? { ...item, ...patch } : item,
+      ),
+    );
+  };
+
+  const removeLineItem = (itemId: string) => {
+    setLineItems((current) => current.filter((item) => item.id !== itemId));
   };
 
   const updateSharedExpenseItem = (
@@ -954,6 +1067,14 @@ function RouteComponent() {
         participantIds,
         splitMethod: payloadSplitMethod,
         exactShares,
+        lineItems:
+          splitMethod === 'exact'
+            ? normalizedLineItems.map((item) => ({
+                memberId: item.memberId,
+                description: item.description.trim(),
+                amount: item.normalizedAmount,
+              }))
+            : [],
         sharedSplit,
         ...(advancedDetailsEnabled && attachmentDataUrl
           ? {
@@ -1392,81 +1513,112 @@ function RouteComponent() {
             {members.map((member) => {
               const selected = participantIds.includes(member.id);
               const computedAmount = participantComputedAmounts[member.id] ?? 0;
+              const memberLineItems = lineItems.filter(
+                (item) => item.memberId === member.id,
+              );
 
               return (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between gap-4"
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleParticipant(member.id)}
-                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                  >
-                    <div
-                      className={`flex size-6 items-center justify-center rounded-full ${
-                        selected ? 'bg-rose-500' : 'bg-gray-300'
-                      }`}
+                <div key={member.id}>
+                  <div className="flex items-center justify-between gap-4">
+                    <button
+                      type="button"
+                      onClick={() => toggleParticipant(member.id)}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
                     >
-                      {selected ? (
-                        <Check className="size-4 text-white" />
-                      ) : (
-                        <Plus className="size-4 text-white" />
-                      )}
-                    </div>
-                    <ParticipantAvatar
-                      name={member.name}
-                      image={member.image}
-                      sizeClassName="size-9 shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <span className="block truncate text-sm text-gray-900">
-                        {member.name}
-                        {member.isCurrentUser ? (
-                          <span className="text-gray-500"> (Tú)</span>
-                        ) : null}
-                      </span>
-                      {splitMethod !== 'equal' && selected ? (
-                        <span className="block text-xs text-gray-500">
-                          {formatMoney(currency, computedAmount)}
-                        </span>
-                      ) : null}
-                    </div>
-                  </button>
-
-                  {selected ? (
-                    splitMethod === 'equal' ? (
-                      <span className="shrink-0 text-sm font-medium text-gray-900">
-                        {formatMoney(currency, equalShare || 0)}
-                      </span>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <input
-                          value={participantValues[member.id] ?? ''}
-                          onChange={(event) =>
-                            setParticipantValues((current) => ({
-                              ...current,
-                              [member.id]: event.target.value,
-                            }))
-                          }
-                          inputMode="decimal"
-                          placeholder={
-                            splitMethod === 'percentage' ? '0' : '0.00'
-                          }
-                          className="h-10 w-20 rounded-full border border-gray-200 px-3 text-right text-sm text-gray-900 outline-none"
-                        />
-                        <span className="text-xs text-gray-400">
-                          {splitMethod === 'percentage' ? '%' : currency}
-                        </span>
+                      <div
+                        className={`flex size-6 items-center justify-center rounded-full ${
+                          selected ? 'bg-rose-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        {selected ? (
+                          <Check className="size-4 text-white" />
+                        ) : (
+                          <Plus className="size-4 text-white" />
+                        )}
                       </div>
-                    )
-                  ) : (
-                    <span className="shrink-0 text-sm text-gray-400">0</span>
-                  )}
+                      <ParticipantAvatar
+                        name={member.name}
+                        image={member.image}
+                        sizeClassName="size-9 shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <span className="block truncate text-sm text-gray-900">
+                          {member.name}
+                          {member.isCurrentUser ? (
+                            <span className="text-gray-500"> (Tú)</span>
+                          ) : null}
+                        </span>
+                        {splitMethod !== 'equal' && selected ? (
+                          <span className="block text-xs text-gray-500">
+                            {formatMoney(currency, computedAmount)}
+                            {memberLineItems.length > 0
+                              ? ` · ${lineItemsMessages.itemCount(memberLineItems.length)}`
+                              : ''}
+                          </span>
+                        ) : null}
+                      </div>
+                    </button>
+
+                    {selected ? (
+                      splitMethod === 'equal' ? (
+                        <span className="shrink-0 text-sm font-medium text-gray-900">
+                          {formatMoney(currency, equalShare || 0)}
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={participantValues[member.id] ?? ''}
+                            onChange={(event) =>
+                              setParticipantValues((current) => ({
+                                ...current,
+                                [member.id]: event.target.value,
+                              }))
+                            }
+                            readOnly={
+                              splitMethod === 'exact' &&
+                              memberLineItems.length > 0
+                            }
+                            inputMode="decimal"
+                            placeholder={
+                              splitMethod === 'percentage' ? '0' : '0.00'
+                            }
+                            className={`h-10 w-20 rounded-full border border-gray-200 px-3 text-right text-sm text-gray-900 outline-none ${
+                              memberLineItems.length > 0 ? 'bg-gray-50' : ''
+                            }`}
+                          />
+                          <span className="text-xs text-gray-400">
+                            {splitMethod === 'percentage' ? '%' : currency}
+                          </span>
+                          {splitMethod === 'exact' ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setLineItemsDrawerMemberId(member.id)
+                              }
+                              aria-label={lineItemsMessages.drawerTitle(
+                                member.name,
+                              )}
+                              className="flex size-9 items-center justify-center rounded-full border border-gray-200 text-rose-500 transition-colors hover:bg-rose-50"
+                            >
+                              <Plus className="size-4" />
+                            </button>
+                          ) : null}
+                        </div>
+                      )
+                    ) : (
+                      <span className="shrink-0 text-sm text-gray-400">0</span>
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
+
+          {showLineItemsError ? (
+            <p className="mt-3 text-xs font-medium text-red-600">
+              {lineItemsMessages.validation}
+            </p>
+          ) : null}
         </section>
 
         {!splitIsValid && selectedCount > 0 ? (
@@ -1548,6 +1700,110 @@ function RouteComponent() {
                 </button>
               );
             })}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer
+        open={Boolean(lineItemsDrawerMember)}
+        onOpenChange={(open) => {
+          if (!open) setLineItemsDrawerMemberId(null);
+        }}
+      >
+        <DrawerContent className="flex max-h-[85dvh] flex-col overflow-hidden">
+          <DrawerHeader>
+            <DrawerTitle>
+              {lineItemsDrawerMember
+                ? lineItemsMessages.drawerTitle(lineItemsDrawerMember.name)
+                : lineItemsMessages.title}
+            </DrawerTitle>
+            <DrawerDescription>
+              {lineItemsMessages.drawerDescription}
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 pb-5">
+            {drawerLineItems.map((item) => (
+              <div
+                key={item.id}
+                className="grid grid-cols-[minmax(0,1fr)_6.5rem_2.5rem] items-center gap-2"
+              >
+                <input
+                  value={item.description}
+                  onChange={(event) =>
+                    updateLineItem(item.id, {
+                      description: event.target.value,
+                    })
+                  }
+                  placeholder={lineItemsMessages.itemPlaceholder}
+                  className="h-11 min-w-0 rounded-full border border-gray-200 bg-white px-4 text-sm outline-none placeholder:text-gray-400 focus:border-rose-500"
+                />
+                <input
+                  value={item.amount}
+                  onChange={(event) =>
+                    updateLineItem(item.id, { amount: event.target.value })
+                  }
+                  inputMode="decimal"
+                  placeholder={lineItemsMessages.amountPlaceholder}
+                  aria-label={lineItemsMessages.amountPlaceholder}
+                  className="h-11 min-w-0 rounded-full border border-gray-200 bg-white px-3 text-right text-sm tabular-nums outline-none placeholder:text-gray-400 focus:border-rose-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeLineItem(item.id)}
+                  aria-label={lineItemsMessages.removeItem}
+                  className="flex size-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
+            ))}
+
+            {lineItemsDrawerMember ? (
+              <button
+                type="button"
+                onClick={() => addLineItem(lineItemsDrawerMember.id)}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-dashed border-rose-300 text-sm font-medium text-rose-500 transition-colors hover:bg-rose-50"
+              >
+                <Plus className="size-4" />
+                {lineItemsMessages.addItem}
+              </button>
+            ) : null}
+
+            {showLineItemsError &&
+            drawerLineItems.some(
+              (item) =>
+                !item.description.trim() ||
+                !Number.isFinite(Number(item.amount)) ||
+                Number(item.amount) <= 0,
+            ) ? (
+              <p className="text-xs font-medium text-red-600">
+                {lineItemsMessages.validation}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="border-t border-gray-200 px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4">
+            <div className="mb-3 flex items-center justify-between gap-3 text-sm">
+              <span className="font-medium text-gray-600">
+                {lineItemsMessages.total}
+              </span>
+              <span className="font-semibold tabular-nums text-gray-900">
+                {formatMoney(
+                  currency,
+                  lineItemsDrawerMember
+                    ? (lineItemTotalsByMember[lineItemsDrawerMember.id] ?? 0)
+                    : 0,
+                )}
+              </span>
+            </div>
+            <Button
+              type="button"
+              className="h-12 w-full rounded-full bg-rose-500 text-white hover:bg-rose-500/90"
+              onClick={() => setLineItemsDrawerMemberId(null)}
+            >
+              {lineItemsMessages.done}
+            </Button>
           </div>
         </DrawerContent>
       </Drawer>

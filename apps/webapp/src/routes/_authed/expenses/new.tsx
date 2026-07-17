@@ -14,8 +14,8 @@ export const Route = createFileRoute('/_authed/expenses/new')({
 function toInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0]!.slice(0, 1).toUpperCase();
-  return `${parts[0]![0] ?? ''}${parts[1]![0] ?? ''}`.toUpperCase();
+  if (parts.length === 1) return (parts[0] ?? '?').slice(0, 1).toUpperCase();
+  return `${parts[0]?.[0] ?? ''}${parts[1]?.[0] ?? ''}`.toUpperCase();
 }
 
 function getGroupCardGradient(groupId: string) {
@@ -90,30 +90,32 @@ function RouteComponent() {
   return (
     <main className="min-h-dvh bg-white font-sans text-[#111827]">
       <div className="flex h-dvh w-full flex-col overflow-hidden bg-white">
-        <header className="border-b border-[#f3f4f6] px-4 pb-3 pt-2">
-          <div className="relative flex items-start justify-center">
+        <header className="h-16 shrink-0 bg-white">
+          <div className="flex h-14 items-center px-4">
             <Button
               type="button"
               variant="outline"
               size="icon-sm"
-              className="absolute left-0 top-1 rounded-full border-[#ebebeb] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.05)]"
+              className="rounded-full border-[#ebebeb] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.05)]"
               onClick={() => navigate({ to: '/' })}
             >
-              <span className="sr-only">Volver</span>
+              <span className="sr-only">{t.back}</span>
               <ChevronLeft className="size-4" />
             </Button>
 
-            <div className="min-w-0 py-7 text-center">
+            <div className="min-w-0 flex-1 text-center">
               <p className="text-xs font-normal leading-4 text-[#4c4c4c]">
                 {t.entryStep}
               </p>
-              <h1 className="mt-0.5 text-sm font-semibold leading-5 text-[#1e1e1e]">
+              <h1 className="text-sm font-semibold leading-5 text-[#1e1e1e]">
                 {t.title}
               </h1>
             </div>
+
+            <span className="size-8 shrink-0" aria-hidden="true" />
           </div>
 
-          <div className="-mx-4 mt-1 h-2 overflow-hidden bg-[#ebebeb]">
+          <div className="h-2 overflow-hidden bg-[#ebebeb]">
             <div className="h-full w-[30%] rounded-r-full bg-[linear-gradient(90deg,#ffc8da_0%,#fd407f_39.32%,#d000bf_100%)]" />
           </div>
         </header>
@@ -124,8 +126,7 @@ function RouteComponent() {
               {t.entryTitle}
             </h2>
             <p className="mt-1 text-base leading-6 text-[#626262]">
-              Elige un espacio existente, regístralo con amigos o como un gasto
-              personal
+              {t.entryDescription}
             </p>
           </section>
 
@@ -181,14 +182,14 @@ function RouteComponent() {
                     </p>
                     <p className="text-sm leading-5 text-[#626262]">
                       {space.participantCount <= 1
-                        ? 'Solo tú'
+                        ? t.spacesOnlyYou
                         : t.spacesParticipants(space.participantCount)}
                     </p>
                   </div>
 
                   <span className="shrink-0 rounded-full border border-[#ffe2e7] bg-[#fff0f2] px-[9px] py-[3px] text-sm font-medium leading-5 text-primary">
                     {space.participantCount <= 1
-                      ? 'Personal'
+                      ? t.spacesPersonalTag
                       : t.spacesSharedTag}
                   </span>
                 </button>

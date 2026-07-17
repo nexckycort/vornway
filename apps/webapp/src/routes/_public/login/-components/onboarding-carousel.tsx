@@ -59,7 +59,7 @@ export function OnboardingCarousel() {
               <img
                 src={slide.image}
                 alt=""
-                className="absolute inset-0 size-full object-cover object-top lg:object-center"
+                className="absolute inset-0 size-full object-cover object-center"
               />
               <div className="absolute inset-0 bg-black/50 lg:bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.12)_38%,rgba(0,0,0,0.78)_100%)]" />
               <div className="absolute inset-x-0 bottom-11 flex flex-col items-center gap-4 px-5 text-center text-white lg:bottom-12 lg:items-start lg:gap-6 lg:px-12 lg:text-left">

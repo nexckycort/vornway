@@ -96,6 +96,8 @@ const steps = [
       "Divide gastos, controla balances y mantén todo organizado sin cálculos manuales.",
   },
 ];
+
+const githubRepoUrl = "https://github.com/nexckycort/vornway";
 ---
 
 <noscript>
@@ -123,6 +125,15 @@ const steps = [
 
       <div class="nav-actions">
         <a class="button button-dark" href="#features">Ver funcionalidades</a>
+        <a
+          class="button button-github button-icon"
+          href={githubRepoUrl}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Ver repositorio de Vornway en GitHub"
+        >
+          <span class="icon icon-github" aria-hidden="true"></span>
+        </a>
         <a class="button button-primary" href="https://app.vornway.com"
           >Abrir aplicación</a
         >
@@ -273,7 +284,13 @@ const steps = [
         loading="lazy"
       />
     </a>
-    <p>© 2026 Vornway</p>
+    <div class="footer-actions">
+      <a class="footer-link" href={githubRepoUrl} target="_blank" rel="noreferrer">
+        <span class="icon icon-github" aria-hidden="true"></span>
+        GitHub
+      </a>
+      <p>© 2026 Vornway</p>
+    </div>
   </footer>
 </main>
 
@@ -643,8 +660,36 @@ const steps = [
     transform: translateY(-1px);
   }
 
+  .button-icon {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    padding: 0;
+  }
+
   .button-dark {
     background: var(--black-soft);
+  }
+
+  .button-github {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .button-github:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  .icon {
+    display: inline-block;
+    width: 1.15rem;
+    height: 1.15rem;
+    flex: 0 0 auto;
+    background: currentColor;
+  }
+
+  .icon-github {
+    -webkit-mask: url("/icons/github.svg") center / contain no-repeat;
+    mask: url("/icons/github.svg") center / contain no-repeat;
   }
 
   .button-primary {
@@ -1091,11 +1136,35 @@ const steps = [
     color: #fff;
   }
 
+  .footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .footer-actions a,
   .footer p {
     margin: 0;
+    color: #fff;
     font-size: 1rem;
     font-weight: 500;
     line-height: 1.5;
+    text-decoration: none;
+  }
+
+  .footer-actions a {
+    color: rgba(255, 255, 255, 0.78);
+    transition: color 180ms ease;
+  }
+
+  .footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .footer-actions a:hover {
+    color: #fff;
   }
 
   @media (max-width: 1180px) {
@@ -1269,6 +1338,12 @@ const steps = [
     .footer {
       align-items: center;
       padding-inline: 1rem;
+    }
+
+    .footer-actions {
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.25rem;
     }
 
   }

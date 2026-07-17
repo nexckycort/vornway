@@ -47,7 +47,8 @@ html {
 
 body {
   margin: 0;
-  font-family: "Inter", "SF Pro Display", "SF Pro Text", "Avenir Next", "Segoe UI",
+  font-family:
+    "Inter", "SF Pro Display", "SF Pro Text", "Avenir Next", "Segoe UI",
     sans-serif;
   color: var(--text);
   background: var(--page-bg);

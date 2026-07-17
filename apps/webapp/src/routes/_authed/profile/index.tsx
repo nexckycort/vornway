@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   AlertCircle,
+  AtSign,
   BarChart3,
   Bell,
   CalendarClock,
@@ -91,9 +92,12 @@ function RouteComponent() {
   const [showInstallInstructionsDialog, setShowInstallInstructionsDialog] =
     useState(false);
   const [showLanguageDrawer, setShowLanguageDrawer] = useState(false);
+  const [showUsernameDialog, setShowUsernameDialog] = useState(false);
+  const [usernameInput, setUsernameInput] = useState('');
 
   const currentLocale = getCurrentLocale();
   const userName = auth.user?.name?.trim() || t.defaultUser;
+  const username = auth.user?.username?.trim() || '';
   const userEmail = auth.user?.email?.trim() || t.noEmail;
   const isStatsUser =
     auth.user?.email?.trim().toLowerCase() === 'junior110120@gmail.com';
@@ -177,6 +181,41 @@ function RouteComponent() {
     },
   });
 
+  const updateUsernameMutation = useMutation({
+    mutationFn: async (value: string) => {
+      const response = await usersClient.me.username.$patch({
+        json: { username: value },
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          message?: string;
+          error?: string;
+        } | null;
+
+        throw new Error(
+          payload?.message ??
+            payload?.error ??
+            'No se pudo actualizar el nombre de usuario',
+        );
+      }
+
+      return await response.json();
+    },
+    onSuccess: async () => {
+      await Promise.all([auth.refresh(), session.refetch()]);
+      setShowUsernameDialog(false);
+      toast.success('Nombre de usuario actualizado');
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar el nombre de usuario',
+      );
+    },
+  });
+
   useEffect(() => {
     let active = true;
 
@@ -197,6 +236,11 @@ function RouteComponent() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!showUsernameDialog) return;
+    setUsernameInput(username);
+  }, [showUsernameDialog, username]);
 
   const sessions = useMemo(() => {
     const list = sessionsQuery.data ?? [];
@@ -284,6 +328,10 @@ function RouteComponent() {
     updateProfileImageMutation.mutate(file);
   }
 
+  const normalizedUsernameInput = usernameInput.trim().toLowerCase();
+  const isUsernameValid = /^[a-z0-9._]{3,24}$/.test(normalizedUsernameInput);
+  const hasUsernameChanges = normalizedUsernameInput !== username;
+
   return (
     <>
       <main className="min-h-screen bg-[#fafafa] text-foreground">
@@ -327,6 +375,11 @@ function RouteComponent() {
                 <p className="text-sm font-semibold text-[#0f172a]">
                   {userName}
                 </p>
+                {username ? (
+                  <p className="mt-1 truncate text-sm text-primary">
+                    @{username}
+                  </p>
+                ) : null}
                 <p className="mt-1 truncate text-sm text-[#64748b]">
                   {userEmail}
                 </p>
@@ -343,6 +396,15 @@ function RouteComponent() {
           />
 
           <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-2 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+            <ProfileActionRow
+              icon={<AtSign className="size-5" />}
+              title="Nombre de usuario"
+              subtitle={
+                username ? `@${username}` : 'Configura tu nombre de usuario'
+              }
+              onClick={() => setShowUsernameDialog(true)}
+              trailing="Editar"
+            />
             <ProfileActionRow
               icon={<Bell className="size-5" />}
               title={t.notifications}
@@ -491,6 +553,81 @@ function RouteComponent() {
             >
               {t.common.yesDisable}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showUsernameDialog} onOpenChange={setShowUsernameDialog}>
+        <DialogContent className="max-w-[calc(100%-1rem)] rounded-[28px] p-4 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar nombre de usuario</DialogTitle>
+            <DialogDescription>
+              Este nombre lo verán otras personas cuando te busquen o te
+              agreguen.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-4">
+            <div className="rounded-2xl bg-[#f8fafc] px-4 py-3 text-sm text-[#475569]">
+              Se verá como{' '}
+              <span className="font-semibold">
+                @{normalizedUsernameInput || 'tu.usuario'}
+              </span>
+            </div>
+
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-[#0f172a]">
+                Nombre de usuario
+              </span>
+              <div className="flex h-12 items-center rounded-full border border-[#e2e8f0] bg-white px-4 focus-within:border-primary">
+                <span className="mr-1 text-sm text-[#64748b]">@</span>
+                <input
+                  value={usernameInput}
+                  onChange={(event) =>
+                    setUsernameInput(
+                      event.target.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9._]/g, ''),
+                    )
+                  }
+                  placeholder="tu.usuario"
+                  maxLength={24}
+                  autoFocus
+                  className="w-full bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+                />
+              </div>
+              <p className="mt-2 text-xs text-[#64748b]">
+                Usa entre 3 y 24 caracteres. Solo letras minúsculas, números,
+                punto y guion bajo.
+              </p>
+            </label>
+
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 flex-1 rounded-full"
+                onClick={() => setShowUsernameDialog(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                className="h-12 flex-1 rounded-full"
+                disabled={
+                  !isUsernameValid ||
+                  !hasUsernameChanges ||
+                  updateUsernameMutation.isPending
+                }
+                onClick={() =>
+                  void updateUsernameMutation.mutateAsync(
+                    normalizedUsernameInput,
+                  )
+                }
+              >
+                {updateUsernameMutation.isPending ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

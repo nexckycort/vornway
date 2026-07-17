@@ -63,6 +63,16 @@ function RouteComponent() {
   const isEmailStep = step === 'email';
   const isNameStep = step === 'name';
   const isOtpStep = step === 'otp';
+  const desktopTitle = isOtpStep
+    ? t.otpTitle
+    : isNameStep
+      ? t.nameTitle
+      : t.title;
+  const desktopCopy = isOtpStep
+    ? t.otpCopy(email)
+    : isNameStep
+      ? t.nameCopy(email)
+      : t.emailCopy;
 
   useEffect(() => {
     if (!auth.isAuthenticated) return;
@@ -133,18 +143,31 @@ function RouteComponent() {
   }
 
   return (
-    <main className="min-h-dvh bg-[#1e1e1e] md:flex md:items-center md:justify-center md:p-6">
-      <div className="mx-auto flex min-h-dvh w-full max-w-[412px] flex-col overflow-hidden bg-black md:min-h-[min(897px,calc(100dvh-3rem))] md:rounded-[28px] md:shadow-2xl">
-        <section className="relative min-h-[280px] flex-1 overflow-visible">
+    <main className="min-h-dvh bg-[radial-gradient(circle_at_12%_18%,rgba(222,3,77,0.14),transparent_30%),radial-gradient(circle_at_88%_82%,rgba(246,178,107,0.2),transparent_28%),#f7f3f4] md:flex md:items-center md:justify-center md:p-6 lg:p-8">
+      <div className="mx-auto flex min-h-dvh w-full max-w-[412px] flex-col overflow-hidden bg-[#eadfe2] md:min-h-[min(897px,calc(100dvh-3rem))] md:rounded-[28px] md:shadow-2xl lg:grid lg:h-[calc(100dvh-4rem)] lg:min-h-[680px] lg:max-h-[860px] lg:max-w-[1180px] lg:grid-cols-[minmax(0,1.12fr)_minmax(420px,0.88fr)] lg:rounded-[36px] lg:bg-white lg:shadow-[0_36px_100px_rgba(38,25,29,0.2)]">
+        <section className="relative min-h-[280px] flex-1 overflow-visible lg:min-h-0 lg:overflow-hidden">
           <OnboardingCarousel />
         </section>
 
-        <section className="relative flex w-full shrink-0 flex-col gap-6 rounded-t-[24px] bg-white px-4 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-          <div className="flex h-7 items-center justify-center gap-1">
-            <img src="/logo.webp" alt="" className="size-7 object-contain" />
-            <h1 className="text-[28px] leading-7 font-semibold tracking-[-0.04em] text-[#1e1e1e]">
+        <section className="relative flex w-full shrink-0 flex-col items-center gap-6 rounded-t-[24px] bg-white px-4 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] [&>*]:w-full [&>*]:max-w-[420px] lg:h-full lg:justify-center lg:rounded-none lg:px-12 lg:py-12">
+          <div className="flex h-7 items-center justify-center gap-1 lg:h-10 lg:justify-start lg:gap-2">
+            <img
+              src="/logo.webp"
+              alt=""
+              className="size-7 object-contain lg:size-10"
+            />
+            <h1 className="text-[28px] leading-7 font-semibold tracking-[-0.04em] text-[#1e1e1e] lg:text-[34px] lg:leading-10">
               Vornway
             </h1>
+          </div>
+
+          <div className="hidden flex-col gap-2 lg:flex">
+            <h2 className="text-3xl leading-9 font-semibold tracking-[-0.025em] text-balance text-foreground">
+              {desktopTitle}
+            </h2>
+            <p className="max-w-[360px] text-sm leading-6 text-muted-foreground">
+              {desktopCopy}
+            </p>
           </div>
 
           <FieldGroup className="gap-3">
@@ -160,13 +183,13 @@ function RouteComponent() {
                     placeholder={t.emailPlaceholder}
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    className="h-10 px-4 text-base shadow-sm"
+                    className="h-10 px-4 text-base shadow-sm lg:h-12"
                   />
                   <Button
                     type="submit"
                     size="lg"
                     disabled={!canSubmitEmail}
-                    className="h-10 w-full text-base shadow-[0_8px_20px_rgba(222,3,77,0.1)]"
+                    className="h-10 w-full text-base shadow-[0_8px_20px_rgba(222,3,77,0.1)] lg:h-12"
                   >
                     {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
                     {isSubmitting ? t.common.loading : t.common.continue}
@@ -186,13 +209,13 @@ function RouteComponent() {
                     placeholder={t.namePlaceholder}
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    className="h-10 px-4 text-base shadow-sm"
+                    className="h-10 px-4 text-base shadow-sm lg:h-12"
                   />
                   <Button
                     type="submit"
                     size="lg"
                     disabled={!canSubmitName}
-                    className="h-10 w-full text-base shadow-[0_8px_20px_rgba(222,3,77,0.1)]"
+                    className="h-10 w-full text-base shadow-[0_8px_20px_rgba(222,3,77,0.1)] lg:h-12"
                   >
                     {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
                     {isSubmitting ? t.common.loading : t.common.continue}
@@ -207,7 +230,7 @@ function RouteComponent() {
                   className="items-center gap-3"
                   data-invalid={Boolean(displayedError)}
                 >
-                  <div className="flex flex-col gap-1 text-center">
+                  <div className="flex flex-col gap-1 text-center lg:hidden">
                     <h2 className="text-base font-semibold text-foreground">
                       {t.otpTitle}
                     </h2>
@@ -235,7 +258,7 @@ function RouteComponent() {
                     type="submit"
                     size="lg"
                     disabled={!canSubmitOtp || isAuthSubmitting}
-                    className="h-10 w-full text-base shadow-[0_8px_20px_rgba(222,3,77,0.1)]"
+                    className="h-10 w-full text-base shadow-[0_8px_20px_rgba(222,3,77,0.1)] lg:h-12"
                   >
                     {isAuthSubmitting ? (
                       <Spinner data-icon="inline-start" />
@@ -263,7 +286,7 @@ function RouteComponent() {
             size="lg"
             onClick={handleGoogleSignIn}
             disabled={isGoogleLoading || isSubmitting || isAuthSubmitting}
-            className="h-10 w-full text-base shadow-sm"
+            className="h-10 w-full text-base shadow-sm lg:h-12"
           >
             {isGoogleLoading ? (
               <Spinner data-icon="inline-start" />

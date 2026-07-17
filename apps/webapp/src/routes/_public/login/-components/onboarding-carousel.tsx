@@ -48,7 +48,7 @@ export function OnboardingCarousel() {
 
   return (
     <Carousel
-      className="absolute inset-x-0 top-0 -bottom-6 overflow-hidden [&_[data-slot=carousel-content]]:h-full"
+      className="absolute inset-x-0 top-0 -bottom-6 overflow-hidden [&_[data-slot=carousel-content]]:h-full lg:bottom-0"
       opts={{ loop: true }}
       setApi={setApi}
     >
@@ -59,20 +59,20 @@ export function OnboardingCarousel() {
               <img
                 src={slide.image}
                 alt=""
-                className="absolute inset-0 size-full object-cover object-top"
+                className="absolute inset-0 size-full object-cover object-top lg:object-center"
               />
-              <div className="absolute inset-0 bg-black/50" />
-              <div className="absolute inset-x-0 bottom-11 flex flex-col items-center gap-4 px-5 text-center text-white">
-                <div className="flex max-w-[380px] flex-col gap-1">
-                  <h2 className="text-2xl leading-8 font-semibold text-balance">
+              <div className="absolute inset-0 bg-black/50 lg:bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.12)_38%,rgba(0,0,0,0.78)_100%)]" />
+              <div className="absolute inset-x-0 bottom-11 flex flex-col items-center gap-4 px-5 text-center text-white lg:bottom-12 lg:items-start lg:gap-6 lg:px-12 lg:text-left">
+                <div className="flex max-w-[380px] flex-col gap-1 lg:max-w-[520px] lg:gap-3">
+                  <h2 className="text-2xl leading-8 font-semibold text-balance lg:text-[42px] lg:leading-[1.12] lg:tracking-[-0.035em]">
                     {slide.title}
                   </h2>
-                  <p className="text-xs leading-4 text-balance text-[#bdbdbd]">
+                  <p className="text-xs leading-4 text-balance text-[#bdbdbd] lg:max-w-[460px] lg:text-sm lg:leading-6 lg:text-white/80">
                     {slide.description}
                   </p>
                 </div>
 
-                <fieldset className="flex items-center gap-1.5">
+                <fieldset className="flex items-center gap-1.5 lg:self-start">
                   <legend className="sr-only">{`${currentSlide + 1} de ${slides.length}`}</legend>
                   {slides.map((item, index) => (
                     <button

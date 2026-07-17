@@ -12,6 +12,7 @@ export type ExpenseEntrySpace = {
 
 export type ExpenseEntryFriend = {
   id: string;
+  userId: string | null;
   name: string;
   image: string | null;
   sharedGroupCount: number;
@@ -62,7 +63,7 @@ export function useExpenseEntryData() {
   );
 
   const recentFriends = useMemo(() => {
-    const byId = new Map<string, ExpenseEntryFriend>();
+    const byIdentity = new Map<string, ExpenseEntryFriend>();
 
     for (const group of groups) {
       const currentMemberId = group.currentUser?.memberId ?? null;
@@ -72,10 +73,14 @@ export function useExpenseEntryData() {
           continue;
         }
 
-        const existing = byId.get(member.id);
+        const identity = member.userId
+          ? `user:${member.userId}`
+          : `manual:${member.name.trim().toLocaleLowerCase('es-CO')}`;
+        const existing = byIdentity.get(identity);
         if (!existing) {
-          byId.set(member.id, {
+          byIdentity.set(identity, {
             id: member.id,
+            userId: member.userId ?? null,
             name: member.name,
             image: member.image,
             sharedGroupCount: 1,
@@ -84,7 +89,7 @@ export function useExpenseEntryData() {
           continue;
         }
 
-        byId.set(member.id, {
+        byIdentity.set(identity, {
           ...existing,
           sharedGroupCount: existing.sharedGroupCount + 1,
           lastSeenAt:
@@ -96,7 +101,7 @@ export function useExpenseEntryData() {
       }
     }
 
-    return Array.from(byId.values()).sort((left, right) => {
+    return Array.from(byIdentity.values()).sort((left, right) => {
       const dateDiff =
         new Date(right.lastSeenAt).getTime() -
         new Date(left.lastSeenAt).getTime();

@@ -230,6 +230,7 @@ function mapGroupListRow(
     totals,
     members: orderedMembers.map((member) => ({
       id: member.id,
+      userId: member.userId,
       name: member.name,
       image: resolveUserImageUrl(
         member.user?.image ?? null,

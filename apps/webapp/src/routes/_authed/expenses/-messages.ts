@@ -8,8 +8,11 @@ export function getQuickSplitMessages() {
     entryTitle: m['quickSplit.entryTitle'](),
     entryDescription: m['quickSplit.entryDescription'](),
     entrySearchPlaceholder: m['quickSplit.entrySearchPlaceholder'](),
+    back: m['quickSplit.back'](),
     spacesLabel: m['quickSplit.spacesLabel'](),
     spacesSharedTag: m['quickSplit.spacesSharedTag'](),
+    spacesPersonalTag: m['quickSplit.spacesPersonalTag'](),
+    spacesOnlyYou: m['quickSplit.spacesOnlyYou'](),
     spacesParticipants: (count: number) =>
       m['quickSplit.spacesParticipants']({ count }),
     friendsSectionLabel: m['quickSplit.friendsSectionLabel'](),

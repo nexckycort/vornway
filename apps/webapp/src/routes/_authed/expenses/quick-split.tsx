@@ -226,7 +226,7 @@ function RouteComponent() {
             id: friend.id,
             name: friend.name,
             email: '',
-            userId: undefined,
+            userId: friend.userId ?? undefined,
           },
         ];
       });

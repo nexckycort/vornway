@@ -222,6 +222,7 @@ export type GroupListItem = {
   totals: Record<string, number>;
   members: Array<{
     id: string;
+    userId: string | null;
     name: string;
     image: string | null;
   }>;

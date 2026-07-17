@@ -1,10 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.13/schema.json",
   "files": {
-    "includes": [
-      "**",
-      "!**/routeTree.gen.ts"
-    ]
+    "includes": ["**", "!**/routeTree.gen.ts"]
   },
   "assist": {
     "actions": {

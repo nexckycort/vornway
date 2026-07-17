@@ -1,6 +1,6 @@
+import { Link } from '@tanstack/react-router';
 import { cn } from '#/lib/utils';
 import type { SavingGoal } from '#/routes/_authed/(home)/-hooks/use-home-query';
-import { Link } from '@tanstack/react-router';
 import { homeIcons } from './home-icons';
 
 type SavingGoalCardProps = {

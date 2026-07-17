@@ -13,10 +13,7 @@ declare module 'html5-qrcode' {
   };
 
   export class Html5Qrcode {
-    constructor(
-      elementId: string,
-      options?: boolean | { verbose?: boolean },
-    );
+    constructor(elementId: string, options?: boolean | { verbose?: boolean });
 
     start(
       cameraConfig: string | { facingMode?: 'environment' | 'user' },

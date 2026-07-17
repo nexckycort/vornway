@@ -18,7 +18,10 @@ export async function compressImageFileToDataUrl(
     throw new Error('La imagen no puede superar 10 MB');
   }
 
-  if (typeof createImageBitmap === 'undefined' || typeof document === 'undefined') {
+  if (
+    typeof createImageBitmap === 'undefined' ||
+    typeof document === 'undefined'
+  ) {
     return readFileAsDataUrl(file);
   }
 

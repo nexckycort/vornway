@@ -1,6 +1,6 @@
-import { client } from '#/lib/hc';
 import type { InfiniteData } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { client } from '#/lib/hc';
 
 const deleteExpenseEndpoint =
   client.api.groups[':id'].expenses[':expenseId'].$delete;
@@ -28,9 +28,9 @@ async function deleteExpense({ groupId, expenseId }: DeleteExpenseInput) {
   });
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { error?: string }
-      | null;
+    const payload = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
     throw new Error(payload?.error ?? 'No se pudo eliminar el gasto');
   }
 
@@ -72,7 +72,9 @@ export function useDeleteExpenseMutation(groupId: string) {
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({ queryKey: ['group-expenses', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
         queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
       ]);

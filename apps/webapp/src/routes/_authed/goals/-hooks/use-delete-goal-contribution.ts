@@ -1,6 +1,6 @@
-import { client } from '#/lib/hc';
-import type { InferResponseType } from '#/lib/hc';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { InferResponseType } from '#/lib/hc';
+import { client } from '#/lib/hc';
 
 const deleteGoalContributionEndpoint =
   client.api.goals[':id'].contributions[':contributionId'].$delete;

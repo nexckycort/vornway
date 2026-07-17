@@ -1,5 +1,5 @@
-import { isShallowEqual } from '#/utils/is-shallow-equal';
 import { useRef, useSyncExternalStore } from 'react';
+import { isShallowEqual } from '#/utils/is-shallow-equal';
 
 type ConnectionLike = {
   downlink?: number;
@@ -30,11 +30,7 @@ type NetworkState = {
 
 const getConnection = (): ConnectionLike | undefined => {
   const nav = navigator as NavigatorWithConnection;
-  return (
-    nav.connection ||
-    nav.mozConnection ||
-    nav.webkitConnection
-  );
+  return nav.connection || nav.mozConnection || nav.webkitConnection;
 };
 
 const useNetworkStateSubscribe = (callback: () => void) => {

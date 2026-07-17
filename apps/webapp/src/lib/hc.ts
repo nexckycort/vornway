@@ -1,5 +1,5 @@
-import { API_URL } from '#/config/env';
 import { createAuthedClient, createPublicClient } from '@vornway/api/hc';
+import { API_URL } from '#/config/env';
 
 export type { InferRequestType, InferResponseType } from '@vornway/api/hc';
 

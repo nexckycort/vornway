@@ -1,6 +1,6 @@
+import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InferResponseType } from '#/lib/hc';
 import { client } from '#/lib/hc';
-import { useInfiniteQuery } from '@tanstack/react-query';
 
 const goalsEndpoint = client.api.goals.$get;
 

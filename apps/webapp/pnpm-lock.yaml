@@ -9,6 +9,9 @@ catalogs:
     '@biomejs/biome':
       specifier: ^2.4.14
       version: 2.5.4
+    portless:
+      specifier: ^0.15.2
+      version: 0.15.3
     tailwindcss:
       specifier: ^4.3.2
       version: 4.3.2
@@ -129,6 +132,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.17)
+      portless:
+        specifier: 'catalog:'
+        version: 0.15.3
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -2810,6 +2816,12 @@ packages:
   pngjs@5.0.0:
     resolution: {integrity: sha512-40QW5YalBNfQo5yRYmiw7Yz6TKKVr3h6970B2YE+3fQpsWcrbj1PzJgxeJ19DRQjhMbKPIuMY8rFaXc8moolVw==}
     engines: {node: '>=10.13.0'}
+
+  portless@0.15.3:
+    resolution: {integrity: sha512-2xm7SOHMhl6QOZZS3hwdtVT7D/908TDH8+Sebc1TJRJcaTVtTwMR4Mv/oI5JsdeiMh/6Im+Tp4e/OsPn+skOJQ==}
+    engines: {node: '>=24'}
+    os: [darwin, linux, win32]
+    hasBin: true
 
   postcss-selector-parser@7.1.4:
     resolution: {integrity: sha512-HeP7D2wyhkR+XaK6v4W8oRF62Dsz4flyuczALJp61GckGm42u1saSSJ/0auvcBqxs3jMRFEcPK34At/0JBKdOg==}
@@ -5653,6 +5665,8 @@ snapshots:
       find-up: 3.0.0
 
   pngjs@5.0.0: {}
+
+  portless@0.15.3: {}
 
   postcss-selector-parser@7.1.4:
     dependencies:

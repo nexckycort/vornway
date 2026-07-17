@@ -10,7 +10,7 @@
     "build": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && rsbuild build",
     "clean": "rm -rf node_modules && rm -rf dist",
     "check": "biome check --write",
-    "dev": "rsbuild --open --port 3001",
+    "dev": "portless app.vornway rsbuild --open",
     "deploy": "wrangler pages deploy --branch=main",
     "typecheck": "tsc --noEmit",
     "preview": "rsbuild preview",
@@ -53,6 +53,7 @@
     "@tanstack/router-plugin": "^1.167.28",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "portless": "catalog:",
     "typescript": "catalog:",
     "wrangler": "catalog:"
   }

@@ -7,7 +7,7 @@
   "scripts": {
     "postinstall": "bun db:generate && bun build:rpc",
     "build:rpc": "tsc -p tsconfig.rpc.json",
-    "dev": "bun run --env-file=.env --hot src/index.ts",
+    "dev": "portless api.vornway bun run --env-file=.env --hot src/index.ts",
     "check": "biome check --write",
     "clean": "rm -rf node_modules && rm -rf dist",
     "db:generate": "DATABASE_URL=dummy prisma generate",
@@ -60,6 +60,7 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "@types/web-push": "^3.6.4",
+    "portless": "catalog:",
     "prisma": "catalog:",
     "typescript": "catalog:"
   }

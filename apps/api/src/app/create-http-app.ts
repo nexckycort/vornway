@@ -17,11 +17,14 @@ export function createHttpApp(): Hono {
 
   app.use(
     cors({
-      origin: [
-        'https://vornway.com',
-        'https://www.vornway.com',
-        'https://app.vornway.com',
-      ],
+      origin:
+        env.NODE_ENV === 'development'
+          ? 'https://app.vornway.localhost'
+          : [
+              'https://vornway.com',
+              'https://www.vornway.com',
+              'https://app.vornway.com',
+            ],
       exposeHeaders: ['Content-Length'],
       maxAge: 600,
       credentials: true,

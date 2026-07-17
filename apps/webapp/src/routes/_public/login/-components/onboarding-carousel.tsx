@@ -1,16 +1,18 @@
-'use client';
+import { useEffect, useState } from 'react';
 
 import {
   Carousel,
+  type CarouselApi,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from '#/components/ui/carousel';
+import { cn } from '#/lib/utils';
 import { getLoginMessages } from '#/routes/_public/login/-messages';
 
 export function OnboardingCarousel() {
   const t = getLoginMessages();
+  const [api, setApi] = useState<CarouselApi>();
+  const [currentSlide, setCurrentSlide] = useState(0);
   const slides = [
     {
       image: '/images/login/slide-1.webp',
@@ -29,38 +31,68 @@ export function OnboardingCarousel() {
     },
   ];
 
+  useEffect(() => {
+    if (!api) return;
+
+    const updateCurrentSlide = () => setCurrentSlide(api.selectedScrollSnap());
+
+    updateCurrentSlide();
+    api.on('select', updateCurrentSlide);
+    api.on('reInit', updateCurrentSlide);
+
+    return () => {
+      api.off('select', updateCurrentSlide);
+      api.off('reInit', updateCurrentSlide);
+    };
+  }, [api]);
+
   return (
-    <Carousel className="h-full w-full">
+    <Carousel
+      className="absolute inset-x-0 top-0 -bottom-6 overflow-hidden [&_[data-slot=carousel-content]]:h-full"
+      opts={{ loop: true }}
+      setApi={setApi}
+    >
       <CarouselContent className="-ml-0 h-full">
         {slides.map((slide) => (
           <CarouselItem key={slide.title} className="h-full pl-0">
-            <div className="relative h-full min-h-[460px] w-full overflow-hidden">
+            <div className="relative h-full min-h-[280px] w-full overflow-hidden">
               <img
                 src={slide.image}
-                alt={slide.title}
-                className="absolute inset-0 h-full w-full object-cover"
+                alt=""
+                className="absolute inset-0 size-full object-cover object-top"
               />
-              <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/10 via-black/25 to-black/70" />
-              <div className="absolute inset-x-0 bottom-12 z-20 flex flex-col gap-2 px-6 text-center text-white">
-                <h2 className="text-3xl leading-tight font-semibold text-balance drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
-                  {slide.title}
-                </h2>
-                <p className="text-sm leading-relaxed text-white/95 text-balance drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]">
-                  {slide.description}
-                </p>
-                <div className="mt-2 flex items-center justify-center gap-2">
-                  <span className="h-1 w-8 rounded-full bg-white" />
-                  <span className="size-2 rounded-full bg-white/80" />
-                  <span className="size-2 rounded-full bg-white/80" />
+              <div className="absolute inset-0 bg-black/50" />
+              <div className="absolute inset-x-0 bottom-11 flex flex-col items-center gap-4 px-5 text-center text-white">
+                <div className="flex max-w-[380px] flex-col gap-1">
+                  <h2 className="text-2xl leading-8 font-semibold text-balance">
+                    {slide.title}
+                  </h2>
+                  <p className="text-xs leading-4 text-balance text-[#bdbdbd]">
+                    {slide.description}
+                  </p>
                 </div>
+
+                <fieldset className="flex items-center gap-1.5">
+                  <legend className="sr-only">{`${currentSlide + 1} de ${slides.length}`}</legend>
+                  {slides.map((item, index) => (
+                    <button
+                      key={item.title}
+                      type="button"
+                      onClick={() => api?.scrollTo(index)}
+                      aria-label={`Ir a la diapositiva ${index + 1}`}
+                      aria-current={index === currentSlide ? 'true' : undefined}
+                      className={cn(
+                        'h-2 rounded-full bg-white/80 transition-[width,opacity] duration-200',
+                        index === currentSlide ? 'w-10 opacity-100' : 'w-5',
+                      )}
+                    />
+                  ))}
+                </fieldset>
               </div>
             </div>
           </CarouselItem>
         ))}
       </CarouselContent>
-
-      <CarouselPrevious className="left-3" />
-      <CarouselNext className="right-3" />
     </Carousel>
   );
 }

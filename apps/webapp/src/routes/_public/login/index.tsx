@@ -1,16 +1,23 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 
 import { Button } from '#/components/ui/button';
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldSeparator,
+} from '#/components/ui/field';
 import { Input } from '#/components/ui/input';
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from '#/components/ui/input-otp';
-import { VornwayLogo } from '#/components/vornway-logo';
+import { Spinner } from '#/components/ui/spinner';
 import { useAuth } from '#/contexts/auth/use-auth';
 import { signIn } from '#/lib/auth-client';
+import { OnboardingCarousel } from '#/routes/_public/login/-components/onboarding-carousel';
 import { useLogin } from '#/routes/_public/login/-hooks/use-login';
 import { getLoginMessages } from '#/routes/_public/login/-messages';
 
@@ -48,11 +55,14 @@ function RouteComponent() {
       ? new URLSearchParams(window.location.search).get('redirect')
       : null,
   );
-
   const callbackURL =
     typeof window !== 'undefined'
       ? new URL(redirect, window.location.origin).toString()
       : '/';
+  const displayedError = syncError || error;
+  const isEmailStep = step === 'email';
+  const isNameStep = step === 'name';
+  const isOtpStep = step === 'otp';
 
   useEffect(() => {
     if (!auth.isAuthenticated) return;
@@ -62,10 +72,6 @@ function RouteComponent() {
       replace: true,
     });
   }, [auth.isAuthenticated, navigate, redirect]);
-
-  const isEmailStep = step === 'email';
-  const isNameStep = step === 'name';
-  const isOtpStep = step === 'otp';
 
   async function handleGoogleSignIn() {
     setSyncError(null);
@@ -111,153 +117,198 @@ function RouteComponent() {
     }
   }
 
+  function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    submitEmail();
+  }
+
+  function handleNameSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    submitName();
+  }
+
+  function handleOtpSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void submitOtpWithAuth();
+  }
+
   return (
-    <main className="min-h-dvh bg-[radial-gradient(circle_at_top,_rgba(251,242,246,1)_0%,_rgba(255,255,255,1)_36%,_rgba(245,247,251,1)_100%)] px-4 py-6">
-      <div className="mx-auto flex min-h-[calc(100dvh-3rem)] w-full max-w-md items-center">
-        <section className="w-full space-y-5">
-          <div className="flex items-center gap-3 px-1">
-            <VornwayLogo className="h-12 w-12 rounded-2xl bg-white ring-1 ring-border/70 shadow-sm" />
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                Vornway
-              </p>
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                {t.title}
-              </h1>
-            </div>
+    <main className="min-h-dvh bg-[#1e1e1e] md:flex md:items-center md:justify-center md:p-6">
+      <div className="mx-auto flex min-h-dvh w-full max-w-[412px] flex-col overflow-hidden bg-black md:min-h-[min(897px,calc(100dvh-3rem))] md:rounded-[28px] md:shadow-2xl">
+        <section className="relative min-h-[280px] flex-1 overflow-visible">
+          <OnboardingCarousel />
+        </section>
+
+        <section className="relative flex w-full shrink-0 flex-col gap-6 rounded-t-[24px] bg-white px-4 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+          <div className="flex h-7 items-center justify-center gap-1">
+            <img src="/logo.webp" alt="" className="size-7 object-contain" />
+            <h1 className="text-[28px] leading-7 font-semibold tracking-[-0.04em] text-[#1e1e1e]">
+              Vornway
+            </h1>
           </div>
 
-          <div className="rounded-[32px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
-            <div className="space-y-4">
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                onClick={handleGoogleSignIn}
-                disabled={isGoogleLoading || isSubmitting || isAuthSubmitting}
-                className="h-12 w-full rounded-full border-border bg-background text-base font-medium text-foreground hover:bg-muted/40"
-              >
-                <GoogleIcon className="mr-2 size-5" />
-                {isGoogleLoading ? t.redirecting : t.continueWithGoogle}
-              </Button>
-
-              <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-                <span className="h-px flex-1 bg-border" />
-                {t.orWithEmail}
-                <span className="h-px flex-1 bg-border" />
-              </div>
-
-              {isEmailStep ? (
-                <StepCard title={t.emailTitle} copy={t.emailCopy}>
+          <FieldGroup className="gap-3">
+            {isEmailStep ? (
+              <form onSubmit={handleEmailSubmit}>
+                <Field className="gap-3" data-invalid={Boolean(displayedError)}>
                   <Input
                     type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    aria-label={t.emailTitle}
+                    aria-invalid={Boolean(displayedError)}
                     placeholder={t.emailPlaceholder}
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    className="h-12 rounded-2xl border-border bg-background px-4 text-base placeholder:text-muted-foreground"
+                    className="h-10 px-4 text-base shadow-sm"
                   />
-
                   <Button
-                    type="button"
-                    onClick={submitEmail}
+                    type="submit"
+                    size="lg"
                     disabled={!canSubmitEmail}
-                    className="h-12 w-full rounded-full bg-primary text-base font-medium text-primary-foreground shadow-[0_10px_30px_rgba(222,3,77,0.16)] hover:bg-primary/90"
+                    className="h-10 w-full text-base shadow-[0_8px_20px_rgba(222,3,77,0.1)]"
                   >
+                    {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
                     {isSubmitting ? t.common.loading : t.common.continue}
                   </Button>
-                </StepCard>
-              ) : null}
+                </Field>
+              </form>
+            ) : null}
 
-              {isNameStep ? (
-                <StepCard title={t.nameTitle} copy={t.nameCopy(email)}>
+            {isNameStep ? (
+              <form onSubmit={handleNameSubmit}>
+                <Field className="gap-3" data-invalid={Boolean(displayedError)}>
                   <Input
                     type="text"
+                    autoComplete="name"
+                    aria-label={t.nameTitle}
+                    aria-invalid={Boolean(displayedError)}
                     placeholder={t.namePlaceholder}
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    className="h-12 rounded-2xl border-border bg-background px-4 text-base placeholder:text-muted-foreground"
+                    className="h-10 px-4 text-base shadow-sm"
                   />
-
                   <Button
-                    type="button"
-                    onClick={submitName}
+                    type="submit"
+                    size="lg"
                     disabled={!canSubmitName}
-                    className="h-12 w-full rounded-full bg-primary text-base font-medium text-primary-foreground shadow-[0_10px_30px_rgba(222,3,77,0.16)] hover:bg-primary/90"
+                    className="h-10 w-full text-base shadow-[0_8px_20px_rgba(222,3,77,0.1)]"
                   >
+                    {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
                     {isSubmitting ? t.common.loading : t.common.continue}
                   </Button>
+                </Field>
+              </form>
+            ) : null}
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={goBackToEmail}
-                    className="h-11 w-full rounded-full text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-                  >
-                    {t.back}
-                  </Button>
-                </StepCard>
-              ) : null}
-
-              {isOtpStep ? (
-                <StepCard title={t.otpTitle} copy={t.otpCopy(email)}>
-                  <div className="mx-auto">
-                    <InputOTP
-                      maxLength={6}
-                      value={otp}
-                      onChange={setOtp}
-                      containerClassName="justify-center"
-                    >
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
+            {isOtpStep ? (
+              <form onSubmit={handleOtpSubmit}>
+                <Field
+                  className="items-center gap-3"
+                  data-invalid={Boolean(displayedError)}
+                >
+                  <div className="flex flex-col gap-1 text-center">
+                    <h2 className="text-base font-semibold text-foreground">
+                      {t.otpTitle}
+                    </h2>
+                    <p className="text-xs leading-4 text-muted-foreground">
+                      {t.otpCopy(email)}
+                    </p>
                   </div>
-
-                  <Button
-                    type="button"
-                    onClick={submitOtpWithAuth}
-                    disabled={!canSubmitOtp || isAuthSubmitting}
-                    className="h-12 w-full rounded-full bg-primary text-base font-medium text-primary-foreground shadow-[0_10px_30px_rgba(222,3,77,0.16)] hover:bg-primary/90"
+                  <InputOTP
+                    maxLength={6}
+                    value={otp}
+                    onChange={setOtp}
+                    aria-invalid={Boolean(displayedError)}
+                    containerClassName="justify-center"
                   >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} className="size-10" />
+                      <InputOTPSlot index={1} className="size-10" />
+                      <InputOTPSlot index={2} className="size-10" />
+                      <InputOTPSlot index={3} className="size-10" />
+                      <InputOTPSlot index={4} className="size-10" />
+                      <InputOTPSlot index={5} className="size-10" />
+                    </InputOTPGroup>
+                  </InputOTP>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={!canSubmitOtp || isAuthSubmitting}
+                    className="h-10 w-full text-base shadow-[0_8px_20px_rgba(222,3,77,0.1)]"
+                  >
+                    {isAuthSubmitting ? (
+                      <Spinner data-icon="inline-start" />
+                    ) : null}
                     {isAuthSubmitting ? t.common.loading : t.verifyCode}
                   </Button>
+                </Field>
+              </form>
+            ) : null}
 
-                  <div className="flex items-center justify-between text-sm">
-                    <button
-                      type="button"
-                      onClick={goBackToEmail}
-                      className="font-medium text-muted-foreground hover:underline"
-                    >
-                      {t.changeEmail}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={resendOtp}
-                      className="font-medium text-foreground hover:underline"
-                    >
-                      {t.resendCode}
-                    </button>
-                  </div>
-                </StepCard>
-              ) : null}
+            {displayedError ? (
+              <FieldError className="text-center" aria-live="polite">
+                {displayedError}
+              </FieldError>
+            ) : null}
+          </FieldGroup>
 
-              {syncError || error ? (
-                <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700">
-                  {syncError || error}
-                </p>
-              ) : null}
+          <FieldSeparator className="-my-0 text-xs">
+            o continuar con
+          </FieldSeparator>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={handleGoogleSignIn}
+            disabled={isGoogleLoading || isSubmitting || isAuthSubmitting}
+            className="h-10 w-full text-base shadow-sm"
+          >
+            {isGoogleLoading ? (
+              <Spinner data-icon="inline-start" />
+            ) : (
+              <GoogleIcon data-icon="inline-start" />
+            )}
+            {isGoogleLoading ? t.redirecting : t.continueWithGoogle}
+          </Button>
+
+          {isOtpStep ? (
+            <div className="flex items-center justify-center gap-5 text-xs">
+              <button
+                type="button"
+                onClick={goBackToEmail}
+                className="text-[#626262]"
+              >
+                {t.changeEmail}
+              </button>
+              <button
+                type="button"
+                onClick={resendOtp}
+                disabled={isSubmitting}
+                className="font-semibold text-[#1e1e1e] disabled:opacity-50"
+              >
+                {t.resendCode}
+              </button>
             </div>
-
-            <p className="mt-5 text-center text-xs leading-5 text-muted-foreground">
-              Al continuar aceptas el uso de tu cuenta para iniciar sesión en
-              Vornway.
-            </p>
-          </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 text-xs">
+              <span className="text-[#626262]">¿Ya tienes una cuenta?</span>
+              {isNameStep ? (
+                <button
+                  type="button"
+                  onClick={goBackToEmail}
+                  className="font-semibold text-[#1e1e1e]"
+                >
+                  Iniciar Sesión
+                </button>
+              ) : (
+                <span className="font-semibold text-[#1e1e1e]">
+                  Iniciar Sesión
+                </span>
+              )}
+            </div>
+          )}
         </section>
       </div>
     </main>
@@ -270,32 +321,9 @@ function normalizeRedirect(value: string | null): string {
   return value;
 }
 
-function StepCard({
-  title,
-  copy,
-  children,
-}: {
-  title: string;
-  copy: string;
-  children: ReactNode;
-}) {
+function GoogleIcon(props: React.ComponentProps<'svg'>) {
   return (
-    <section className="rounded-[28px] border border-[#e8edf4] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
-      <div className="mb-4 space-y-1">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">
-          {title}
-        </h2>
-        <p className="text-sm leading-6 text-muted-foreground">{copy}</p>
-      </div>
-
-      <div className="space-y-4">{children}</div>
-    </section>
-  );
-}
-
-function GoogleIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
       <path
         fill="#4285F4"
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

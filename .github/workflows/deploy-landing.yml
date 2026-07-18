@@ -41,6 +41,7 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           workingDirectory: "apps/landing"
+          packageManager: bun
           apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy

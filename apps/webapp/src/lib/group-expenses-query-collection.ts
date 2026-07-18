@@ -1,7 +1,8 @@
 import { createCollection, localStorageCollectionOptions } from '@tanstack/db';
-import { client, type InferResponseType } from '#/lib/hc';
+import { groupsClient } from '#/api/groups';
+import type { InferResponseType } from '#/api/types';
 
-const groupExpensesEndpoint = client.api.groups[':id'].expenses.$get;
+const groupExpensesEndpoint = groupsClient[':id'].expenses.$get;
 
 type GroupExpensesPageResponse = InferResponseType<
   typeof groupExpensesEndpoint

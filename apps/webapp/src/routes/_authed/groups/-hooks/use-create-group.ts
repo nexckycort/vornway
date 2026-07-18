@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { InferRequestType, InferResponseType } from '#/lib/hc';
-import { client } from '#/lib/hc';
+import { groupsClient } from '#/api/groups';
+import type { InferRequestType, InferResponseType } from '#/api/types';
 import {
   type CreateGroupOfflineFirstResult,
   createGroupOfflineFirst,
 } from '#/lib/offline-group-query-collection';
 
-const createGroupEndpoint = client.api.groups.$post;
+const createGroupEndpoint = groupsClient.index.$post;
 
 type CreateGroupRequest = InferRequestType<typeof createGroupEndpoint>;
 type CreateGroupResponse = InferResponseType<typeof createGroupEndpoint>;

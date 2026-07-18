@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { invitesClient } from '#/api/invites';
 
-import { client } from '#/lib/hc';
-
-const acceptInviteEndpoint = client.api.invites[':inviteCode'].accept.$post;
+const acceptInviteEndpoint = invitesClient[':inviteCode'].accept.$post;
 
 export type AcceptInviteResponse = {
   groupId: string;

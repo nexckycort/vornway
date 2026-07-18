@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { client } from '#/lib/hc';
+import { homeClient } from '#/api/home';
 import {
   getCachedHomeSummary,
   type HomeApiResponse,
@@ -71,7 +71,7 @@ export type HomeQueryData = {
   savingGoals: SavingGoal[];
 };
 
-const homeEndpoint = client.api.home.$get;
+const homeEndpoint = homeClient.index.$get;
 
 function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
   const t = getHomeMessages();

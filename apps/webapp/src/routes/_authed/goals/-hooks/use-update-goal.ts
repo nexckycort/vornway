@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { InferRequestType, InferResponseType } from '#/lib/hc';
-import { client } from '#/lib/hc';
+import { goalsClient } from '#/api/goals';
+import type { InferRequestType, InferResponseType } from '#/api/types';
 
-const updateGoalEndpoint = client.api.goals[':id'].$patch;
+const updateGoalEndpoint = goalsClient[':id'].$patch;
 
 type UpdateGoalRequest = InferRequestType<typeof updateGoalEndpoint>;
 type UpdateGoalResponse = InferResponseType<typeof updateGoalEndpoint>;

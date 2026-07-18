@@ -1,12 +1,12 @@
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { groupsClient } from '#/api/groups';
 import {
   GROUPS_LIST_REFRESH_EVENT,
   type GroupListFilter,
   type GroupsPage,
   upsertGroupListItems,
 } from '#/lib/groups-list-query-collection';
-import { client } from '#/lib/hc';
 
 const PAGE_LIMIT = 20;
 
@@ -21,7 +21,7 @@ async function fetchGroupsPage({
   search: string;
   filter: GroupListFilter;
 }): Promise<GroupsPage> {
-  const response = await client.api.groups.$get({
+  const response = await groupsClient.index.$get({
     query: {
       limit: String(PAGE_LIMIT),
       ...(pageParam ? { cursor: pageParam } : {}),

@@ -19,6 +19,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { mapsClient } from '#/api/maps';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import {
@@ -37,7 +38,6 @@ import {
 } from '#/components/ui/drawer';
 import { Skeleton } from '#/components/ui/skeleton';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
-import { client } from '#/lib/hc';
 import { compressImageFileToDataUrl } from '#/lib/image-compression';
 import { enqueueExpenseOffline } from '#/lib/offline-expense-query-collection';
 import {
@@ -140,7 +140,7 @@ const emptyAdvancedDetails: ExpenseAdvancedDetails = {
   notes: '',
 };
 
-const resolveMapEndpoint = client.api.maps.resolve.$post;
+const resolveMapEndpoint = mapsClient.resolve.$post;
 
 const customCategoryIconId = 'custom';
 

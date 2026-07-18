@@ -1,9 +1,9 @@
 import type { InfiniteData } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { client } from '#/lib/hc';
+import { groupsClient } from '#/api/groups';
 
 const deleteExpenseEndpoint =
-  client.api.groups[':id'].expenses[':expenseId'].$delete;
+  groupsClient[':id'].expenses[':expenseId'].$delete;
 
 type DeleteExpenseInput = {
   groupId: string;

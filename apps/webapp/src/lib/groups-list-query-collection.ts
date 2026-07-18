@@ -1,10 +1,11 @@
 import { createCollection } from '@tanstack/db';
 import { QueryClient } from '@tanstack/query-core';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
-import { client, type InferResponseType } from '#/lib/hc';
+import { groupsClient } from '#/api/groups';
+import type { InferResponseType } from '#/api/types';
 import type { GroupSummary } from '#/routes/_authed/groups/$id/-types/group-detail.types';
 
-const listGroupsEndpoint = client.api.groups.$get;
+const listGroupsEndpoint = groupsClient.index.$get;
 
 export type GroupsPage = InferResponseType<typeof listGroupsEndpoint>;
 export type GroupListItem = GroupsPage['data'][number];

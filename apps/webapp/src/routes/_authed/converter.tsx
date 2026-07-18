@@ -7,11 +7,12 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { client, type InferResponseType } from '#/lib/hc';
+import { converterClient } from '#/api/converter';
+import type { InferResponseType } from '#/api/types';
 import { formatCurrency } from '#/lib/i18n';
 import { getConverterMessages } from '#/routes/_authed/converter/-messages';
 
-const converterEndpoint = client.api.converter.$get;
+const converterEndpoint = converterClient.index.$get;
 type ConverterApiResponse = Extract<
   InferResponseType<typeof converterEndpoint>,
   { currencies: unknown }

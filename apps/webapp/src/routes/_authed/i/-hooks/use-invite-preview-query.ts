@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import { invitesClient } from '#/api/invites';
 
-import { client } from '#/lib/hc';
-
-const invitePreviewEndpoint = client.api.invites[':inviteCode'].$get;
+const invitePreviewEndpoint = invitesClient[':inviteCode'].$get;
 
 export type InvitePreviewResponse = {
   group: {

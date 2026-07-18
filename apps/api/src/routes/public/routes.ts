@@ -8,4 +8,3 @@ export const publicRoutes = new Hono()
   .route('/login', loginRoutes);
 
 export default publicRoutes;
-export type PublicRoutes = typeof publicRoutes;

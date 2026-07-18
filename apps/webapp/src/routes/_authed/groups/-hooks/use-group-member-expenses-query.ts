@@ -1,11 +1,12 @@
 import { useInfiniteQuery, useQueries } from '@tanstack/react-query';
+import { groupsClient } from '#/api/groups';
 
-import { client, type InferResponseType } from '#/lib/hc';
+import type { InferResponseType } from '#/api/types';
 
 const PAGE_LIMIT = 20;
 const MULTI_MEMBER_LIMIT = 100;
 const groupMemberExpensesEndpoint =
-  client.api.groups[':id'].members[':memberId'].expenses.$get;
+  groupsClient[':id'].members[':memberId'].expenses.$get;
 
 type GroupMemberExpensesPageResponse = InferResponseType<
   typeof groupMemberExpensesEndpoint

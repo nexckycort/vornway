@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { client, type InferResponseType } from '#/lib/hc';
+import { notificationsClient } from '#/api/notifications';
+import type { InferResponseType } from '#/api/types';
 
-const notificationsEndpoint = client.api.notifications.$get;
-const notificationsMarkReadEndpoint =
-  client.api.notifications['read-all'].$post;
+const notificationsEndpoint = notificationsClient.index.$get;
+const notificationsMarkReadEndpoint = notificationsClient['read-all'].$post;
 
 type NotificationsResponse = InferResponseType<typeof notificationsEndpoint>;
 

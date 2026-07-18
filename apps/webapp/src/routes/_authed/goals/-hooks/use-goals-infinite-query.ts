@@ -1,8 +1,8 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { InferResponseType } from '#/lib/hc';
-import { client } from '#/lib/hc';
+import { goalsClient } from '#/api/goals';
+import type { InferResponseType } from '#/api/types';
 
-const goalsEndpoint = client.api.goals.$get;
+const goalsEndpoint = goalsClient.index.$get;
 
 type GoalsApiResponse = InferResponseType<typeof goalsEndpoint>;
 

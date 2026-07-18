@@ -4,6 +4,8 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { groupsClient } from '#/api/groups';
+import type { InferResponseType } from '#/api/types';
 import {
   type GroupExpensesPageSuccess,
   getCachedGroupExpensesPage,
@@ -14,8 +16,6 @@ import {
   getCachedGroupSummary,
   upsertCachedGroupSummary,
 } from '#/lib/groups-list-query-collection';
-import type { InferResponseType } from '#/lib/hc';
-import { client } from '#/lib/hc';
 import {
   getLocalGroupById,
   type PendingGroup,
@@ -28,16 +28,14 @@ import type {
 
 const PAGE_LIMIT = 20;
 
-const groupSummaryEndpoint = client.api.groups[':id'].$get;
-const groupExpensesEndpoint = client.api.groups[':id'].expenses.$get;
-const groupExpenseEndpoint =
-  client.api.groups[':id'].expenses[':expenseId'].$get;
-const groupReportsTotalsEndpoint = client.api.groups[':id'].reports.totals.$get;
+const groupSummaryEndpoint = groupsClient[':id'].$get;
+const groupExpensesEndpoint = groupsClient[':id'].expenses.$get;
+const groupExpenseEndpoint = groupsClient[':id'].expenses[':expenseId'].$get;
+const groupReportsTotalsEndpoint = groupsClient[':id'].reports.totals.$get;
 const groupReportsCategoryCountEndpoint =
-  client.api.groups[':id'].reports['category-count'].$get;
-const groupReportsBalancesEndpoint =
-  client.api.groups[':id'].reports.balances.$get;
-const groupReportsSharesEndpoint = client.api.groups[':id'].reports.shares.$get;
+  groupsClient[':id'].reports['category-count'].$get;
+const groupReportsBalancesEndpoint = groupsClient[':id'].reports.balances.$get;
+const groupReportsSharesEndpoint = groupsClient[':id'].reports.shares.$get;
 
 function buildPendingGroupSummary(group: PendingGroup): GroupSummary {
   const ownerMemberId = `${group.id}:owner`;

@@ -1,5 +1,5 @@
+import { pushClient } from '#/api/push';
 import { API_URL, VAPID_PUBLIC_KEY } from '#/config/env';
-import { client } from '#/lib/hc';
 
 type PushPermissionStatus =
   | 'unsupported'
@@ -74,7 +74,7 @@ async function syncSubscriptionWithBackend(subscription: PushSubscription) {
       auth: string;
     };
   };
-  const endpoint = client.api.push.subscriptions.$post;
+  const endpoint = pushClient.subscriptions.$post;
 
   const response = await endpoint({
     json: {
@@ -92,7 +92,7 @@ async function syncSubscriptionWithBackend(subscription: PushSubscription) {
 }
 
 async function sendPushTestNotification() {
-  const endpoint = client.api.push.test.$post;
+  const endpoint = pushClient.test.$post;
   const response = await endpoint({});
 
   if (!response.ok) {

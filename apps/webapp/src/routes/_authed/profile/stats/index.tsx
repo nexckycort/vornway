@@ -8,10 +8,10 @@ import {
   Users,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { adminClient } from '#/api/admin';
 
 import { Button } from '#/components/ui/button';
 import { useAuth } from '#/contexts/auth/use-auth';
-import { client } from '#/lib/hc';
 
 type AdminStatsResponse = {
   totalUsers: number;
@@ -35,7 +35,7 @@ function RouteComponent() {
     queryKey: ['admin-stats'],
     enabled: isAllowed,
     queryFn: async () => {
-      const response = await client.api.admin.stats.$get();
+      const response = await adminClient.stats.$get();
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as {

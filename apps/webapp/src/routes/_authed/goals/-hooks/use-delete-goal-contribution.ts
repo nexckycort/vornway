@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { InferResponseType } from '#/lib/hc';
-import { client } from '#/lib/hc';
+import { goalsClient } from '#/api/goals';
+import type { InferResponseType } from '#/api/types';
 
 const deleteGoalContributionEndpoint =
-  client.api.goals[':id'].contributions[':contributionId'].$delete;
+  goalsClient[':id'].contributions[':contributionId'].$delete;
 
 type DeleteGoalContributionResponse = InferResponseType<
   typeof deleteGoalContributionEndpoint

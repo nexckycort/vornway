@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+
 import { adminMiddleware } from '#/shared/middlewares/admin.middleware';
 import { authMiddleware } from '#/shared/middlewares/auth.middleware';
 import adminRoutes from './admin/routes';
@@ -32,4 +33,3 @@ const app = new Hono()
   .route('/admin', adminRoutes);
 
 export default app;
-export type AuthedRoutes = typeof app;

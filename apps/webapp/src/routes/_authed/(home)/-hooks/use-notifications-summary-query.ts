@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { client } from '#/lib/hc';
+import { notificationsClient } from '#/api/notifications';
 
 type NotificationsSummaryResponse = {
   data: unknown[];
@@ -11,7 +11,7 @@ type NotificationsSummaryResponse = {
   unreadCount: number;
 };
 
-const notificationsEndpoint = client.api.notifications.$get;
+const notificationsEndpoint = notificationsClient.index.$get;
 
 export function useNotificationsSummaryQuery() {
   return useQuery({

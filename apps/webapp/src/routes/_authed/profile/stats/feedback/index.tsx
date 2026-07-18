@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { adminClient } from '#/api/admin';
 import { Button } from '#/components/ui/button';
 import {
   Dialog,
@@ -18,7 +19,6 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog';
 import { useAuth } from '#/contexts/auth/use-auth';
-import { client } from '#/lib/hc';
 
 type FeedbackStatus = 'OPEN' | 'IN_REVIEW' | 'PLANNED' | 'DONE' | 'REJECTED';
 
@@ -81,7 +81,7 @@ function RouteComponent() {
     queryKey: ['admin-feedback'],
     enabled: isAllowed,
     queryFn: async () => {
-      const response = await client.api.admin.feedback.$get({
+      const response = await adminClient.feedback.$get({
         query: { limit: '50' },
       });
 
@@ -102,7 +102,7 @@ function RouteComponent() {
       status?: FeedbackStatus;
       priority?: string | null;
     }) => {
-      const response = await client.api.admin.feedback[':feedbackId'].$patch({
+      const response = await adminClient.feedback[':feedbackId'].$patch({
         param: { feedbackId: input.feedbackId },
         json: {
           ...(input.status ? { status: input.status } : {}),

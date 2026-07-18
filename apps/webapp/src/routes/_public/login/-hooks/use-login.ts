@@ -1,17 +1,13 @@
 import { useMutation } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-
-import {
-  type InferRequestType,
-  type InferResponseType,
-  publicClient,
-} from '#/lib/hc';
+import { loginClient } from '#/api/login';
+import type { InferRequestType, InferResponseType } from '#/api/types';
 import { getLoginMessages } from '#/routes/_public/login/-messages';
 
 type LoginStep = 'email' | 'name' | 'otp' | 'done';
 
-type SendOtpMethod = (typeof publicClient.api.login)['send-otp']['$post'];
-type VerifyOtpMethod = (typeof publicClient.api.login)['verify-otp']['$post'];
+type SendOtpMethod = (typeof loginClient)['send-otp']['$post'];
+type VerifyOtpMethod = (typeof loginClient)['verify-otp']['$post'];
 
 type SendOtpRequest = InferRequestType<SendOtpMethod>['json'];
 type SendOtpResponse = InferResponseType<SendOtpMethod>;
@@ -20,7 +16,7 @@ type VerifyOtpRequest = InferRequestType<VerifyOtpMethod>['json'];
 type VerifyOtpResponse = InferResponseType<VerifyOtpMethod>;
 
 async function sendOtp(payload: SendOtpRequest): Promise<SendOtpResponse> {
-  const response = await publicClient.api.login['send-otp'].$post({
+  const response = await loginClient['send-otp'].$post({
     json: payload,
   });
   const data = (await response.json()) as SendOtpResponse;
@@ -31,7 +27,7 @@ async function sendOtp(payload: SendOtpRequest): Promise<SendOtpResponse> {
 async function verifyOtp(
   payload: VerifyOtpRequest,
 ): Promise<VerifyOtpResponse> {
-  const response = await publicClient.api.login['verify-otp'].$post({
+  const response = await loginClient['verify-otp'].$post({
     json: payload,
   });
   const data = (await response.json()) as VerifyOtpResponse;

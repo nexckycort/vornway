@@ -1,31 +1,29 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { groupsClient } from '#/api/groups';
+import type { InferRequestType, InferResponseType } from '#/api/types';
 import { removeCachedGroupListItem } from '#/lib/groups-list-query-collection';
-import type { InferRequestType, InferResponseType } from '#/lib/hc';
-import { client } from '#/lib/hc';
 import { createExpenseOfflineFirst } from '#/lib/offline-expense-query-collection';
 import { removeLocalGroupFallback } from '#/lib/offline-group-query-collection';
 import { m } from '#/paraglide/messages.js';
 
-const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
-const updateExpenseEndpoint =
-  client.api.groups[':id'].expenses[':expenseId'].$put;
-const updateGroupEndpoint = client.api.groups[':id'].$patch;
-const updateGroupSettingsEndpoint = client.api.groups[':id'].settings.$patch;
-const deleteGroupEndpoint = client.api.groups[':id'].$delete;
-const exportGroupCsvEndpoint = client.api.groups[':id'].export.$get;
-const settleDebtEndpoint = client.api.groups[':id'].settlements.$post;
-const addMemberEndpoint = client.api.groups[':id'].members.$post;
-const createCategoryEndpoint = client.api.groups[':id'].categories.$post;
+const createExpenseEndpoint = groupsClient[':id'].expenses.$post;
+const updateExpenseEndpoint = groupsClient[':id'].expenses[':expenseId'].$put;
+const updateGroupEndpoint = groupsClient[':id'].$patch;
+const updateGroupSettingsEndpoint = groupsClient[':id'].settings.$patch;
+const deleteGroupEndpoint = groupsClient[':id'].$delete;
+const exportGroupCsvEndpoint = groupsClient[':id'].export.$get;
+const settleDebtEndpoint = groupsClient[':id'].settlements.$post;
+const addMemberEndpoint = groupsClient[':id'].members.$post;
+const createCategoryEndpoint = groupsClient[':id'].categories.$post;
 const updateCategoryEndpoint =
-  client.api.groups[':id'].categories[':categoryId'].$patch;
+  groupsClient[':id'].categories[':categoryId'].$patch;
 const deleteCategoryEndpoint =
-  client.api.groups[':id'].categories[':categoryId'].$delete;
+  groupsClient[':id'].categories[':categoryId'].$delete;
 const moveCategoryExpensesEndpoint =
-  client.api.groups[':id'].categories[':categoryId']['move-expenses'].$post;
-const removeMemberEndpoint =
-  client.api.groups[':id'].members[':memberId'].$delete;
+  groupsClient[':id'].categories[':categoryId']['move-expenses'].$post;
+const removeMemberEndpoint = groupsClient[':id'].members[':memberId'].$delete;
 const unlinkMemberEndpoint =
-  client.api.groups[':id'].members[':memberId']['account-link'].$delete;
+  groupsClient[':id'].members[':memberId']['account-link'].$delete;
 
 type CreateExpenseRequest = InferRequestType<typeof createExpenseEndpoint>;
 type UpdateExpenseRequest = InferRequestType<typeof updateExpenseEndpoint>;
@@ -68,7 +66,7 @@ type UpdateGroupImageResponse = {
   imageUrl: string | null;
 };
 
-const updateGroupImageEndpoint = client.api.groups[':id'] as unknown as {
+const updateGroupImageEndpoint = groupsClient[':id'] as unknown as {
   image: {
     $patch: (args: {
       param: { id: string };

@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import type { InferResponseType } from '#/lib/hc';
-import { client } from '#/lib/hc';
+import { goalsClient } from '#/api/goals';
+import type { InferResponseType } from '#/api/types';
 
-const goalDetailEndpoint = client.api.goals[':id'].$get;
+const goalDetailEndpoint = goalsClient[':id'].$get;
 
 type GoalDetailApiResponse = InferResponseType<typeof goalDetailEndpoint>;
 type GoalDetailSuccess = Extract<GoalDetailApiResponse, { group: unknown }>;

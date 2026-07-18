@@ -1,9 +1,10 @@
 import { createCollection } from '@tanstack/db';
 import { QueryClient } from '@tanstack/query-core';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
-import { client, type InferRequestType } from '#/lib/hc';
+import { groupsClient } from '#/api/groups';
+import type { InferRequestType } from '#/api/types';
 
-const createExpenseEndpoint = client.api.groups[':id'].expenses.$post;
+const createExpenseEndpoint = groupsClient[':id'].expenses.$post;
 
 type CreateExpensePayload = InferRequestType<
   typeof createExpenseEndpoint

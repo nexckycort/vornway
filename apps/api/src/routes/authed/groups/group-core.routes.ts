@@ -12,10 +12,12 @@ import {
   groupImageSchema,
   groupParamsSchema,
   listGroupsQuerySchema,
+  transferGroupOwnerSchema,
   updateGroupSchema,
   updateGroupSettingsSchema,
 } from './groups.validators';
 import { createGroupListOperations } from './list-groups.query';
+import { createGroupOwnerTransferOperations } from './transfer-group-owner.command';
 import { createGroupUpdateOperations } from './update-group.command';
 import { createGroupImageOperations } from './update-group-image.command';
 
@@ -25,6 +27,7 @@ const groupCoreOperations = {
   ...createGroupExportOperations(),
   ...createGroupSummaryOperations(),
   ...createGroupListOperations(),
+  ...createGroupOwnerTransferOperations(),
   ...createGroupUpdateOperations(),
   ...createGroupImageOperations(),
 };
@@ -108,6 +111,28 @@ export const groupCoreRoutes = new Hono<AppContext>()
       return groupRouteErrorResponse(c, error);
     }
   })
+  .patch(
+    '/:id/owner',
+    zValidator('param', groupParamsSchema),
+    zValidator('json', transferGroupOwnerSchema),
+    async (c) => {
+      const { id } = c.req.valid('param');
+      const { memberId } = c.req.valid('json');
+      const { id: userId } = c.get('user');
+
+      try {
+        const result = await groupCoreOperations.transferGroupOwner({
+          userId,
+          groupId: id,
+          memberId,
+        });
+
+        return c.json(result);
+      } catch (error) {
+        return groupRouteErrorResponse(c, error);
+      }
+    },
+  )
   .patch(
     '/:id',
     zValidator('param', groupParamsSchema),

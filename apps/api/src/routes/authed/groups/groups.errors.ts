@@ -99,6 +99,24 @@ export const groupErrors = {
       code: 'GROUP_OWNER_UNLINK_FORBIDDEN',
       message: 'No puedes desvincular al creador del grupo',
     }),
+  ownerTransferForbidden: () =>
+    new AppError({
+      status: 403,
+      code: 'GROUP_OWNER_TRANSFER_FORBIDDEN',
+      message: 'Solo el dueño puede transferir el grupo',
+    }),
+  ownerTransferTargetRequired: () =>
+    new AppError({
+      status: 400,
+      code: 'GROUP_OWNER_TRANSFER_TARGET_REQUIRED',
+      message: 'El nuevo dueño debe tener una cuenta vinculada',
+    }),
+  ownerTransferTargetSame: () =>
+    new AppError({
+      status: 400,
+      code: 'GROUP_OWNER_TRANSFER_TARGET_SAME',
+      message: 'Ese participante ya es el dueño del grupo',
+    }),
   expenseNotFound: () =>
     new AppError({
       status: 404,

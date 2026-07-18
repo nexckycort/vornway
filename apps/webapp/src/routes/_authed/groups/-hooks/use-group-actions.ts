@@ -9,6 +9,7 @@ import { m } from '#/paraglide/messages.js';
 const createExpenseEndpoint = groupsClient[':id'].expenses.$post;
 const updateExpenseEndpoint = groupsClient[':id'].expenses[':expenseId'].$put;
 const updateGroupEndpoint = groupsClient[':id'].$patch;
+const transferGroupOwnerEndpoint = groupsClient[':id'].owner.$patch;
 const updateGroupSettingsEndpoint = groupsClient[':id'].settings.$patch;
 const deleteGroupEndpoint = groupsClient[':id'].$delete;
 const exportGroupCsvEndpoint = groupsClient[':id'].export.$get;
@@ -30,6 +31,12 @@ type UpdateExpenseRequest = InferRequestType<typeof updateExpenseEndpoint>;
 type UpdateExpenseResponse = InferResponseType<typeof updateExpenseEndpoint>;
 type UpdateGroupRequest = InferRequestType<typeof updateGroupEndpoint>;
 type UpdateGroupResponse = InferResponseType<typeof updateGroupEndpoint>;
+type TransferGroupOwnerRequest = InferRequestType<
+  typeof transferGroupOwnerEndpoint
+>;
+type TransferGroupOwnerResponse = InferResponseType<
+  typeof transferGroupOwnerEndpoint
+>;
 type UpdateGroupSettingsRequest = InferRequestType<
   typeof updateGroupSettingsEndpoint
 >;
@@ -152,6 +159,38 @@ export function useUpdateGroupMutation(groupId: string) {
       }
 
       return (await response.json()) as UpdateGroupResponse;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['group-expenses', groupId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
+    },
+  });
+}
+
+export function useTransferGroupOwnerMutation(groupId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (json: TransferGroupOwnerRequest['json']) => {
+      const response = await transferGroupOwnerEndpoint({
+        param: { id: groupId },
+        json,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(
+          payload.error ?? 'No se pudo transferir el dueño del grupo',
+        );
+      }
+
+      return (await response.json()) as TransferGroupOwnerResponse;
     },
     onSuccess: async () => {
       await Promise.all([

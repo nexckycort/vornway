@@ -88,6 +88,20 @@ export type UnlinkGroupMemberInput = {
   memberId: string;
 };
 
+export type TransferGroupOwnerInput = {
+  userId: string;
+  groupId: string;
+  memberId: string;
+};
+
+export type TransferGroupOwnerResult = {
+  id: string;
+  ownerId: string;
+  ownerMemberId: string;
+  ownerName: string;
+  updatedAt: Date;
+};
+
 export type CreateGroupInput = {
   id?: string;
   userId: string;

@@ -1,5 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Crown, Link2Off, Share2, Trash2, UserPlus } from 'lucide-react';
+import {
+  Crown,
+  Link2Off,
+  Share2,
+  Trash2,
+  UserCog,
+  UserPlus,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
@@ -15,6 +22,7 @@ import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import {
   useAddMemberMutation,
   useRemoveMemberMutation,
+  useTransferGroupOwnerMutation,
   useUnlinkMemberMutation,
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
@@ -30,6 +38,7 @@ function RouteComponent() {
   const groupQuery = useGroupSummaryQuery(id);
   const addMemberMutation = useAddMemberMutation(id);
   const removeMemberMutation = useRemoveMemberMutation(id);
+  const transferOwnerMutation = useTransferGroupOwnerMutation(id);
   const unlinkMemberMutation = useUnlinkMemberMutation(id);
   const [name, setName] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -40,6 +49,9 @@ function RouteComponent() {
     NonNullable<typeof groupQuery.data>['members'][number] | null
   >(null);
   const [memberToUnlink, setMemberToUnlink] = useState<
+    NonNullable<typeof groupQuery.data>['members'][number] | null
+  >(null);
+  const [memberToTransferOwner, setMemberToTransferOwner] = useState<
     NonNullable<typeof groupQuery.data>['members'][number] | null
   >(null);
 
@@ -127,6 +139,24 @@ function RouteComponent() {
         error instanceof Error
           ? error.message
           : 'No se pudo desvincular la cuenta',
+      );
+    }
+  };
+
+  const handleTransferOwner = async () => {
+    if (!memberToTransferOwner) return;
+
+    try {
+      await transferOwnerMutation.mutateAsync({
+        memberId: memberToTransferOwner.id,
+      });
+      setMessage(`${memberToTransferOwner.name} ahora es dueño del espacio`);
+      setMemberToTransferOwner(null);
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo transferir el dueño del espacio',
       );
     }
   };
@@ -328,6 +358,17 @@ function RouteComponent() {
                     type="button"
                     variant="outline"
                     size="icon"
+                    className="size-10 rounded-2xl text-primary"
+                    onClick={() => setMemberToTransferOwner(member)}
+                  >
+                    <UserCog className="size-4" />
+                  </Button>
+                ) : null}
+                {member.userId ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
                     className="size-10 rounded-2xl text-amber-600"
                     onClick={() => setMemberToUnlink(member)}
                   >
@@ -349,6 +390,57 @@ function RouteComponent() {
           </article>
         ))}
       </section>
+
+      <Drawer
+        open={Boolean(memberToTransferOwner)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMemberToTransferOwner(null);
+          }
+        }}
+      >
+        <DrawerContent>
+          {memberToTransferOwner ? (
+            <>
+              <DrawerHeader>
+                <DrawerTitle>Transferir dueño</DrawerTitle>
+                <DrawerDescription>
+                  Esta persona podrá editar ajustes, administrar participantes y
+                  eliminar el espacio. Tú seguirás como participante.
+                </DrawerDescription>
+              </DrawerHeader>
+
+              <div className="px-5 pb-2">
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
+                  Vas a transferir el espacio a{' '}
+                  <strong>{memberToTransferOwner.name}</strong>.
+                </div>
+              </div>
+
+              <DrawerFooter>
+                <Button
+                  type="button"
+                  className="h-11 rounded-full"
+                  disabled={transferOwnerMutation.isPending}
+                  onClick={handleTransferOwner}
+                >
+                  {transferOwnerMutation.isPending
+                    ? 'Transfiriendo...'
+                    : 'Sí, transferir dueño'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-full"
+                  onClick={() => setMemberToTransferOwner(null)}
+                >
+                  Cancelar
+                </Button>
+              </DrawerFooter>
+            </>
+          ) : null}
+        </DrawerContent>
+      </Drawer>
 
       <Drawer
         open={Boolean(memberToUnlink)}

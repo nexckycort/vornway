@@ -1,7 +1,7 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.13/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.14/schema.json",
   "files": {
-    "includes": ["**", "!**/routeTree.gen.ts"]
+    "includes": ["**", "!**/routeTree.gen.ts", "!src/components/ui"]
   },
   "assist": {
     "actions": {
@@ -30,6 +30,11 @@
   "javascript": {
     "formatter": {
       "quoteStyle": "single"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   }
 }

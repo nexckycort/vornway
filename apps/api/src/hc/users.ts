@@ -1,10 +1,11 @@
 import { hc } from 'hono/client';
-import type { UsersAppType } from '#/routes/authed/users/routes';
+import type { UsersRpc } from '#/routes/authed/users/routes';
 
-const usersClient = hc<UsersAppType>('');
+export type { UsersRpc };
 
+const usersClient = hc<UsersRpc>('');
 export type UsersClient = typeof usersClient;
 
 export const createUsersClient = (
   ...args: Parameters<typeof hc>
-): UsersClient => hc<UsersAppType>(...args);
+): UsersClient => hc<UsersRpc>(...args);

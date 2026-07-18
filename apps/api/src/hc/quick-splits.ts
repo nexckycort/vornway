@@ -1,10 +1,11 @@
 import { hc } from 'hono/client';
-import type { QuickSplitsAppType } from '#/routes/authed/quick-splits/routes';
+import type { QuickSplitsRpc } from '#/routes/authed/quick-splits/routes';
 
-const quickSplitsClient = hc<QuickSplitsAppType>('');
+export type { QuickSplitsRpc };
 
+const quickSplitsClient = hc<QuickSplitsRpc>('');
 export type QuickSplitsClient = typeof quickSplitsClient;
 
 export const createQuickSplitsClient = (
   ...args: Parameters<typeof hc>
-): QuickSplitsClient => hc<QuickSplitsAppType>(...args);
+): QuickSplitsClient => hc<QuickSplitsRpc>(...args);

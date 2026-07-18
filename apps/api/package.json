@@ -24,22 +24,10 @@
         "default": "./dist/hc/index.js"
       }
     },
-    "./hc/users": {
+    "./hc/*": {
       "import": {
-        "types": "./dist/hc/users.d.ts",
-        "default": "./dist/hc/users.js"
-      }
-    },
-    "./hc/feedback": {
-      "import": {
-        "types": "./dist/hc/feedback.d.ts",
-        "default": "./dist/hc/feedback.js"
-      }
-    },
-    "./hc/quick-splits": {
-      "import": {
-        "types": "./dist/hc/quick-splits.d.ts",
-        "default": "./dist/hc/quick-splits.js"
+        "types": "./dist/hc/*.d.ts",
+        "default": "./dist/hc/*.js"
       }
     }
   },

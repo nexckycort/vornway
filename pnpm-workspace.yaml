@@ -4,6 +4,7 @@ sharedWorkspaceLockfile: false
 
 packages:
   - 'apps/*'
+  - 'packages/*'
 
 allowBuilds:
   '@prisma/engines': true

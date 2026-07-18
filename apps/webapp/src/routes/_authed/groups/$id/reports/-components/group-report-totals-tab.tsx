@@ -157,11 +157,11 @@ export function GroupReportTotalsTab({
     () =>
       selectedDay
         ? compactDateFormatter.format(selectedDay)
-        : 'Selecciona una fecha',
-    [compactDateFormatter, selectedDay],
+        : t.reports.selectDate,
+    [compactDateFormatter, selectedDay, t.reports.selectDate],
   );
   const selectedRangeLabel = useMemo(() => {
-    if (!selectedRange?.from) return 'Selecciona un rango';
+    if (!selectedRange?.from) return t.reports.selectRange;
 
     const from = compactDateFormatter.format(selectedRange.from);
 
@@ -170,7 +170,7 @@ export function GroupReportTotalsTab({
     const to = compactDateFormatter.format(selectedRange.to);
 
     return `${from} - ${to}`;
-  }, [compactDateFormatter, selectedRange]);
+  }, [compactDateFormatter, selectedRange, t.reports.selectRange]);
   const selectedPeriodLabel = useMemo(() => {
     if (dateFilterMode === 'day') return selectedDayLabel;
     if (dateFilterMode === 'range') return selectedRangeLabel;
@@ -296,7 +296,7 @@ export function GroupReportTotalsTab({
       <Drawer open={isDayDrawerOpen} onOpenChange={setIsDayDrawerOpen}>
         <DrawerContent className="gap-4 p-0">
           <DrawerHeader>
-            <DrawerTitle>Selecciona un día</DrawerTitle>
+            <DrawerTitle>{t.reports.selectDayTitle}</DrawerTitle>
             <DrawerDescription>
               Elige la fecha para filtrar el reporte.
             </DrawerDescription>
@@ -320,7 +320,7 @@ export function GroupReportTotalsTab({
       <Drawer open={isRangeDrawerOpen} onOpenChange={setIsRangeDrawerOpen}>
         <DrawerContent className="max-h-[85vh] gap-0 overflow-hidden p-0">
           <DrawerHeader>
-            <DrawerTitle>Selecciona un rango</DrawerTitle>
+            <DrawerTitle>{t.reports.selectRangeTitle}</DrawerTitle>
             <DrawerDescription>
               Elige la fecha inicial y final para filtrar el reporte.
             </DrawerDescription>

@@ -19,6 +19,7 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
+import { m } from '#/paraglide/messages.js';
 import {
   useAddMemberMutation,
   useRemoveMemberMutation,
@@ -27,6 +28,7 @@ import {
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useGroupMemberSearchQuery } from '#/routes/_authed/groups/-hooks/use-group-member-search-query';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 
 export const Route = createFileRoute('/_authed/groups/$id/participants')({
   component: RouteComponent,
@@ -34,6 +36,7 @@ export const Route = createFileRoute('/_authed/groups/$id/participants')({
 
 function RouteComponent() {
   const { id } = Route.useParams();
+  const t = getGroupDetailMessages();
   const { navigateToGroupRoot } = useGroupFlowNavigation(id);
   const groupQuery = useGroupSummaryQuery(id);
   const addMemberMutation = useAddMemberMutation(id);
@@ -86,9 +89,7 @@ function RouteComponent() {
       setSelectedUserId(null);
     } catch (error) {
       setMessage(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo agregar el participante',
+        error instanceof Error ? error.message : t.participants.addFailed,
       );
     }
   };
@@ -101,9 +102,9 @@ function RouteComponent() {
         return;
       }
       await navigator.clipboard.writeText(inviteLink);
-      setMessage('Enlace copiado');
+      setMessage(t.participants.linkCopied);
     } catch {
-      setMessage('No se pudo compartir el enlace');
+      setMessage(t.participants.shareFailed);
     }
   };
 
@@ -114,13 +115,11 @@ function RouteComponent() {
       await removeMemberMutation.mutateAsync({
         memberId: memberToRemove.id,
       });
-      setMessage('Participante eliminado correctamente');
+      setMessage(t.participants.removeSuccess);
       setMemberToRemove(null);
     } catch (error) {
       setMessage(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo eliminar el participante',
+        error instanceof Error ? error.message : t.participants.removeFailed,
       );
     }
   };
@@ -132,13 +131,11 @@ function RouteComponent() {
       await unlinkMemberMutation.mutateAsync({
         memberId: memberToUnlink.id,
       });
-      setMessage('Cuenta desvinculada correctamente');
+      setMessage(t.participants.unlinkSuccess);
       setMemberToUnlink(null);
     } catch (error) {
       setMessage(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo desvincular la cuenta',
+        error instanceof Error ? error.message : t.participants.unlinkFailed,
       );
     }
   };
@@ -150,25 +147,23 @@ function RouteComponent() {
       await transferOwnerMutation.mutateAsync({
         memberId: memberToTransferOwner.id,
       });
-      setMessage(`${memberToTransferOwner.name} ahora es dueño del espacio`);
+      setMessage(t.participants.transferSuccess(memberToTransferOwner.name));
       setMemberToTransferOwner(null);
     } catch (error) {
       setMessage(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo transferir el dueño del espacio',
+        error instanceof Error ? error.message : t.participants.transferFailed,
       );
     }
   };
 
   return (
     <MobilePageLayout
-      title="Agregar participantes"
+      title={t.participants.title}
       onBack={() => navigateToGroupRoot(true)}
     >
       <section className="mb-5 rounded-2xl border border-[#e2e8f0] bg-white p-4">
         <p className="mb-2 text-sm font-medium text-[#132238]">
-          Compartir enlace del espacio
+          {t.participants.shareLinkTitle}
         </p>
         <div className="flex gap-2">
           <div className="min-w-0 flex-1 rounded-2xl bg-[#f8fafc] px-3 py-3">
@@ -190,7 +185,7 @@ function RouteComponent() {
           htmlFor="member-name"
           className="mb-2 block text-sm font-medium text-[#334155]"
         >
-          Añadir manualmente
+          {t.participants.manualAdd}
         </label>
         <div className="flex gap-2">
           <input
@@ -207,7 +202,7 @@ function RouteComponent() {
                 void addMember();
               }
             }}
-            placeholder="Nombre del participante"
+            placeholder={t.participants.namePlaceholder}
             className="h-12 min-w-0 flex-1 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none focus:border-primary"
           />
           <Button
@@ -222,13 +217,12 @@ function RouteComponent() {
         </div>
 
         <p className="mt-2 text-xs text-[#64748b]">
-          Si encontramos un usuario registrado con ese nombre o usuario, lo
-          mostraremos debajo. Si no, puedes crear el participante manualmente.
+          {t.participants.manualAddCopy}
         </p>
 
         {searchQuery.isFetching ? (
           <p className="mt-3 text-sm text-[#64748b]">
-            Buscando coincidencias...
+            {t.participants.searching}
           </p>
         ) : null}
 
@@ -236,7 +230,7 @@ function RouteComponent() {
         !searchQuery.isFetching &&
         searchResults.length === 0 ? (
           <p className="mt-3 text-sm text-[#64748b]">
-            No encontramos coincidencias. Puedes crearlo solo con el nombre.
+            {t.participants.noSearchResults}
           </p>
         ) : null}
 
@@ -252,8 +246,8 @@ function RouteComponent() {
                   setSelectedUserId(candidate.id);
                   setMessage(
                     candidate.isAlreadyMember
-                      ? 'Este usuario ya está agregado en el espacio'
-                      : `Usuario seleccionado: ${candidate.name}`,
+                      ? t.participants.alreadyInGroup
+                      : t.participants.selectedUser(candidate.name),
                   );
                 }}
                 className={`rounded-2xl border px-4 py-3 text-left ${
@@ -276,12 +270,12 @@ function RouteComponent() {
                   <div className="flex flex-col items-end gap-1 text-[11px] text-[#64748b]">
                     {candidate.isAlreadyMember ? (
                       <span className="rounded-full bg-[#f8fafc] px-2 py-1">
-                        Ya está en el espacio
+                        {t.participants.alreadyInGroupBadge}
                       </span>
                     ) : null}
                     {candidate.isCurrentUser ? (
                       <span className="rounded-full bg-[#f8fafc] px-2 py-1">
-                        Tú
+                        {m['common.user.you']()}
                       </span>
                     ) : null}
                   </div>
@@ -320,33 +314,35 @@ function RouteComponent() {
               <p className="truncate text-sm font-semibold text-[#132238]">
                 {member.name}
                 {member.isCurrentUser ? (
-                  <span className="ml-1 text-xs text-[#94a3b8]">(tú)</span>
+                  <span className="ml-1 text-xs text-[#94a3b8]">
+                    {t.participants.you}
+                  </span>
                 ) : null}
                 {group?.ownerId === member.userId ? (
                   <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                     <Crown className="size-3" />
-                    Dueño
+                    {t.participants.owner}
                   </span>
                 ) : null}
               </p>
               <p className="truncate text-xs text-[#64748b]">
-                {member.email ?? 'Sin cuenta vinculada'}
+                {member.email ?? t.participants.unlinked}
               </p>
               {group?.isOwner && !member.isCurrentUser ? (
                 <div className="mt-1 flex flex-wrap gap-2 text-xs text-[#94a3b8]">
                   {member.userId ? (
                     <span className="rounded-full bg-[#f8fafc] px-2 py-1">
-                      Cuenta vinculada
+                      {t.participants.linkedAccount}
                     </span>
                   ) : (
                     <span className="rounded-full bg-[#f8fafc] px-2 py-1">
-                      Sin cuenta vinculada
+                      {t.participants.unlinked}
                     </span>
                   )}
                   <span className="rounded-full bg-[#f8fafc] px-2 py-1">
                     {member.expenseCount > 0
-                      ? 'No se puede eliminar: tiene gastos'
-                      : 'Se puede eliminar'}
+                      ? t.participants.cannotRemoveHasExpenses
+                      : t.participants.canRemove}
                   </span>
                 </div>
               ) : null}
@@ -403,17 +399,17 @@ function RouteComponent() {
           {memberToTransferOwner ? (
             <>
               <DrawerHeader>
-                <DrawerTitle>Transferir dueño</DrawerTitle>
+                <DrawerTitle>{t.participants.ownerTransferTitle}</DrawerTitle>
                 <DrawerDescription>
-                  Esta persona podrá editar ajustes, administrar participantes y
-                  eliminar el espacio. Tú seguirás como participante.
+                  {t.participants.ownerTransferCopy}
                 </DrawerDescription>
               </DrawerHeader>
 
               <div className="px-5 pb-2">
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
-                  Vas a transferir el espacio a{' '}
-                  <strong>{memberToTransferOwner.name}</strong>.
+                  {t.participants.ownerTransferConfirm(
+                    memberToTransferOwner.name,
+                  )}
                 </div>
               </div>
 
@@ -425,8 +421,8 @@ function RouteComponent() {
                   onClick={handleTransferOwner}
                 >
                   {transferOwnerMutation.isPending
-                    ? 'Transfiriendo...'
-                    : 'Sí, transferir dueño'}
+                    ? t.participants.transferring
+                    : t.participants.yesTransferOwner}
                 </Button>
                 <Button
                   type="button"
@@ -434,7 +430,7 @@ function RouteComponent() {
                   className="h-11 rounded-full"
                   onClick={() => setMemberToTransferOwner(null)}
                 >
-                  Cancelar
+                  {t.common.cancel}
                 </Button>
               </DrawerFooter>
             </>
@@ -454,18 +450,15 @@ function RouteComponent() {
           {memberToUnlink ? (
             <>
               <DrawerHeader>
-                <DrawerTitle>Desvincular cuenta</DrawerTitle>
+                <DrawerTitle>{t.participants.unlinkTitle}</DrawerTitle>
                 <DrawerDescription>
-                  Se quitará la cuenta vinculada, pero el nombre del
-                  participante permanecerá para que otra persona lo pueda
-                  reclamar más adelante.
+                  {t.participants.unlinkCopy}
                 </DrawerDescription>
               </DrawerHeader>
 
               <div className="px-5 pb-2">
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                  Vas a desvincular a <strong>{memberToUnlink.name}</strong> de
-                  su cuenta actual.
+                  {t.participants.unlinkConfirm(memberToUnlink.name)}
                 </div>
               </div>
 
@@ -478,8 +471,8 @@ function RouteComponent() {
                   onClick={handleUnlinkMember}
                 >
                   {unlinkMemberMutation.isPending
-                    ? 'Desvinculando...'
-                    : 'Sí, desvincular cuenta'}
+                    ? t.participants.unlinking
+                    : t.participants.yesUnlink}
                 </Button>
                 <Button
                   type="button"
@@ -487,7 +480,7 @@ function RouteComponent() {
                   className="h-11 rounded-full"
                   onClick={() => setMemberToUnlink(null)}
                 >
-                  Cancelar
+                  {t.common.cancel}
                 </Button>
               </DrawerFooter>
             </>
@@ -507,16 +500,15 @@ function RouteComponent() {
           {memberToRemove ? (
             <>
               <DrawerHeader>
-                <DrawerTitle>Eliminar participante</DrawerTitle>
+                <DrawerTitle>{t.participants.removeTitle}</DrawerTitle>
                 <DrawerDescription>
-                  Solo puedes eliminarlo si no tiene gastos.
+                  {t.participants.removeCopy}
                 </DrawerDescription>
               </DrawerHeader>
 
               <div className="px-5 pb-2">
                 <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  Vas a eliminar a <strong>{memberToRemove.name}</strong> del
-                  espacio.
+                  {t.participants.removeConfirm(memberToRemove.name)}
                 </div>
               </div>
 
@@ -529,8 +521,8 @@ function RouteComponent() {
                   onClick={handleRemoveMember}
                 >
                   {removeMemberMutation.isPending
-                    ? 'Eliminando...'
-                    : 'Sí, eliminar participante'}
+                    ? t.detail.deleting
+                    : t.participants.yesRemove}
                 </Button>
                 <Button
                   type="button"
@@ -538,7 +530,7 @@ function RouteComponent() {
                   className="h-11 rounded-full"
                   onClick={() => setMemberToRemove(null)}
                 >
-                  Cancelar
+                  {t.common.cancel}
                 </Button>
               </DrawerFooter>
             </>

@@ -3,6 +3,8 @@ import { type ChangeEvent, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { feedbackClient } from '#/api/feedback';
 import { compressImageFileToDataUrl } from '#/lib/image-compression';
+import { m } from '#/paraglide/messages.js';
+import { getProfileMessages } from '#/routes/_authed/profile/-messages';
 
 export type FeedbackType = 'BUG' | 'FEATURE_REQUEST';
 export type FeedbackStatus =
@@ -59,6 +61,7 @@ async function readErrorMessage(response: Response, fallback: string) {
 }
 
 export function useFeedbackPage(initialType: FeedbackType) {
+  const t = getProfileMessages();
   const queryClient = useQueryClient();
   const imageInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -80,7 +83,7 @@ export function useFeedbackPage(initialType: FeedbackType) {
 
       if (!response.ok) {
         throw new Error(
-          await readErrorMessage(response, 'No se pudo cargar el feedback'),
+          await readErrorMessage(response, m['system.loadFeedbackFailed']()),
         );
       }
 
@@ -103,7 +106,7 @@ export function useFeedbackPage(initialType: FeedbackType) {
 
       if (!response.ok) {
         throw new Error(
-          await readErrorMessage(response, 'No se pudo enviar el feedback'),
+          await readErrorMessage(response, m['system.sendFeedbackFailed']()),
         );
       }
 
@@ -116,16 +119,14 @@ export function useFeedbackPage(initialType: FeedbackType) {
       setDraftImages([]);
       setShowValidation(false);
       toast.success(
-        type === 'BUG'
-          ? 'Error reportado correctamente'
-          : 'Solicitud enviada correctamente',
+        type === 'BUG' ? t.feedback.bugSubmitted : t.feedback.featureSubmitted,
       );
     },
     onError: (error) => {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'No se pudo enviar el feedback',
+          : m['system.sendFeedbackFailed'](),
       );
     },
   });
@@ -138,33 +139,33 @@ export function useFeedbackPage(initialType: FeedbackType) {
 
       if (!response.ok) {
         throw new Error(
-          await readErrorMessage(response, 'No se pudo eliminar el reporte'),
+          await readErrorMessage(response, m['system.deleteFeedbackFailed']()),
         );
       }
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['user-feedback'] });
       setFeedbackToDelete(null);
-      toast.success('Reporte eliminado');
+      toast.success(t.feedback.deleted);
     },
     onError: (error) => {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'No se pudo eliminar el reporte',
+          : m['system.deleteFeedbackFailed'](),
       );
     },
   });
 
   const titleError =
     showValidation && title.trim().length === 0
-      ? 'Agrega un título'
+      ? t.feedback.titleRequired
       : undefined;
   const descriptionError =
     showValidation && description.trim().length === 0
       ? type === 'BUG'
-        ? 'Describe el error'
-        : 'Describe la funcionalidad'
+        ? t.feedback.bugDescriptionRequired
+        : t.feedback.featureDescriptionRequired
       : undefined;
   const canSubmit =
     !createFeedbackMutation.isPending &&
@@ -173,9 +174,7 @@ export function useFeedbackPage(initialType: FeedbackType) {
 
   const feedbackItems = feedbackQuery.data?.data ?? [];
   const groupedEmptyCopy = useMemo(() => {
-    return type === 'BUG'
-      ? 'Todavía no has reportado errores.'
-      : 'Todavía no has pedido funcionalidades.';
+    return type === 'BUG' ? t.feedback.emptyBugs : t.feedback.emptyFeatures;
   }, [type]);
 
   async function handleDraftImagesChange(event: ChangeEvent<HTMLInputElement>) {
@@ -200,7 +199,7 @@ export function useFeedbackPage(initialType: FeedbackType) {
 
       setDraftImages((current) => [...current, ...nextImages]);
     } catch {
-      toast.error('No se pudieron procesar las imágenes');
+      toast.error(m['system.processFeedbackImagesFailed']());
     } finally {
       if (imageInputRef.current) {
         imageInputRef.current.value = '';

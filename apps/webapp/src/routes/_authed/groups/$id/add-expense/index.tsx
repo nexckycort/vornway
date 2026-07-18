@@ -40,6 +40,7 @@ import { Skeleton } from '#/components/ui/skeleton';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { compressImageFileToDataUrl } from '#/lib/image-compression';
 import { enqueueExpenseOffline } from '#/lib/offline-expense-query-collection';
+import { m } from '#/paraglide/messages.js';
 import {
   useCreateCategoryMutation,
   useCreateExpenseMutation,
@@ -49,6 +50,7 @@ import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import {
   CategoryIcon,
   categoryIconOptions,
@@ -83,21 +85,21 @@ type ExpenseLineItem = {
 };
 
 const splitMethods: Array<{ value: SplitMethod; label: string }> = [
-  { value: 'equal', label: 'Partes iguales' },
-  { value: 'percentage', label: 'Porcentaje' },
-  { value: 'exact', label: 'Partes desiguales' },
+  { value: 'equal', label: m['groups.expense.splitEqual']() },
+  { value: 'percentage', label: m['groups.expense.splitPercentage']() },
+  { value: 'exact', label: m['groups.expense.splitExact']() },
 ];
 
 const currencyMeta: Record<
   string,
   { label: string; flag: string; name: string }
 > = {
-  COP: { label: 'COP', flag: '🇨🇴', name: 'Pesos Colombianos' },
-  USD: { label: 'USD', flag: '🇺🇸', name: 'Dólares Estadounidenses' },
-  EUR: { label: 'EUR', flag: '🇪🇺', name: 'Euros' },
-  GBP: { label: 'GBP', flag: '🇬🇧', name: 'Libra esterlina' },
-  MXN: { label: 'MXN', flag: '🇲🇽', name: 'Peso mexicano' },
-  BRL: { label: 'BRL', flag: '🇧🇷', name: 'Real brasileño' },
+  COP: { label: 'COP', flag: '🇨🇴', name: m['common.currency.copFull']() },
+  USD: { label: 'USD', flag: '🇺🇸', name: m['common.currency.usdFull']() },
+  EUR: { label: 'EUR', flag: '🇪🇺', name: m['common.currency.eurFull']() },
+  GBP: { label: 'GBP', flag: '🇬🇧', name: m['common.currency.gbpFull']() },
+  MXN: { label: 'MXN', flag: '🇲🇽', name: m['common.currency.mxnFull']() },
+  BRL: { label: 'BRL', flag: '🇧🇷', name: m['common.currency.brlFull']() },
 };
 
 const currencyOptions = ['COP', 'EUR', 'USD', 'GBP', 'MXN', 'BRL'] as const;
@@ -108,22 +110,34 @@ const advancedDetailsTypeOptions: Array<{
 }> = [
   {
     value: 'stay',
-    label: 'Estadía',
-    description: 'Hotel, Airbnb o alojamiento',
+    label: m['groups.expense.advancedTypeStay'](),
+    description: m['groups.expense.advancedTypeStayDescription'](),
   },
-  { value: 'food', label: 'Comida', description: 'Restaurante o reserva' },
+  {
+    value: 'food',
+    label: m['groups.expense.advancedTypeFood'](),
+    description: m['groups.expense.advancedTypeFoodDescription'](),
+  },
   {
     value: 'transport',
-    label: 'Transporte',
-    description: 'Trayecto, reserva o contacto',
+    label: m['groups.expense.advancedTypeTransport'](),
+    description: m['groups.expense.advancedTypeTransportDescription'](),
   },
   {
     value: 'activity',
-    label: 'Actividad',
-    description: 'Tour, evento o entrada',
+    label: m['groups.expense.advancedTypeActivity'](),
+    description: m['groups.expense.advancedTypeActivityDescription'](),
   },
-  { value: 'purchase', label: 'Compra', description: 'Tienda o proveedor' },
-  { value: 'other', label: 'Otro', description: 'Información adicional' },
+  {
+    value: 'purchase',
+    label: m['groups.expense.advancedTypePurchase'](),
+    description: m['groups.expense.advancedTypePurchaseDescription'](),
+  },
+  {
+    value: 'other',
+    label: m['groups.expense.advancedTypeOther'](),
+    description: m['groups.expense.advancedTypeOtherDescription'](),
+  },
 ];
 
 const emptyAdvancedDetails: ExpenseAdvancedDetails = {
@@ -365,6 +379,7 @@ function RouteComponent() {
   const isEditMode = Boolean(expenseId);
   const { navigateToGroupRoot } = useGroupFlowNavigation(id);
   const lineItemsMessages = getExpenseLineItemsMessages();
+  const groupMessages = getGroupDetailMessages();
 
   const groupQuery = useGroupSummaryQuery(id);
   const expenseQuery = useGroupExpenseQuery(id, expenseId);
@@ -949,7 +964,7 @@ function RouteComponent() {
       setError(
         creationError instanceof Error
           ? creationError.message
-          : 'No se pudo crear la categoría',
+          : groupMessages.expense.createCategoryFailed,
       );
     }
   };
@@ -969,7 +984,7 @@ function RouteComponent() {
       setAttachmentError(
         selectionError instanceof Error
           ? selectionError.message
-          : 'No se pudo procesar la imagen',
+          : groupMessages.form.imageProcessFailed,
       );
     } finally {
       if (attachmentInputRef.current) {
@@ -1110,8 +1125,8 @@ function RouteComponent() {
         submitError instanceof Error
           ? submitError.message
           : isEditMode
-            ? 'No se pudo actualizar el gasto'
-            : 'No se pudo crear el gasto',
+            ? groupMessages.expense.updateExpenseFailed
+            : groupMessages.expense.createExpenseFailed,
       );
     }
   };
@@ -1131,7 +1146,7 @@ function RouteComponent() {
         ? groupQuery.error.message
         : isEditMode && expenseQuery.error instanceof Error
           ? expenseQuery.error.message
-          : 'No se pudo cargar el espacio';
+          : groupMessages.settings.loadError;
 
     return (
       <MobilePageLayout
@@ -1173,7 +1188,7 @@ function RouteComponent() {
           </button>
 
           <label className="min-w-0 flex-1 text-right">
-            <span className="sr-only">Monto</span>
+            <span className="sr-only">{groupMessages.expense.amount}</span>
             <div className="relative flex min-h-14 w-full items-end justify-end">
               <div
                 aria-hidden="true"
@@ -1194,7 +1209,7 @@ function RouteComponent() {
                 inputMode="numeric"
                 pattern="[0-9]*"
                 placeholder="0"
-                aria-label="Monto"
+                aria-label={groupMessages.expense.amount}
                 className="absolute inset-0 h-full w-full bg-transparent text-right text-[16px] leading-none tabular-nums text-transparent outline-none caret-gray-900 [font-size:16px]"
               />
             </div>
@@ -1217,7 +1232,7 @@ function RouteComponent() {
             ref={descriptionInputRef}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            placeholder="Cena con amigos"
+            placeholder={groupMessages.expense.descriptionPlaceholder}
             aria-invalid={showDescriptionError}
             className={`w-full bg-transparent outline-none placeholder:text-gray-400 ${
               showDescriptionError ? 'text-red-700' : 'text-gray-700'
@@ -1251,9 +1266,12 @@ function RouteComponent() {
               />
             </span>
             <div className="min-w-0">
-              <p className="text-xs text-gray-500">Categoría</p>
+              <p className="text-xs text-gray-500">
+                {groupMessages.expense.category}
+              </p>
               <p className="text-sm font-medium text-gray-900">
-                {selectedCategory?.name ?? 'Sin categoría'}
+                {selectedCategory?.name ??
+                  groupMessages.expense.withoutCategory}
               </p>
             </div>
           </div>
@@ -1271,7 +1289,9 @@ function RouteComponent() {
                 <MapPin className="size-5" />
               </span>
               <div className="min-w-0">
-                <p className="text-xs text-gray-500">Detalles del lugar</p>
+                <p className="text-xs text-gray-500">
+                  {groupMessages.expense.placeDetails}
+                </p>
                 <p className="truncate text-sm font-medium text-gray-900">
                   {normalizedAdvancedDetails?.placeName ??
                     selectedAdvancedDetailsType.label}
@@ -1284,7 +1304,9 @@ function RouteComponent() {
 
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="text-sm text-gray-600">Pagado por</p>
+            <p className="text-sm text-gray-600">
+              {groupMessages.expense.paidBy}
+            </p>
             <span className="text-xs text-gray-400">
               {paidByIds.length} seleccionada{paidByIds.length === 1 ? '' : 's'}
             </span>
@@ -1321,7 +1343,9 @@ function RouteComponent() {
                     {selected ? <Check className="size-2.5" /> : '•'}
                   </span>
                   <span className="mt-1.5 max-w-[60px] truncate text-xs text-gray-600">
-                    {member.isCurrentUser ? 'Tú' : member.name}
+                    {member.isCurrentUser
+                      ? groupMessages.expense.you
+                      : member.name}
                   </span>
                 </button>
               );
@@ -1355,7 +1379,9 @@ function RouteComponent() {
                             }))
                           }
                           inputMode="decimal"
-                          placeholder="Total pagado"
+                          placeholder={
+                            groupMessages.expense.totalPaidPlaceholder
+                          }
                           className="h-11 w-full rounded-full border border-gray-200 bg-white px-4 text-sm font-medium text-gray-900 outline-none placeholder:text-gray-400 focus:border-rose-500"
                         />
                       </div>
@@ -1371,8 +1397,8 @@ function RouteComponent() {
                   }
                 >
                   {payerSplitIsValid
-                    ? 'La suma de pagadores coincide con el total'
-                    : 'La suma de pagadores debe ser igual al total'}
+                    ? groupMessages.expense.payersTotalValid
+                    : groupMessages.expense.payersTotalInvalid}
                 </span>
                 <span
                   className={
@@ -1388,7 +1414,9 @@ function RouteComponent() {
 
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="text-sm text-gray-600">Se divide con</p>
+            <p className="text-sm text-gray-600">
+              {groupMessages.expense.splitWith}
+            </p>
             <button
               type="button"
               onClick={() => setShowSplitDrawer(true)}
@@ -1419,7 +1447,9 @@ function RouteComponent() {
                 <Plus className="size-4 text-white" />
               )}
             </div>
-            <span className="text-sm font-medium text-gray-900">Todos</span>
+            <span className="text-sm font-medium text-gray-900">
+              {groupMessages.expense.all}
+            </span>
             <span className="ml-auto text-sm text-gray-500">
               {splitMethod === 'equal'
                 ? formatMoney(currency, equalShare || 0)
@@ -1439,7 +1469,7 @@ function RouteComponent() {
                   type="button"
                   onClick={addSharedExpenseItem}
                   className="flex size-6 shrink-0 items-center justify-center rounded bg-rose-500"
-                  aria-label="Agregar gasto compartido"
+                  aria-label={groupMessages.expense.addSharedExpenseAria}
                 >
                   <Plus className="size-4 text-white" />
                 </button>
@@ -1468,7 +1498,9 @@ function RouteComponent() {
                             name: event.target.value,
                           })
                         }
-                        placeholder="Nombre del gasto compartido"
+                        placeholder={
+                          groupMessages.expense.sharedExpenseNamePlaceholder
+                        }
                         className="h-11 rounded-full border border-gray-200 px-4 text-sm text-gray-900 outline-none placeholder:text-gray-400"
                       />
                       <input
@@ -1486,7 +1518,9 @@ function RouteComponent() {
                         type="button"
                         onClick={() => removeSharedExpenseItem(item.id)}
                         className="flex size-10 items-center justify-center rounded-full border border-gray-200 text-gray-500"
-                        aria-label="Eliminar gasto compartido"
+                        aria-label={
+                          groupMessages.expense.removeSharedExpenseAria
+                        }
                       >
                         <Trash2 className="size-4" />
                       </button>
@@ -1545,7 +1579,10 @@ function RouteComponent() {
                         <span className="block truncate text-sm text-gray-900">
                           {member.name}
                           {member.isCurrentUser ? (
-                            <span className="text-gray-500"> (Tú)</span>
+                            <span className="text-gray-500">
+                              {' '}
+                              {groupMessages.expense.you}
+                            </span>
                           ) : null}
                         </span>
                         {splitMethod !== 'equal' && selected ? (
@@ -1624,10 +1661,10 @@ function RouteComponent() {
         {!splitIsValid && selectedCount > 0 ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
             {sharedAmountExceedsTotal
-              ? 'El monto compartido no puede ser mayor que el total.'
+              ? groupMessages.expense.sharedAmountExceedsTotal
               : splitMethod === 'percentage'
-                ? 'La suma de porcentajes debe ser 100.'
-                : 'La suma de montos individuales más el compartido debe coincidir con el total.'}
+                ? m['quickSplit.invalidPercentage']()
+                : groupMessages.expense.sharedSplitInvalid}
           </div>
         ) : null}
 
@@ -1658,15 +1695,15 @@ function RouteComponent() {
               ? 'Guardando...'
               : 'Agregando...'
             : isEditMode
-              ? 'Guardar cambios'
-              : 'Agregar gasto'}
+              ? groupMessages.common.saveChanges
+              : groupMessages.expense.addExpense}
         </Button>
       </div>
 
       <Drawer open={showSplitDrawer} onOpenChange={setShowSplitDrawer}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Método de división</DrawerTitle>
+            <DrawerTitle>{groupMessages.expense.splitMethodTitle}</DrawerTitle>
             <DrawerDescription>
               Elige cómo se repartirá este gasto.
             </DrawerDescription>
@@ -1814,7 +1851,7 @@ function RouteComponent() {
       >
         <DrawerContent className="h-dvh max-h-dvh">
           <DrawerHeader>
-            <DrawerTitle>Detalles del lugar</DrawerTitle>
+            <DrawerTitle>{groupMessages.expense.placeDetailsTitle}</DrawerTitle>
             <DrawerDescription>
               Agrega datos útiles para el viaje sin cambiar el gasto.
             </DrawerDescription>
@@ -1858,7 +1895,7 @@ function RouteComponent() {
             </section>
 
             <AdvancedDetailsInput
-              label="Nombre del lugar"
+              label={groupMessages.expense.placeName}
               value={advancedDetails.placeName ?? ''}
               onChange={(value) =>
                 setAdvancedDetails((current) => ({
@@ -1876,7 +1913,7 @@ function RouteComponent() {
             />
 
             <AdvancedDetailsInput
-              label="Dirección"
+              label={groupMessages.expense.address}
               value={advancedDetails.address ?? ''}
               onChange={(value) =>
                 setAdvancedDetails((current) => ({
@@ -1884,12 +1921,12 @@ function RouteComponent() {
                   address: value,
                 }))
               }
-              placeholder="Calle, zona o referencia"
+              placeholder={groupMessages.expense.addressPlaceholder}
               icon={<MapPin className="size-4" />}
             />
 
             <AdvancedDetailsInput
-              label="Ubicación en mapa"
+              label={groupMessages.expense.mapLocation}
               value={advancedDetails.mapUrl ?? ''}
               onChange={(value) =>
                 setAdvancedDetails((current) => ({
@@ -1897,14 +1934,14 @@ function RouteComponent() {
                   mapUrl: value,
                 }))
               }
-              placeholder="https://maps.google.com/..."
+              placeholder={groupMessages.expense.mapUrlPlaceholder}
               inputMode="url"
               icon={<MapPin className="size-4" />}
             />
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <AdvancedDetailsInput
-                label="Contacto"
+                label={groupMessages.expense.contact}
                 value={advancedDetails.contactName ?? ''}
                 onChange={(value) =>
                   setAdvancedDetails((current) => ({
@@ -1912,11 +1949,11 @@ function RouteComponent() {
                     contactName: value,
                   }))
                 }
-                placeholder="Host, restaurante..."
+                placeholder={groupMessages.expense.contactPlaceholder}
               />
 
               <AdvancedDetailsInput
-                label="Teléfono o WhatsApp"
+                label={groupMessages.expense.phone}
                 value={advancedDetails.phone ?? ''}
                 onChange={(value) =>
                   setAdvancedDetails((current) => ({
@@ -1931,7 +1968,7 @@ function RouteComponent() {
             </div>
 
             <AdvancedDetailsInput
-              label="Correo"
+              label={groupMessages.expense.email}
               value={advancedDetails.email ?? ''}
               onChange={(value) =>
                 setAdvancedDetails((current) => ({
@@ -1939,13 +1976,13 @@ function RouteComponent() {
                   email: value,
                 }))
               }
-              placeholder="contacto@lugar.com"
+              placeholder={groupMessages.expense.emailPlaceholder}
               inputMode="email"
             />
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <AdvancedDetailsInput
-                label="Código de reserva"
+                label={groupMessages.expense.reservationCode}
                 value={advancedDetails.bookingCode ?? ''}
                 onChange={(value) =>
                   setAdvancedDetails((current) => ({
@@ -1953,11 +1990,11 @@ function RouteComponent() {
                     bookingCode: value,
                   }))
                 }
-                placeholder="ABC123"
+                placeholder={groupMessages.expense.reservationCodePlaceholder}
               />
 
               <AdvancedDetailsInput
-                label="Fecha u hora"
+                label={groupMessages.expense.dateOrTime}
                 value={advancedDetails.reservationTime ?? ''}
                 onChange={(value) =>
                   setAdvancedDetails((current) => ({
@@ -1965,13 +2002,13 @@ function RouteComponent() {
                     reservationTime: value,
                   }))
                 }
-                placeholder="Check-in, reserva..."
+                placeholder={groupMessages.expense.dateOrTimePlaceholder}
                 icon={<CalendarClock className="size-4" />}
               />
             </div>
 
             <AdvancedDetailsInput
-              label="Link externo"
+              label={groupMessages.expense.externalLink}
               value={advancedDetails.websiteUrl ?? ''}
               onChange={(value) =>
                 setAdvancedDetails((current) => ({
@@ -1979,14 +2016,16 @@ function RouteComponent() {
                   websiteUrl: value,
                 }))
               }
-              placeholder="Booking, Airbnb, ticket..."
+              placeholder={groupMessages.expense.externalLinkPlaceholder}
               inputMode="url"
               icon={<LinkIcon className="size-4" />}
             />
 
             <section>
               <div className="mb-2 flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-gray-900">Imagen</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {groupMessages.expense.image}
+                </p>
                 {attachmentDataUrl ? (
                   <button
                     type="button"
@@ -2017,7 +2056,7 @@ function RouteComponent() {
                 {attachmentPreviewUrl ? (
                   <img
                     src={attachmentPreviewUrl}
-                    alt="Imagen del gasto"
+                    alt={groupMessages.expense.imageAlt}
                     className="size-20 shrink-0 rounded-2xl object-cover"
                   />
                 ) : (
@@ -2027,7 +2066,9 @@ function RouteComponent() {
                 )}
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold text-gray-900">
-                    {attachmentPreviewUrl ? 'Cambiar imagen' : 'Agregar imagen'}
+                    {attachmentPreviewUrl
+                      ? groupMessages.expense.changeImage
+                      : groupMessages.expense.addImage}
                   </span>
                   <span className="mt-1 block text-xs text-gray-500">
                     Recibo, reserva, ticket o referencia del lugar
@@ -2041,7 +2082,9 @@ function RouteComponent() {
             </section>
 
             <label className="block">
-              <span className="text-sm font-medium text-gray-900">Notas</span>
+              <span className="text-sm font-medium text-gray-900">
+                {groupMessages.expense.notes}
+              </span>
               <textarea
                 value={advancedDetails.notes ?? ''}
                 onChange={(event) =>
@@ -2050,7 +2093,7 @@ function RouteComponent() {
                     notes: event.target.value,
                   }))
                 }
-                placeholder="Instrucciones, reglas, punto de encuentro..."
+                placeholder={groupMessages.expense.notesPlaceholder}
                 className="mt-2 min-h-28 w-full resize-none rounded-2xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none focus:border-rose-500"
               />
             </label>
@@ -2081,7 +2124,7 @@ function RouteComponent() {
       <Drawer open={showCategoryDrawer} onOpenChange={setShowCategoryDrawer}>
         <DrawerContent className="flex max-h-[85dvh] flex-col overflow-hidden">
           <DrawerHeader>
-            <DrawerTitle>Categoría</DrawerTitle>
+            <DrawerTitle>{groupMessages.expense.categoryTitle}</DrawerTitle>
             <DrawerDescription>
               Elige una categoría para este gasto.
             </DrawerDescription>
@@ -2195,7 +2238,7 @@ function RouteComponent() {
               <input
                 value={newCategoryName}
                 onChange={(event) => setNewCategoryName(event.target.value)}
-                placeholder="Transporte"
+                placeholder={groupMessages.expense.categoryPlaceholder}
                 className="h-12 rounded-full border border-gray-200 px-4 text-base shadow-[0_4px_12px_rgba(15,23,42,0.06)] outline-none focus:border-rose-500"
               />
             </label>
@@ -2233,7 +2276,7 @@ function RouteComponent() {
                       ? 'border-gray-900 text-gray-900'
                       : 'border-gray-200 text-gray-500'
                   }`}
-                  aria-label="Usar icono del teclado"
+                  aria-label={groupMessages.expense.keyboardIconAria}
                 >
                   <Plus className="size-4" />
                 </button>
@@ -2255,7 +2298,7 @@ function RouteComponent() {
                     placeholder="🙂"
                     inputMode="text"
                     className="min-w-0 flex-1 bg-transparent text-xl outline-none"
-                    aria-label="Icono personalizado"
+                    aria-label={groupMessages.expense.customIconAria}
                   />
                 </label>
               ) : null}
@@ -2324,7 +2367,7 @@ function RouteComponent() {
             >
               {createCategoryMutation.isPending
                 ? 'Creando...'
-                : 'Guardar categoría'}
+                : groupMessages.settings.saveCategory}
             </Button>
           </div>
         </DialogContent>
@@ -2333,7 +2376,7 @@ function RouteComponent() {
       <Drawer open={showCurrencyDrawer} onOpenChange={setShowCurrencyDrawer}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Moneda</DrawerTitle>
+            <DrawerTitle>{groupMessages.expense.currencyTitle}</DrawerTitle>
             <DrawerDescription>
               Elige la moneda de este gasto.
             </DrawerDescription>

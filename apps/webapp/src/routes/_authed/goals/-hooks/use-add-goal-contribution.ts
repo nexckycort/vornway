@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { goalsClient } from '#/api/goals';
 import type { InferRequestType, InferResponseType } from '#/api/types';
+import { m } from '#/paraglide/messages.js';
 
 const addGoalContributionEndpoint = goalsClient[':id'].contributions.$post;
 
@@ -23,7 +24,9 @@ export function useAddGoalContributionMutation(goalId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo registrar el aporte');
+        throw new Error(
+          payload.error ?? m['system.addGoalContributionFailed'](),
+        );
       }
 
       return (await response.json()) as AddGoalContributionResponse;

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { notificationsClient } from '#/api/notifications';
+import { m } from '#/paraglide/messages.js';
 
 type NotificationsSummaryResponse = {
   data: unknown[];
@@ -22,7 +23,7 @@ export function useNotificationsSummaryQuery() {
       });
 
       if (!response.ok) {
-        throw new Error('No se pudo cargar el estado de notificaciones');
+        throw new Error(m['system.loadNotificationsStatusFailed']());
       }
 
       return (await response.json()) as unknown as NotificationsSummaryResponse;

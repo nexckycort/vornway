@@ -186,7 +186,7 @@ export function useTransferGroupOwnerMutation(groupId: string) {
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
         throw new Error(
-          payload.error ?? 'No se pudo transferir el dueño del grupo',
+          payload.error ?? m['groups.participants.transferFailed'](),
         );
       }
 
@@ -292,7 +292,9 @@ export function useExportGroupCsvMutation(groupId: string, groupName: string) {
 
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
-      const safeName = slugifyFileName(groupName) || 'espacio';
+      const safeName =
+        slugifyFileName(groupName) ||
+        slugifyFileName(m['groups.participants.createdGroupFallback']());
       link.href = url;
       link.download = `${safeName}-export.csv`;
       document.body.append(link);

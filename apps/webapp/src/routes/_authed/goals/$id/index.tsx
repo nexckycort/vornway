@@ -26,6 +26,7 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer';
 import { formatCurrency } from '#/lib/i18n';
+import { m } from '#/paraglide/messages.js';
 import { useAddMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
 import { useAddGoalContributionMutation } from '../-hooks/use-add-goal-contribution';
@@ -39,6 +40,7 @@ import {
   getDaysLabel,
   getGoalTheme,
 } from '../-lib/goal-experience';
+import { getGoalsMessages } from '../-messages';
 
 export const Route = createFileRoute('/_authed/goals/$id/')({
   component: RouteComponent,
@@ -107,6 +109,7 @@ function isMemberOnTrack(input: {
 }
 
 function RouteComponent() {
+  const t = getGoalsMessages();
   const { id } = Route.useParams();
   const queryClient = useQueryClient();
   const goalQuery = useGoalDetailQuery(id);
@@ -212,12 +215,12 @@ function RouteComponent() {
       await queryClient.invalidateQueries({ queryKey: ['goal-detail', id] });
       setParticipantInput('');
       setDebouncedSearch('');
-      toast.success('Participante agregado');
+      toast.success(t.detail.memberAdded);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'No se pudo agregar el participante',
+          : m['system.addGoalParticipantFailed'](),
       );
     }
   };
@@ -260,12 +263,12 @@ function RouteComponent() {
           : {}),
       });
       setShowContributionDrawer(false);
-      toast.success('Aporte agregado');
+      toast.success(t.detail.contributionAdded);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'No se pudo registrar el aporte',
+          : m['system.addGoalContributionFailed'](),
       );
     }
   };
@@ -290,12 +293,10 @@ function RouteComponent() {
         contributionMode: editContributionMode,
       });
       setShowEditDrawer(false);
-      toast.success('Meta actualizada');
+      toast.success(m['system.goalUpdated']());
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo actualizar la meta',
+        error instanceof Error ? error.message : m['system.updateGoalFailed'](),
       );
     }
   };
@@ -318,12 +319,12 @@ function RouteComponent() {
       await deleteContributionMutation.mutateAsync(contributionToDelete.id);
       setShowDeleteContributionDrawer(false);
       setContributionToDelete(null);
-      toast.success('Aporte eliminado');
+      toast.success(t.detail.contributionDeleted);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'No se pudo eliminar el aporte',
+          : m['system.deleteGoalContributionFailed'](),
       );
     }
   };
@@ -343,7 +344,7 @@ function RouteComponent() {
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {goalQuery.error instanceof Error
               ? goalQuery.error.message
-              : 'No tienes acceso a esta meta'}
+              : t.detail.noAccess}
           </div>
         </div>
       </main>
@@ -385,7 +386,7 @@ function RouteComponent() {
                 type="button"
                 onClick={handleBack}
                 className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
-                aria-label="Volver"
+                aria-label={t.detail.backAria}
               >
                 <ArrowLeft className="size-4" />
               </button>
@@ -415,7 +416,7 @@ function RouteComponent() {
                   type="button"
                   onClick={() => setShowEditDrawer(true)}
                   className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
-                  aria-label="Editar meta"
+                  aria-label={t.detail.editAria}
                 >
                   <Edit3 className="size-4" />
                 </button>
@@ -426,14 +427,16 @@ function RouteComponent() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-light text-white/80">
-                    Progreso general
+                    {t.detail.generalProgress}
                   </p>
                   <p className="mt-2 text-2xl font-bold tracking-tight text-white">
                     {Math.round(goal.progress)}%
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-light text-white/70">Restan</p>
+                  <p className="text-xs font-light text-white/70">
+                    {t.detail.remaining}
+                  </p>
                   <p className="mt-1 text-sm font-semibold text-white">
                     {getDaysLabel(goal.daysLeft)}
                   </p>
@@ -452,13 +455,17 @@ function RouteComponent() {
 
               <div className="mt-4 flex items-end justify-between gap-4">
                 <div>
-                  <p className="text-xs font-light text-white/70">Ahorrado</p>
+                  <p className="text-xs font-light text-white/70">
+                    {t.detail.saved}
+                  </p>
                   <p className="text-base font-semibold text-emerald-400">
                     {formatCurrency(goal.currency, goal.savedAmount)}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-light text-white/70">Objetivo</p>
+                  <p className="text-xs font-light text-white/70">
+                    {t.detail.objective}
+                  </p>
                   <p className="text-base font-semibold text-white">
                     {formatCurrency(goal.currency, goal.targetAmount)}
                   </p>
@@ -468,33 +475,33 @@ function RouteComponent() {
 
             <div className="mt-3 grid grid-cols-3 gap-2">
               <HeroStat
-                label="Este mes"
+                label={t.detail.thisMonth}
                 value={formatCurrency(
                   goal.currency,
                   goal.stats.currentMonthContributionTotal,
                 )}
               />
-              <HeroStat label="Al día" value={`${membersOnTrack}`} />
-              <HeroStat label="Pendientes" value={`${pendingMembers}`} />
+              <HeroStat label={t.detail.onTrack} value={`${membersOnTrack}`} />
+              <HeroStat label={t.detail.pending} value={`${pendingMembers}`} />
             </div>
 
             <div className="mt-2.5 grid grid-cols-3 gap-2">
               {isAdmin ? (
                 <HeaderAction
                   icon={<Plus className="size-5" />}
-                  label="Aporte"
+                  label={t.detail.contribution}
                   primary
                   onClick={openAddContributionDrawer}
                 />
               ) : null}
               <HeaderAction
                 icon={<Users className="size-5" />}
-                label="Invitar"
+                label={t.detail.invite}
                 onClick={() => participantInputRef.current?.focus()}
               />
               <HeaderAction
                 icon={<Share2 className="size-5" />}
-                label="Compartir"
+                label={t.detail.share}
                 onClick={() => {
                   void navigator.clipboard?.writeText(window.location.href);
                   toast.success('Enlace copiado');
@@ -508,16 +515,16 @@ function RouteComponent() {
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
             <section className="rounded-[30px] bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
               <SectionHeader
-                title="Actividad reciente"
-                copy="Lo último que movió esta meta."
-                count={`${goal.contributions.length} aportes`}
+                title={t.detail.recentActivity}
+                copy={t.detail.recentActivityCopy}
+                count={t.detail.contributionsCount(goal.contributions.length)}
               />
 
               {recentContributions.length === 0 ? (
                 <EmptyCard
                   icon={<Sparkles className="size-5" />}
-                  title="Aún no hay aportes"
-                  copy="Registra el primer movimiento para que el progreso cobre vida."
+                  title={t.detail.emptyContributions}
+                  copy={t.detail.emptyContributionsCopy}
                 />
               ) : (
                 <div className="mt-4 space-y-3">
@@ -552,7 +559,7 @@ function RouteComponent() {
                             })
                           }
                           className="flex size-9 items-center justify-center rounded-full text-red-500"
-                          aria-label="Eliminar aporte"
+                          aria-label={t.detail.deleteContributionAria}
                         >
                           <Trash2 className="size-4" />
                         </button>
@@ -565,9 +572,9 @@ function RouteComponent() {
 
             <section className="rounded-[30px] bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
               <SectionHeader
-                title="Miembros"
-                copy="Quién va al día y quién necesita aportar."
-                count={`${goal.participantCount} personas`}
+                title={t.detail.members}
+                copy={t.detail.membersCopy}
+                count={t.detail.peopleCount(goal.participantCount)}
               />
 
               {isAdmin ? (
@@ -585,7 +592,7 @@ function RouteComponent() {
                           void addParticipant({ name: participantInput });
                         }
                       }}
-                      placeholder="Nombre o correo"
+                      placeholder={t.detail.peoplePlaceholder}
                       className="h-12 min-w-0 flex-1 rounded-[20px] border border-[#e2e8f0] bg-white px-4 text-base outline-none"
                     />
                     <Button
@@ -598,7 +605,7 @@ function RouteComponent() {
                       onClick={() =>
                         void addParticipant({ name: participantInput })
                       }
-                      aria-label="Agregar participante"
+                      aria-label={t.detail.addParticipantAria}
                     >
                       <UserPlus className="size-5" />
                     </Button>
@@ -631,7 +638,7 @@ function RouteComponent() {
                               </span>
                               <span className="block truncate text-xs text-[#64748b]">
                                 {alreadyMember
-                                  ? 'Ya agregado'
+                                  ? t.detail.alreadyAdded
                                   : candidate.username
                                     ? `@${candidate.username}`
                                     : candidate.email}
@@ -658,14 +665,14 @@ function RouteComponent() {
                           {member.name}
                           {member.isCurrentUser ? (
                             <span className="ml-1 text-xs text-[#94a3b8]">
-                              (tú)
+                              {t.detail.you}
                             </span>
                           ) : null}
                         </p>
                         <p className="text-xs text-[#64748b]">
                           {isOnTrack
-                            ? 'Va al día con el fondo'
-                            : 'Debe ponerse al día'}
+                            ? t.detail.onTrackCopy
+                            : t.detail.pendingCopy}
                         </p>
                       </div>
                       {index === 0 && amount > 0 ? (
@@ -674,7 +681,9 @@ function RouteComponent() {
                     </div>
                     <div className="mt-4 flex items-end justify-between">
                       <div>
-                        <p className="text-xs text-[#94a3b8]">Total aportado</p>
+                        <p className="text-xs text-[#94a3b8]">
+                          {t.detail.totalContributed}
+                        </p>
                         <p className="text-base font-semibold">
                           {formatCurrency(goal.currency, amount)}
                         </p>
@@ -686,7 +695,7 @@ function RouteComponent() {
                           backgroundColor: isOnTrack ? '#ecfdf5' : '#fff1f2',
                         }}
                       >
-                        {isOnTrack ? 'Al día' : 'Pendiente'}
+                        {isOnTrack ? t.detail.onTrack : t.detail.pending}
                       </span>
                     </div>
                   </article>
@@ -696,9 +705,9 @@ function RouteComponent() {
 
             <section className="rounded-[30px] bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
               <SectionHeader
-                title="Calendario"
-                copy="Ritmo mensual estimado para llegar a tiempo."
-                count={`${goal.installmentCount} cuotas`}
+                title={t.detail.calendar}
+                copy={t.detail.calendarCopy}
+                count={t.detail.installmentsCount(goal.installmentCount)}
               />
               <div className="mt-4 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {timeline.map((item, index) => {
@@ -719,7 +728,7 @@ function RouteComponent() {
                       </p>
                       <p className="mt-1 text-xs text-[#64748b]">
                         {index === 0
-                          ? 'Inicio'
+                          ? t.detail.start
                           : formatCurrency(goal.currency, goal.monthlyTarget)}
                       </p>
                     </div>
@@ -730,29 +739,29 @@ function RouteComponent() {
 
             <section className="grid gap-3 md:grid-cols-3">
               <InsightCard
-                label="Falta"
+                label={t.detail.missing}
                 value={formatCurrency(
                   goal.currency,
                   goal.stats.remainingAmount,
                 )}
-                copy="para completar"
+                copy={t.detail.completeCopy}
               />
               <InsightCard
-                label="Promedio"
+                label={t.detail.average}
                 value={formatCurrency(
                   goal.currency,
                   goal.stats.averageContribution,
                 )}
-                copy="por aporte"
+                copy={t.detail.perContributionCopy}
               />
               <InsightCard
-                label="Proyección"
+                label={t.detail.projection}
                 value={
                   goal.stats.projectedCompletionDate
                     ? formatDate(goal.stats.projectedCompletionDate)
-                    : 'Sin datos'
+                    : t.detail.noData
                 }
-                copy="según ritmo actual"
+                copy={t.detail.currentPaceCopy}
               />
             </section>
           </div>
@@ -765,9 +774,9 @@ function RouteComponent() {
       >
         <DrawerContent className="mt-0 h-dvh max-h-dvh rounded-none">
           <DrawerHeader className="shrink-0">
-            <DrawerTitle>Registrar aporte</DrawerTitle>
+            <DrawerTitle>{t.detail.registerContributionTitle}</DrawerTitle>
             <DrawerDescription>
-              Agrega un movimiento a {goal.title}.
+              {t.detail.registerContributionCopy(goal.title)}
             </DrawerDescription>
           </DrawerHeader>
 
@@ -790,7 +799,7 @@ function RouteComponent() {
                       {member.name}
                     </p>
                     <p className="truncate text-xs text-[#64748b]">
-                      {member.email ?? 'Sin cuenta vinculada'}
+                      {member.email ?? t.detail.unlinked}
                     </p>
                   </div>
                   {contributionMemberId === member.id ? (
@@ -803,7 +812,7 @@ function RouteComponent() {
             <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-[#334155]">
-                  Monto
+                  {t.detail.amount}
                 </span>
                 <input
                   value={contributionAmount}
@@ -817,7 +826,7 @@ function RouteComponent() {
               </label>
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-[#334155]">
-                  Fecha
+                  {t.detail.date}
                 </span>
                 <input
                   type="date"
@@ -830,13 +839,13 @@ function RouteComponent() {
 
             <label className="flex flex-col gap-2">
               <span className="text-sm font-medium text-[#334155]">
-                Nota opcional
+                {t.detail.optionalNote}
               </span>
               <textarea
                 value={contributionNotes}
                 onChange={(event) => setContributionNotes(event.target.value)}
                 rows={3}
-                placeholder="Transferencia, efectivo, doble cuota..."
+                placeholder={t.detail.contributionNotePlaceholder}
                 className="rounded-2xl border border-[#e2e8f0] bg-white px-4 py-3 text-base outline-none"
               />
             </label>
@@ -854,8 +863,8 @@ function RouteComponent() {
               onClick={() => void saveContribution()}
             >
               {addContributionMutation.isPending
-                ? 'Guardando...'
-                : 'Guardar aporte'}
+                ? t.detail.savingContribution
+                : t.detail.saveContribution}
             </Button>
             <Button
               type="button"
@@ -863,7 +872,7 @@ function RouteComponent() {
               className="h-12 rounded-full"
               onClick={() => setShowContributionDrawer(false)}
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -872,15 +881,15 @@ function RouteComponent() {
       <Drawer open={showEditDrawer} onOpenChange={setShowEditDrawer}>
         <DrawerContent className="mt-0 h-dvh max-h-dvh rounded-none">
           <DrawerHeader className="shrink-0">
-            <DrawerTitle>Editar meta</DrawerTitle>
-            <DrawerDescription>
-              Ajusta el objetivo sin perder los aportes existentes.
-            </DrawerDescription>
+            <DrawerTitle>{t.detail.editGoalTitle}</DrawerTitle>
+            <DrawerDescription>{t.detail.editGoalCopy}</DrawerDescription>
           </DrawerHeader>
 
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-4">
             <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-[#334155]">Nombre</span>
+              <span className="text-sm font-medium text-[#334155]">
+                {t.detail.name}
+              </span>
               <input
                 value={editTitle}
                 onChange={(event) => setEditTitle(event.target.value)}
@@ -889,7 +898,7 @@ function RouteComponent() {
             </label>
             <label className="flex flex-col gap-2">
               <span className="text-sm font-medium text-[#334155]">
-                Descripción
+                {t.detail.description}
               </span>
               <textarea
                 value={editDescription}
@@ -935,10 +944,10 @@ function RouteComponent() {
                   }`}
                 >
                   <p className="text-sm font-semibold text-[#0f172a]">
-                    {mode.label}
+                    {mode.label()}
                   </p>
                   <p className="mt-1 text-xs text-[#64748b]">
-                    {mode.description}
+                    {mode.description()}
                   </p>
                 </button>
               ))}
@@ -957,8 +966,8 @@ function RouteComponent() {
               onClick={() => void saveGoalChanges()}
             >
               {updateGoalMutation.isPending
-                ? 'Guardando...'
-                : 'Guardar cambios'}
+                ? t.common.saving
+                : t.common.saveChanges}
             </Button>
             <Button
               type="button"
@@ -966,7 +975,7 @@ function RouteComponent() {
               className="h-12 rounded-full"
               onClick={() => setShowEditDrawer(false)}
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -978,14 +987,14 @@ function RouteComponent() {
       >
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Eliminar aporte</DrawerTitle>
+            <DrawerTitle>{t.detail.deleteContributionTitle}</DrawerTitle>
             <DrawerDescription>
               {contributionToDelete
                 ? `${contributionToDelete.memberName} · ${formatCurrency(
                     contributionToDelete.currency,
                     contributionToDelete.amount,
                   )}`
-                : 'Confirma si deseas eliminar este aporte'}
+                : t.detail.deleteContributionConfirm}
             </DrawerDescription>
           </DrawerHeader>
 
@@ -998,8 +1007,8 @@ function RouteComponent() {
               onClick={() => void confirmDeleteContribution()}
             >
               {deleteContributionMutation.isPending
-                ? 'Eliminando…'
-                : 'Eliminar'}
+                ? t.common.deleting
+                : t.common.delete}
             </Button>
             <Button
               type="button"
@@ -1007,7 +1016,7 @@ function RouteComponent() {
               className="h-12 rounded-full"
               onClick={() => setShowDeleteContributionDrawer(false)}
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
           </DrawerFooter>
         </DrawerContent>

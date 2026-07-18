@@ -10,6 +10,7 @@ import { useMemo, useState } from 'react';
 import { converterClient } from '#/api/converter';
 import type { InferResponseType } from '#/api/types';
 import { formatCurrency } from '#/lib/i18n';
+import { m } from '#/paraglide/messages.js';
 import { getConverterMessages } from '#/routes/_authed/converter/-messages';
 
 const converterEndpoint = converterClient.index.$get;
@@ -20,12 +21,12 @@ type ConverterApiResponse = Extract<
 type SupportedCurrency = ConverterApiResponse['currencies'][number];
 
 const CURRENCY_META: Record<string, { flag: string; name: string }> = {
-  COP: { flag: '🇨🇴', name: 'Peso colombiano' },
-  USD: { flag: '🇺🇸', name: 'Dólar estadounidense' },
-  EUR: { flag: '🇪🇺', name: 'Euro' },
-  GBP: { flag: '🇬🇧', name: 'Libra esterlina' },
-  MXN: { flag: '🇲🇽', name: 'Peso mexicano' },
-  BRL: { flag: '🇧🇷', name: 'Real brasileño' },
+  COP: { flag: '🇨🇴', name: m['common.currency.copFull']() },
+  USD: { flag: '🇺🇸', name: m['common.currency.usdFull']() },
+  EUR: { flag: '🇪🇺', name: m['common.currency.eurFull']() },
+  GBP: { flag: '🇬🇧', name: m['common.currency.gbpFull']() },
+  MXN: { flag: '🇲🇽', name: m['common.currency.mxnFull']() },
+  BRL: { flag: '🇧🇷', name: m['common.currency.brlFull']() },
 };
 
 const converterLastUpdatedFormatter = new Intl.DateTimeFormat('es-CO', {
@@ -134,7 +135,7 @@ function RouteComponent() {
           <button
             type="button"
             onClick={() => router.history.back()}
-            aria-label="Volver"
+            aria-label={t.common.back}
             className="inline-flex items-center gap-2 text-sm font-medium text-[#1f2937]"
           >
             <ChevronLeft className="size-5" />

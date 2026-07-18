@@ -316,19 +316,17 @@ function RouteComponent() {
             </div>
           ) : (
             <div className="flex items-center justify-center gap-2 text-xs">
-              <span className="text-[#626262]">¿Ya tienes una cuenta?</span>
+              <span className="text-[#626262]">{t.alreadyHaveAccount}</span>
               {isNameStep ? (
                 <button
                   type="button"
                   onClick={goBackToEmail}
                   className="font-semibold text-[#1e1e1e]"
                 >
-                  Iniciar Sesión
+                  {t.signIn}
                 </button>
               ) : (
-                <span className="font-semibold text-[#1e1e1e]">
-                  Iniciar Sesión
-                </span>
+                <span className="font-semibold text-[#1e1e1e]">{t.signIn}</span>
               )}
             </div>
           )}

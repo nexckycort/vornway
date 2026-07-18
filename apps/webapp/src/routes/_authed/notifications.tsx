@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { BellRing, Plus, RefreshCcw } from 'lucide-react';
 import { useEffect } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
+import { m } from '#/paraglide/messages.js';
 import {
   markNotificationsAsRead,
   useNotificationsQuery,
@@ -39,12 +40,12 @@ function formatRelativeTime(isoDate: string): string {
   const diffMin = Math.floor(diffMs / (1000 * 60));
 
   if (diffMin < 60) {
-    return `Hace ${Math.max(1, diffMin)}m`;
+    return m['notifications.minutesAgo']({ count: Math.max(1, diffMin) });
   }
 
   const diffHours = Math.floor(diffMin / 60);
   if (diffHours < 24) {
-    return `Hace ${diffHours}h`;
+    return m['notifications.hoursAgo']({ count: diffHours });
   }
 
   return relativeDateFormatter.format(new Date(isoDate));
@@ -62,17 +63,21 @@ function groupNotifications(
     const createdAt = new Date(item.createdAt);
     const label =
       createdAt >= today
-        ? 'Hoy'
+        ? m['notifications.today']()
         : createdAt >= oneMonthAgo
-          ? 'Este mes'
-          : 'Hace 1 mes';
+          ? m['notifications.thisMonth']()
+          : m['notifications.oneMonthAgo']();
 
     (acc.get(label) ?? acc.set(label, []).get(label)!).push(item);
     return acc;
   }, new Map<string, NotificationGroup['items']>());
 
   const orderedGroups: NotificationGroup[] = [];
-  for (const label of ['Hoy', 'Este mes', 'Hace 1 mes']) {
+  for (const label of [
+    m['notifications.today'](),
+    m['notifications.thisMonth'](),
+    m['notifications.oneMonthAgo'](),
+  ]) {
     const items = groups.get(label) ?? [];
     if (items.length === 0) continue;
     orderedGroups.push({ label, items });
@@ -94,7 +99,7 @@ function NotificationIcon({
     return (
       <img
         src={actorImage}
-        alt={actorName ?? 'Invitación'}
+        alt={actorName ?? m['notifications.inviteAlt']()}
         className="size-12 rounded-full object-cover"
         referrerPolicy="no-referrer"
       />
@@ -134,19 +139,21 @@ function RouteComponent() {
 
   return (
     <MobilePageLayout
-      title="Notificaciones"
+      title={m['notifications.title']()}
       onBack={() => navigate({ to: '/', replace: true })}
     >
       <div className="-mx-1 flex flex-1 flex-col overflow-y-auto px-1 pb-4 pt-2">
         {notificationsQuery.isLoading ? (
-          <p className="px-3 py-6 text-sm text-[#64748b]">Cargando…</p>
+          <p className="px-3 py-6 text-sm text-[#64748b]">
+            {m['notifications.loading']()}
+          </p>
         ) : null}
 
         {notificationsQuery.isError ? (
           <div className="mx-3 mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {notificationsQuery.error instanceof Error
               ? notificationsQuery.error.message
-              : 'No se pudieron cargar las notificaciones'}
+              : m['notifications.loadFailed']()}
           </div>
         ) : null}
 
@@ -159,11 +166,10 @@ function RouteComponent() {
                 <BellRing className="size-6" />
               </span>
               <p className="text-base font-semibold leading-6 text-[#202124]">
-                Aún no tienes notificaciones
+                {m['notifications.emptyTitle']()}
               </p>
               <p className="mt-1 max-w-[260px] text-sm leading-5 text-[#64748b]">
-                Empieza por crear tu primera aventura y te notificaremos todo lo
-                nuevo
+                {m['notifications.emptyCopy']()}
               </p>
             </div>
           </div>

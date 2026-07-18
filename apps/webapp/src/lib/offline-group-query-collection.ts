@@ -4,6 +4,7 @@ import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import { groupsClient } from '#/api/groups';
 import type { InferRequestType } from '#/api/types';
 import { GROUPS_LIST_REFRESH_EVENT } from '#/lib/groups-list-query-collection';
+import { m } from '#/paraglide/messages.js';
 
 const createGroupEndpoint = groupsClient.index.$post;
 
@@ -350,7 +351,7 @@ export async function createGroupOfflineFirst(
   if (typeof window === 'undefined') {
     const response = await postGroupToApi(payload);
     if (!response.ok) {
-      throw new Error('No se pudo crear el espacio');
+      throw new Error(m['system.createGroupFailed']());
     }
 
     const data = (await response.json()) as CreateGroupOfflineFirstResult;
@@ -378,5 +379,5 @@ export async function createGroupOfflineFirst(
   }
 
   const payloadError = (await response.json()) as { error?: string };
-  throw new Error(payloadError.error ?? 'No se pudo crear el espacio');
+  throw new Error(payloadError.error ?? m['system.createGroupFailed']());
 }

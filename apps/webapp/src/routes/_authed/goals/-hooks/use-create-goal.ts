@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { goalsClient } from '#/api/goals';
 import type { InferRequestType, InferResponseType } from '#/api/types';
+import { m } from '#/paraglide/messages.js';
 
 const createGoalEndpoint = goalsClient.index.$post;
 
@@ -69,7 +70,7 @@ async function createGoal(
   const response = await createGoalEndpoint(payload);
 
   if (!response.ok) {
-    throw new Error('No se pudo crear la meta');
+    throw new Error(m['system.createGoalFailed']());
   }
 
   return (await response.json()) as CreateGoalResponse;

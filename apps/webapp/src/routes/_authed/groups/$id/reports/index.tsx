@@ -207,8 +207,8 @@ function RouteComponent() {
     value: ReportDateFilterMode;
   }> = [
     { label: t.reports.rangeAll, value: 'all' },
-    { label: 'Día', value: 'day' },
-    { label: 'Rango', value: 'range' },
+    { label: t.reports.day, value: 'day' },
+    { label: t.reports.range, value: 'range' },
   ];
   useEffect(() => {
     if (availableCurrencies.length === 0) return;

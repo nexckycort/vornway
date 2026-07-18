@@ -1,22 +1,17 @@
 import { AlertCircle, Check, Lightbulb } from 'lucide-react';
+import { getProfileMessages } from '#/routes/_authed/profile/-messages';
 import type { FeedbackType } from '../-hooks/use-feedback-page';
 
 const feedbackTypeOptions: Array<{
   value: FeedbackType;
-  label: string;
-  subtitle: string;
   icon: typeof AlertCircle;
 }> = [
   {
     value: 'BUG',
-    label: 'Reportar error',
-    subtitle: 'Algo no funciona como debería',
     icon: AlertCircle,
   },
   {
     value: 'FEATURE_REQUEST',
-    label: 'Pedir funcionalidad',
-    subtitle: 'Una mejora o algo nuevo',
     icon: Lightbulb,
   },
 ];
@@ -30,15 +25,16 @@ export function FeedbackTypeSelector({
   value,
   onChange,
 }: FeedbackTypeSelectorProps) {
+  const t = getProfileMessages();
+
   return (
     <section className="space-y-3">
       <div>
         <p className="text-2xl font-semibold tracking-tight text-[#0f172a]">
-          Cuéntanos qué pasó
+          {t.feedback.selectorTitle}
         </p>
         <p className="mt-1 text-sm leading-6 text-[#64748b]">
-          Reporta errores o pide funcionalidades nuevas. Puedes adjuntar
-          imágenes si ayudan a explicar mejor.
+          {t.feedback.selectorCopy}
         </p>
       </div>
 
@@ -70,7 +66,7 @@ export function FeedbackTypeSelector({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-[#0f172a]">
-                    {option.label}
+                    {getFeedbackTypeLabel(option.value, t)}
                   </p>
                   {active ? (
                     <span className="flex size-5 items-center justify-center rounded-full bg-primary text-white">
@@ -78,7 +74,9 @@ export function FeedbackTypeSelector({
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-1 text-sm text-[#64748b]">{option.subtitle}</p>
+                <p className="mt-1 text-sm text-[#64748b]">
+                  {getFeedbackTypeSubtitle(option.value, t)}
+                </p>
               </div>
             </button>
           );
@@ -86,4 +84,18 @@ export function FeedbackTypeSelector({
       </div>
     </section>
   );
+}
+
+function getFeedbackTypeLabel(
+  type: FeedbackType,
+  t: ReturnType<typeof getProfileMessages>,
+) {
+  return type === 'BUG' ? t.reportBug : t.requestFeature;
+}
+
+function getFeedbackTypeSubtitle(
+  type: FeedbackType,
+  t: ReturnType<typeof getProfileMessages>,
+) {
+  return type === 'BUG' ? t.feedback.bugSubtitle : t.feedback.featureSubtitle;
 }

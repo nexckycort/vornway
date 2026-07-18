@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { quickSplitsClient } from '#/api/quick-splits';
+import { m } from '#/paraglide/messages.js';
 
 export type QuickSplitExpenseDetail = {
   id: string;
@@ -38,7 +39,7 @@ export function useQuickSplitExpenseQuery(
     enabled: Boolean(quickSplitId && expenseId),
     queryFn: async () => {
       if (!quickSplitId || !expenseId) {
-        throw new Error('Gasto no encontrado');
+        throw new Error(m['system.expenseNotFound']());
       }
 
       const response = await quickSplitExpenseEndpoint({
@@ -50,7 +51,7 @@ export function useQuickSplitExpenseQuery(
 
       if (!response.ok) {
         const payload = (await response.json()) as { message?: string };
-        throw new Error(payload.message ?? 'No se pudo cargar el gasto');
+        throw new Error(payload.message ?? m['system.loadExpenseFailed']());
       }
 
       return (await response.json()) as QuickSplitExpenseDetail;

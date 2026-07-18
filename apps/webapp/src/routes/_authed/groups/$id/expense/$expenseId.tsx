@@ -13,11 +13,13 @@ import {
 } from '#/components/ui/drawer';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { formatCurrency } from '#/lib/i18n';
+import { m } from '#/paraglide/messages.js';
 import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-delete-expense';
 import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import { CategoryIcon } from '../-components/category-icon';
 import { getExpenseEmoji } from '../-components/group-detail.utils';
 import type { ExpenseItem, GroupSummary } from '../-types/group-detail.types';
@@ -192,6 +194,7 @@ function getSharedParticipantAmount(input: {
 }
 
 function RouteComponent() {
+  const t = getGroupDetailMessages();
   const { id, expenseId } = Route.useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -281,13 +284,13 @@ function RouteComponent() {
             type="button"
             onClick={handleBack}
             className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[#334155] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
-            aria-label="Atrás"
+            aria-label={t.expense.backAria}
           >
             <ArrowLeft className="size-4" />
           </button>
           <div className="min-w-0 text-center">
             <h1 className="truncate text-base font-semibold text-[#0f172a]">
-              Detalle
+              {t.detail.expenseDetailTitle}
             </h1>
           </div>
           <span className="size-9" />
@@ -299,8 +302,7 @@ function RouteComponent() {
 
         {!expenseQuery.isLoading && !fallbackExpense && !expense ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            No encontramos este gasto en la página cargada. Vuelve al listado y
-            ábrelo desde allí.
+            {t.detail.expenseMissing}
           </div>
         ) : null}
 
@@ -350,7 +352,7 @@ function RouteComponent() {
                   <span className="mx-1 text-[#9ca3af]">•</span>
                   <span className="font-semibold">
                     {paidByMembers.length > 1
-                      ? `${paidByMembers.length} personas pagaron`
+                      ? t.detail.peoplePaid(paidByMembers.length)
                       : expense.paidBy.name}
                   </span>
                 </p>
@@ -358,7 +360,7 @@ function RouteComponent() {
 
               <div className="relative border-t border-dashed border-[#e2e8f0] px-5 pb-6 pt-5 before:absolute before:-left-3 before:-top-3 before:size-6 before:rounded-full before:bg-[#ececec] after:absolute after:-right-3 after:-top-3 after:size-6 after:rounded-full after:bg-[#ececec]">
                 <p className="mb-4 text-xs font-medium text-[#444444]">
-                  Pagado por
+                  {t.expense.paidBy}
                 </p>
                 <div className="space-y-4">
                   {(paidByMembers.length > 0
@@ -380,7 +382,7 @@ function RouteComponent() {
                       <MemberLine
                         key={payer.memberId}
                         image={member?.image ?? null}
-                        name={`${payer.name}${member?.isCurrentUser ? ' (Tu)' : ''}`}
+                        name={`${payer.name}${member?.isCurrentUser ? ` ${t.detail.you}` : ''}`}
                         amount={formatAmount(expense.currency, payer.amount)}
                       />
                     );
@@ -390,7 +392,7 @@ function RouteComponent() {
                 {!isSettlement ? (
                   <>
                     <p className="mb-4 mt-7 text-xs font-medium text-[#444444]">
-                      Se divide con
+                      {t.expense.splitWith}
                     </p>
                     <div className="space-y-5">
                       {participants.map((participant) => {
@@ -427,7 +429,7 @@ function RouteComponent() {
                           <ParticipantLine
                             key={participant.memberId}
                             image={member?.image ?? null}
-                            name={`${participant.name}${member?.isCurrentUser ? ' (Tu)' : ''}`}
+                            name={`${participant.name}${member?.isCurrentUser ? ` ${t.detail.you}` : ''}`}
                             amount={formatAmount(
                               expense.currency,
                               participant.share,
@@ -441,7 +443,7 @@ function RouteComponent() {
                           <MemberLine
                             key={participant.memberId}
                             image={member?.image ?? null}
-                            name={`${participant.name}${member?.isCurrentUser ? ' (Tu)' : ''}`}
+                            name={`${participant.name}${member?.isCurrentUser ? ` ${t.detail.you}` : ''}`}
                             amount={formatAmount(
                               expense.currency,
                               participant.share,
@@ -457,7 +459,7 @@ function RouteComponent() {
                 {!isSettlement && sharedSplitItems.length > 0 ? (
                   <>
                     <p className="mb-4 mt-7 text-xs font-medium text-[#444444]">
-                      Gastos compartidos
+                      {t.detail.sharedExpenses}
                     </p>
                     <div className="space-y-4 rounded-3xl bg-[#fafafa] p-4">
                       {sharedSplitItems.map((item, index) => (
@@ -470,7 +472,7 @@ function RouteComponent() {
                       <div className="h-px bg-[#e5e7eb]" />
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-[11px] font-medium text-[#94a3b8]">
-                          Total compartido
+                          {t.detail.sharedTotal}
                         </p>
                         <p className="text-sm font-semibold text-[#202124]">
                           {formatAmount(expense.currency, sharedSplitAmount)}
@@ -483,13 +485,15 @@ function RouteComponent() {
                 {advancedDetails ? (
                   <>
                     <p className="mb-4 mt-7 text-xs font-medium text-[#444444]">
-                      Detalles del lugar
+                      {t.expense.placeDetailsTitle}
                     </p>
                     <div className="min-w-0 space-y-3 rounded-3xl bg-[#fafafa] p-4">
                       {mapEmbedUrl ? (
                         <div className="max-w-full overflow-hidden rounded-3xl border border-[#e5e7eb] bg-white">
                           <iframe
-                            title={`Mapa de ${advancedDetails.placeName ?? expense.description}`}
+                            title={t.detail.mapTitle(
+                              advancedDetails.placeName ?? expense.description,
+                            )}
                             src={mapEmbedUrl}
                             className="block aspect-[4/3] w-full max-w-full"
                             loading="lazy"
@@ -500,48 +504,51 @@ function RouteComponent() {
                       ) : null}
 
                       <DetailLine
-                        label="Tipo"
+                        label={t.expense.detailLabels.type}
                         value={getAdvancedTypeLabel(advancedDetails.type)}
                       />
                       <DetailLine
-                        label="Lugar"
+                        label={t.expense.detailLabels.place}
                         value={advancedDetails.placeName}
                       />
                       <DetailLine
-                        label="Dirección"
+                        label={t.expense.detailLabels.address}
                         value={advancedDetails.address}
                       />
                       {!mapEmbedUrl ? (
                         <DetailLine
-                          label="Mapa"
+                          label={t.expense.detailLabels.map}
                           value={advancedDetails.mapUrl}
                         />
                       ) : null}
                       <DetailLine
-                        label="Contacto"
+                        label={t.expense.detailLabels.contact}
                         value={advancedDetails.contactName}
                       />
                       <DetailLine
-                        label="Teléfono"
+                        label={t.expense.detailLabels.phone}
                         value={advancedDetails.phone}
                       />
                       <DetailLine
-                        label="Correo"
+                        label={t.expense.detailLabels.email}
                         value={advancedDetails.email}
                       />
                       <DetailLine
-                        label="Reserva"
+                        label={t.expense.detailLabels.reservation}
                         value={advancedDetails.bookingCode}
                       />
                       <DetailLine
-                        label="Fecha u hora"
+                        label={t.expense.detailLabels.dateOrTime}
                         value={advancedDetails.reservationTime}
                       />
                       <DetailLine
-                        label="Link"
+                        label={t.expense.detailLabels.link}
                         value={advancedDetails.websiteUrl}
                       />
-                      <DetailLine label="Notas" value={advancedDetails.notes} />
+                      <DetailLine
+                        label={t.expense.detailLabels.notes}
+                        value={advancedDetails.notes}
+                      />
                     </div>
                   </>
                 ) : null}
@@ -566,7 +573,9 @@ function RouteComponent() {
                   onClick={() => setShowDeleteDrawer(true)}
                   className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#202124] shadow-[0_4px_12px_rgba(15,23,42,0.05)]"
                   aria-label={
-                    isSettlement ? 'Eliminar liquidación' : 'Eliminar gasto'
+                    isSettlement
+                      ? t.expense.deleteSettlementTitle
+                      : t.expense.deleteExpenseTitle
                   }
                 >
                   <Trash2 className="size-4" />
@@ -576,7 +585,9 @@ function RouteComponent() {
                   onClick={handleEditExpense}
                   className="flex h-12 flex-1 items-center justify-center rounded-full bg-[#080202] text-sm font-semibold text-white"
                 >
-                  {isSettlement ? 'Editar liquidación' : 'Editar gasto'}
+                  {isSettlement
+                    ? t.expense.editSettlement
+                    : t.expense.editExpense}
                 </button>
               </div>
             </div>
@@ -588,12 +599,14 @@ function RouteComponent() {
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>
-              {isSettlement ? 'Eliminar liquidación' : 'Eliminar gasto'}
+              {isSettlement
+                ? t.expense.deleteSettlementTitle
+                : t.expense.deleteExpenseTitle}
             </DrawerTitle>
             <DrawerDescription>
               {isSettlement
-                ? 'Esta acción eliminará la liquidación y restaurará la deuda pendiente.'
-                : 'Esta acción eliminará el gasto del espacio.'}
+                ? t.expense.deleteSettlementCopy
+                : t.expense.deleteExpenseCopy}
             </DrawerDescription>
           </DrawerHeader>
           <DrawerFooter className="grid grid-cols-2">
@@ -611,7 +624,9 @@ function RouteComponent() {
               onClick={() => void handleConfirmDeleteExpense()}
               disabled={deleteExpenseMutation.isPending}
             >
-              {deleteExpenseMutation.isPending ? 'Eliminando…' : 'Eliminar'}
+              {deleteExpenseMutation.isPending
+                ? t.detail.deleting
+                : t.common.delete}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -721,17 +736,17 @@ function ParticipantLine({
 function getAdvancedTypeLabel(type: string) {
   switch (type) {
     case 'stay':
-      return 'Estadía';
+      return m['groups.expense.advancedTypeStay']();
     case 'food':
-      return 'Comida';
+      return m['groups.expense.advancedTypeFood']();
     case 'transport':
-      return 'Transporte';
+      return m['groups.expense.advancedTypeTransport']();
     case 'activity':
-      return 'Actividad';
+      return m['groups.expense.advancedTypeActivity']();
     case 'purchase':
-      return 'Compra';
+      return m['groups.expense.advancedTypePurchase']();
     default:
-      return 'Otro';
+      return m['groups.expense.advancedTypeOther']();
   }
 }
 

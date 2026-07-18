@@ -20,6 +20,8 @@ export function getLoginMessages() {
     otpTitle: m['login.otpTitle'](),
     otpCopy: (email: string) => m['login.otpCopy']({ email }),
     verifyCode: m['login.verifyCode'](),
+    alreadyHaveAccount: m['login.alreadyHaveAccount'](),
+    signIn: m['login.signIn'](),
     resendCode: m['login.resendCode'](),
     resendLoading: m['login.resendLoading'](),
     changeEmail: m['login.changeEmail'](),

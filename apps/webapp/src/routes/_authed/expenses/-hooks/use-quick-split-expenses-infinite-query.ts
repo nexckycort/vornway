@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { quickSplitsClient } from '#/api/quick-splits';
 import type { InferResponseType } from '#/api/types';
+import { m } from '#/paraglide/messages.js';
 
 const quickSplitExpensesEndpoint = quickSplitsClient.expenses.$get;
 
@@ -25,7 +26,7 @@ export function useQuickSplitExpensesInfiniteQuery() {
       });
 
       if (!response.ok) {
-        throw new Error('No se pudieron cargar los gastos con amigos');
+        throw new Error(m['system.loadFriendsExpensesFailed']());
       }
 
       return (await response.json()) as QuickSplitExpensesResponse;

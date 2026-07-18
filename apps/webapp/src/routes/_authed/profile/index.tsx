@@ -194,9 +194,7 @@ function RouteComponent() {
         } | null;
 
         throw new Error(
-          payload?.message ??
-            payload?.error ??
-            'No se pudo actualizar el nombre de usuario',
+          payload?.message ?? payload?.error ?? t.usernameUpdateFailed,
         );
       }
 
@@ -205,13 +203,11 @@ function RouteComponent() {
     onSuccess: async () => {
       await Promise.all([auth.refresh(), session.refetch()]);
       setShowUsernameDialog(false);
-      toast.success('Nombre de usuario actualizado');
+      toast.success(t.usernameUpdated);
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo actualizar el nombre de usuario',
+        error instanceof Error ? error.message : t.usernameUpdateFailed,
       );
     },
   });
@@ -398,12 +394,10 @@ function RouteComponent() {
           <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-2 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
             <ProfileActionRow
               icon={<AtSign className="size-5" />}
-              title="Nombre de usuario"
-              subtitle={
-                username ? `@${username}` : 'Configura tu nombre de usuario'
-              }
+              title={t.username}
+              subtitle={username ? `@${username}` : t.configureUsername}
               onClick={() => setShowUsernameDialog(true)}
-              trailing="Editar"
+              trailing={t.edit}
             />
             <ProfileActionRow
               icon={<Bell className="size-5" />}
@@ -450,8 +444,8 @@ function RouteComponent() {
             />
             <ProfileActionRow
               icon={<AlertCircle className="size-5" />}
-              title="Reportar error"
-              subtitle="Algo no funcionó como esperabas"
+              title={t.reportBug}
+              subtitle={t.reportBugSubtitle}
               onClick={() =>
                 void navigate({
                   to: '/profile/feedback',
@@ -461,8 +455,8 @@ function RouteComponent() {
             />
             <ProfileActionRow
               icon={<Lightbulb className="size-5" />}
-              title="Pedir funcionalidad"
-              subtitle="Comparte una mejora o idea nueva"
+              title={t.requestFeature}
+              subtitle={t.requestFeatureSubtitle}
               onClick={() =>
                 void navigate({
                   to: '/profile/feedback',
@@ -473,14 +467,14 @@ function RouteComponent() {
             {isStatsUser && (
               <ProfileActionRow
                 icon={<BarChart3 className="size-5" />}
-                title="Estadísticas"
-                subtitle="Usuarios y espacios creados"
+                title={t.stats}
+                subtitle={t.statsSubtitle}
                 onClick={() =>
                   void navigate({
                     to: '/profile/stats',
                   })
                 }
-                trailing="Ver"
+                trailing={t.view}
               />
             )}
             <ProfileActionRow
@@ -560,24 +554,21 @@ function RouteComponent() {
       <Dialog open={showUsernameDialog} onOpenChange={setShowUsernameDialog}>
         <DialogContent className="max-w-[calc(100%-1rem)] rounded-[28px] p-4 sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Editar nombre de usuario</DialogTitle>
-            <DialogDescription>
-              Este nombre lo verán otras personas cuando te busquen o te
-              agreguen.
-            </DialogDescription>
+            <DialogTitle>{t.editUsernameTitle}</DialogTitle>
+            <DialogDescription>{t.editUsernameCopy}</DialogDescription>
           </DialogHeader>
 
           <div className="mt-4 space-y-4">
             <div className="rounded-2xl bg-[#f8fafc] px-4 py-3 text-sm text-[#475569]">
-              Se verá como{' '}
+              {t.usernamePreview}{' '}
               <span className="font-semibold">
-                @{normalizedUsernameInput || 'tu.usuario'}
+                @{normalizedUsernameInput || t.usernamePlaceholder}
               </span>
             </div>
 
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-[#0f172a]">
-                Nombre de usuario
+                {t.username}
               </span>
               <div className="flex h-12 items-center rounded-full border border-[#e2e8f0] bg-white px-4 focus-within:border-primary">
                 <span className="mr-1 text-sm text-[#64748b]">@</span>
@@ -590,16 +581,13 @@ function RouteComponent() {
                         .replace(/[^a-z0-9._]/g, ''),
                     )
                   }
-                  placeholder="tu.usuario"
+                  placeholder={t.usernamePlaceholder}
                   maxLength={24}
                   autoFocus
                   className="w-full bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
                 />
               </div>
-              <p className="mt-2 text-xs text-[#64748b]">
-                Usa entre 3 y 24 caracteres. Solo letras minúsculas, números,
-                punto y guion bajo.
-              </p>
+              <p className="mt-2 text-xs text-[#64748b]">{t.usernameRules}</p>
             </label>
 
             <div className="flex gap-3">
@@ -609,7 +597,7 @@ function RouteComponent() {
                 className="h-12 flex-1 rounded-full"
                 onClick={() => setShowUsernameDialog(false)}
               >
-                Cancelar
+                {t.common.cancel}
               </Button>
               <Button
                 type="button"
@@ -625,7 +613,9 @@ function RouteComponent() {
                   )
                 }
               >
-                {updateUsernameMutation.isPending ? 'Guardando...' : 'Guardar'}
+                {updateUsernameMutation.isPending
+                  ? t.common.saving
+                  : t.common.saveChanges}
               </Button>
             </div>
           </div>

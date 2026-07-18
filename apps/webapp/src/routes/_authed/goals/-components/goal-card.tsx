@@ -69,7 +69,7 @@ export function GoalCard({ goal, onPress, featured = false }: GoalCardProps) {
             featured ? 'text-white/55' : 'text-[#94a3b8]',
           ].join(' ')}
         >
-          {theme.label} · {getContributionModeLabel(goal.contributionMode)}
+          {theme.label()} · {getContributionModeLabel(goal.contributionMode)}
         </p>
         <h2
           className={[

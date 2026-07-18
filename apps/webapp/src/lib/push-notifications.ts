@@ -87,7 +87,7 @@ async function syncSubscriptionWithBackend(subscription: PushSubscription) {
   });
 
   if (!response.ok) {
-    throw new Error('No se pudo registrar la suscripción push');
+    throw new Error(m['system.pushRegisterFailed']());
   }
 }
 
@@ -96,7 +96,7 @@ async function sendPushTestNotification() {
   const response = await endpoint({});
 
   if (!response.ok) {
-    throw new Error('No se pudo enviar la notificación de prueba');
+    throw new Error(m['system.pushTestFailed']());
   }
 }
 
@@ -124,7 +124,7 @@ async function revokePushSubscription(subscription: PushSubscription) {
   );
 
   if (!response.ok) {
-    throw new Error('No se pudo desactivar la suscripción push');
+    throw new Error(m['system.pushDisableFailed']());
   }
 }
 
@@ -152,7 +152,7 @@ export async function enablePushNotifications(): Promise<PushPermissionStatus> {
 
   if (!subscription) {
     if (!VAPID_PUBLIC_KEY) {
-      throw new Error('Falta la clave pública VAPID');
+      throw new Error(m['system.missingVapidKey']());
     }
 
     subscription = await registration.pushManager.subscribe({
@@ -167,7 +167,7 @@ export async function enablePushNotifications(): Promise<PushPermissionStatus> {
   try {
     await sendPushTestNotification();
   } catch (error) {
-    console.warn('No se pudo enviar la notificación de prueba', error);
+    console.warn(m['system.pushTestFailed'](), error);
   }
 
   return 'enabled';
@@ -195,3 +195,5 @@ export async function disablePushNotifications(): Promise<PushPermissionStatus> 
 
   return 'permission-required';
 }
+
+import { m } from '#/paraglide/messages.js';

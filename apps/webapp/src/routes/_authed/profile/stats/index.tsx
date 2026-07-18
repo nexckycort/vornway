@@ -12,6 +12,7 @@ import { adminClient } from '#/api/admin';
 
 import { Button } from '#/components/ui/button';
 import { useAuth } from '#/contexts/auth/use-auth';
+import { getProfileMessages } from '#/routes/_authed/profile/-messages';
 
 type AdminStatsResponse = {
   totalUsers: number;
@@ -27,6 +28,7 @@ export const Route = createFileRoute('/_authed/profile/stats/')({
 function RouteComponent() {
   const navigate = useNavigate();
   const auth = useAuth();
+  const t = getProfileMessages();
   const loading = auth.loading;
   const email = auth.user?.email?.trim().toLowerCase() ?? '';
   const isAllowed = email === ALLOWED_EMAIL;
@@ -41,7 +43,7 @@ function RouteComponent() {
         const payload = (await response.json().catch(() => null)) as {
           error?: string;
         } | null;
-        throw new Error(payload?.error ?? 'No se pudieron cargar las métricas');
+        throw new Error(payload?.error ?? t.statsPage.loadMetricsFailed);
       }
 
       return (await response.json()) as AdminStatsResponse;
@@ -71,10 +73,10 @@ function RouteComponent() {
               <BarChart3 className="size-5" />
             </div>
             <h1 className="mt-4 text-2xl font-semibold leading-8 text-[#0f172a]">
-              Estadísticas
+              {t.statsPage.title}
             </h1>
             <p className="mt-2 text-sm leading-6 text-[#64748b]">
-              No tienes acceso a esta vista.
+              {t.statsPage.noAccess}
             </p>
 
             <Button
@@ -83,7 +85,7 @@ function RouteComponent() {
               onClick={() => navigate({ to: '/profile' })}
             >
               <ArrowLeft className="mr-2 size-4" />
-              Volver al perfil
+              {t.statsPage.backToProfile}
             </Button>
           </div>
         </div>
@@ -97,10 +99,10 @@ function RouteComponent() {
         <header className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.22em] text-[#94a3b8]">
-              Admin
+              {t.statsPage.admin}
             </p>
             <h1 className="mt-2 text-3xl font-semibold leading-9 text-[#0f172a]">
-              Estadísticas
+              {t.statsPage.title}
             </h1>
           </div>
 
@@ -110,7 +112,7 @@ function RouteComponent() {
             size="icon-sm"
             className="rounded-full bg-white"
             onClick={() => navigate({ to: '/profile' })}
-            aria-label="Volver al perfil"
+            aria-label={t.statsPage.backAria}
           >
             <ArrowLeft className="size-4" />
           </Button>
@@ -118,7 +120,7 @@ function RouteComponent() {
 
         <section className="mt-5 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
           <p className="text-sm leading-6 text-[#64748b]">
-            Resumen general del crecimiento de la app.
+            {t.statsPage.summaryCopy}
           </p>
 
           {statsQuery.isLoading ? (
@@ -130,18 +132,18 @@ function RouteComponent() {
             <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {statsQuery.error instanceof Error
                 ? statsQuery.error.message
-                : 'No se pudieron cargar las métricas'}
+                : t.statsPage.loadMetricsFailed}
             </div>
           ) : statsQuery.data ? (
             <div className="mt-4 grid grid-cols-2 gap-3">
               <StatCard
                 icon={<Users className="size-5" />}
-                label="Usuarios"
+                label={t.statsPage.users}
                 value={formatNumber(statsQuery.data.totalUsers)}
               />
               <StatCard
                 icon={<FolderKanban className="size-5" />}
-                label="Espacios"
+                label={t.statsPage.groups}
                 value={formatNumber(statsQuery.data.totalGroups)}
               />
             </div>
@@ -151,10 +153,11 @@ function RouteComponent() {
         <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-lg font-semibold text-[#0f172a]">Feedback</p>
+              <p className="text-lg font-semibold text-[#0f172a]">
+                {t.statsPage.feedback}
+              </p>
               <p className="mt-1 text-sm leading-6 text-[#64748b]">
-                Revisa bugs y solicitudes de funcionalidad reportadas por los
-                usuarios.
+                {t.statsPage.feedbackCopy}
               </p>
             </div>
             <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -167,7 +170,7 @@ function RouteComponent() {
             className="mt-4 h-12 w-full rounded-full"
             onClick={() => navigate({ to: '/profile/stats/feedback' })}
           >
-            Abrir bandeja de feedback
+            {t.statsPage.openFeedbackInbox}
           </Button>
         </section>
       </div>

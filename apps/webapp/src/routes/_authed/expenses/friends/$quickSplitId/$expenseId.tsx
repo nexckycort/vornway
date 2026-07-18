@@ -16,6 +16,7 @@ import { useAuth } from '#/contexts/auth/use-auth';
 import { formatCurrency } from '#/lib/i18n';
 import { useDeleteQuickSplitExpenseMutation } from '#/routes/_authed/expenses/-hooks/use-delete-quick-split-expense';
 import { useQuickSplitExpenseQuery } from '#/routes/_authed/expenses/-hooks/use-quick-split-expense-query';
+import { getQuickSplitMessages } from '#/routes/_authed/expenses/-messages';
 
 export const Route = createFileRoute(
   '/_authed/expenses/friends/$quickSplitId/$expenseId',
@@ -51,6 +52,7 @@ function getInitials(name: string): string {
 }
 
 function RouteComponent() {
+  const t = getQuickSplitMessages();
   const { quickSplitId, expenseId } = Route.useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -99,14 +101,10 @@ function RouteComponent() {
         expenseId,
       });
       setShowDeleteDrawer(false);
-      toast.success('Gasto eliminado');
+      toast.success(t.deleted);
       await navigate({ to: '/expenses/friends' });
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo eliminar el gasto con amigos',
-      );
+      toast.error(error instanceof Error ? error.message : t.deleteFailed);
     }
   };
 
@@ -118,13 +116,13 @@ function RouteComponent() {
             type="button"
             onClick={handleBack}
             className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[#334155] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
-            aria-label="Atrás"
+            aria-label={t.back}
           >
             <ArrowLeft className="size-4" />
           </button>
           <div className="min-w-0 text-center">
             <h1 className="truncate text-base font-semibold text-[#0f172a]">
-              Detalle
+              {t.detailTitle}
             </h1>
           </div>
           <span className="size-9" />
@@ -136,7 +134,7 @@ function RouteComponent() {
 
         {!expenseQuery.isLoading && !expense ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            No encontramos este gasto. Vuelve al listado y ábrelo desde allí.
+            {t.missingExpense}
           </div>
         ) : null}
 
@@ -167,25 +165,25 @@ function RouteComponent() {
 
               <div className="relative border-t border-dashed border-[#e2e8f0] px-5 pb-6 pt-5 before:absolute before:-left-3 before:-top-3 before:size-6 before:rounded-full before:bg-[#ececec] after:absolute after:-right-3 after:-top-3 after:size-6 after:rounded-full after:bg-[#ececec]">
                 <p className="mb-4 text-xs font-medium text-[#444444]">
-                  Pagado por
+                  {t.payerLabel}
                 </p>
                 <div className="space-y-4">
                   <MemberLine
                     image={expense.paidBy.image}
-                    name={`${expense.paidBy.name}${expense.paidBy.userId === user?.id ? ' (Tu)' : ''}`}
+                    name={`${expense.paidBy.name}${expense.paidBy.userId === user?.id ? ` (${t.you})` : ''}`}
                     amount={formatAmount(expense.currency, expense.amount)}
                   />
                 </div>
 
                 <p className="mb-4 mt-7 text-xs font-medium text-[#444444]">
-                  Se divide con
+                  {t.splitLabel}
                 </p>
                 <div className="space-y-5">
                   {expense.participants.map((participant) => (
                     <MemberLine
                       key={participant.id}
                       image={participant.image}
-                      name={`${participant.name}${participant.userId === user?.id ? ' (Tu)' : ''}`}
+                      name={`${participant.name}${participant.userId === user?.id ? ` (${t.you})` : ''}`}
                       amount={formatAmount(expense.currency, participant.share)}
                     />
                   ))}
@@ -197,7 +195,7 @@ function RouteComponent() {
                   type="button"
                   onClick={() => setShowDeleteDrawer(true)}
                   className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#202124] shadow-[0_4px_12px_rgba(15,23,42,0.05)]"
-                  aria-label="Eliminar gasto"
+                  aria-label={t.deleteExpenseTitle}
                 >
                   <Trash2 className="size-4" />
                 </button>
@@ -216,7 +214,7 @@ function RouteComponent() {
                   className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[#080202] text-sm font-semibold text-white"
                 >
                   <PencilLine className="size-4" />
-                  Editar gasto
+                  {t.editExpense}
                 </button>
               </div>
             </div>
@@ -227,10 +225,8 @@ function RouteComponent() {
       <Drawer open={showDeleteDrawer} onOpenChange={setShowDeleteDrawer}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Eliminar gasto</DrawerTitle>
-            <DrawerDescription>
-              Esta acción eliminará el gasto con amigos.
-            </DrawerDescription>
+            <DrawerTitle>{t.deleteExpenseTitle}</DrawerTitle>
+            <DrawerDescription>{t.deleteExpenseCopy}</DrawerDescription>
           </DrawerHeader>
           <DrawerFooter className="grid grid-cols-2">
             <Button
@@ -247,7 +243,9 @@ function RouteComponent() {
               onClick={() => void handleConfirmDelete()}
               disabled={deleteExpenseMutation.isPending}
             >
-              {deleteExpenseMutation.isPending ? 'Eliminando…' : 'Eliminar'}
+              {deleteExpenseMutation.isPending
+                ? t.common.deleting
+                : t.common.delete}
             </Button>
           </DrawerFooter>
         </DrawerContent>

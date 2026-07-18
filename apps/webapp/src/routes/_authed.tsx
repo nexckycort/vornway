@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog';
 import { useAuth } from '#/contexts/auth/use-auth';
+import { m } from '#/paraglide/messages.js';
 
 export const Route = createFileRoute('/_authed')({
   component: AuthedLayout,
@@ -79,7 +80,7 @@ function AuthedLayout() {
         throw new Error(
           payload?.message ??
             payload?.error ??
-            'No se pudo guardar el nombre de usuario',
+            m['profile.usernameSaveFailed'](),
         );
       }
 
@@ -87,13 +88,13 @@ function AuthedLayout() {
     },
     onSuccess: async () => {
       await auth.refresh();
-      toast.success('Nombre de usuario configurado');
+      toast.success(m['profile.usernameConfigured']());
     },
     onError: (error) => {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'No se pudo guardar el nombre de usuario',
+          : m['profile.usernameSaveFailed'](),
       );
     },
   });
@@ -114,24 +115,23 @@ function AuthedLayout() {
           className="max-w-[calc(100%-1rem)] rounded-[28px] p-5 sm:max-w-md"
         >
           <DialogHeader className="space-y-2 text-left">
-            <DialogTitle>Elige tu nombre de usuario</DialogTitle>
+            <DialogTitle>{m['profile.chooseUsernameTitle']()}</DialogTitle>
             <DialogDescription>
-              Todas las personas deben tener uno para que buscar y agregar
-              amigos sea mucho mas facil.
+              {m['profile.chooseUsernameCopy']()}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="rounded-2xl bg-[#f8fafc] px-4 py-3 text-sm text-[#475569]">
-              Se vera como{' '}
+              {m['profile.usernamePreview']()}{' '}
               <span className="font-semibold">
-                @{username.trim() || 'tu.usuario'}
+                @{username.trim() || m['profile.usernamePlaceholder']()}
               </span>
             </div>
 
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-[#0f172a]">
-                Nombre de usuario
+                {m['profile.username']()}
               </span>
               <div className="flex h-12 items-center rounded-full border border-[#e2e8f0] bg-white px-4 focus-within:border-primary">
                 <span className="mr-1 text-sm text-[#64748b]">@</span>
@@ -144,15 +144,14 @@ function AuthedLayout() {
                         .replace(/[^a-z0-9._]/g, ''),
                     )
                   }
-                  placeholder="tu.usuario"
+                  placeholder={m['profile.usernamePlaceholder']()}
                   maxLength={24}
                   autoFocus
                   className="w-full bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
                 />
               </div>
               <p className="mt-2 text-xs text-[#64748b]">
-                Usa entre 3 y 24 caracteres. Solo letras minusculas, numeros,
-                punto y guion bajo.
+                {m['profile.usernameRules']()}
               </p>
             </label>
 
@@ -165,8 +164,8 @@ function AuthedLayout() {
               }
             >
               {updateUsernameMutation.isPending
-                ? 'Guardando...'
-                : 'Guardar nombre de usuario'}
+                ? m['common.saving']()
+                : m['profile.saveUsername']()}
             </Button>
           </div>
         </DialogContent>

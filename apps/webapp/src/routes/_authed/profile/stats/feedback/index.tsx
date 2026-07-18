@@ -19,6 +19,8 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog';
 import { useAuth } from '#/contexts/auth/use-auth';
+import { m } from '#/paraglide/messages.js';
+import { getProfileMessages } from '#/routes/_authed/profile/-messages';
 
 type FeedbackStatus = 'OPEN' | 'IN_REVIEW' | 'PLANNED' | 'DONE' | 'REJECTED';
 
@@ -69,6 +71,7 @@ export const Route = createFileRoute('/_authed/profile/stats/feedback/')({
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const t = getProfileMessages();
   const auth = useAuth();
   const queryClient = useQueryClient();
   const email = auth.user?.email?.trim().toLowerCase() ?? '';
@@ -89,7 +92,7 @@ function RouteComponent() {
         const payload = (await response.json().catch(() => null)) as {
           error?: string;
         } | null;
-        throw new Error(payload?.error ?? 'No se pudo cargar el feedback');
+        throw new Error(payload?.error ?? m['system.loadFeedbackFailed']());
       }
 
       return (await response.json()) as AdminFeedbackResponse;
@@ -114,7 +117,7 @@ function RouteComponent() {
         const payload = (await response.json().catch(() => null)) as {
           error?: string;
         } | null;
-        throw new Error(payload?.error ?? 'No se pudo actualizar el feedback');
+        throw new Error(payload?.error ?? m['system.updateFeedbackFailed']());
       }
 
       return (await response.json()) as AdminFeedbackItem;
@@ -123,13 +126,13 @@ function RouteComponent() {
       await queryClient.invalidateQueries({ queryKey: ['admin-feedback'] });
       setSelectedFeedback(updated);
       setDraftPriority(updated.priority ?? '');
-      toast.success('Feedback actualizado');
+      toast.success(m['system.feedbackUpdated']());
     },
     onError: (error) => {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'No se pudo actualizar el feedback',
+          : m['system.updateFeedbackFailed'](),
       );
     },
   });
@@ -150,9 +153,11 @@ function RouteComponent() {
       <main className="min-h-screen bg-[#fafafa] px-4 pt-6 text-foreground">
         <div className="mx-auto flex min-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col justify-center">
           <div className="rounded-[28px] border border-[#e2e8f0] bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
-            <h1 className="text-2xl font-semibold text-[#0f172a]">Feedback</h1>
+            <h1 className="text-2xl font-semibold text-[#0f172a]">
+              {t.statsPage.feedback}
+            </h1>
             <p className="mt-2 text-sm leading-6 text-[#64748b]">
-              No tienes acceso a esta vista.
+              {t.statsPage.noAccess}
             </p>
             <Button
               type="button"
@@ -160,7 +165,7 @@ function RouteComponent() {
               onClick={() => navigate({ to: '/profile' })}
             >
               <ArrowLeft className="mr-2 size-4" />
-              Volver al perfil
+              {t.statsPage.backToProfile}
             </Button>
           </div>
         </div>
@@ -174,10 +179,10 @@ function RouteComponent() {
         <header className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.22em] text-[#94a3b8]">
-              Admin
+              {t.statsPage.admin}
             </p>
             <h1 className="mt-2 text-3xl font-semibold leading-9 text-[#0f172a]">
-              Feedback
+              {t.statsPage.feedback}
             </h1>
           </div>
 
@@ -187,7 +192,7 @@ function RouteComponent() {
             size="icon-sm"
             className="rounded-full bg-white"
             onClick={() => navigate({ to: '/profile/stats' })}
-            aria-label="Volver"
+            aria-label={t.statsPage.back}
           >
             <ArrowLeft className="size-4" />
           </Button>
@@ -196,22 +201,22 @@ function RouteComponent() {
         <section className="mt-5 grid grid-cols-2 gap-3">
           <MiniStatCard
             icon={<FolderKanban className="size-4" />}
-            label="Total"
+            label={t.statsPage.total}
             value={String(counters.total)}
           />
           <MiniStatCard
             icon={<CircleDashed className="size-4" />}
-            label="Abiertos"
+            label={t.statsPage.open}
             value={String(counters.open)}
           />
           <MiniStatCard
             icon={<SearchCheck className="size-4" />}
-            label="Revisión"
+            label={t.statsPage.review}
             value={String(counters.inReview)}
           />
           <MiniStatCard
             icon={<Clock3 className="size-4" />}
-            label="Planeados"
+            label={t.statsPage.planned}
             value={String(counters.planned)}
           />
         </section>
@@ -232,11 +237,11 @@ function RouteComponent() {
             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {feedbackQuery.error instanceof Error
                 ? feedbackQuery.error.message
-                : 'No se pudo cargar el feedback'}
+                : t.statsPage.loadFeedbackFailed}
             </div>
           ) : feedbackItems.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-[#cbd5e1] bg-white px-4 py-5 text-sm text-[#64748b]">
-              No hay feedback todavía.
+              {t.statsPage.emptyFeedback}
             </div>
           ) : (
             feedbackItems.map((item) => (
@@ -297,7 +302,7 @@ function RouteComponent() {
                       setDraftPriority(item.priority ?? '');
                     }}
                   >
-                    Gestionar
+                    {t.statsPage.manage}
                   </Button>
                 </div>
               </article>
@@ -313,9 +318,9 @@ function RouteComponent() {
         >
           <DialogContent className="max-w-[calc(100%-1rem)] rounded-[28px] p-4 sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Gestionar feedback</DialogTitle>
+              <DialogTitle>{t.statsPage.manageFeedbackTitle}</DialogTitle>
               <DialogDescription>
-                Cambia el estado o la prioridad del reporte.
+                {t.statsPage.manageFeedbackCopy}
               </DialogDescription>
             </DialogHeader>
 
@@ -331,7 +336,9 @@ function RouteComponent() {
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold text-[#0f172a]">Estado</p>
+                  <p className="text-sm font-semibold text-[#0f172a]">
+                    {t.statsPage.status}
+                  </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {statusOptions.map((status) => (
                       <button
@@ -361,13 +368,13 @@ function RouteComponent() {
                     htmlFor="feedback-priority"
                     className="text-sm font-semibold text-[#0f172a]"
                   >
-                    Prioridad
+                    {t.statsPage.priority}
                   </label>
                   <input
                     id="feedback-priority"
                     value={draftPriority}
                     onChange={(event) => setDraftPriority(event.target.value)}
-                    placeholder="Ej: alta, media, baja"
+                    placeholder={t.statsPage.priorityPlaceholder}
                     className="mt-2 h-12 w-full rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none focus:border-primary"
                   />
                   <div className="mt-3 flex gap-3">
@@ -394,7 +401,7 @@ function RouteComponent() {
                     >
                       {updateFeedbackMutation.isPending
                         ? 'Guardando...'
-                        : 'Guardar'}
+                        : t.common.saveChanges}
                     </Button>
                   </div>
                 </div>
@@ -448,7 +455,11 @@ function AdminStatusBadge({ status }: { status: FeedbackStatus }) {
 function getAdminStatusMeta(status: FeedbackStatus) {
   switch (status) {
     case 'IN_REVIEW':
-      return { label: 'En revisión', background: '#fef3c7', color: '#b45309' };
+      return {
+        label: m['profile.feedback.inReview'](),
+        background: '#fef3c7',
+        color: '#b45309',
+      };
     case 'PLANNED':
       return { label: 'Planeado', background: '#dbeafe', color: '#1d4ed8' };
     case 'DONE':

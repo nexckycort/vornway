@@ -2,6 +2,10 @@ import { m } from '#/paraglide/messages.js';
 
 export function getQuickSplitMessages() {
   return {
+    common: {
+      delete: m['common.delete'](),
+      deleting: m['common.deleting'](),
+    },
     title: m['quickSplit.title'](),
     step: m['quickSplit.step'](),
     entryStep: m['quickSplit.entryStep'](),
@@ -31,6 +35,32 @@ export function getQuickSplitMessages() {
     payerLabel: m['quickSplit.payerLabel'](),
     splitLabel: m['quickSplit.splitLabel'](),
     splitAll: m['quickSplit.splitAll'](),
+    selectedOne: m['quickSplit.selectedOne'](),
+    you: m['quickSplit.you'](),
+    splitEqual: m['quickSplit.splitEqual'](),
+    splitPercentage: m['quickSplit.splitPercentage'](),
+    splitExact: m['quickSplit.splitExact'](),
+    splitEqualCopy: m['quickSplit.splitEqualCopy'](),
+    splitPercentageCopy: m['quickSplit.splitPercentageCopy'](),
+    splitExactCopy: m['quickSplit.splitExactCopy'](),
+    splitMethodTitle: m['quickSplit.splitMethodTitle'](),
+    splitMethodCopy: m['quickSplit.splitMethodCopy'](),
+    invalidPercentage: m['quickSplit.invalidPercentage'](),
+    invalidExact: m['quickSplit.invalidExact'](),
+    invalidAmountTotal: m['quickSplit.invalidAmountTotal'](),
+    splitMinHint: m['quickSplit.splitMinHint'](),
+    splitPercentageHint: (count: number, percent: string, amount: string) =>
+      m['quickSplit.splitPercentageHint']({ count, percent, amount }),
+    splitAmountHint: (count: number, assigned: string, total: string) =>
+      m['quickSplit.splitAmountHint']({ count, assigned, total }),
+    editingIn: (name: string) => m['quickSplit.editingIn']({ name }),
+    detailTitle: m['quickSplit.detailTitle'](),
+    missingExpense: m['quickSplit.missingExpense'](),
+    editExpense: m['quickSplit.editExpense'](),
+    deleteExpenseTitle: m['quickSplit.deleteExpenseTitle'](),
+    deleteExpenseCopy: m['quickSplit.deleteExpenseCopy'](),
+    deleted: m['quickSplit.deleted'](),
+    deleteFailed: m['quickSplit.deleteFailed'](),
     splitTotal: (assigned: string, total: string) =>
       m['quickSplit.splitTotal']({ assigned, total }),
     submit: m['quickSplit.submit'](),

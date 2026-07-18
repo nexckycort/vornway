@@ -12,6 +12,7 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import { formatCurrency } from '#/lib/i18n';
+import { m } from '#/paraglide/messages.js';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
 import { useCreateGoalMutation } from '../-hooks/use-create-goal';
 import {
@@ -21,6 +22,7 @@ import {
   getGoalTheme,
   goalTypes,
 } from '../-lib/goal-experience';
+import { getGoalsMessages } from '../-messages';
 
 export const Route = createFileRoute('/_authed/goals/new/')({
   component: RouteComponent,
@@ -39,13 +41,14 @@ function normalizeText(value: string) {
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const t = getGoalsMessages();
   const createGoalMutation = useCreateGoalMutation();
   const nameRef = useRef<HTMLInputElement | null>(null);
   const participantRef = useRef<HTMLInputElement | null>(null);
 
   const [step, setStep] = useState(0);
   const [goalType, setGoalType] = useState<GoalType>('gift');
-  const [name, setName] = useState('Regalos para Navidad');
+  const [name, setName] = useState(String(t.defaultName));
   const [emoji, setEmoji] = useState('🎁');
   const [description, setDescription] = useState('');
   const [currency, setCurrency] = useState('COP');
@@ -107,10 +110,10 @@ function RouteComponent() {
   }, [goalType]);
 
   const participantsCountLabel = useMemo(() => {
-    if (participants.length === 0) return 'Solo tú';
-    if (participants.length === 1) return '2 personas';
-    return `${participants.length + 1} personas`;
-  }, [participants.length]);
+    if (participants.length === 0) return t.onlyYou;
+    if (participants.length === 1) return t.twoPeople;
+    return t.peopleCount(participants.length + 1);
+  }, [participants.length, t.onlyYou, t.twoPeople, t.peopleCount]);
 
   const addParticipant = (participant: DraftParticipant) => {
     const trimmedName = participant.name.trim();
@@ -175,7 +178,7 @@ function RouteComponent() {
       });
 
       if (!result?.id) {
-        throw new Error('No se pudo crear la meta');
+        throw new Error(m['system.createGoalFailed']());
       }
 
       await navigate({
@@ -187,7 +190,7 @@ function RouteComponent() {
       setError(
         submitError instanceof Error
           ? submitError.message
-          : 'No se pudo crear la meta',
+          : m['system.createGoalFailed'](),
       );
     }
   };
@@ -202,7 +205,7 @@ function RouteComponent() {
   };
 
   return (
-    <MobilePageLayout title="Nueva meta" onBack={previousStep}>
+    <MobilePageLayout title={t.newTitle} onBack={previousStep}>
       <form onSubmit={handleSubmit} className="flex flex-1 flex-col pb-6">
         <div className="-mx-4 border-y border-[#e2e8f0] bg-white px-4 py-3">
           <div className="h-1.5 overflow-hidden rounded-full bg-[#eef2f7]">
@@ -217,9 +220,9 @@ function RouteComponent() {
           {step === 0 ? (
             <section className="space-y-4">
               <StepHeader
-                eyebrow="Paso 1 de 6"
-                title="¿Qué quieres lograr?"
-                copy="El tipo define la vibra visual, el ritmo sugerido y cómo se sentirá el progreso."
+                eyebrow={t.stepOne}
+                title={t.whatTitle}
+                copy={t.stepOneCopy}
               />
               <div className="grid gap-3">
                 {goalTypes.map((type) => {
@@ -248,10 +251,10 @@ function RouteComponent() {
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-base font-semibold text-[#0f172a]">
-                          {type.label}
+                          {type.label()}
                         </span>
                         <span className="mt-1 block text-sm leading-5 text-[#64748b]">
-                          {type.description}
+                          {type.description()}
                         </span>
                       </span>
                       {active ? (
@@ -267,14 +270,14 @@ function RouteComponent() {
           {step === 1 ? (
             <section className="space-y-4">
               <StepHeader
-                eyebrow="Paso 2 de 6"
-                title="Dale identidad"
-                copy="Debe sentirse como algo que vale la pena abrir y compartir."
+                eyebrow={t.stepTwo}
+                title={t.identityTitle}
+                copy={t.stepTwoCopy}
               />
               <GoalPreviewCard
                 name={name}
                 emoji={emoji}
-                typeLabel={selectedType.label}
+                typeLabel={selectedType.label()}
                 target={target}
                 currency={currency}
                 progress={0}
@@ -285,20 +288,20 @@ function RouteComponent() {
                   value={emoji}
                   onChange={(event) => setEmoji(event.target.value.slice(0, 8))}
                   className="h-14 rounded-[22px] border border-[#e2e8f0] bg-white px-4 text-center text-2xl outline-none"
-                  aria-label="Emoji"
+                  aria-label={t.emojiAria}
                 />
                 <input
                   ref={nameRef}
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  placeholder="Nombre de la meta"
+                  placeholder={t.namePlaceholder}
                   className="h-14 rounded-[22px] border border-[#e2e8f0] bg-white px-4 text-base outline-none"
                 />
               </div>
               <textarea
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-                placeholder="Descripción opcional"
+                placeholder={t.descriptionPlaceholder}
                 rows={3}
                 className="w-full rounded-[22px] border border-[#e2e8f0] bg-white px-4 py-3 text-base outline-none"
               />
@@ -308,12 +311,12 @@ function RouteComponent() {
           {step === 2 ? (
             <section className="space-y-4">
               <StepHeader
-                eyebrow="Paso 3 de 6"
-                title="Define el objetivo"
-                copy="Vornway calcula el ritmo necesario para llegar a tiempo."
+                eyebrow={t.stepThree}
+                title={t.objectiveTitle}
+                copy={t.stepThreeCopy}
               />
               <div className="rounded-[30px] bg-[#111111] p-5 text-white">
-                <p className="text-sm text-white/60">Objetivo</p>
+                <p className="text-sm text-white/60">{t.objective}</p>
                 <div className="mt-3 flex items-end gap-3">
                   <input
                     value={targetAmount}
@@ -333,18 +336,18 @@ function RouteComponent() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <DateField
-                  label="Inicio"
+                  label={t.start}
                   value={startDate}
                   onChange={setStartDate}
                 />
                 <DateField
-                  label="Final"
+                  label={t.end}
                   value={endDate}
                   onChange={setEndDate}
                 />
               </div>
               <InsightCard
-                label="Ritmo sugerido"
+                label={t.suggestedPace}
                 value={formatCurrency(currency, perPersonMonthly)}
                 copy={`por persona al mes con ${participantsCountLabel.toLowerCase()}`}
               />
@@ -354,9 +357,9 @@ function RouteComponent() {
           {step === 3 ? (
             <section className="space-y-4">
               <StepHeader
-                eyebrow="Paso 4 de 6"
-                title="Elige cómo aportan"
-                copy="La meta puede ser estricta, flexible o simplemente sugerir un ritmo."
+                eyebrow={t.stepFour}
+                title={t.contributionModeTitle}
+                copy={t.stepFourCopy}
               />
               <div className="grid gap-3">
                 {contributionModes.map((mode) => {
@@ -373,10 +376,10 @@ function RouteComponent() {
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="text-base font-semibold text-[#0f172a]">
-                            {mode.label}
+                            {mode.label()}
                           </p>
                           <p className="mt-1 text-sm leading-5 text-[#64748b]">
-                            {mode.description}
+                            {mode.description()}
                           </p>
                         </div>
                         {active ? (
@@ -392,14 +395,14 @@ function RouteComponent() {
                   value={installmentCount}
                   onChange={(event) => setInstallmentCount(event.target.value)}
                   inputMode="numeric"
-                  placeholder="Meses"
+                  placeholder={t.monthsPlaceholder}
                   className="h-12 rounded-[20px] border border-[#e2e8f0] bg-white px-4 text-base outline-none"
                 />
                 <input
                   value={installmentAmount}
                   onChange={(event) => setInstallmentAmount(event.target.value)}
                   inputMode="numeric"
-                  placeholder="Cuota opcional"
+                  placeholder={t.optionalQuotaPlaceholder}
                   className="h-12 rounded-[20px] border border-[#e2e8f0] bg-white px-4 text-base outline-none"
                 />
               </div>
@@ -409,9 +412,9 @@ function RouteComponent() {
           {step === 4 ? (
             <section className="space-y-4">
               <StepHeader
-                eyebrow="Paso 5 de 6"
-                title="Agrega personas"
-                copy="Puedes buscar usuarios o crear participantes manuales para reclamar después."
+                eyebrow={t.stepFive}
+                title={t.addPeopleTitle}
+                copy={t.stepFiveCopy}
               />
               <div className="flex gap-2">
                 <input
@@ -424,7 +427,7 @@ function RouteComponent() {
                       addParticipant({ name: participantInput });
                     }
                   }}
-                  placeholder="Nombre o correo"
+                  placeholder={t.peoplePlaceholder}
                   className="h-12 min-w-0 flex-1 rounded-[20px] border border-[#e2e8f0] bg-white px-4 text-base outline-none"
                 />
                 <Button
@@ -433,7 +436,7 @@ function RouteComponent() {
                   className="size-12 rounded-[20px]"
                   onClick={() => addParticipant({ name: participantInput })}
                   disabled={!participantInput.trim()}
-                  aria-label="Agregar participante"
+                  aria-label={t.addParticipantAria}
                 >
                   <UserPlus className="size-5" />
                 </Button>
@@ -511,14 +514,14 @@ function RouteComponent() {
           {step === 5 ? (
             <section className="space-y-4">
               <StepHeader
-                eyebrow="Paso 6 de 6"
-                title="Así se verá tu meta"
-                copy="Confirma el plan antes de crear el fondo."
+                eyebrow={t.stepSix}
+                title={t.previewTitle}
+                copy={t.stepSixCopy}
               />
               <GoalPreviewCard
                 name={name}
                 emoji={emoji}
-                typeLabel={selectedType.label}
+                typeLabel={selectedType.label()}
                 target={target}
                 currency={currency}
                 progress={0}
@@ -526,18 +529,20 @@ function RouteComponent() {
               />
               <div className="grid grid-cols-2 gap-3">
                 <InsightCard
-                  label="Cuota sugerida"
+                  label={t.suggestedQuota}
                   value={formatCurrency(currency, suggestedContribution)}
-                  copy="por persona"
+                  copy={t.perPerson}
                 />
                 <InsightCard
-                  label="Miembros"
+                  label={t.members}
                   value={participantCount.toString()}
                   copy={participantsCountLabel}
                 />
               </div>
               <div className="rounded-[26px] border border-[#e2e8f0] bg-white p-4">
-                <p className="text-sm font-semibold text-[#0f172a]">Timeline</p>
+                <p className="text-sm font-semibold text-[#0f172a]">
+                  {t.timeline}
+                </p>
                 <div className="mt-4 flex items-center gap-2">
                   {Array.from({ length: Math.min(6, months) }).map(
                     (_, index) => (

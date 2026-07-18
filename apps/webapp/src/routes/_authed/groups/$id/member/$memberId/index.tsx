@@ -4,11 +4,13 @@ import { useEffect, useMemo, useRef } from 'react';
 
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
+import { m } from '#/paraglide/messages.js';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import {
   type GroupMemberExpenseItem,
   useGroupMemberExpensesInfiniteQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-member-expenses-query';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import { CategoryIcon } from '../../-components/category-icon';
 import {
   formatMoney,
@@ -43,6 +45,7 @@ export const Route = createFileRoute('/_authed/groups/$id/member/$memberId/')({
 });
 
 function RouteComponent() {
+  const t = getGroupDetailMessages();
   const { id, memberId } = Route.useParams();
   const {
     categoryId,
@@ -157,22 +160,22 @@ function RouteComponent() {
       title={
         member
           ? categoryName
-            ? `Gastos de ${member.name} en ${categoryName}`
-            : `Gastos de ${member.name}`
-          : 'Gastos del participante'
+            ? t.detail.memberCategoryExpensesTitle(member.name, categoryName)
+            : t.detail.memberExpensesTitle(member.name)
+          : t.detail.participantExpensesTitle
       }
       onBack={handleBack}
     >
       <div className="flex flex-1 flex-col pb-8">
         {groupQuery.isLoading ? (
           <div className="rounded-[28px] border border-[#e2e8f0] bg-white p-4">
-            <p className="text-sm text-[#64748b]">Cargando participante…</p>
+            <p className="text-sm text-[#64748b]">{t.detail.memberLoading}</p>
           </div>
         ) : null}
 
         {!groupQuery.isLoading && !member ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            No encontramos este participante en el espacio.
+            {t.detail.memberMissing}
           </div>
         ) : null}
 
@@ -197,11 +200,13 @@ function RouteComponent() {
                   <p className="truncate text-base font-semibold text-[#132238]">
                     {member.name}
                     {member.isCurrentUser ? (
-                      <span className="ml-1 text-xs text-[#94a3b8]">(tú)</span>
+                      <span className="ml-1 text-xs text-[#94a3b8]">
+                        {t.detail.you}
+                      </span>
                     ) : null}
                   </p>
                   <p className="truncate text-xs text-[#64748b]">
-                    {member.email ?? 'Sin cuenta vinculada'}
+                    {member.email ?? t.detail.unlinked}
                   </p>
                 </div>
               </div>
@@ -209,15 +214,19 @@ function RouteComponent() {
               <p className="mt-4 rounded-2xl bg-[#f8fafc] px-3 py-3 text-xs text-[#64748b]">
                 {paidOnly
                   ? categoryName
-                    ? `Revisa solo los gastos de ${categoryName.toLowerCase()} que esta persona pagó.`
+                    ? m['groups.detail.memberFilterPaidCategoryCopy']({
+                        category: categoryName.toLowerCase(),
+                      })
                     : startDate && endDate
-                      ? 'Revisa solo los gastos que esta persona pagó en este rango.'
-                      : 'Revisa solo los gastos que esta persona pagó.'
+                      ? m['groups.detail.memberFilterPaidRangeCopy']()
+                      : m['groups.detail.memberFilterPaidCopy']()
                   : categoryName
-                    ? `Revisa solo los gastos de ${categoryName.toLowerCase()} donde esta persona pagó o participa.`
+                    ? m['groups.detail.memberFilterRelatedCategoryCopy']({
+                        category: categoryName.toLowerCase(),
+                      })
                     : startDate && endDate
-                      ? 'Revisa solo los gastos de este rango donde esta persona pagó o participa.'
-                      : 'Revisa solo los gastos donde esta persona pagó o participa.'}
+                      ? m['groups.detail.memberFilterRelatedRangeCopy']()
+                      : m['groups.detail.memberFilterRelatedCopy']()}
               </p>
             </section>
 
@@ -225,12 +234,12 @@ function RouteComponent() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-[#132238]">
-                    Consolidado
+                    {m['groups.detail.memberSummaryTitle']()}
                   </h2>
                   <p className="mt-1 text-xs text-[#64748b]">
                     {paidOnly
-                      ? 'Total de su parte en gastos que pagó'
-                      : 'Total que ha gastado en este filtro'}
+                      ? m['groups.detail.memberSummaryPaidCopy']()
+                      : m['groups.detail.memberSummaryRelatedCopy']()}
                   </p>
                 </div>
               </div>
@@ -244,8 +253,12 @@ function RouteComponent() {
                     >
                       <p className="text-xs font-medium text-[#64748b]">
                         {paidOnly
-                          ? `Su parte en ${currency}`
-                          : `Total en ${currency}`}
+                          ? m['groups.detail.memberShareInCurrency']({
+                              currency,
+                            })
+                          : m['groups.detail.memberTotalInCurrency']({
+                              currency,
+                            })}
                       </p>
                       <p className="mt-1 text-lg font-semibold text-[#132238]">
                         {formatMoney(currency, amount)}
@@ -259,7 +272,9 @@ function RouteComponent() {
                           className="rounded-2xl bg-[#eef6ff] px-4 py-3"
                         >
                           <p className="text-xs font-medium text-[#64748b]">
-                            Total pagado en {currency}
+                            {m['groups.detail.memberTotalPaidInCurrency']({
+                              currency,
+                            })}
                           </p>
                           <p className="mt-1 text-lg font-semibold text-[#132238]">
                             {formatMoney(currency, amount)}
@@ -270,7 +285,7 @@ function RouteComponent() {
                 </div>
               ) : (
                 <div className="rounded-2xl bg-[#f8fafc] px-4 py-4 text-sm text-[#64748b]">
-                  Aún no hay total acumulado para este filtro.
+                  {m['groups.detail.memberNoSummary']()}
                 </div>
               )}
             </section>
@@ -281,28 +296,34 @@ function RouteComponent() {
                   <h2 className="text-sm font-semibold text-[#132238]">
                     {paidOnly
                       ? categoryName
-                        ? `Gastos pagados en ${categoryName}`
-                        : 'Gastos que pagó'
+                        ? m['groups.detail.memberPaidExpensesInCategory']({
+                            category: categoryName,
+                          })
+                        : m['groups.detail.memberPaidExpenses']()
                       : categoryName
-                        ? `Gastos en ${categoryName}`
-                        : 'Gastos relacionados'}
+                        ? m['groups.detail.memberCategoryExpenses']({
+                            category: categoryName,
+                          })
+                        : m['groups.detail.memberRelatedExpenses']()}
                   </h2>
                   <p className="mt-1 text-xs text-[#64748b]">
                     {paidOnly
                       ? categoryName
-                        ? 'Solo pagados por esta persona en esta categoría'
+                        ? m['groups.detail.memberPaidCategoryHint']()
                         : startDate && endDate
-                          ? 'Solo los que pagó en este rango de fecha'
-                          : 'Solo los que pagó'
+                          ? m['groups.detail.memberPaidRangeHint']()
+                          : m['groups.detail.memberPaidHint']()
                       : categoryName
-                        ? 'Solo de esta categoría'
+                        ? m['groups.detail.memberCategoryHint']()
                         : startDate && endDate
-                          ? 'Solo de este rango de fecha'
-                          : 'Donde pagó o participa'}
+                          ? m['groups.detail.memberRangeHint']()
+                          : m['groups.detail.memberRelatedHint']()}
                   </p>
                 </div>
                 <span className="text-xs text-[#94a3b8]">
-                  {expenses.length} gasto{expenses.length === 1 ? '' : 's'}
+                  {m['groups.detail.memberExpenseCount']({
+                    count: expenses.length,
+                  })}
                 </span>
               </div>
 
@@ -317,7 +338,7 @@ function RouteComponent() {
                       : 'border-[#cbd5e1] bg-white text-[#475569]',
                   ].join(' ')}
                 >
-                  Solo los que pagó
+                  {m['groups.detail.memberPaidOnlyToggle']()}
                 </button>
               </div>
 
@@ -335,20 +356,20 @@ function RouteComponent() {
               {!expensesQuery.isLoading && expenses.length === 0 ? (
                 <div className="rounded-2xl bg-[#f8fafc] px-4 py-6 text-center">
                   <p className="text-sm font-medium text-[#132238]">
-                    Sin gastos para este participante
+                    {m['groups.detail.memberEmptyTitle']()}
                   </p>
                   <p className="mt-1 text-xs text-[#64748b]">
                     {paidOnly
                       ? categoryName
-                        ? 'Cuando pague un gasto de esta categoría aparecerá aquí.'
+                        ? m['groups.detail.memberEmptyPaidCategoryCopy']()
                         : startDate && endDate
-                          ? 'Cuando pague un gasto en este rango aparecerá aquí.'
-                          : 'Cuando pague un gasto aparecerá aquí.'
+                          ? m['groups.detail.memberEmptyPaidRangeCopy']()
+                          : m['groups.detail.memberEmptyPaidCopy']()
                       : categoryName
-                        ? 'Cuando esté involucrado en un gasto de esta categoría aparecerá aquí.'
+                        ? m['groups.detail.memberEmptyRelatedCategoryCopy']()
                         : startDate && endDate
-                          ? 'Cuando esté involucrado en un gasto de este rango aparecerá aquí.'
-                          : 'Cuando esté involucrado en un gasto aparecerá aquí.'}
+                          ? m['groups.detail.memberEmptyRelatedRangeCopy']()
+                          : m['groups.detail.memberEmptyRelatedCopy']()}
                   </p>
                 </div>
               ) : null}

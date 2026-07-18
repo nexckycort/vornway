@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { quickSplitsClient } from '#/api/quick-splits';
+import { m } from '#/paraglide/messages.js';
 
 const deleteQuickSplitExpenseEndpoint =
   quickSplitsClient[':id'].expenses[':expenseId'].$delete;
@@ -24,9 +25,7 @@ async function deleteQuickSplitExpense({
     const payload = (await response.json().catch(() => null)) as {
       message?: string;
     } | null;
-    throw new Error(
-      payload?.message ?? 'No se pudo eliminar el gasto con amigos',
-    );
+    throw new Error(payload?.message ?? m['system.deleteExpenseFailed']());
   }
 
   return response.json() as Promise<{ id: string }>;

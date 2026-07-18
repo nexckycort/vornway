@@ -39,6 +39,7 @@ import { GroupDetailHeader } from './-components/group-detail-header';
 import { GroupDetailSkeleton } from './-components/group-detail-skeleton';
 import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
 import { GroupParticipantsStrip } from './-components/group-participants-strip';
+import { getGroupDetailMessages } from './-messages';
 import type { ExpenseItem, GroupSummary } from './-types/group-detail.types';
 
 export const Route = createFileRoute('/_authed/groups/$id/')({
@@ -47,6 +48,7 @@ export const Route = createFileRoute('/_authed/groups/$id/')({
 
 function RouteComponent() {
   const { id } = Route.useParams();
+  const t = getGroupDetailMessages();
   const navigate = useNavigate();
   const { flowState, navigateToFlowBack } = useGroupFlowNavigation(id);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -126,7 +128,7 @@ function RouteComponent() {
               id: expense.payload.categoryId,
               name:
                 categoriesById.get(expense.payload.categoryId)?.name ??
-                'Categoría',
+                t.detail.fallbackCategory,
               icon:
                 categoriesById.get(expense.payload.categoryId)?.icon ?? null,
               color:
@@ -266,7 +268,7 @@ function RouteComponent() {
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {groupQuery.error instanceof Error
               ? groupQuery.error.message
-              : 'No tienes acceso a este espacio'}
+              : t.detail.noAccess}
           </div>
           <Link
             to="/groups"
@@ -306,7 +308,7 @@ function RouteComponent() {
       await navigator.clipboard.writeText(value);
       setShareMessage(`${label} copiado`);
     } catch {
-      setShareMessage('No se pudo copiar');
+      setShareMessage(t.detail.copyFailed);
     }
   };
 
@@ -321,7 +323,7 @@ function RouteComponent() {
 
       await copyText(inviteLink, 'Enlace');
     } catch {
-      setShareMessage('No se pudo compartir');
+      setShareMessage(t.detail.shareFailed);
     }
   };
 
@@ -359,7 +361,7 @@ function RouteComponent() {
       setExpenseForOptions(null);
     } catch (error) {
       setShareMessage(
-        error instanceof Error ? error.message : 'No se pudo actualizar el pin',
+        error instanceof Error ? error.message : t.detail.pinFailed,
       );
     }
   };
@@ -380,9 +382,7 @@ function RouteComponent() {
       setMemberToRemove(null);
     } catch (error) {
       setShareMessage(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo eliminar el miembro',
+        error instanceof Error ? error.message : t.detail.removeMemberFailed,
       );
     }
   };
@@ -399,7 +399,7 @@ function RouteComponent() {
       setExpenseToDelete(null);
     } catch (error) {
       setShareMessage(
-        error instanceof Error ? error.message : 'No se pudo eliminar el gasto',
+        error instanceof Error ? error.message : t.detail.deleteExpenseFailed,
       );
     }
   };
@@ -472,7 +472,7 @@ function RouteComponent() {
       <Drawer open={showQrDrawer} onOpenChange={setShowQrDrawer}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Código QR del espacio</DrawerTitle>
+            <DrawerTitle>{t.detail.qrCodeTitle}</DrawerTitle>
             <DrawerDescription>{group.name}</DrawerDescription>
           </DrawerHeader>
 
@@ -486,7 +486,7 @@ function RouteComponent() {
               <div className="flex justify-center rounded-[28px] border border-[#e2e8f0] bg-white p-4">
                 <img
                   src={groupQrCode}
-                  alt={`Código QR para unirse a ${group.name}`}
+                  alt={t.settings.qrAlt(group.name)}
                   className="size-64 rounded-[24px] bg-white object-contain"
                 />
               </div>
@@ -627,7 +627,9 @@ function RouteComponent() {
                   className="flex w-full items-center gap-3 rounded-2xl p-1 text-left"
                 >
                   <Trash2 className="size-5 text-red-500" />
-                  <span className="font-medium text-red-500">Eliminar</span>
+                  <span className="font-medium text-red-500">
+                    {t.detail.delete}
+                  </span>
                 </button>
               ) : null}
 
@@ -635,7 +637,7 @@ function RouteComponent() {
                 <p className="text-sm text-red-500">
                   {toggleExpensePinMutation.error instanceof Error
                     ? toggleExpensePinMutation.error.message
-                    : 'No se pudo actualizar el pin'}
+                    : t.detail.pinFailed}
                 </p>
               ) : null}
             </div>
@@ -658,7 +660,7 @@ function RouteComponent() {
           {expenseToDelete ? (
             <>
               <DrawerHeader>
-                <DrawerTitle>Eliminar gasto</DrawerTitle>
+                <DrawerTitle>{t.detail.deleteExpenseTitle}</DrawerTitle>
                 <DrawerDescription>
                   Se eliminará este gasto del espacio.
                 </DrawerDescription>
@@ -699,7 +701,7 @@ function RouteComponent() {
                 >
                   {deleteExpenseMutation.isPending
                     ? 'Eliminando…'
-                    : 'Sí, eliminar gasto'}
+                    : t.detail.yesDeleteExpense}
                 </Button>
               </DrawerFooter>
             </>
@@ -722,7 +724,7 @@ function RouteComponent() {
           {memberToRemove ? (
             <>
               <DrawerHeader>
-                <DrawerTitle>Eliminar miembro</DrawerTitle>
+                <DrawerTitle>{t.detail.removeMemberTitle}</DrawerTitle>
                 <DrawerDescription>
                   Solo puedes eliminarlo si no tiene saldos pendientes.
                 </DrawerDescription>
@@ -745,7 +747,7 @@ function RouteComponent() {
                 >
                   {removeMemberMutation.isPending
                     ? 'Eliminando…'
-                    : 'Sí, eliminar miembro'}
+                    : t.detail.yesDeleteMember}
                 </Button>
                 <Button
                   type="button"

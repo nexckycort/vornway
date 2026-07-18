@@ -6,14 +6,15 @@ import {
   Sparkles,
   WalletCards,
 } from 'lucide-react';
+import { m } from '#/paraglide/messages.js';
 
 export type GoalType = 'trip' | 'gift' | 'saving' | 'event' | 'custom';
 export type ContributionMode = 'manual' | 'monthly' | 'flexible' | 'suggested';
 
 export const goalTypes: Array<{
   id: GoalType;
-  label: string;
-  description: string;
+  label: () => string;
+  description: () => string;
   emoji: string;
   accent: string;
   soft: string;
@@ -21,8 +22,8 @@ export const goalTypes: Array<{
 }> = [
   {
     id: 'trip',
-    label: 'Viaje',
-    description: 'Destinos, countdown y presupuesto compartido.',
+    label: () => m['goals.typeTrip'](),
+    description: () => m['goals.typeTripDescription'](),
     emoji: '✈️',
     accent: '#0ea5e9',
     soft: '#e0f2fe',
@@ -30,8 +31,8 @@ export const goalTypes: Array<{
   },
   {
     id: 'gift',
-    label: 'Regalo',
-    description: 'Fondos cálidos para detalles en espacio.',
+    label: () => m['goals.typeGift'](),
+    description: () => m['goals.typeGiftDescription'](),
     emoji: '🎁',
     accent: '#f97316',
     soft: '#ffedd5',
@@ -39,8 +40,8 @@ export const goalTypes: Array<{
   },
   {
     id: 'saving',
-    label: 'Ahorro',
-    description: 'Minimal, claro y orientado al objetivo.',
+    label: () => m['goals.typeSaving'](),
+    description: () => m['goals.typeSavingDescription'](),
     emoji: '💰',
     accent: '#10b981',
     soft: '#d1fae5',
@@ -48,8 +49,8 @@ export const goalTypes: Array<{
   },
   {
     id: 'event',
-    label: 'Evento',
-    description: 'Planes sociales, fechas y aportes visibles.',
+    label: () => m['goals.typeEvent'](),
+    description: () => m['goals.typeEventDescription'](),
     emoji: '🎉',
     accent: '#e11d48',
     soft: '#ffe4e6',
@@ -57,8 +58,8 @@ export const goalTypes: Array<{
   },
   {
     id: 'custom',
-    label: 'Personalizada',
-    description: 'Define tu propia vibra y ritmo.',
+    label: () => m['goals.typeCustom'](),
+    description: () => m['goals.typeCustomDescription'](),
     emoji: '✨',
     accent: '#7c3aed',
     soft: '#ede9fe',
@@ -68,28 +69,28 @@ export const goalTypes: Array<{
 
 export const contributionModes: Array<{
   id: ContributionMode;
-  label: string;
-  description: string;
+  label: () => string;
+  description: () => string;
 }> = [
   {
     id: 'manual',
-    label: 'Manual',
-    description: 'Cada aporte se registra cuando ocurra.',
+    label: () => m['goals.modeManual'](),
+    description: () => m['goals.modeManualDescription'](),
   },
   {
     id: 'monthly',
-    label: 'Mensual',
-    description: 'Ideal para cuotas fijas y seguimiento por mes.',
+    label: () => m['goals.modeMonthly'](),
+    description: () => m['goals.modeMonthlyDescription'](),
   },
   {
     id: 'flexible',
-    label: 'Flexible',
-    description: 'Sin presión fija, pero con progreso visible.',
+    label: () => m['goals.modeFlexible'](),
+    description: () => m['goals.modeFlexibleDescription'](),
   },
   {
     id: 'suggested',
-    label: 'Cuota sugerida',
-    description: 'Vornway calcula un aporte recomendado.',
+    label: () => m['goals.modeSuggested'](),
+    description: () => m['goals.modeSuggestedDescription'](),
   },
 ];
 
@@ -106,23 +107,23 @@ export function getGoalTheme(
 
 export function getContributionModeLabel(mode?: string | null) {
   return (
-    contributionModes.find((item) => item.id === mode)?.label ??
-    contributionModes[0].label
+    contributionModes.find((item) => item.id === mode)?.label() ??
+    contributionModes[0].label()
   );
 }
 
 export function getDaysLabel(daysLeft: number) {
-  if (daysLeft <= 0) return 'Hoy';
-  if (daysLeft === 1) return '1 día';
-  return `${daysLeft} días`;
+  if (daysLeft <= 0) return m['goals.daysToday']();
+  if (daysLeft === 1) return m['goals.daysOne']();
+  return m['goals.daysMany']({ count: daysLeft });
 }
 
 export function getProgressTone(progress: number) {
-  if (progress >= 100) return 'Completada';
-  if (progress >= 75) return 'Muy cerca';
-  if (progress >= 40) return 'En movimiento';
-  if (progress > 0) return 'Empezando';
-  return 'Nueva';
+  if (progress >= 100) return m['goals.progressComplete']();
+  if (progress >= 75) return m['goals.progressClose']();
+  if (progress >= 40) return m['goals.progressMoving']();
+  if (progress > 0) return m['goals.progressStarting']();
+  return m['goals.progressNew']();
 }
 
 export const defaultGoalIcon = WalletCards;

@@ -1,4 +1,6 @@
 import { Trash2 } from 'lucide-react';
+import { m } from '#/paraglide/messages.js';
+import { getProfileMessages } from '#/routes/_authed/profile/-messages';
 import type { FeedbackItem, FeedbackStatus } from '../-hooks/use-feedback-page';
 
 type FeedbackListProps = {
@@ -16,12 +18,16 @@ export function FeedbackList({
   emptyCopy,
   onRequestDelete,
 }: FeedbackListProps) {
+  const t = getProfileMessages();
+
   return (
     <section className="space-y-3">
       <div>
-        <p className="text-lg font-semibold text-[#0f172a]">Tus envíos</p>
+        <p className="text-lg font-semibold text-[#0f172a]">
+          {t.feedback.submissions}
+        </p>
         <p className="mt-1 text-sm text-[#64748b]">
-          Revisa el estado de lo que ya reportaste.
+          {t.feedback.submissionsCopy}
         </p>
       </div>
 
@@ -29,9 +35,7 @@ export function FeedbackList({
         <FeedbackListSkeleton />
       ) : error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error instanceof Error
-            ? error.message
-            : 'No se pudo cargar el feedback'}
+          {error instanceof Error ? error.message : t.feedback.loadFailed}
         </div>
       ) : items.length === 0 ? (
         <div className="rounded-[24px] border border-dashed border-[#cbd5e1] bg-white px-4 py-5 text-sm text-[#64748b]">
@@ -76,6 +80,8 @@ function FeedbackCard({
   item: FeedbackItem;
   onRequestDelete: (item: FeedbackItem) => void;
 }) {
+  const t = getProfileMessages();
+
   return (
     <article className="rounded-[24px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
       <div className="flex items-start justify-between gap-3">
@@ -85,8 +91,8 @@ function FeedbackCard({
           </p>
           <p className="mt-1 text-xs text-[#64748b]">
             {item.type === 'BUG'
-              ? 'Error reportado'
-              : 'Funcionalidad solicitada'}
+              ? t.feedback.bugReported
+              : t.feedback.featureRequested}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -95,7 +101,7 @@ function FeedbackCard({
             type="button"
             onClick={() => onRequestDelete(item)}
             className="flex size-8 items-center justify-center rounded-full border border-[#e2e8f0] bg-white text-[#64748b]"
-            aria-label="Eliminar reporte"
+            aria-label={t.feedback.removeReportAria}
           >
             <Trash2 className="size-4" />
           </button>
@@ -146,19 +152,19 @@ function getStatusMeta(status: FeedbackStatus) {
   switch (status) {
     case 'IN_REVIEW':
       return {
-        label: 'En revisión',
+        label: m['profile.feedback.inReview'](),
         background: '#fef3c7',
         color: '#b45309',
       };
     case 'PLANNED':
       return {
-        label: 'Planeado',
+        label: m['profile.feedback.planned'](),
         background: '#dbeafe',
         color: '#1d4ed8',
       };
     case 'DONE':
       return {
-        label: 'Hecho',
+        label: m['profile.feedback.done'](),
         background: '#dcfce7',
         color: '#15803d',
       };

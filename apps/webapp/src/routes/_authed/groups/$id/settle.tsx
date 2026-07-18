@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronDown, Delete, Repeat2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
+import { m } from '#/paraglide/messages.js';
 import {
   useSettleDebtMutation,
   useUpdateExpenseMutation,
@@ -28,12 +29,12 @@ const currencyMeta: Record<
   string,
   { flag: string; label: string; symbol: string }
 > = {
-  COP: { flag: '🇨🇴', label: 'Pesos Colombianos', symbol: '$' },
-  EUR: { flag: '🇪🇺', label: 'Euro', symbol: '€' },
-  USD: { flag: '🇺🇸', label: 'Dólar estadounidense', symbol: 'US$' },
-  GBP: { flag: '🇬🇧', label: 'Libra esterlina', symbol: '£' },
-  MXN: { flag: '🇲🇽', label: 'Peso mexicano', symbol: '$' },
-  BRL: { flag: '🇧🇷', label: 'Real brasileño', symbol: 'R$' },
+  COP: { flag: '🇨🇴', label: m['common.currency.copFull'](), symbol: '$' },
+  EUR: { flag: '🇪🇺', label: m['common.currency.eurFull'](), symbol: '€' },
+  USD: { flag: '🇺🇸', label: m['common.currency.usdFull'](), symbol: 'US$' },
+  GBP: { flag: '🇬🇧', label: m['common.currency.gbpFull'](), symbol: '£' },
+  MXN: { flag: '🇲🇽', label: m['common.currency.mxnFull'](), symbol: '$' },
+  BRL: { flag: '🇧🇷', label: m['common.currency.brlFull'](), symbol: 'R$' },
 };
 
 type Step = 1 | 2;
@@ -131,7 +132,8 @@ function RouteComponent() {
   const didInitializeEditRef = useRef(false);
 
   const myMembershipId = groupQuery.data?.myMembership?.id ?? null;
-  const myMembershipName = groupQuery.data?.myMembership?.name ?? 'Tú';
+  const myMembershipName =
+    groupQuery.data?.myMembership?.name ?? m['common.user.you']();
   const directDebts = (groupQuery.data?.directDebts ?? []) as Array<{
     toMemberId: string;
     toName: string;

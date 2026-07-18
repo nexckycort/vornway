@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { notificationsClient } from '#/api/notifications';
 import type { InferResponseType } from '#/api/types';
+import { m } from '#/paraglide/messages.js';
 
 const notificationsEndpoint = notificationsClient.index.$get;
 const notificationsMarkReadEndpoint = notificationsClient['read-all'].$post;
@@ -16,7 +17,7 @@ export function useNotificationsQuery() {
       });
 
       if (!response.ok) {
-        throw new Error('No se pudieron cargar las notificaciones');
+        throw new Error(m['notifications.loadFailed']());
       }
 
       return (await response.json()) as unknown as NotificationsResponse;

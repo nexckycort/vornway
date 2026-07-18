@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
+import { getProfileMessages } from '#/routes/_authed/profile/-messages';
 import { DeleteFeedbackDialog } from './-components/delete-feedback-dialog';
 import { FeedbackForm } from './-components/feedback-form';
 import { FeedbackList } from './-components/feedback-list';
@@ -16,12 +17,13 @@ export const Route = createFileRoute('/_authed/profile/feedback/')({
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const t = getProfileMessages();
   const { type: initialType } = Route.useSearch();
   const feedbackPage = useFeedbackPage(initialType as FeedbackType);
 
   return (
     <MobilePageLayout
-      title="Feedback"
+      title={t.feedback.title}
       onBack={() => {
         void navigate({ to: '/profile' });
       }}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_URL } from '#/config/env';
+import { m } from '#/paraglide/messages.js';
 
 const VERSION_STORAGE_KEY = 'vornway.app.version';
 const VERSION_ENDPOINT = `${API_URL.replace(/\/$/, '')}/version`;
@@ -30,7 +31,7 @@ async function fetchRemoteVersion() {
   });
 
   if (!response.ok) {
-    throw new Error('No se pudo consultar la versión');
+    throw new Error(m['system.versionCheckFailed']());
   }
 
   const data = (await response.json()) as VersionResponse;

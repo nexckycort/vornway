@@ -1,6 +1,6 @@
 import { ArrowDownLeft, Clock3, Pencil, Pin, Trash2 } from 'lucide-react';
 import { type MouseEvent, type TouchEvent, useRef, useState } from 'react';
-
+import { getGroupDetailMessages } from '../-messages';
 import type { ExpenseItem } from '../-types/group-detail.types';
 import { CategoryIcon } from './category-icon';
 import { formatMoney, getExpenseEmoji } from './group-detail.utils';
@@ -28,6 +28,7 @@ export function GroupExpenseRow({
   onDeleteExpense,
   onEditExpense,
 }: GroupExpenseRowProps) {
+  const t = getGroupDetailMessages();
   const SWIPE_WIDTH = 88;
   const SWIPE_THRESHOLD = 44;
   const FULL_SWIPE_THRESHOLD = 78;
@@ -217,8 +218,8 @@ export function GroupExpenseRow({
     userBalance === null || Math.abs(userBalance) < 0.01
       ? null
       : userBalance > 0
-        ? `Te deben ${formatMoney(expense.currency, userBalance)}`
-        : `Tú debes ${formatMoney(expense.currency, Math.abs(userBalance))}`;
+        ? t.detail.theyOwe(formatMoney(expense.currency, userBalance))
+        : t.detail.youOwe(formatMoney(expense.currency, Math.abs(userBalance)));
   const settlementLabel = expense.description.replace(/^Liquidación:\s*/i, '');
 
   return (
@@ -239,7 +240,7 @@ export function GroupExpenseRow({
             className="flex h-full w-full flex-col items-center justify-center text-white"
           >
             <Trash2 className="mb-1 size-5" />
-            <span className="text-xs font-medium">Borrar</span>
+            <span className="text-xs font-medium">{t.detail.deleteSwipe}</span>
           </button>
         </div>
       ) : null}
@@ -248,7 +249,7 @@ export function GroupExpenseRow({
         <div className="absolute inset-y-0 left-0 z-0 flex w-[88px] items-center justify-center bg-[#0f172a]">
           <div className="flex h-full w-full flex-col items-center justify-center text-white">
             <Pencil className="mb-1 size-5" />
-            <span className="text-xs font-medium">Editar</span>
+            <span className="text-xs font-medium">{t.detail.edit}</span>
           </div>
         </div>
       ) : null}

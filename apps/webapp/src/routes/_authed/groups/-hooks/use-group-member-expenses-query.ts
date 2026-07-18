@@ -2,6 +2,7 @@ import { useInfiniteQuery, useQueries } from '@tanstack/react-query';
 import { groupsClient } from '#/api/groups';
 
 import type { InferResponseType } from '#/api/types';
+import { m } from '#/paraglide/messages.js';
 
 const PAGE_LIMIT = 20;
 const MULTI_MEMBER_LIMIT = 100;
@@ -58,7 +59,7 @@ export function useGroupMemberExpensesInfiniteQuery(
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
       if (!memberId) {
-        throw new Error('Participante no encontrado');
+        throw new Error(m['groups.detail.memberMissing']());
       }
 
       const response = await groupMemberExpensesEndpoint({
@@ -75,7 +76,7 @@ export function useGroupMemberExpensesInfiniteQuery(
       });
 
       if (!response.ok) {
-        throw new Error('No se pudieron cargar los gastos del participante');
+        throw new Error(m['system.loadMemberExpensesFailed']());
       }
 
       return (await response.json()) as GroupMemberExpensesPageSuccess;
@@ -118,7 +119,7 @@ export function useGroupMemberExpensesByMembersQuery(
         });
 
         if (!response.ok) {
-          throw new Error('No se pudieron cargar los gastos del participante');
+          throw new Error(m['system.loadMemberExpensesFailed']());
         }
 
         return (await response.json()) as GroupMemberExpensesPageSuccess;

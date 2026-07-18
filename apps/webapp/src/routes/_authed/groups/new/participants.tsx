@@ -16,12 +16,14 @@ import {
   enqueueGroupOffline,
   syncPendingGroupsQueue,
 } from '#/lib/offline-group-query-collection';
+import { m } from '#/paraglide/messages.js';
 import {
   buildCreateGroupPayload,
   type CreateGroupFormValues,
   useCreateGroupMutation,
 } from '#/routes/_authed/groups/-hooks/use-create-group';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import {
   clearGroupDraft,
   type GroupCreateDraft,
@@ -65,6 +67,7 @@ function normalizeText(value: string) {
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const t = getGroupDetailMessages();
   const { name, type, description, draftId } = Route.useSearch();
   const createGroupMutation = useCreateGroupMutation();
   const network = useNetworkState();
@@ -93,10 +96,15 @@ function RouteComponent() {
   const canAddParticipant = participantInput.trim().length > 0;
 
   const participantsCountLabel = useMemo(() => {
-    if (participants.length === 0) return 'Sin participantes extra';
-    if (participants.length === 1) return '1 participante agregado';
-    return `${participants.length} participantes agregados`;
-  }, [participants.length]);
+    if (participants.length === 0) return t.participants.extraParticipantsNone;
+    if (participants.length === 1) return t.participants.extraParticipantsOne;
+    return t.participants.extraParticipantsMany(participants.length);
+  }, [
+    participants.length,
+    t.participants.extraParticipantsNone,
+    t.participants.extraParticipantsOne,
+    t.participants.extraParticipantsMany,
+  ]);
 
   const createdInviteLink = useMemo(() => {
     if (!createdGroup) return '';
@@ -233,7 +241,7 @@ function RouteComponent() {
         setError(
           offlineError instanceof Error
             ? offlineError.message
-            : 'No se pudo guardar el espacio sin conexión',
+            : t.participants.offlineSaveFailed,
         );
         setIsSavingOffline(false);
       }
@@ -264,16 +272,16 @@ function RouteComponent() {
       setError(
         submitError instanceof Error
           ? submitError.message
-          : 'No se pudo crear el espacio',
+          : t.participants.createFailed,
       );
     }
   };
 
   if (!isValidGroupData) {
     return (
-      <MobilePageLayout title="Agregar participantes" onBack={goBack}>
+      <MobilePageLayout title={t.participants.title} onBack={goBack}>
         <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          Falta información del espacio. Vuelve al paso anterior.
+          {t.participants.missingGroupInfo}
         </p>
         <Button
           type="button"
@@ -281,14 +289,14 @@ function RouteComponent() {
           className="mt-4 h-11 rounded-2xl"
           onClick={goBack}
         >
-          Volver
+          {t.common.back}
         </Button>
       </MobilePageLayout>
     );
   }
 
   return (
-    <MobilePageLayout title="Agregar participantes" onBack={goBack}>
+    <MobilePageLayout title={t.participants.title} onBack={goBack}>
       <div className="flex min-h-full min-w-0 flex-col">
         <section className="mb-3 rounded-2xl border border-[#e2e8f0] bg-white p-4">
           <div className="flex items-center gap-3">
@@ -314,7 +322,7 @@ function RouteComponent() {
           htmlFor="participant-name"
           className="mt-2 block text-sm font-medium text-[#334155]"
         >
-          Nombre o usuario
+          {t.participants.nameOrUsername}
         </label>
         <div className="mt-2 flex min-w-0 gap-2">
           <input
@@ -328,7 +336,7 @@ function RouteComponent() {
                 addManualParticipant();
               }
             }}
-            placeholder="Ej: Ana Pérez o ana.perez"
+            placeholder={t.participants.searchPlaceholder}
             className="h-12 min-w-0 flex-1 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none transition-colors focus:border-primary"
             maxLength={120}
           />
@@ -338,26 +346,27 @@ function RouteComponent() {
             className="size-12 rounded-2xl"
             onClick={addManualParticipant}
             disabled={!canAddParticipant}
-            aria-label="Agregar participante"
+            aria-label={t.participants.addAria}
           >
             <UserPlus className="size-5" />
           </Button>
         </div>
 
         <p className="mt-3 text-xs text-[#64748b]">
-          Si coincide con un usuario registrado, lo verás debajo con su nombre
-          de usuario. Si no, puedes crearlo solo con el nombre.
+          {t.participants.searchCopy}
         </p>
 
         {searchQuery.isFetching && debouncedSearch ? (
-          <p className="mt-3 text-sm text-[#64748b]">Buscando coincidencias…</p>
+          <p className="mt-3 text-sm text-[#64748b]">
+            {t.participants.searching}
+          </p>
         ) : null}
 
         {debouncedSearch &&
         !searchQuery.isFetching &&
         searchResults.length === 0 ? (
           <p className="mt-3 text-sm text-[#64748b]">
-            No encontramos coincidencias. Puedes crearlo manualmente.
+            {t.participants.noSearchResultsManual}
           </p>
         ) : null}
 
@@ -402,11 +411,11 @@ function RouteComponent() {
                   <div className="flex shrink-0 flex-col items-end gap-1 text-[11px] text-[#64748b]">
                     {candidate.isCurrentUser ? (
                       <span className="rounded-full bg-[#f8fafc] px-2 py-1">
-                        Tú
+                        {m['common.user.you']()}
                       </span>
                     ) : (
                       <span className="rounded-full bg-[#f8fafc] px-2 py-1">
-                        Vincular
+                        {t.participants.linkUser}
                       </span>
                     )}
                   </div>
@@ -436,7 +445,7 @@ function RouteComponent() {
                   </p>
                 ) : (
                   <p className="text-xs text-[#64748b]">
-                    Se creará manualmente
+                    {t.participants.manualParticipant}
                   </p>
                 )}
               </div>
@@ -467,7 +476,7 @@ function RouteComponent() {
               onClick={handleCreate}
               disabled={isSubmitting}
             >
-              Omitir
+              {t.participants.skip}
             </Button>
             <Button
               type="button"
@@ -476,7 +485,7 @@ function RouteComponent() {
               disabled={isSubmitting}
             >
               <PlusCircle data-icon="inline-start" />
-              {isSubmitting ? 'Creando…' : 'Crear espacio'}
+              {isSubmitting ? t.participants.creating : t.common.createGroup}
             </Button>
           </div>
         </div>
@@ -497,10 +506,12 @@ function RouteComponent() {
         <DrawerContent className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden rounded-t-[32px] pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
           <DrawerHeader className="px-4 pt-3">
             <DrawerTitle className="text-[1.75rem] leading-[1.05] tracking-tight">
-              ¡{createdGroup?.name ?? 'Espacio'} creado!
+              {t.participants.createdTitle(
+                createdGroup?.name ?? t.participants.createdGroupFallback,
+              )}
             </DrawerTitle>
             <DrawerDescription className="text-sm leading-6">
-              Ya puedes compartir el enlace e invitar a más personas.
+              {t.participants.createdCopy}
             </DrawerDescription>
           </DrawerHeader>
 
@@ -512,7 +523,7 @@ function RouteComponent() {
                   {draft?.image?.dataUrl ? (
                     <img
                       src={draft.image.dataUrl}
-                      alt={createdGroup?.name ?? 'Espacio creado'}
+                      alt={createdGroup?.name ?? t.participants.createdGroupAlt}
                       className="h-full w-full object-cover"
                       referrerPolicy="no-referrer"
                     />
@@ -527,7 +538,7 @@ function RouteComponent() {
 
             <div>
               <p className="text-[1rem] font-semibold text-[#0f172a]">
-                Comparte el enlace del espacio
+                {t.participants.shareCreatedTitle}
               </p>
 
               <div className="mt-2 flex items-center gap-3">
@@ -565,8 +576,12 @@ function RouteComponent() {
                 onClick={async () => {
                   if (navigator.share) {
                     await navigator.share({
-                      title: createdGroup?.name ?? 'Espacio',
-                      text: `Únete a ${createdGroup?.name ?? 'mi espacio'}`,
+                      title:
+                        createdGroup?.name ??
+                        t.participants.createdGroupFallback,
+                      text: t.participants.shareCreatedText(
+                        createdGroup?.name ?? t.participants.shareFallbackName,
+                      ),
                       url: createdInviteLink,
                     });
                     return;
@@ -576,31 +591,33 @@ function RouteComponent() {
                 }}
               >
                 <Share2 className="mr-2 size-4" />
-                Compartir enlace
+                {t.participants.shareLink}
               </Button>
             </div>
 
             <div className="rounded-[24px] bg-white p-4">
               <p className="text-base font-semibold text-[#0f172a]">
-                ¿Qué puedes hacer ahora?
+                {t.participants.nextStepsTitle}
               </p>
               <ul className="mt-2 space-y-1.5 text-sm leading-6 text-[#334155]">
                 <li>
-                  <span className="font-semibold text-[#0f172a]">Invita</span> a
-                  más personas cuando quieras
+                  <span className="font-semibold text-[#0f172a]">
+                    {t.participants.inviteStrong}
+                  </span>{' '}
+                  {t.participants.inviteMore}
                 </li>
                 <li>
-                  Comienza a{' '}
+                  {t.participants.startRegister}{' '}
                   <span className="font-semibold text-[#0f172a]">
-                    registrar gastos
+                    {t.participants.registerExpensesStrong}
                   </span>{' '}
-                  compartidos
+                  {t.participants.sharedExpensesSuffix}
                 </li>
                 <li>
                   <span className="font-semibold text-[#0f172a]">
-                    Revisa los balances
+                    {t.participants.reviewBalancesStrong}
                   </span>{' '}
-                  en tiempo real
+                  {t.participants.realTimeSuffix}
                 </li>
               </ul>
             </div>
@@ -620,7 +637,7 @@ function RouteComponent() {
               }}
               disabled={!createdGroup}
             >
-              Ir al espacio
+              {t.participants.goToGroup}
             </Button>
           </div>
         </DrawerContent>

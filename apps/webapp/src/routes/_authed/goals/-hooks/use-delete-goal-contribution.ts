@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { goalsClient } from '#/api/goals';
 import type { InferResponseType } from '#/api/types';
+import { m } from '#/paraglide/messages.js';
 
 const deleteGoalContributionEndpoint =
   goalsClient[':id'].contributions[':contributionId'].$delete;
@@ -20,7 +21,9 @@ export function useDeleteGoalContributionMutation(goalId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo eliminar el aporte');
+        throw new Error(
+          payload.error ?? m['system.deleteGoalContributionFailed'](),
+        );
       }
 
       return (await response.json()) as DeleteGoalContributionResponse;

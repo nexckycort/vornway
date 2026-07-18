@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-
+import { getGroupDetailMessages } from '../-messages';
 import type { GroupSummary } from '../-types/group-detail.types';
 import { formatMoney, getInitials } from './group-detail.utils';
 
@@ -12,6 +12,8 @@ export function GroupBalancesSection({
   group,
   balanceRef,
 }: GroupBalancesSectionProps) {
+  const t = getGroupDetailMessages();
+
   return (
     <section ref={balanceRef} className="scroll-mt-6">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -63,7 +65,9 @@ export function GroupBalancesSection({
                   <p className="truncate text-sm font-semibold text-[#132238]">
                     {member.name}
                     {member.isCurrentUser ? (
-                      <span className="ml-1 text-xs text-[#94a3b8]">(tú)</span>
+                      <span className="ml-1 text-xs text-[#94a3b8]">
+                        {t.detail.you}
+                      </span>
                     ) : null}
                   </p>
                   <p className="truncate text-xs text-[#94a3b8]">

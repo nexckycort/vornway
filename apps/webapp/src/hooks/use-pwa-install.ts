@@ -3,6 +3,7 @@ import {
   globalDeferredPrompt,
   setGlobalDeferredPrompt,
 } from '#/lib/pwa-install-global';
+import { m } from '#/paraglide/messages.js';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -165,29 +166,29 @@ export function usePWAInstall() {
 
     if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
       return {
-        title: 'Instalar en iOS',
+        title: m['profile.installIosTitle'](),
         steps: [
-          'Toca el botón de compartir en Safari',
-          'Desplázate hacia abajo y toca "Añadir a la pantalla de inicio"',
-          'Toca "Añadir" para confirmar',
+          m['profile.installIosShare'](),
+          m['profile.installIosAddHome'](),
+          m['profile.installIosConfirm'](),
         ],
       };
     } else if (userAgent.includes('android')) {
       return {
-        title: 'Instalar en Android',
+        title: m['profile.installAndroidTitle'](),
         steps: [
-          'Toca el menú de opciones (tres puntos) en tu navegador',
-          'Selecciona "Instalar aplicación" o "Añadir a la pantalla de inicio"',
-          'Toca "Instalar" para confirmar',
+          m['profile.installAndroidMenu'](),
+          m['profile.installAndroidAdd'](),
+          m['profile.installAndroidConfirm'](),
         ],
       };
     } else {
       return {
-        title: 'Instalar en Escritorio',
+        title: m['profile.installDesktopTitle'](),
         steps: [
-          'Busca el ícono de instalación en la barra de direcciones',
-          'Haz clic en "Instalar" cuando aparezca la opción',
-          'O usa el menú del navegador → "Instalar Splitway"',
+          m['profile.installDesktopIcon'](),
+          m['profile.installDesktopClick'](),
+          m['profile.installDesktopMenu'](),
         ],
       };
     }

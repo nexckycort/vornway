@@ -21,6 +21,7 @@ import {
   type PendingGroup,
   removeLocalGroupFallback,
 } from '#/lib/offline-group-query-collection';
+import { m } from '#/paraglide/messages.js';
 import type {
   ExpenseItem,
   GroupSummary,
@@ -69,7 +70,7 @@ function buildPendingGroupSummary(group: PendingGroup): GroupSummary {
     members: [
       {
         id: ownerMemberId,
-        name: 'Tú',
+        name: m['common.user.you'](),
         email: null,
         image: null,
         role: 'admin',
@@ -85,7 +86,7 @@ function buildPendingGroupSummary(group: PendingGroup): GroupSummary {
     settlementDebts: [],
     myMembership: {
       id: ownerMemberId,
-      name: 'Tú',
+      name: m['common.user.you'](),
       role: 'admin',
     },
     isOwner: true,
@@ -236,7 +237,7 @@ export function useGroupSummaryQuery(groupId: string) {
           return cachedGroup;
         }
 
-        throw new Error('No se pudo cargar el espacio');
+        throw new Error(m['system.loadGroupFailed']());
       }
 
       if (!response.ok) {
@@ -248,7 +249,7 @@ export function useGroupSummaryQuery(groupId: string) {
           return cachedGroup;
         }
 
-        throw new Error('No se pudo cargar el espacio');
+        throw new Error(m['system.loadGroupFailed']());
       }
 
       const group = (await response.json()) as unknown as GroupSummary;
@@ -321,7 +322,7 @@ export function useGroupExpenseQuery(
     enabled: Boolean(expenseId),
     queryFn: async () => {
       if (!expenseId) {
-        throw new Error('Gasto no encontrado');
+        throw new Error(m['system.expenseNotFound']());
       }
 
       const response = await groupExpenseEndpoint({
@@ -330,7 +331,7 @@ export function useGroupExpenseQuery(
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo cargar el gasto');
+        throw new Error(payload.error ?? m['system.loadExpenseFailed']());
       }
 
       return (await response.json()) as GroupExpenseSuccess;
@@ -405,7 +406,7 @@ export function useGroupReportsTotalsQuery(
       });
 
       if (!response.ok) {
-        throw new Error('No se pudieron cargar los totales');
+        throw new Error(m['system.loadTotalsFailed']());
       }
 
       return (await response.json()) as GroupReportsTotalsSuccess;
@@ -443,7 +444,7 @@ export function useGroupReportsBalancesQuery(
       });
 
       if (!response.ok) {
-        throw new Error('No se pudieron cargar los balances');
+        throw new Error(m['system.loadBalancesFailed']());
       }
 
       return (await response.json()) as GroupReportsBalancesSuccess;
@@ -495,7 +496,7 @@ export function useGroupReportsCategoryCountQuery(
       });
 
       if (!response.ok) {
-        throw new Error('No se pudo cargar el total de gastos');
+        throw new Error(m['system.loadExpenseTotalFailed']());
       }
 
       return (await response.json()) as GroupReportsCategoryCountSuccess;
@@ -533,7 +534,7 @@ export function useGroupReportsSharesQuery(
       });
 
       if (!response.ok) {
-        throw new Error('No se pudieron cargar las partes');
+        throw new Error(m['system.loadSharesFailed']());
       }
 
       return (await response.json()) as GroupReportsSharesSuccess;

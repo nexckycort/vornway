@@ -46,7 +46,7 @@ export async function compressImageFileToDataUrl(
   const context = canvas.getContext('2d');
   if (!context) {
     bitmap.close();
-    throw new Error('No se pudo procesar la imagen');
+    throw new Error(m['system.imageProcessFailed']());
   }
 
   context.drawImage(bitmap, 0, 0, width, height);
@@ -64,9 +64,11 @@ function readFileAsDataUrl(file: File): Promise<string> {
         return;
       }
 
-      reject(new Error('No se pudo leer la imagen'));
+      reject(new Error(m['system.imageReadFailed']()));
     };
-    reader.onerror = () => reject(new Error('No se pudo leer la imagen'));
+    reader.onerror = () => reject(new Error(m['system.imageReadFailed']()));
     reader.readAsDataURL(file);
   });
 }
+
+import { m } from '#/paraglide/messages.js';

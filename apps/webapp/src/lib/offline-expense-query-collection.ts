@@ -3,6 +3,7 @@ import { QueryClient } from '@tanstack/query-core';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import { groupsClient } from '#/api/groups';
 import type { InferRequestType } from '#/api/types';
+import { m } from '#/paraglide/messages.js';
 
 const createExpenseEndpoint = groupsClient[':id'].expenses.$post;
 
@@ -278,7 +279,7 @@ export async function createExpenseOfflineFirst(
   if (typeof window === 'undefined') {
     const response = await postExpenseToApi(groupId, payloadWithId);
     if (!response.ok) {
-      throw new Error('No se pudo crear el gasto');
+      throw new Error(m['system.createExpenseFailed']());
     }
 
     const data = (await response.json()) as { id: string };
@@ -304,7 +305,7 @@ export async function createExpenseOfflineFirst(
     }
 
     const payloadError = (await response.json()) as { error?: string };
-    throw new Error(payloadError.error ?? 'No se pudo crear el gasto');
+    throw new Error(payloadError.error ?? m['system.createExpenseFailed']());
   } catch {
     const localId = enqueuePendingExpense(groupId, payloadWithId);
     return { id: localId, queued: true };

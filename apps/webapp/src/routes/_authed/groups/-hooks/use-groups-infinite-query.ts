@@ -7,6 +7,7 @@ import {
   type GroupsPage,
   upsertGroupListItems,
 } from '#/lib/groups-list-query-collection';
+import { m } from '#/paraglide/messages.js';
 
 const PAGE_LIMIT = 20;
 
@@ -31,7 +32,7 @@ async function fetchGroupsPage({
   });
 
   if (!response.ok) {
-    throw new Error('No se pudieron cargar los espacios');
+    throw new Error(m['groups.loadFailed']());
   }
 
   const page = (await response.json()) as GroupsPage;

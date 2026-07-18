@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog';
+import { getProfileMessages } from '#/routes/_authed/profile/-messages';
 import type { FeedbackItem } from '../-hooks/use-feedback-page';
 
 type DeleteFeedbackDialogProps = {
@@ -21,6 +22,8 @@ export function DeleteFeedbackDialog({
   onClose,
   onConfirm,
 }: DeleteFeedbackDialogProps) {
+  const t = getProfileMessages();
+
   return (
     <Dialog
       open={Boolean(feedback)}
@@ -30,10 +33,8 @@ export function DeleteFeedbackDialog({
     >
       <DialogContent className="max-w-[calc(100%-1rem)] rounded-[28px] p-4 sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Eliminar reporte</DialogTitle>
-          <DialogDescription>
-            Se eliminará el reporte y sus imágenes adjuntas.
-          </DialogDescription>
+          <DialogTitle>{t.feedback.deleteTitle}</DialogTitle>
+          <DialogDescription>{t.feedback.deleteCopy}</DialogDescription>
         </DialogHeader>
 
         <div className="mt-4 flex gap-3">
@@ -43,7 +44,7 @@ export function DeleteFeedbackDialog({
             className="h-12 flex-1 rounded-full"
             onClick={onClose}
           >
-            Cancelar
+            {t.common.cancel}
           </Button>
           <Button
             type="button"
@@ -51,7 +52,7 @@ export function DeleteFeedbackDialog({
             disabled={isDeleting || !feedback}
             onClick={onConfirm}
           >
-            {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            {isDeleting ? t.common.deleting : t.common.delete}
           </Button>
         </div>
       </DialogContent>

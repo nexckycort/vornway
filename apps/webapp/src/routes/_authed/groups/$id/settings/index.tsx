@@ -35,6 +35,7 @@ import {
   useUpdateGroupSettingsMutation,
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 
 export const Route = createFileRoute('/_authed/groups/$id/settings/')({
   component: RouteComponent,
@@ -42,6 +43,7 @@ export const Route = createFileRoute('/_authed/groups/$id/settings/')({
 
 function RouteComponent() {
   const { id } = Route.useParams();
+  const t = getGroupDetailMessages();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { navigateToGroupRoot, returnTo } = useGroupFlowNavigation(id);
@@ -66,7 +68,7 @@ function RouteComponent() {
   const updateSettingsMutation = useUpdateGroupSettingsMutation(id);
   const exportGroupCsvMutation = useExportGroupCsvMutation(
     id,
-    groupQuery.data?.name ?? 'espacio',
+    groupQuery.data?.name ?? t.participants.createdGroupFallback,
   );
 
   const inviteLink = useMemo(() => {
@@ -120,7 +122,7 @@ function RouteComponent() {
         setIsLinkCopied(false);
       }, 1200);
     } catch {
-      setShareMessage('No se pudo copiar');
+      setShareMessage(t.settings.copyFailed);
     }
   };
 
@@ -143,7 +145,7 @@ function RouteComponent() {
 
       await copyText(inviteLink, 'Enlace');
     } catch {
-      setShareMessage('No se pudo compartir');
+      setShareMessage(t.settings.shareFailed);
     }
   };
 
@@ -157,9 +159,7 @@ function RouteComponent() {
       void navigate({ to: '/groups', replace: true });
     } catch (error) {
       setShareMessage(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo eliminar el espacio',
+        error instanceof Error ? error.message : t.settings.deleteFailed,
       );
     }
   };
@@ -168,7 +168,7 @@ function RouteComponent() {
     const memberId = groupQuery.data?.myMembership?.id;
 
     if (!memberId) {
-      setShareMessage('No se pudo salir del espacio');
+      setShareMessage(t.settings.leaveFailed);
       return;
     }
 
@@ -177,7 +177,7 @@ function RouteComponent() {
       void navigate({ to: '/groups', replace: true });
     } catch (error) {
       setShareMessage(
-        error instanceof Error ? error.message : 'No se pudo salir del espacio',
+        error instanceof Error ? error.message : t.settings.leaveFailed,
       );
     }
   };
@@ -185,21 +185,19 @@ function RouteComponent() {
   const handleExportGroup = async () => {
     try {
       await exportGroupCsvMutation.mutateAsync();
-      toast.success('Exportación descargada');
+      toast.success(t.settings.exportDownloaded);
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo exportar el espacio',
+        error instanceof Error ? error.message : t.settings.exportFailed,
       );
     }
   };
 
   if (groupQuery.isLoading) {
     return (
-      <MobilePageLayout title="Ajustes" onBack={goBack}>
+      <MobilePageLayout title={t.settings.title} onBack={goBack}>
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-[#64748b]">Cargando ajustes…</p>
+          <p className="text-sm text-[#64748b]">{t.settings.loading}</p>
         </div>
       </MobilePageLayout>
     );
@@ -207,12 +205,12 @@ function RouteComponent() {
 
   if (groupQuery.isError || !groupQuery.data) {
     return (
-      <MobilePageLayout title="Ajustes" onBack={goBack}>
+      <MobilePageLayout title={t.settings.title} onBack={goBack}>
         <div className="flex flex-1 flex-col justify-center gap-4">
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {groupQuery.error instanceof Error
               ? groupQuery.error.message
-              : 'No se pudo cargar el espacio'}
+              : t.settings.loadError}
           </div>
           <Button
             type="button"
@@ -220,7 +218,7 @@ function RouteComponent() {
             className="h-11 rounded-full"
             onClick={goBack}
           >
-            Volver
+            {t.common.back}
           </Button>
         </div>
       </MobilePageLayout>
@@ -233,7 +231,7 @@ function RouteComponent() {
     user?.email?.trim().toLowerCase() === 'junior110120@gmail.com';
 
   return (
-    <MobilePageLayout title="Ajustes" onBack={goBack}>
+    <MobilePageLayout title={t.settings.title} onBack={goBack}>
       <div className="flex flex-1 flex-col pb-4">
         <section className="-mx-4 border-y border-[#e5e7eb] bg-white px-4">
           <div className="flex items-center gap-3 py-4">
@@ -257,7 +255,9 @@ function RouteComponent() {
                 {group.name}
               </p>
               <p className="truncate text-xs text-[#64748b]">
-                {group.type === 'meta' ? 'Meta' : 'Viaje'}
+                {group.type === 'meta'
+                  ? t.settings.groupTypeGoal
+                  : t.settings.groupTypeTrip}
               </p>
             </div>
 
@@ -272,7 +272,7 @@ function RouteComponent() {
                   state: editFlowState,
                 })
               }
-              aria-label="Editar espacio"
+              aria-label={t.settings.editGroupAria}
             >
               <Pencil className="size-4" />
             </button>
@@ -281,7 +281,7 @@ function RouteComponent() {
 
         <section className="-mx-4 mt-6">
           <p className="px-3 pb-1 text-sm text-[#64748b]">
-            Invitar participantes
+            {t.settings.inviteParticipants}
           </p>
 
           <button
@@ -292,7 +292,9 @@ function RouteComponent() {
             <span className="flex size-9 items-center justify-center text-[#132238]">
               <QrCode className="size-5" />
             </span>
-            <span className="flex-1 text-sm text-[#132238]">Ver código QR</span>
+            <span className="flex-1 text-sm text-[#132238]">
+              {t.settings.viewQrCode}
+            </span>
           </button>
 
           <button
@@ -304,14 +306,14 @@ function RouteComponent() {
               <Share2 className="size-5" />
             </span>
             <span className="flex-1 text-sm text-[#132238]">
-              Compartir enlace de invitación
+              {t.settings.shareInvitationLink}
             </span>
           </button>
         </section>
 
         <section className="-mx-4 mt-2 overflow-x-hidden">
           <p className="px-3 pb-1 text-sm text-[#64748b]">
-            Otras configuraciones
+            {t.settings.otherSettings}
           </p>
 
           <button
@@ -328,7 +330,7 @@ function RouteComponent() {
               <QrCode className="size-5" />
             </span>
             <span className="flex-1 text-sm text-[#132238]">
-              Crear y editar categorías
+              {t.settings.manageCategoriesTitle}
             </span>
           </button>
 
@@ -345,14 +347,14 @@ function RouteComponent() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm text-[#132238]">
-                Exportar en Excel
+                {t.settings.exportExcel}
               </p>
               <p className="truncate text-xs text-[#94a3b8]">
-                Descarga un CSV compatible con Excel
+                {t.settings.exportExcelCopy}
               </p>
             </div>
             <span className="text-xs text-[#94a3b8]">
-              {exportGroupCsvMutation.isPending ? 'Exportando…' : ''}
+              {exportGroupCsvMutation.isPending ? t.settings.exporting : ''}
             </span>
           </button>
 
@@ -363,10 +365,10 @@ function RouteComponent() {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm text-[#132238]">
-                  Detalles avanzados de gastos
+                  {t.settings.advancedExpenseDetails}
                 </p>
                 <p className="truncate text-xs text-[#94a3b8]">
-                  Lugares, contactos, reservas y notas por gasto
+                  {t.settings.advancedExpenseDetailsCopy}
                 </p>
               </div>
               <Switch
@@ -377,7 +379,7 @@ function RouteComponent() {
                     advancedExpenseDetailsEnabled: checked,
                   });
                 }}
-                aria-label="Activar detalles avanzados de gastos"
+                aria-label={t.settings.enableAdvancedExpenseDetailsAria}
               />
             </div>
           ) : null}
@@ -402,7 +404,7 @@ function RouteComponent() {
             ) : (
               <LogOut className="size-5" />
             )}
-            {isOwner ? 'Eliminar espacio' : 'Salir del espacio'}
+            {isOwner ? t.settings.deleteGroupTitle : t.settings.leaveGroupTitle}
           </button>
         </div>
 
@@ -416,11 +418,8 @@ function RouteComponent() {
       <Drawer open={showQrDrawer} onOpenChange={setShowQrDrawer}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Escanea el código QR</DrawerTitle>
-            <DrawerDescription>
-              Invita a tus compañeros de espacio a escanear el código para
-              unirse al espacio.
-            </DrawerDescription>
+            <DrawerTitle>{t.settings.scanQrTitle}</DrawerTitle>
+            <DrawerDescription>{t.settings.scanQrCopy}</DrawerDescription>
           </DrawerHeader>
 
           <div className="space-y-3 px-5 pb-10">
@@ -428,13 +427,13 @@ function RouteComponent() {
               <div className="mx-auto w-fit rounded-[24px] border border-[#e5e7eb] bg-white p-3">
                 <img
                   src={groupQrCode}
-                  alt={`Código QR para unirse a ${group.name}`}
+                  alt={t.settings.qrAlt(group.name)}
                   className="size-72 bg-white object-contain"
                 />
               </div>
             ) : (
               <div className="rounded-[28px] border border-dashed border-[#cbd5e1] bg-[#f8fafc] px-4 py-10 text-center text-sm text-[#64748b]">
-                Generando QR...
+                {t.settings.generatingQr}
               </div>
             )}
           </div>
@@ -444,10 +443,8 @@ function RouteComponent() {
       <Drawer open={showShareDrawer} onOpenChange={setShowShareDrawer}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Invita a tus compañeros de Espacio</DrawerTitle>
-            <DrawerDescription>
-              Comienza a gestionar los gastos compartidos del Espacio
-            </DrawerDescription>
+            <DrawerTitle>{t.settings.inviteTitle}</DrawerTitle>
+            <DrawerDescription>{t.settings.inviteCopy}</DrawerDescription>
           </DrawerHeader>
 
           <div className="space-y-3 px-5 pb-8">
@@ -465,11 +462,11 @@ function RouteComponent() {
                     : ''
                 }`}
                 onClick={async () => {
-                  await copyText(inviteLink, 'Enlace');
+                  await copyText(inviteLink, t.settings.inviteLinkLabel);
                 }}
               >
                 {isLinkCopied ? (
-                  <span className="text-xs font-semibold">OK</span>
+                  <span className="text-xs font-semibold">{t.common.ok}</span>
                 ) : (
                   <Copy className="size-5" />
                 )}
@@ -484,7 +481,7 @@ function RouteComponent() {
               }}
             >
               <Share2 className="mr-2 size-4" />
-              Compartir enlace
+              {t.settings.shareLink}
             </Button>
           </div>
         </DrawerContent>
@@ -496,12 +493,8 @@ function RouteComponent() {
       >
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Eliminar espacio</DrawerTitle>
-            <DrawerDescription>
-              Esta acción eliminará el espacio, los gastos y toda la información
-              del Espacio para todos los participantes. Esta acción no se puede
-              deshacer.
-            </DrawerDescription>
+            <DrawerTitle>{t.settings.deleteGroupTitle}</DrawerTitle>
+            <DrawerDescription>{t.settings.deleteGroupCopy}</DrawerDescription>
           </DrawerHeader>
 
           <DrawerFooter className="flex-row gap-3">
@@ -511,7 +504,7 @@ function RouteComponent() {
               className="h-11 flex-1 rounded-full"
               onClick={() => setShowDeleteGroupDrawer(false)}
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button
               type="button"
@@ -519,7 +512,9 @@ function RouteComponent() {
               onClick={handleConfirmDeleteGroup}
               disabled={deleteGroupMutation.isPending}
             >
-              {deleteGroupMutation.isPending ? 'Eliminando…' : 'Sí, eliminar'}
+              {deleteGroupMutation.isPending
+                ? t.detail.deleting
+                : t.settings.yesDelete}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -531,11 +526,8 @@ function RouteComponent() {
       >
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Salir del espacio</DrawerTitle>
-            <DrawerDescription>
-              Dejarás de tener acceso a los gastos, balances y actividad de este
-              Espacio y el espacio se eliminará de tu cuenta.
-            </DrawerDescription>
+            <DrawerTitle>{t.settings.leaveGroupTitle}</DrawerTitle>
+            <DrawerDescription>{t.settings.leaveGroupCopy}</DrawerDescription>
           </DrawerHeader>
 
           <DrawerFooter className="flex-row gap-3">
@@ -545,7 +537,7 @@ function RouteComponent() {
               className="h-11 flex-1 rounded-full"
               onClick={() => setShowLeaveGroupDrawer(false)}
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button
               type="button"
@@ -553,7 +545,9 @@ function RouteComponent() {
               onClick={handleLeaveGroup}
               disabled={unlinkMemberMutation.isPending}
             >
-              {unlinkMemberMutation.isPending ? 'Saliendo…' : 'Sí, salir'}
+              {unlinkMemberMutation.isPending
+                ? t.settings.leaving
+                : t.settings.yesLeave}
             </Button>
           </DrawerFooter>
         </DrawerContent>

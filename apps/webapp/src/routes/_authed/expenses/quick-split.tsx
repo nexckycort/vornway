@@ -14,6 +14,7 @@ import {
 import { useAuth } from '#/contexts/auth/use-auth';
 import { formatCurrency } from '#/lib/i18n';
 import { cn } from '#/lib/utils';
+import { m } from '#/paraglide/messages.js';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
 import { useCreateQuickSplitExpenseMutation } from './-hooks/use-create-quick-split-expense';
 import { useExpenseEntryData } from './-hooks/use-expense-entry-data';
@@ -51,16 +52,12 @@ type SelectedFriend = {
 
 type SplitMethod = 'equal' | 'percentage' | 'exact';
 
-const splitMethods: Array<{ value: SplitMethod; label: string }> = [
-  { value: 'equal', label: 'Partes iguales' },
-  { value: 'percentage', label: 'Porcentaje' },
-  { value: 'exact', label: 'Partes desiguales' },
-];
+const splitMethods: SplitMethod[] = ['equal', 'percentage', 'exact'];
 
 const currencyOptions = [
-  { code: 'COP', name: 'Peso colombiano', flag: '🇨🇴' },
-  { code: 'USD', name: 'Dólar estadounidense', flag: '🇺🇸' },
-  { code: 'EUR', name: 'Euro', flag: '🇪🇺' },
+  { code: 'COP', name: m['common.currency.copFull'](), flag: '🇨🇴' },
+  { code: 'USD', name: m['common.currency.usdFull'](), flag: '🇺🇸' },
+  { code: 'EUR', name: m['common.currency.eurFull'](), flag: '🇪🇺' },
 ] as const;
 
 function readCurrencyCode(
@@ -111,7 +108,7 @@ function RouteComponent() {
   const expenseQuery = useQuickSplitExpenseQuery(quickSplitId, expenseId);
   const isEditMode = Boolean(quickSplitId && expenseId);
   const currentUserId = user?.id ?? '';
-  const currentUserName = user?.name?.trim() || 'Tú';
+  const currentUserName = user?.name?.trim() || m['common.user.you']();
   const currentUserParticipantId =
     expenseQuery.data?.participants.find(
       (participant) => participant.userId === currentUserId,
@@ -436,8 +433,8 @@ function RouteComponent() {
     if (!splitIsValid) {
       toast.error(
         splitMethod === 'percentage'
-          ? 'La suma de porcentajes debe ser 100.'
-          : 'La suma de montos debe coincidir con el total.',
+          ? t.invalidPercentage
+          : t.invalidAmountTotal,
       );
       return;
     }
@@ -712,8 +709,8 @@ function RouteComponent() {
             <>
               <section>
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <p className="text-sm text-gray-600">Pagado por</p>
-                  <span className="text-xs text-gray-400">1 seleccionada</span>
+                  <p className="text-sm text-gray-600">{t.payerLabel}</p>
+                  <span className="text-xs text-gray-400">{t.selectedOne}</span>
                 </div>
                 <div className="flex gap-3 overflow-x-auto pb-1">
                   {people.map((person) => {
@@ -745,7 +742,7 @@ function RouteComponent() {
                           {isSelected ? <Check className="size-2.5" /> : '•'}
                         </span>
                         <span className="mt-1.5 max-w-[60px] truncate text-xs text-gray-600">
-                          {person.isCurrentUser ? 'Tú' : person.name}
+                          {person.isCurrentUser ? t.you : person.name}
                         </span>
                       </button>
                     );
@@ -755,17 +752,14 @@ function RouteComponent() {
 
               <section>
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <p className="text-sm text-gray-600">Se divide con</p>
+                  <p className="text-sm text-gray-600">{t.splitLabel}</p>
                   <button
                     type="button"
                     onClick={() => setShowSplitDrawer(true)}
                     className="inline-flex items-center gap-1 text-rose-500"
                   >
                     <span className="text-sm font-medium">
-                      {
-                        splitMethods.find((item) => item.value === splitMethod)
-                          ?.label
-                      }
+                      {getSplitMethodLabel(splitMethod, t)}
                     </span>
                     <ChevronDown className="size-4" />
                   </button>
@@ -780,7 +774,7 @@ function RouteComponent() {
                     <Plus className="size-4 text-white" />
                   </div>
                   <span className="text-sm font-medium text-gray-900">
-                    Todos
+                    {t.splitAll}
                   </span>
                   <span className="ml-auto text-sm text-gray-500">
                     {splitMethod === 'equal'
@@ -823,7 +817,10 @@ function RouteComponent() {
                             <span className="block truncate text-sm text-gray-900">
                               {person.name}
                               {person.isCurrentUser ? (
-                                <span className="text-gray-500"> (Tú)</span>
+                                <span className="text-gray-500">
+                                  {' '}
+                                  ({t.you})
+                                </span>
                               ) : null}
                             </span>
                             {splitMethod !== 'equal' && selected ? (
@@ -876,22 +873,33 @@ function RouteComponent() {
           {!splitIsValid && selectedCount > 1 ? (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
               {splitMethod === 'percentage'
-                ? 'La suma de porcentajes debe ser 100.'
-                : 'La suma de montos individuales debe coincidir con el total.'}
+                ? t.invalidPercentage
+                : t.invalidExact}
             </div>
           ) : null}
 
           <p className="text-xs text-gray-500">
             {selectedCount <= 1
-              ? 'Selecciona al menos dos personas para dividir este gasto'
+              ? t.splitMinHint
               : splitMethod === 'percentage'
-                ? `${selectedCount} participantes · ${splitSum.toFixed(2)}% sobre ${formatCurrency(currency, amount)}`
-                : `${selectedCount} participantes · ${formatCurrency(currency, splitMethod === 'equal' ? amount : splitSum)} de ${formatCurrency(currency, amount)}`}
+                ? t.splitPercentageHint(
+                    selectedCount,
+                    splitSum.toFixed(2),
+                    formatCurrency(currency, amount),
+                  )
+                : t.splitAmountHint(
+                    selectedCount,
+                    formatCurrency(
+                      currency,
+                      splitMethod === 'equal' ? amount : splitSum,
+                    ),
+                    formatCurrency(currency, amount),
+                  )}
           </p>
 
           {expenseQuery.data?.quickSplitName && isEditMode ? (
             <p className="text-xs text-gray-500">
-              Editando dentro de {expenseQuery.data.quickSplitName}
+              {t.editingIn(expenseQuery.data.quickSplitName)}
             </p>
           ) : null}
         </section>
@@ -952,34 +960,28 @@ function RouteComponent() {
       <Drawer open={showSplitDrawer} onOpenChange={setShowSplitDrawer}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Método de división</DrawerTitle>
-            <DrawerDescription>
-              Elige cómo se repartirá este gasto.
-            </DrawerDescription>
+            <DrawerTitle>{t.splitMethodTitle}</DrawerTitle>
+            <DrawerDescription>{t.splitMethodCopy}</DrawerDescription>
           </DrawerHeader>
 
           <div className="space-y-2 px-5 pb-5">
             {splitMethods.map((method) => {
-              const active = splitMethod === method.value;
+              const active = splitMethod === method;
               return (
                 <button
-                  key={method.value}
+                  key={method}
                   type="button"
-                  onClick={() => setMethod(method.value)}
+                  onClick={() => setMethod(method)}
                   className={`flex w-full items-center justify-between rounded-2xl px-4 py-4 text-left transition ${
                     active ? 'bg-rose-50' : 'bg-white'
                   }`}
                 >
                   <div>
                     <p className="text-base font-semibold text-[#132238]">
-                      {method.label}
+                      {getSplitMethodLabel(method, t)}
                     </p>
                     <p className="text-sm text-[#64748b]">
-                      {method.value === 'equal'
-                        ? 'Todos pagan lo mismo de este gasto.'
-                        : method.value === 'percentage'
-                          ? 'Cada persona paga un porcentaje del total.'
-                          : 'Cada persona paga un monto distinto.'}
+                      {getSplitMethodDescription(method, t)}
                     </p>
                   </div>
                   {active ? <Check className="size-5 text-rose-500" /> : null}
@@ -999,6 +1001,24 @@ function ParticipantAvatar({ name }: { name: string }) {
       {toInitials(name)}
     </span>
   );
+}
+
+function getSplitMethodLabel(
+  method: SplitMethod,
+  t: ReturnType<typeof getQuickSplitMessages>,
+) {
+  if (method === 'equal') return t.splitEqual;
+  if (method === 'percentage') return t.splitPercentage;
+  return t.splitExact;
+}
+
+function getSplitMethodDescription(
+  method: SplitMethod,
+  t: ReturnType<typeof getQuickSplitMessages>,
+) {
+  if (method === 'equal') return t.splitEqualCopy;
+  if (method === 'percentage') return t.splitPercentageCopy;
+  return t.splitExactCopy;
 }
 
 function QuickSplitExpenseSkeleton() {

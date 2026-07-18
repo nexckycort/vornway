@@ -1,6 +1,7 @@
 import { type RefObject, useMemo } from 'react';
 
 import { Skeleton } from '#/components/ui/skeleton';
+import { getGroupDetailMessages } from '../-messages';
 import type { ExpenseItem } from '../-types/group-detail.types';
 import { groupExpensesByDate } from './group-detail.utils';
 import { GroupExpenseRow } from './group-expense-row';
@@ -32,6 +33,7 @@ export function GroupExpensesTimeline({
   onDeleteExpense,
   onEditExpense,
 }: GroupExpensesTimelineProps) {
+  const t = getGroupDetailMessages();
   const sortedExpenses = useMemo(() => {
     const pinnedSet = new Set(pinnedExpenseIds);
 
@@ -93,9 +95,7 @@ export function GroupExpensesTimeline({
 
       {isError ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error instanceof Error
-            ? error.message
-            : 'No se pudieron cargar los gastos'}
+          {error instanceof Error ? error.message : t.detail.expensesLoadFailed}
         </div>
       ) : null}
 
@@ -105,10 +105,10 @@ export function GroupExpensesTimeline({
             💸
           </div>
           <h3 className="text-base font-semibold text-[#132238]">
-            No tienes gastos aún
+            {t.detail.emptyExpensesTitle}
           </h3>
           <p className="mt-2 text-sm text-[#64748b]">
-            Crea tu primer gasto y empieza a organizar este espacio.
+            {t.detail.emptyExpensesCopy}
           </p>
         </div>
       ) : null}
@@ -139,7 +139,9 @@ export function GroupExpensesTimeline({
       <div ref={loadMoreRef} className="h-8" />
 
       {isFetchingNextPage ? (
-        <p className="text-center text-sm text-[#64748b]">Cargando más…</p>
+        <p className="text-center text-sm text-[#64748b]">
+          {t.detail.loadingMore}
+        </p>
       ) : null}
     </section>
   );

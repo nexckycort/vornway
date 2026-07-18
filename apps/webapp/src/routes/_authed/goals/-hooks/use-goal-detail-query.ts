@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { goalsClient } from '#/api/goals';
 import type { InferResponseType } from '#/api/types';
+import { m } from '#/paraglide/messages.js';
 
 const goalDetailEndpoint = goalsClient[':id'].$get;
 
@@ -19,7 +20,7 @@ export function useGoalDetailQuery(goalId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo cargar la meta');
+        throw new Error(payload.error ?? m['system.loadGoalFailed']());
       }
 
       return (await response.json()) as GoalDetailSuccess;

@@ -1,3 +1,4 @@
+import { m } from '#/paraglide/messages.js';
 import type { ExpenseItem } from '../-types/group-detail.types';
 
 const moneyFormatCache = new Map<string, Intl.NumberFormat>();
@@ -121,8 +122,8 @@ export function getExpenseDateGroupLabel(value: string): string {
   ).getTime();
   const diffDays = Math.round((today - expenseDay) / 86_400_000);
 
-  if (diffDays === 0) return 'Hoy';
-  if (diffDays === 1) return 'Ayer';
+  if (diffDays === 0) return m['groups.detail.today']();
+  if (diffDays === 1) return m['groups.detail.yesterday']();
   return formatTimelineDate(value);
 }
 
@@ -160,7 +161,7 @@ export function getExpenseRowTag(
   tone: 'emerald' | 'rose' | 'blue' | 'amber' | 'slate';
 } | null {
   if (expense.isSettlement) {
-    return { label: 'Liquidación', tone: 'emerald' };
+    return { label: m['groups.detail.settlement'](), tone: 'emerald' };
   }
 
   if (expense.currentUserBalance !== null && expense.participantCount > 0) {

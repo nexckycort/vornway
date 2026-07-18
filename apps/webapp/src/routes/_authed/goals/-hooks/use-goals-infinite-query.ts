@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { goalsClient } from '#/api/goals';
 import type { InferResponseType } from '#/api/types';
+import { m } from '#/paraglide/messages.js';
 
 const goalsEndpoint = goalsClient.index.$get;
 
@@ -24,7 +25,7 @@ export function useGoalsInfiniteQuery(search: string) {
       });
 
       if (!response.ok) {
-        throw new Error('No se pudieron cargar las metas');
+        throw new Error(m['goals.loadError']());
       }
 
       return (await response.json()) as GoalsApiResponse;

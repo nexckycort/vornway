@@ -13,6 +13,7 @@ import {
   loadGroupDraft,
   saveGroupDraft,
 } from '#/routes/_authed/groups/new/-lib/group-create-draft';
+import { getGroupDetailMessages } from '../$id/-messages';
 
 export const Route = createFileRoute('/_authed/groups/new/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -25,16 +26,12 @@ export const Route = createFileRoute('/_authed/groups/new/')({
   component: RouteComponent,
 });
 
-const groupTypes = [
-  { value: 'viajes', label: 'Viajes' },
-  { value: 'meta', label: 'Meta' },
-  { value: 'personal', label: 'Personal' },
-  { value: 'otros', label: 'Otros' },
-] as const;
+const groupTypes = ['viajes', 'meta', 'personal', 'otros'] as const;
 
 function RouteComponent() {
   const navigate = useNavigate();
   const router = useRouter();
+  const t = getGroupDetailMessages();
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const {
@@ -45,7 +42,7 @@ function RouteComponent() {
   } = Route.useSearch();
 
   const [name, setName] = useState(searchName);
-  const [type, setType] = useState<string>(searchType || groupTypes[0].value);
+  const [type, setType] = useState<string>(searchType || groupTypes[0]);
   const [description, setDescription] = useState(searchDescription);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
@@ -65,7 +62,7 @@ function RouteComponent() {
     if (!draft) return;
 
     setName(draft.name);
-    setType(draft.type || groupTypes[0].value);
+    setType(draft.type || groupTypes[0]);
     setDescription(draft.description);
     setImageDataUrl(draft.image?.dataUrl ?? null);
     setImageFileName(draft.image?.fileName ?? null);
@@ -92,9 +89,7 @@ function RouteComponent() {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       setImageDataUrl(null);
       setImageFileName(null);
-      setImageError(
-        'Sin conexión no es posible subir la imagen. Puedes subirla después.',
-      );
+      setImageError(t.form.offlineImageUploadFailed);
       return;
     }
 
@@ -107,9 +102,7 @@ function RouteComponent() {
       setImageDataUrl(null);
       setImageFileName(null);
       setImageError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo procesar la imagen',
+        error instanceof Error ? error.message : t.form.imageProcessFailed,
       );
     } finally {
       setIsCompressingImage(false);
@@ -154,39 +147,41 @@ function RouteComponent() {
             className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#334155]"
           >
             <ArrowLeft className="size-4" />
-            Atrás
+            {t.form.back}
           </button>
           <h1 className="text-2xl font-semibold leading-8 text-[#0f172a]">
-            Crear espacio
+            {t.form.newTitle}
           </h1>
-          <p className="mt-1 text-sm text-[#64748b]">
-            Puedes crearlo solo para ti o compartirlo después.
-          </p>
+          <p className="mt-1 text-sm text-[#64748b]">{t.form.newCopy}</p>
         </header>
 
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5">
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-[#334155]">Nombre</span>
+            <span className="text-sm font-medium text-[#334155]">
+              {t.form.name}
+            </span>
             <input
               ref={nameInputRef}
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Ej: Semana santa"
+              placeholder={t.form.namePlaceholder}
               className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none transition-colors focus:border-primary"
               maxLength={120}
             />
           </label>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-[#334155]">Tipo</span>
+            <span className="text-sm font-medium text-[#334155]">
+              {t.form.type}
+            </span>
             <select
               value={type}
               onChange={(event) => setType(event.target.value)}
               className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none transition-colors focus:border-primary"
             >
               {groupTypes.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
+                <option key={item} value={item}>
+                  {getGroupTypeLabel(item, t)}
                 </option>
               ))}
             </select>
@@ -194,12 +189,12 @@ function RouteComponent() {
 
           <label className="flex flex-col gap-2">
             <span className="text-sm font-medium text-[#334155]">
-              Descripción (opcional)
+              {t.form.descriptionOptional}
             </span>
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Detalle breve del espacio"
+              placeholder={t.form.descriptionPlaceholder}
               className="min-h-24 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-primary"
               maxLength={400}
             />
@@ -211,7 +206,7 @@ function RouteComponent() {
                 {imageDataUrl ? (
                   <img
                     src={imageDataUrl}
-                    alt="Imagen seleccionada del espacio"
+                    alt={t.form.selectedImageAlt}
                     className="size-full object-cover"
                   />
                 ) : (
@@ -221,10 +216,10 @@ function RouteComponent() {
 
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-[#334155]">
-                  Imagen del espacio
+                  {t.form.imageTitle}
                 </p>
                 <p className="mt-1 text-xs leading-5 text-[#64748b]">
-                  Se comprimirá automáticamente antes de guardarse.
+                  {t.form.imageCopy}
                 </p>
                 {imageFileName ? (
                   <p className="mt-1 truncate text-xs text-[#94a3b8]">
@@ -252,7 +247,9 @@ function RouteComponent() {
                 onClick={() => imageInputRef.current?.click()}
                 disabled={isCompressingImage}
               >
-                {isCompressingImage ? 'Procesando...' : 'Subir imagen'}
+                {isCompressingImage
+                  ? t.form.processingImage
+                  : t.form.uploadImage}
               </Button>
               {imageDataUrl ? (
                 <Button
@@ -287,11 +284,21 @@ function RouteComponent() {
               className="h-11 w-full rounded-full"
               disabled={!isValid}
             >
-              Continuar
+              {t.common.continue}
             </Button>
           </div>
         </form>
       </div>
     </main>
   );
+}
+
+function getGroupTypeLabel(
+  value: (typeof groupTypes)[number],
+  t: ReturnType<typeof getGroupDetailMessages>,
+) {
+  if (value === 'viajes') return t.form.typeTrip;
+  if (value === 'meta') return t.form.typeGoal;
+  if (value === 'personal') return t.form.typePersonal;
+  return t.form.typeOther;
 }

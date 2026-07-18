@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 
 import { Button } from '#/components/ui/button';
 import { useAuth } from '#/contexts/auth/use-auth';
+import { m } from '#/paraglide/messages.js';
 import { HomeAction } from '#/routes/_authed/(home)/-components/home-action';
 import { homeIcons } from '#/routes/_authed/(home)/-components/home-icons';
 import { HomeSection } from '#/routes/_authed/(home)/-components/home-section';
@@ -110,7 +111,7 @@ function RouteComponent() {
                       <div className="relative z-10 flex size-16 items-center justify-center overflow-hidden rounded-[18px] bg-white shadow-[0_12px_24px_rgba(0,0,0,0.08)]">
                         <img
                           src="/logo.webp"
-                          alt="Vornway"
+                          alt={m['components.logo.alt']()}
                           className="size-full object-cover"
                         />
                       </div>

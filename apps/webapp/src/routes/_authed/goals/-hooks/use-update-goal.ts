@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { goalsClient } from '#/api/goals';
 import type { InferRequestType, InferResponseType } from '#/api/types';
+import { m } from '#/paraglide/messages.js';
 
 const updateGoalEndpoint = goalsClient[':id'].$patch;
 
@@ -19,7 +20,7 @@ export function useUpdateGoalMutation(goalId: string) {
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'No se pudo actualizar la meta');
+        throw new Error(payload.error ?? m['system.updateGoalFailed']());
       }
 
       return (await response.json()) as UpdateGoalResponse;

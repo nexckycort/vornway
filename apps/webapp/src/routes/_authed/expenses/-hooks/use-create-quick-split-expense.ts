@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { quickSplitsClient } from '#/api/quick-splits';
+import { m } from '#/paraglide/messages.js';
 
 export type UpsertQuickSplitExpenseValues = {
   currentUserId: string;
@@ -52,7 +53,7 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
         message?: string;
       };
 
-      throw new Error(payload.message ?? 'No se pudo actualizar el gasto');
+      throw new Error(payload.message ?? m['system.updateExpenseFailed']());
     }
 
     const expense = await updateExpenseResponse.json();
@@ -81,7 +82,7 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
       message?: string;
     };
 
-    throw new Error(payload.message ?? 'No se pudo crear el gasto rápido');
+    throw new Error(payload.message ?? m['system.createExpenseFailed']());
   }
 
   const quickSplit = await createQuickSplitResponse.json();
@@ -111,7 +112,7 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
     !paidByParticipantId ||
     expenseParticipantIds.some((participantId) => !participantId)
   ) {
-    throw new Error('No se pudieron mapear los participantes del gasto');
+    throw new Error(m['system.mapExpenseParticipantsFailed']());
   }
 
   const createExpenseResponse = await createQuickSplitExpenseEndpoint({
@@ -151,7 +152,7 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
       message?: string;
     };
 
-    throw new Error(payload.message ?? 'No se pudo crear el gasto');
+    throw new Error(payload.message ?? m['system.createExpenseFailed']());
   }
 
   const expense = await createExpenseResponse.json();

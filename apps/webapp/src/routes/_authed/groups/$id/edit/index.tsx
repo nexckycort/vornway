@@ -14,6 +14,7 @@ import {
 } from '#/lib/group-flow-navigation';
 import { useUpdateGroupMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 
 import { compressGroupImageFile } from '#/routes/_authed/groups/new/-lib/group-create-draft';
 
@@ -21,15 +22,11 @@ export const Route = createFileRoute('/_authed/groups/$id/edit/')({
   component: RouteComponent,
 });
 
-const groupTypes = [
-  { value: 'viajes', label: 'Viajes' },
-  { value: 'meta', label: 'Meta' },
-  { value: 'personal', label: 'Personal' },
-  { value: 'otros', label: 'Otros' },
-] as const;
+const groupTypes = ['viajes', 'meta', 'personal', 'otros'] as const;
 
 function RouteComponent() {
   const { id } = Route.useParams();
+  const t = getGroupDetailMessages();
   const navigate = useNavigate();
   const router = useRouter();
   const location = useLocation();
@@ -41,7 +38,7 @@ function RouteComponent() {
   const updateGroupMutation = useUpdateGroupMutation(id);
 
   const [name, setName] = useState('');
-  const [type, setType] = useState<string>(groupTypes[0].value);
+  const [type, setType] = useState<string>(groupTypes[0]);
   const [description, setDescription] = useState('');
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
@@ -59,7 +56,7 @@ function RouteComponent() {
 
     hydratedRef.current = true;
     setName(groupQuery.data.name);
-    setType(groupQuery.data.type || groupTypes[0].value);
+    setType(groupQuery.data.type || groupTypes[0]);
     setDescription(groupQuery.data.description ?? '');
     setImageDataUrl(null);
     setImageFileName(null);
@@ -91,9 +88,7 @@ function RouteComponent() {
       setImageDataUrl(null);
       setImageFileName(null);
       setImageError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo procesar la imagen',
+        error instanceof Error ? error.message : t.form.imageProcessFailed,
       );
     } finally {
       setIsCompressingImage(false);
@@ -129,18 +124,16 @@ function RouteComponent() {
       void navigateToGroupRoot(true);
     } catch (error) {
       setFormError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo actualizar el espacio',
+        error instanceof Error ? error.message : t.form.updateFailed,
       );
     }
   };
 
   if (groupQuery.isLoading) {
     return (
-      <MobilePageLayout title="Editar espacio" onBack={goBack}>
+      <MobilePageLayout title={t.form.editTitle} onBack={goBack}>
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-[#64748b]">Cargando espacio...</p>
+          <p className="text-sm text-[#64748b]">{t.form.loading}</p>
         </div>
       </MobilePageLayout>
     );
@@ -148,12 +141,12 @@ function RouteComponent() {
 
   if (groupQuery.isError || !groupQuery.data) {
     return (
-      <MobilePageLayout title="Editar espacio" onBack={goBack}>
+      <MobilePageLayout title={t.form.editTitle} onBack={goBack}>
         <div className="flex flex-1 flex-col justify-center gap-4">
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {groupQuery.error instanceof Error
               ? groupQuery.error.message
-              : 'No se pudo cargar el espacio'}
+              : t.settings.loadError}
           </div>
           <Button
             type="button"
@@ -161,7 +154,7 @@ function RouteComponent() {
             className="h-11 rounded-full"
             onClick={goBack}
           >
-            Volver
+            {t.common.back}
           </Button>
         </div>
       </MobilePageLayout>
@@ -169,30 +162,34 @@ function RouteComponent() {
   }
 
   return (
-    <MobilePageLayout title="Editar espacio" onBack={goBack}>
+    <MobilePageLayout title={t.form.editTitle} onBack={goBack}>
       <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 pb-4">
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-[#334155]">Nombre</span>
+          <span className="text-sm font-medium text-[#334155]">
+            {t.form.name}
+          </span>
           <input
             ref={nameInputRef}
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="Ej: Semana santa"
+            placeholder={t.form.namePlaceholder}
             className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none transition-colors focus:border-primary"
             maxLength={120}
           />
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-[#334155]">Tipo</span>
+          <span className="text-sm font-medium text-[#334155]">
+            {t.form.type}
+          </span>
           <select
             value={type}
             onChange={(event) => setType(event.target.value)}
             className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none transition-colors focus:border-primary"
           >
             {groupTypes.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
+              <option key={item} value={item}>
+                {getGroupTypeLabel(item, t)}
               </option>
             ))}
           </select>
@@ -200,12 +197,12 @@ function RouteComponent() {
 
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-[#334155]">
-            Descripción (opcional)
+            {t.form.descriptionOptional}
           </span>
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            placeholder="Detalle breve del espacio"
+            placeholder={t.form.descriptionPlaceholder}
             className="min-h-24 rounded-2xl border border-[#e2e8f0] bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-primary"
             maxLength={400}
           />
@@ -217,7 +214,7 @@ function RouteComponent() {
               {previewImageUrl ? (
                 <img
                   src={previewImageUrl}
-                  alt="Imagen seleccionada del espacio"
+                  alt={t.form.selectedImageAlt}
                   className="size-full object-cover"
                 />
               ) : (
@@ -227,10 +224,10 @@ function RouteComponent() {
 
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-[#334155]">
-                Imagen del espacio
+                {t.form.imageTitle}
               </p>
               <p className="mt-1 text-xs leading-5 text-[#64748b]">
-                Se comprimirá automáticamente antes de guardarse.
+                {t.form.imageCopy}
               </p>
               {imageFileName ? (
                 <p className="mt-1 truncate text-xs text-[#94a3b8]">
@@ -258,7 +255,7 @@ function RouteComponent() {
               onClick={() => imageInputRef.current?.click()}
               disabled={isCompressingImage}
             >
-              {isCompressingImage ? 'Procesando...' : 'Subir imagen'}
+              {isCompressingImage ? t.form.processingImage : t.form.uploadImage}
             </Button>
             {imageDataUrl ? (
               <Button
@@ -293,10 +290,22 @@ function RouteComponent() {
             className="h-11 w-full rounded-full"
             disabled={!isValid || updateGroupMutation.isPending}
           >
-            {updateGroupMutation.isPending ? 'Guardando...' : 'Guardar cambios'}
+            {updateGroupMutation.isPending
+              ? t.common.saving
+              : t.common.saveChanges}
           </Button>
         </div>
       </form>
     </MobilePageLayout>
   );
+}
+
+function getGroupTypeLabel(
+  value: (typeof groupTypes)[number],
+  t: ReturnType<typeof getGroupDetailMessages>,
+) {
+  if (value === 'viajes') return t.form.typeTrip;
+  if (value === 'meta') return t.form.typeGoal;
+  if (value === 'personal') return t.form.typePersonal;
+  return t.form.typeOther;
 }

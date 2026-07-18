@@ -42,14 +42,6 @@ export const quickSplitExpenseParamsSchema = z.object({
   expenseId: z.string().min(1),
 });
 
-export const listRecentQuickSplitExpensesQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(10).default(3),
-});
-
-export type ListRecentQuickSplitExpensesQueryInput = z.infer<
-  typeof listRecentQuickSplitExpensesQuerySchema
->;
-
 export const listQuickSplitExpensesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(12),
   cursor: z.string().trim().min(1).optional(),
@@ -155,10 +147,6 @@ export type QuickSplitExpenseFeedItem = {
   }>;
   currentUserBalance: number;
   createdAt: string;
-};
-
-export type ListRecentQuickSplitExpensesResult = {
-  data: QuickSplitExpenseFeedItem[];
 };
 
 export type ListQuickSplitExpensesResult = {

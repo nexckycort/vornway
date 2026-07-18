@@ -1,1 +1,0 @@
-export { createGoalsService } from './service';

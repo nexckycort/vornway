@@ -1,12 +1,11 @@
 import { Hono } from 'hono';
-
-import mediaRoutes from './media/routes';
 import loginRoutes from './login/routes';
+import mediaRoutes from './media/routes';
 
-const app = new Hono()
+export const publicRoutes = new Hono()
   .basePath('/api')
   .route('/media', mediaRoutes)
   .route('/login', loginRoutes);
 
-export default app;
-export type PublicRoutes = typeof app;
+export default publicRoutes;
+export type PublicRoutes = typeof publicRoutes;

@@ -4,7 +4,7 @@ import { Hono } from 'hono';
 import { env } from '#/config/env';
 import { S3 } from '#/infrastructure/storage/r2';
 
-const app = new Hono().get('/groups/*', async (c) => {
+export const mediaRoutes = new Hono().get('/groups/*', async (c) => {
   const key = c.req.param('*');
 
   if (!key) {
@@ -52,4 +52,5 @@ const app = new Hono().get('/groups/*', async (c) => {
   }
 });
 
-export default app;
+export default mediaRoutes;
+export type MediaRpc = typeof mediaRoutes;

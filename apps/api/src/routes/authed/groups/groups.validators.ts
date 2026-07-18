@@ -221,10 +221,6 @@ export const addGroupMemberSchema = z.object({
   linkedUserId: z.string().min(1).optional(),
 });
 
-export const groupMemberActionQuerySchema = z.object({
-  unlink: z.coerce.boolean().optional(),
-});
-
 export const searchGroupMembersQuerySchema = z.object({
   query: z.string().trim().min(1).max(120),
 });

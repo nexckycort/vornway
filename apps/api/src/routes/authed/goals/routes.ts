@@ -2,10 +2,11 @@ import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import * as z from 'zod';
 
-import { createGoalsService } from '#/modules/goals';
 import type { AppContext } from '#/shared/types/app';
+import { createGoalOperations } from './goal-operations';
+import { goalRouteErrorResponse } from './goals.errors';
 
-const goalsService = createGoalsService();
+const goalOperations = createGoalOperations();
 
 const goalsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(50).default(12),
@@ -61,6 +62,7 @@ const createGoalContributionSchema = z.object({
 });
 
 const contributionsApp = new Hono<AppContext>()
+  .onError((error, c) => goalRouteErrorResponse(c, error))
   .post(
     '/',
     zValidator('param', goalParamsSchema),
@@ -70,7 +72,7 @@ const contributionsApp = new Hono<AppContext>()
       const data = c.req.valid('json');
       const { id: userId } = c.get('user');
 
-      const contribution = await goalsService.addContribution({
+      const contribution = await goalOperations.addContribution({
         userId,
         goalId,
         memberId: data.memberId,
@@ -89,7 +91,7 @@ const contributionsApp = new Hono<AppContext>()
       const { id: goalId, contributionId } = c.req.valid('param');
       const { id: userId } = c.get('user');
 
-      const contribution = await goalsService.deleteContribution({
+      const contribution = await goalOperations.deleteContribution({
         userId,
         goalId,
         contributionId,
@@ -99,19 +101,20 @@ const contributionsApp = new Hono<AppContext>()
     },
   );
 
-const app = new Hono<AppContext>()
+export const goalsRoutes = new Hono<AppContext>()
+  .onError((error, c) => goalRouteErrorResponse(c, error))
   .get('/', zValidator('query', goalsQuerySchema), async (c) => {
     const query = c.req.valid('query');
     const { id: userId } = c.get('user');
 
-    const goals = await goalsService.list(userId, query);
+    const goals = await goalOperations.list(userId, query);
     return c.json(goals);
   })
   .get('/:id', zValidator('param', goalParamsSchema), async (c) => {
     const { id } = c.req.valid('param');
     const { id: userId } = c.get('user');
 
-    const goal = await goalsService.getById(userId, id);
+    const goal = await goalOperations.getById(userId, id);
 
     if (!goal) {
       return c.json({ error: 'Meta no encontrada' }, 404);
@@ -128,7 +131,7 @@ const app = new Hono<AppContext>()
       const data = c.req.valid('json');
       const { id: userId } = c.get('user');
 
-      const goal = await goalsService.update({
+      const goal = await goalOperations.update({
         userId,
         goalId,
         name: data.name,
@@ -154,7 +157,7 @@ const app = new Hono<AppContext>()
     const data = c.req.valid('json');
     const { id: userId, name: ownerName } = c.get('user');
 
-    const goal = await goalsService.create({
+    const goal = await goalOperations.create({
       userId,
       ownerName,
       name: data.name,
@@ -178,4 +181,5 @@ const app = new Hono<AppContext>()
   })
   .route('/:id/contributions', contributionsApp);
 
-export default app;
+export default goalsRoutes;
+export type GoalsRpc = typeof goalsRoutes;

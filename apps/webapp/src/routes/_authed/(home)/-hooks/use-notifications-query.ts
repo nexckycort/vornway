@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { client, type InferResponseType } from '#/lib/hc';
 
 const notificationsEndpoint = client.api.notifications.$get;
-const notificationsMarkReadEndpoint = client.api.notifications.$get;
+const notificationsMarkReadEndpoint =
+  client.api.notifications['read-all'].$post;
 
 type NotificationsResponse = InferResponseType<typeof notificationsEndpoint>;
 
@@ -11,7 +12,7 @@ export function useNotificationsQuery() {
     queryKey: ['notifications'],
     queryFn: async () => {
       const response = await notificationsEndpoint({
-        query: { limit: '40', markAsRead: 'false' },
+        query: { limit: '40' },
       });
 
       if (!response.ok) {
@@ -24,7 +25,5 @@ export function useNotificationsQuery() {
 }
 
 export async function markNotificationsAsRead() {
-  await notificationsMarkReadEndpoint({
-    query: { limit: '1', markAsRead: 'true' },
-  });
+  await notificationsMarkReadEndpoint();
 }

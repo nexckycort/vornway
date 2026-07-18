@@ -1,134 +1,126 @@
-import { Data } from 'effect';
-import type { ErrorMetadata } from '#/shared/errors/error-metadata';
+import { AppError } from '#/shared/errors/app-error';
 
-export class QuickSplitParticipantsRequiredError
-  extends Data.TaggedError('QuickSplitParticipantsRequiredError')<{
-    readonly details?: never;
-  }>
-  implements ErrorMetadata<400>
-{
-  readonly code = 'QUICK_SPLIT_PARTICIPANTS_REQUIRED';
-  readonly message = 'Debes incluir al menos un participante registrado';
-  readonly status = 400 as const;
+export class QuickSplitParticipantsRequiredError extends AppError<400> {
+  constructor() {
+    super({
+      status: 400,
+      code: 'QUICK_SPLIT_PARTICIPANTS_REQUIRED',
+      message: 'Debes incluir al menos un participante registrado',
+    });
+  }
 }
 
-export class QuickSplitParticipantsNotFoundError
-  extends Data.TaggedError('QuickSplitParticipantsNotFoundError')<{
-    missingUserIds: string[];
-  }>
-  implements ErrorMetadata<400>
-{
-  readonly code = 'QUICK_SPLIT_PARTICIPANTS_NOT_FOUND';
-  readonly message = 'Uno o más participantes no existen';
-  readonly status = 400 as const;
+export class QuickSplitParticipantsNotFoundError extends AppError<400> {
+  constructor(_input: { missingUserIds: string[] }) {
+    super({
+      status: 400,
+      code: 'QUICK_SPLIT_PARTICIPANTS_NOT_FOUND',
+      message: 'Uno o más participantes no existen',
+    });
+  }
 }
 
-export class QuickSplitCreateError
-  extends Data.TaggedError('QuickSplitCreateError')<{
-    cause: unknown;
-  }>
-  implements ErrorMetadata<500>
-{
-  readonly code = 'QUICK_SPLIT_CREATE_FAILED';
-  readonly message = 'No se pudo crear el gasto rápido';
-  readonly status = 500 as const;
+export class QuickSplitCreateError extends AppError<500> {
+  constructor(input: { cause: unknown }) {
+    super({
+      status: 500,
+      code: 'QUICK_SPLIT_CREATE_FAILED',
+      message: 'No se pudo crear el gasto rápido',
+      cause: input.cause,
+    });
+  }
 }
 
-export class QuickSplitNotFoundError
-  extends Data.TaggedError('QuickSplitNotFoundError')<{
-    quickSplitId: string;
-  }>
-  implements ErrorMetadata<404>
-{
-  readonly code = 'QUICK_SPLIT_NOT_FOUND';
-  readonly message = 'Gasto rápido no encontrado';
-  readonly status = 404 as const;
+export class QuickSplitNotFoundError extends AppError<404> {
+  constructor(_input: { quickSplitId: string }) {
+    super({
+      status: 404,
+      code: 'QUICK_SPLIT_NOT_FOUND',
+      message: 'Gasto rápido no encontrado',
+    });
+  }
 }
 
-export class QuickSplitExpenseParticipantsInvalidError
-  extends Data.TaggedError('QuickSplitExpenseParticipantsInvalidError')<{
-    invalidUserIds: string[];
-  }>
-  implements ErrorMetadata<400>
-{
-  readonly code = 'QUICK_SPLIT_EXPENSE_PARTICIPANTS_INVALID';
-  readonly message = 'Uno o más participantes no pertenecen al gasto rápido';
-  readonly status = 400 as const;
+export class QuickSplitExpenseParticipantsInvalidError extends AppError<400> {
+  constructor(_input: { invalidUserIds: string[] }) {
+    super({
+      status: 400,
+      code: 'QUICK_SPLIT_EXPENSE_PARTICIPANTS_INVALID',
+      message: 'Uno o más participantes no pertenecen al gasto rápido',
+    });
+  }
 }
 
-export class QuickSplitExpensePayerInvalidError
-  extends Data.TaggedError('QuickSplitExpensePayerInvalidError')<{
-    paidByUserId: string;
-  }>
-  implements ErrorMetadata<400>
-{
-  readonly code = 'QUICK_SPLIT_EXPENSE_PAYER_INVALID';
-  readonly message = 'El pagador no pertenece al gasto rápido';
-  readonly status = 400 as const;
+export class QuickSplitExpensePayerInvalidError extends AppError<400> {
+  constructor(_input: { paidByUserId: string }) {
+    super({
+      status: 400,
+      code: 'QUICK_SPLIT_EXPENSE_PAYER_INVALID',
+      message: 'El pagador no pertenece al gasto rápido',
+    });
+  }
 }
 
-export class QuickSplitExpenseSharesInvalidError
-  extends Data.TaggedError('QuickSplitExpenseSharesInvalidError')<{
-    reason: string;
-  }>
-  implements ErrorMetadata<400>
-{
-  readonly code = 'QUICK_SPLIT_EXPENSE_SHARES_INVALID';
-  readonly message = 'La división del gasto no es válida';
-  readonly status = 400 as const;
+export class QuickSplitExpenseSharesInvalidError extends AppError<400> {
+  constructor(_input: { reason: string }) {
+    super({
+      status: 400,
+      code: 'QUICK_SPLIT_EXPENSE_SHARES_INVALID',
+      message: 'La división del gasto no es válida',
+    });
+  }
 }
 
-export class QuickSplitExpenseCreateError
-  extends Data.TaggedError('QuickSplitExpenseCreateError')<{
-    cause: unknown;
-  }>
-  implements ErrorMetadata<500>
-{
-  readonly code = 'QUICK_SPLIT_EXPENSE_CREATE_FAILED';
-  readonly message = 'No se pudo crear el gasto del quick split';
-  readonly status = 500 as const;
+export class QuickSplitExpenseCreateError extends AppError<500> {
+  constructor(input: { cause: unknown }) {
+    super({
+      status: 500,
+      code: 'QUICK_SPLIT_EXPENSE_CREATE_FAILED',
+      message: 'No se pudo crear el gasto del quick split',
+      cause: input.cause,
+    });
+  }
 }
 
-export class QuickSplitExpenseNotFoundError
-  extends Data.TaggedError('QuickSplitExpenseNotFoundError')<{
-    expenseId: string;
-  }>
-  implements ErrorMetadata<404>
-{
-  readonly code = 'QUICK_SPLIT_EXPENSE_NOT_FOUND';
-  readonly message = 'Gasto con amigos no encontrado';
-  readonly status = 404 as const;
+export class QuickSplitExpenseNotFoundError extends AppError<404> {
+  constructor(_input: { expenseId: string }) {
+    super({
+      status: 404,
+      code: 'QUICK_SPLIT_EXPENSE_NOT_FOUND',
+      message: 'Gasto con amigos no encontrado',
+    });
+  }
 }
 
-export class QuickSplitExpensesListError
-  extends Data.TaggedError('QuickSplitExpensesListError')<{
-    cause: unknown;
-  }>
-  implements ErrorMetadata<500>
-{
-  readonly code = 'QUICK_SPLIT_EXPENSES_LIST_FAILED';
-  readonly message = 'No se pudieron cargar los gastos con amigos';
-  readonly status = 500 as const;
+export class QuickSplitExpensesListError extends AppError<500> {
+  constructor(input: { cause: unknown }) {
+    super({
+      status: 500,
+      code: 'QUICK_SPLIT_EXPENSES_LIST_FAILED',
+      message: 'No se pudieron cargar los gastos con amigos',
+      cause: input.cause,
+    });
+  }
 }
 
-export class QuickSplitExpenseDetailError
-  extends Data.TaggedError('QuickSplitExpenseDetailError')<{
-    cause: unknown;
-  }>
-  implements ErrorMetadata<500>
-{
-  readonly code = 'QUICK_SPLIT_EXPENSE_DETAIL_FAILED';
-  readonly message = 'No se pudo cargar el detalle del gasto con amigos';
-  readonly status = 500 as const;
+export class QuickSplitExpenseDetailError extends AppError<500> {
+  constructor(input: { cause: unknown }) {
+    super({
+      status: 500,
+      code: 'QUICK_SPLIT_EXPENSE_DETAIL_FAILED',
+      message: 'No se pudo cargar el detalle del gasto con amigos',
+      cause: input.cause,
+    });
+  }
 }
 
-export class QuickSplitExpenseDeleteError
-  extends Data.TaggedError('QuickSplitExpenseDeleteError')<{
-    cause: unknown;
-  }>
-  implements ErrorMetadata<500>
-{
-  readonly code = 'QUICK_SPLIT_EXPENSE_DELETE_FAILED';
-  readonly message = 'No se pudo eliminar el gasto con amigos';
-  readonly status = 500 as const;
+export class QuickSplitExpenseDeleteError extends AppError<500> {
+  constructor(input: { cause: unknown }) {
+    super({
+      status: 500,
+      code: 'QUICK_SPLIT_EXPENSE_DELETE_FAILED',
+      message: 'No se pudo eliminar el gasto con amigos',
+      cause: input.cause,
+    });
+  }
 }

@@ -3,9 +3,9 @@ import { Hono } from 'hono';
 import * as z from 'zod';
 
 import { db } from '#/infrastructure/database/connection';
-import { resolveFeedbackAttachmentUrl } from '#/modules/feedback/attachment.service';
+import { resolveUserImageUrl } from '#/infrastructure/storage/user-images';
 import type { AppContext } from '#/shared/types/app';
-import { resolveUserImageUrl } from '../users/user-image.service';
+import { resolveFeedbackAttachmentUrl } from '../feedback/feedback-attachment.storage';
 
 const listAdminFeedbackQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
@@ -220,4 +220,6 @@ const app = new Hono<AppContext>()
     },
   );
 
-export default app;
+export const adminRoutes = app;
+export default adminRoutes;
+export type AdminRpc = typeof adminRoutes;

@@ -1,46 +1,36 @@
-import { Data } from 'effect';
-import type { ErrorMetadata } from '#/shared/errors/error-metadata';
+import { AppError } from '#/shared/errors/app-error';
 
-export class FeedbackCreateError
-  extends Data.TaggedError('FeedbackCreateError')<{
-    cause: unknown;
-  }>
-  implements ErrorMetadata<400>
-{
-  readonly code = 'FEEDBACK_CREATE_FAILED';
-  readonly message = 'No se pudo crear el reporte';
-  readonly status = 400 as const;
+export function feedbackCreateError(cause: unknown) {
+  return new AppError({
+    status: 400,
+    code: 'FEEDBACK_CREATE_FAILED',
+    message: 'No se pudo crear el reporte',
+    cause,
+  });
 }
 
-export class FeedbackListError
-  extends Data.TaggedError('FeedbackListError')<{
-    cause: unknown;
-  }>
-  implements ErrorMetadata<500>
-{
-  readonly code = 'FEEDBACK_LIST_FAILED';
-  readonly message = 'No se pudieron listar los reportes';
-  readonly status = 500 as const;
+export function feedbackListError(cause: unknown) {
+  return new AppError({
+    status: 500,
+    code: 'FEEDBACK_LIST_FAILED',
+    message: 'No se pudieron listar los reportes',
+    cause,
+  });
 }
 
-export class FeedbackNotFoundError
-  extends Data.TaggedError('FeedbackNotFoundError')<{
-    feedbackId: string;
-  }>
-  implements ErrorMetadata<404>
-{
-  readonly code = 'FEEDBACK_NOT_FOUND';
-  readonly message = 'Reporte no encontrado';
-  readonly status = 404 as const;
+export function feedbackNotFoundError() {
+  return new AppError({
+    status: 404,
+    code: 'FEEDBACK_NOT_FOUND',
+    message: 'Reporte no encontrado',
+  });
 }
 
-export class FeedbackDeleteError
-  extends Data.TaggedError('FeedbackDeleteError')<{
-    cause: unknown;
-  }>
-  implements ErrorMetadata<400>
-{
-  readonly code = 'FEEDBACK_DELETE_FAILED';
-  readonly message = 'No se pudo eliminar el reporte';
-  readonly status = 400 as const;
+export function feedbackDeleteError(cause: unknown) {
+  return new AppError({
+    status: 400,
+    code: 'FEEDBACK_DELETE_FAILED',
+    message: 'No se pudo eliminar el reporte',
+    cause,
+  });
 }

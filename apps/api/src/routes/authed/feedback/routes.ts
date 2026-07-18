@@ -1,45 +1,43 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import { runHttpEffect } from '#/shared/effect/run-effect';
 import type { AppContext } from '#/shared/types/app';
+import { createFeedback } from './create-feedback.command';
+import { deleteFeedback } from './delete-feedback.command';
+import { listFeedbackForUser } from './list-feedback.query';
 import {
   createFeedbackSchema,
   feedbackIdParamSchema,
   listFeedbackQuerySchema,
 } from './schema';
-import { feedbackService } from './service';
 
-const app = new Hono<AppContext>()
+export const feedbackRoutes = new Hono<AppContext>()
   .get('/', zValidator('query', listFeedbackQuerySchema), async (c) => {
     const query = c.req.valid('query');
     const { id: userId } = c.get('user');
 
-    return runHttpEffect(
-      c,
-      feedbackService.listForUser({
-        userId,
-        limit: query.limit,
-        cursor: query.cursor,
-      }),
-    );
+    const result = await listFeedbackForUser({
+      userId,
+      limit: query.limit,
+      cursor: query.cursor,
+    });
+
+    return c.json(result);
   })
   .post('/', zValidator('json', createFeedbackSchema), async (c) => {
     const body = c.req.valid('json');
     const { id: userId } = c.get('user');
 
-    return runHttpEffect(
-      c,
-      feedbackService.create({
-        userId,
-        type: body.type,
-        title: body.title,
-        description: body.description,
-        priority: body.priority,
-        metadata: body.metadata,
-        images: body.images,
-      }),
-      201,
-    );
+    const result = await createFeedback({
+      userId,
+      type: body.type,
+      title: body.title,
+      description: body.description,
+      priority: body.priority,
+      metadata: body.metadata,
+      images: body.images,
+    });
+
+    return c.json(result, 201);
   })
   .delete(
     '/:feedbackId',
@@ -48,16 +46,12 @@ const app = new Hono<AppContext>()
       const { feedbackId } = c.req.valid('param');
       const { id: userId } = c.get('user');
 
-      return runHttpEffect(
-        c,
-        feedbackService.delete({
-          userId,
-          feedbackId,
-        }),
-      );
+      const result = await deleteFeedback({ userId, feedbackId });
+      return c.json(result);
     },
   );
 
-export default app;
+export default feedbackRoutes;
 
-export type FeedbackAppType = typeof app;
+export type FeedbackRpc = typeof feedbackRoutes;
+export type FeedbackAppType = FeedbackRpc;

@@ -1,30 +1,27 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 
-import { createInvitesService } from '#/modules/invites/service';
 import type { AppContext } from '#/shared/types/app';
+import { createInviteOperations } from './invite-operations';
+import { inviteRouteErrorResponse } from './invites.errors';
 import { acceptInviteSchema, inviteParamsSchema } from './invites.validators';
 
-const invitesService = createInvitesService();
+const inviteOperations = createInviteOperations();
 
-const invites = new Hono<AppContext>()
+export const invitesRoutes = new Hono<AppContext>()
   .get('/:inviteCode', zValidator('param', inviteParamsSchema), async (c) => {
     const { inviteCode } = c.req.valid('param');
     const { id: userId } = c.get('user');
 
     try {
-      const result = await invitesService.getPreview({
+      const result = await inviteOperations.getPreview({
         userId,
         inviteCode,
       });
 
       return c.json(result);
     } catch (error) {
-      if (error instanceof Error && error.message === 'Grupo no encontrado') {
-        return c.json({ error: error.message }, 404);
-      }
-
-      throw error;
+      return inviteRouteErrorResponse(c, error);
     }
   })
   .post(
@@ -37,7 +34,7 @@ const invites = new Hono<AppContext>()
       const { id: userId, name, email } = c.get('user');
 
       try {
-        const result = await invitesService.acceptInvite({
+        const result = await inviteOperations.acceptInvite({
           userId,
           userName: name ?? null,
           userEmail: email ?? null,
@@ -47,17 +44,10 @@ const invites = new Hono<AppContext>()
 
         return c.json(result, 201);
       } catch (error) {
-        if (error instanceof Error) {
-          if (error.message === 'Grupo no encontrado') {
-            return c.json({ error: error.message }, 404);
-          }
-
-          return c.json({ error: error.message }, 400);
-        }
-
-        throw error;
+        return inviteRouteErrorResponse(c, error);
       }
     },
   );
 
-export default invites;
+export default invitesRoutes;
+export type InvitesRpc = typeof invitesRoutes;

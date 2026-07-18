@@ -5,7 +5,7 @@ import { Hono } from 'hono';
 import {
   extractBearerToken,
   verifyMcpAccessToken,
-} from '../modules/login/mcp/token';
+} from '#/routes/public/login/mcp/token';
 import { createMcpApp } from './create-mcp-app';
 
 const oauthScopes = ['mcp:tools'];

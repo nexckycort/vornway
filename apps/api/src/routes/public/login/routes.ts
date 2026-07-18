@@ -1,13 +1,13 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
+import { createLoginOperations } from '#/routes/public/login/auth/login-operations';
 import {
   createMcpTokenSchema,
   sendOtpSchema,
   syncGoogleSchema,
   verifyOtpSchema,
-} from '#/modules/login/auth/schemas';
-import { createLoginService } from '#/modules/login/auth/service';
-import { createMcpAccessToken } from '#/modules/login/mcp/token';
+} from '#/routes/public/login/auth/schemas';
+import { createMcpAccessToken } from '#/routes/public/login/mcp/token';
 
 function otpStatus(
   code:
@@ -28,24 +28,24 @@ function otpStatus(
   }
 }
 
-const service = createLoginService();
+const loginOperations = createLoginOperations();
 
-const login = new Hono()
+export const loginRoutes = new Hono()
   .post('/send-otp', zValidator('json', sendOtpSchema), async (c) => {
     const body = c.req.valid('json');
-    const result = await service.sendOtp(body);
+    const result = await loginOperations.sendOtp(body);
 
     return c.json(result, otpStatus(result.code));
   })
   .post('/verify-otp', zValidator('json', verifyOtpSchema), async (c) => {
     const body = c.req.valid('json');
-    const result = await service.verifyOtp(body);
+    const result = await loginOperations.verifyOtp(body);
 
     return c.json(result, result.success ? 200 : 401);
   })
   .post('/sync-google', zValidator('json', syncGoogleSchema), async (c) => {
     const body = c.req.valid('json');
-    const result = await service.syncGoogleSession({
+    const result = await loginOperations.syncGoogleSession({
       headers: c.req.raw.headers,
       ...body,
     });
@@ -55,7 +55,7 @@ const login = new Hono()
   .post('/mcp-token', zValidator('json', createMcpTokenSchema), async (c) => {
     const body = c.req.valid('json');
 
-    const result = await service.verifyOtp({
+    const result = await loginOperations.verifyOtp({
       email: body.email,
       otp: body.otp,
     });
@@ -78,7 +78,7 @@ const login = new Hono()
     });
   })
   .get('/me', async (c) => {
-    const user = await service.getCurrentUser(c.req.raw.headers);
+    const user = await loginOperations.getCurrentUser(c.req.raw.headers);
 
     if (!user) {
       return c.json(null, 401);
@@ -87,4 +87,5 @@ const login = new Hono()
     return c.json(user);
   });
 
-export default login;
+export default loginRoutes;
+export type LoginRpc = typeof loginRoutes;

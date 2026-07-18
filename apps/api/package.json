@@ -51,7 +51,6 @@
     "@prisma/adapter-pg": "catalog:",
     "@prisma/client": "catalog:",
     "better-auth": "catalog:",
-    "effect": "^3.21.3",
     "hono": "catalog:",
     "resend": "catalog:",
     "web-push": "^3.6.7",

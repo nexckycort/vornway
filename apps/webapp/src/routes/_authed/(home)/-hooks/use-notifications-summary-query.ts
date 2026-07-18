@@ -18,7 +18,7 @@ export function useNotificationsSummaryQuery() {
     queryKey: ['notifications-summary'],
     queryFn: async () => {
       const response = await notificationsEndpoint({
-        query: { limit: '1', markAsRead: 'false' },
+        query: { limit: '1' },
       });
 
       if (!response.ok) {

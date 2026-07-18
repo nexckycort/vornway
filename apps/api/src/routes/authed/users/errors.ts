@@ -1,68 +1,53 @@
-import { Data } from 'effect';
-import type { ErrorMetadata } from '#/shared/errors/error-metadata';
+import { AppError } from '#/shared/errors/app-error';
 
-export class UserNotFoundError
-  extends Data.TaggedError('UserNotFoundError')<{
-    userId: string;
-  }>
-  implements ErrorMetadata<404>
-{
-  readonly code = 'USER_NOT_FOUND';
-  readonly message = 'Usuario no encontrado';
-  readonly status = 404 as const;
+export function userNotFoundError() {
+  return new AppError({
+    status: 404,
+    code: 'USER_NOT_FOUND',
+    message: 'Usuario no encontrado',
+  });
 }
 
-export class UserSearchError
-  extends Data.TaggedError('UserSearchError')<{
-    cause: unknown;
-  }>
-  implements ErrorMetadata<500>
-{
-  readonly code = 'USER_SEARCH_FAILED';
-  readonly message = 'No se pudo buscar usuarios';
-  readonly status = 500 as const;
+export function userSearchError(cause: unknown) {
+  return new AppError({
+    status: 500,
+    code: 'USER_SEARCH_FAILED',
+    message: 'No se pudo buscar usuarios',
+    cause,
+  });
 }
 
-export class UserImageUploadError
-  extends Data.TaggedError('UserImageUploadError')<{
-    cause: unknown;
-  }>
-  implements ErrorMetadata<400>
-{
-  readonly code = 'USER_IMAGE_UPLOAD_FAILED';
-  readonly message = 'No se pudo subir la imagen';
-  readonly status = 400 as const;
+export function userImageUploadError(cause: unknown) {
+  return new AppError({
+    status: 400,
+    code: 'USER_IMAGE_UPLOAD_FAILED',
+    message: 'No se pudo subir la imagen',
+    cause,
+  });
 }
 
-export class UserImageUpdateError
-  extends Data.TaggedError('UserImageUpdateError')<{
-    cause: unknown;
-  }>
-  implements ErrorMetadata<500>
-{
-  readonly code = 'USER_IMAGE_UPDATE_FAILED';
-  readonly message = 'No se pudo actualizar la imagen del usuario';
-  readonly status = 500 as const;
+export function userImageUpdateError(cause: unknown) {
+  return new AppError({
+    status: 500,
+    code: 'USER_IMAGE_UPDATE_FAILED',
+    message: 'No se pudo actualizar la imagen del usuario',
+    cause,
+  });
 }
 
-export class UsernameAlreadyTakenError
-  extends Data.TaggedError('UsernameAlreadyTakenError')<{
-    username: string;
-  }>
-  implements ErrorMetadata<409>
-{
-  readonly code = 'USERNAME_ALREADY_TAKEN';
-  readonly message = 'Ese nombre de usuario ya esta en uso';
-  readonly status = 409 as const;
+export function usernameAlreadyTakenError() {
+  return new AppError({
+    status: 409,
+    code: 'USERNAME_ALREADY_TAKEN',
+    message: 'Ese nombre de usuario ya esta en uso',
+  });
 }
 
-export class UsernameUpdateError
-  extends Data.TaggedError('UsernameUpdateError')<{
-    cause: unknown;
-  }>
-  implements ErrorMetadata<500>
-{
-  readonly code = 'USERNAME_UPDATE_FAILED';
-  readonly message = 'No se pudo actualizar el nombre de usuario';
-  readonly status = 500 as const;
+export function usernameUpdateError(cause: unknown) {
+  return new AppError({
+    status: 500,
+    code: 'USERNAME_UPDATE_FAILED',
+    message: 'No se pudo actualizar el nombre de usuario',
+    cause,
+  });
 }

@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 
-import { getCurrencyConverter } from '#/modules/converter/service';
 import type { AppContext } from '#/shared/types/app';
+import { getCurrencyConverter } from './get-currency-converter.query';
 
-const converter = new Hono<AppContext>().get('/', async (c) => {
+export const converterRoutes = new Hono<AppContext>().get('/', async (c) => {
   const { id: userId } = c.get('user');
 
   if (!userId) {
@@ -14,4 +14,5 @@ const converter = new Hono<AppContext>().get('/', async (c) => {
   return c.json(result);
 });
 
-export default converter;
+export default converterRoutes;
+export type ConverterRpc = typeof converterRoutes;

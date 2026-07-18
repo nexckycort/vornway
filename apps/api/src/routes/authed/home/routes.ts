@@ -1,14 +1,15 @@
 import { Hono } from 'hono';
 
-import { createHomeService } from '#/modules/home';
 import type { AppContext } from '#/shared/types/app';
+import { createHomeSummaryQuery } from './get-home-summary.query';
 
-const homeService = createHomeService();
+const homeSummaryQuery = createHomeSummaryQuery();
 
-const home = new Hono<AppContext>().get('/', async (c) => {
+export const homeRoutes = new Hono<AppContext>().get('/', async (c) => {
   const { id: userId } = c.get('user');
-  const summary = await homeService.getSummary(userId);
+  const summary = await homeSummaryQuery.getSummary(userId);
   return c.json(summary);
 });
 
-export default home;
+export default homeRoutes;
+export type HomeRpc = typeof homeRoutes;

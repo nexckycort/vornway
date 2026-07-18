@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { quickSplitsClient } from '#/api/quick-splits';
 import type { InferResponseType } from '#/lib/hc';
 
-const recentQuickSplitExpensesEndpoint = quickSplitsClient.expenses.recent.$get;
+const recentQuickSplitExpensesEndpoint = quickSplitsClient.expenses.$get;
 
 type RecentQuickSplitExpensesResponse = InferResponseType<
   typeof recentQuickSplitExpensesEndpoint,

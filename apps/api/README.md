@@ -1,67 +1,92 @@
-To install dependencies:
-```sh
-pnpm install
-```
+# Vornway API
 
-To run HTTP API:
+Vornway HTTP/RPC backend. The application stack is Hono, Zod, and Prisma.
+
+## Commands
+
 ```sh
+bun install
 bun run dev
+bun check
+bun typecheck
+bun test
+bun build:rpc
 ```
 
-Open http://localhost:3000
+`bun check` and `bun typecheck` must pass before a change is considered done.
 
-## Modular style
+## Architecture
 
-Each feature lives in one folder under `src/modules/<feature>/` and includes everything it needs:
-- `types.ts`
-- `service.ts`
-- `routes.ts`
-- `mcp.ts`
-- `module.ts`
-- `index.ts`
-- `<feature>.test.ts`
+The API is organized by vertical capabilities under `src/routes`.
 
-Create a new module:
+```text
+src/
+├── app/                  # Hono composition, MCP, error handler
+├── infrastructure/       # DB, auth, email, storage, push, notifications
+├── routes/
+│   ├── authed/           # session-protected routes
+│   ├── public/           # public routes
+│   └── mcp/              # MCP tools and context
+└── shared/               # cross-cutting types/errors/middlewares
+```
+
+There is no `src/modules`. Do not create `service.ts` or `repository.ts` by default.
+
+Conventions:
+
+- `*.routes.ts`: Hono HTTP boundary.
+- `*.validators.ts` or `schema.ts`: Zod contracts.
+- `*.query.ts`: one concrete read operation.
+- `*.command.ts`: one concrete write operation.
+- `*.operations.ts`: temporary grouping only when splitting further would reduce clarity.
+- `*.storage.ts`: storage adapter owned by one resource.
+- `*.errors.ts`: typed module errors.
+
+If an integration is shared by multiple modules, it belongs in `src/infrastructure`.
+Current examples: DB, shared images, push delivery, and notifications inbox.
+
+## Error contract
+
+Routes that keep the legacy contract respond with:
+
+```json
+{ "error": "Visible message" }
+```
+
+The global typed-error handler uses:
+
+```json
+{ "code": "ERROR_CODE", "message": "Visible message" }
+```
+
+Do not compare `error.message` in routes to choose an HTTP status. Operations
+must throw `AppError` or module-specific typed errors with `code` and `status`.
+
+## RPC
+
+Each route module exports its RPC type:
+
+```ts
+export type UsersRpc = typeof usersRoutes;
+```
+
+After changing routes or contracts:
+
 ```sh
-bun run module:new <module-name>
+bun build:rpc
 ```
 
-After creating it, register it in `src/app/modules.ts`.
+If the frontend uses the affected contract, also run:
 
-## Public routes and RPC type generation
-
-`src/hc.ts` exports `PublicRoutes` and the generated declaration in `dist/src/hc.d.ts` is used by HTTP clients.
-
-For this to work reliably, public routers must follow this pattern:
-
-1. Use a chained `Hono` declaration:
-```ts
-const login = new Hono()
-  .post(...)
-  .post(...)
-  .get(...)
+```sh
+cd ../webapp
+bun typecheck
 ```
-
-2. Export that chained router as default:
-```ts
-export default login
-```
-
-3. Mount it from `src/routes/public/routes.ts`:
-```ts
-const app = new Hono()
-  .basePath('/api')
-  .route('/login', loginRoutes)
-```
-
-Important:
-- Avoid creating the same public route in more than one place.
-- Keep public HTTP endpoints under `src/routes/public/*` so `PublicRoutes` stays stable.
-- If route typing is broken in clients, check that the router is declared with the chained style above.
 
 ## Environment variables
 
 Push notifications require:
+
 - `VAPID_PUBLIC_KEY`
 - `VAPID_PRIVATE_KEY`
 - `VAPID_SUBJECT`

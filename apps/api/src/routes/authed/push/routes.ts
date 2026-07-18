@@ -1,13 +1,13 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import { pushNotificationService } from '#/modules/push';
+import { pushNotifications } from '#/infrastructure/push/push-notifications';
 import type { AppContext } from '#/shared/types/app';
 import {
   pushSubscriptionSchema,
   revokePushSubscriptionSchema,
 } from './push.validators';
 
-const app = new Hono<AppContext>()
+export const pushRoutes = new Hono<AppContext>()
   .post(
     '/subscriptions',
     zValidator('json', pushSubscriptionSchema),
@@ -16,7 +16,7 @@ const app = new Hono<AppContext>()
       const payload = c.req.valid('json');
       const userAgent = c.req.header('user-agent');
 
-      const subscription = await pushNotificationService.storeSubscription({
+      const subscription = await pushNotifications.storeSubscription({
         userId,
         endpoint: payload.endpoint,
         p256dh: payload.keys.p256dh,
@@ -34,7 +34,7 @@ const app = new Hono<AppContext>()
       const { id: userId } = c.get('user');
       const { endpoint } = c.req.valid('json');
 
-      await pushNotificationService.revokeSubscription({
+      await pushNotifications.revokeSubscription({
         userId,
         endpoint,
       });
@@ -46,7 +46,7 @@ const app = new Hono<AppContext>()
     const { id: userId, name, email } = c.get('user');
 
     try {
-      await pushNotificationService.sendToUsers([userId], {
+      await pushNotifications.sendToUsers([userId], {
         title: 'Push notifications enabled',
         body: `Hi ${name?.trim() || email || 'Usuario'}, this is a test notification from Vornway.`,
         url: '/profile',
@@ -63,4 +63,5 @@ const app = new Hono<AppContext>()
     return c.json({ success: true });
   });
 
-export default app;
+export default pushRoutes;
+export type PushRpc = typeof pushRoutes;

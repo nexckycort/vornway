@@ -24,6 +24,8 @@ const moveCategoryExpensesEndpoint =
   client.api.groups[':id'].categories[':categoryId']['move-expenses'].$post;
 const removeMemberEndpoint =
   client.api.groups[':id'].members[':memberId'].$delete;
+const unlinkMemberEndpoint =
+  client.api.groups[':id'].members[':memberId']['account-link'].$delete;
 
 type CreateExpenseRequest = InferRequestType<typeof createExpenseEndpoint>;
 type UpdateExpenseRequest = InferRequestType<typeof updateExpenseEndpoint>;
@@ -55,6 +57,7 @@ type MoveCategoryExpensesResponse = InferResponseType<
   typeof moveCategoryExpensesEndpoint
 >;
 type RemoveMemberResponse = InferResponseType<typeof removeMemberEndpoint>;
+type UnlinkMemberResponse = InferResponseType<typeof unlinkMemberEndpoint>;
 
 type UpdateGroupImageRequest = {
   dataUrl: string;
@@ -515,7 +518,6 @@ export function useRemoveMemberMutation(groupId: string) {
     mutationFn: async ({ memberId }: { memberId: string }) => {
       const response = await removeMemberEndpoint({
         param: { id: groupId, memberId },
-        query: { unlink: 'true' },
       });
 
       if (!response.ok) {
@@ -545,9 +547,8 @@ export function useUnlinkMemberMutation(groupId: string) {
 
   return useMutation({
     mutationFn: async ({ memberId }: { memberId: string }) => {
-      const response = await removeMemberEndpoint({
+      const response = await unlinkMemberEndpoint({
         param: { id: groupId, memberId },
-        query: { unlink: 'true' },
       });
 
       if (!response.ok) {
@@ -555,7 +556,7 @@ export function useUnlinkMemberMutation(groupId: string) {
         throw new Error(payload.error ?? m['groups.settings.leaveFailed']());
       }
 
-      return (await response.json()) as RemoveMemberResponse;
+      return (await response.json()) as UnlinkMemberResponse;
     },
     onSuccess: async () => {
       await Promise.all([

@@ -1,66 +1,44 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 
-import { runHttpEffect } from '#/shared/effect/run-effect';
 import type { AppContext } from '#/shared/types/app';
+import { quickSplitOperations } from './quick-split-operations';
 import {
   createQuickSplitExpenseSchema,
   createQuickSplitSchema,
   listQuickSplitExpensesQuerySchema,
-  listRecentQuickSplitExpensesQuerySchema,
   quickSplitExpenseParamsSchema,
   quickSplitParamsSchema,
 } from './schema';
-import { quickSplitsService } from './service';
 
-const quickSplitExpenses = new Hono<AppContext>()
-  .get(
-    '/recent',
-    zValidator('query', listRecentQuickSplitExpensesQuerySchema),
-    async (c) => {
-      const query = c.req.valid('query');
-      const { id: userId } = c.get('user');
+const quickSplitExpenses = new Hono<AppContext>().get(
+  '/',
+  zValidator('query', listQuickSplitExpensesQuerySchema),
+  async (c) => {
+    const query = c.req.valid('query');
+    const { id: userId } = c.get('user');
 
-      return runHttpEffect(
-        c,
-        quickSplitsService.listRecentExpenses({
-          ...query,
-          userId,
-        }),
-      );
-    },
-  )
-  .get(
-    '/list',
-    zValidator('query', listQuickSplitExpensesQuerySchema),
-    async (c) => {
-      const query = c.req.valid('query');
-      const { id: userId } = c.get('user');
+    const result = await quickSplitOperations.listExpenses({
+      ...query,
+      userId,
+    });
 
-      return runHttpEffect(
-        c,
-        quickSplitsService.listExpenses({
-          ...query,
-          userId,
-        }),
-      );
-    },
-  );
+    return c.json(result);
+  },
+);
 
-const quickSplits = new Hono<AppContext>()
+export const quickSplitsRoutes = new Hono<AppContext>()
   .route('/expenses', quickSplitExpenses)
   .post('/', zValidator('json', createQuickSplitSchema), async (c) => {
     const data = c.req.valid('json');
     const { id: userId } = c.get('user');
 
-    return runHttpEffect(
-      c,
-      quickSplitsService.create({
-        ...data,
-        userId,
-      }),
-      201,
-    );
+    const result = await quickSplitOperations.create({
+      ...data,
+      userId,
+    });
+
+    return c.json(result, 201);
   })
   .post(
     '/:id/expenses',
@@ -71,15 +49,13 @@ const quickSplits = new Hono<AppContext>()
       const data = c.req.valid('json');
       const { id: userId } = c.get('user');
 
-      return runHttpEffect(
-        c,
-        quickSplitsService.createExpense({
-          ...data,
-          userId,
-          quickSplitId: id,
-        }),
-        201,
-      );
+      const result = await quickSplitOperations.createExpense({
+        ...data,
+        userId,
+        quickSplitId: id,
+      });
+
+      return c.json(result, 201);
     },
   )
   .put(
@@ -91,15 +67,14 @@ const quickSplits = new Hono<AppContext>()
       const data = c.req.valid('json');
       const { id: userId } = c.get('user');
 
-      return runHttpEffect(
-        c,
-        quickSplitsService.updateExpense({
-          ...data,
-          userId,
-          quickSplitId: id,
-          expenseId,
-        }),
-      );
+      const result = await quickSplitOperations.updateExpense({
+        ...data,
+        userId,
+        quickSplitId: id,
+        expenseId,
+      });
+
+      return c.json(result);
     },
   )
   .get(
@@ -109,14 +84,13 @@ const quickSplits = new Hono<AppContext>()
       const { id, expenseId } = c.req.valid('param');
       const { id: userId } = c.get('user');
 
-      return runHttpEffect(
-        c,
-        quickSplitsService.getExpenseDetail({
-          quickSplitId: id,
-          expenseId,
-          userId,
-        }),
-      );
+      const result = await quickSplitOperations.getExpenseDetail({
+        quickSplitId: id,
+        expenseId,
+        userId,
+      });
+
+      return c.json(result);
     },
   )
   .delete(
@@ -126,17 +100,17 @@ const quickSplits = new Hono<AppContext>()
       const { id, expenseId } = c.req.valid('param');
       const { id: userId } = c.get('user');
 
-      return runHttpEffect(
-        c,
-        quickSplitsService.deleteExpense({
-          quickSplitId: id,
-          expenseId,
-          userId,
-        }),
-      );
+      const result = await quickSplitOperations.deleteExpense({
+        quickSplitId: id,
+        expenseId,
+        userId,
+      });
+
+      return c.json(result);
     },
   );
 
-export default quickSplits;
+export default quickSplitsRoutes;
 
-export type QuickSplitsAppType = typeof quickSplits;
+export type QuickSplitsRpc = typeof quickSplitsRoutes;
+export type QuickSplitsAppType = QuickSplitsRpc;

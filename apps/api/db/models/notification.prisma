@@ -1,5 +1,5 @@
 model Notification {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   userId     String
   type       String
   title      String
@@ -10,9 +10,8 @@ model Notification {
   actorName  String?
   actorImage String?
   readAt     DateTime?
-  createdAt  DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([userId, readAt, createdAt])

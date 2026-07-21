@@ -7,8 +7,7 @@ model ActivityLog {
   targetName  String?
   details     Json?
   createdAt   DateTime @default(now())
-
-  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@index([groupId, createdAt])
   @@map("activity_log")

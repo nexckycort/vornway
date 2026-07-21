@@ -11,6 +11,7 @@
     "check": "biome check --write",
     "clean": "rm -rf node_modules && rm -rf dist",
     "db:generate": "DATABASE_URL=dummy prisma generate",
+    "db:pull": "bun run --bun prisma db pull",
     "db:migrate:create": "bun run --bun prisma migrate dev --name ",
     "db:migrate": "bun run --bun prisma migrate dev",
     "db:migrate:deploy": "bun --env-file=.env prisma migrate deploy",

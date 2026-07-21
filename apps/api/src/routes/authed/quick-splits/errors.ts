@@ -124,3 +124,34 @@ export class QuickSplitExpenseDeleteError extends AppError<500> {
     });
   }
 }
+
+export class QuickSplitSettlementParticipantsInvalidError extends AppError<400> {
+  constructor() {
+    super({
+      status: 400,
+      code: 'QUICK_SPLIT_SETTLEMENT_PARTICIPANTS_INVALID',
+      message: 'Los participantes de la liquidación no son válidos',
+    });
+  }
+}
+
+export class QuickSplitSettlementAmountInvalidError extends AppError<400> {
+  constructor() {
+    super({
+      status: 400,
+      code: 'QUICK_SPLIT_SETTLEMENT_AMOUNT_INVALID',
+      message: 'El monto supera el saldo pendiente de la persona seleccionada',
+    });
+  }
+}
+
+export class QuickSplitSettlementCreateError extends AppError<500> {
+  constructor(input: { cause: unknown }) {
+    super({
+      status: 500,
+      code: 'QUICK_SPLIT_SETTLEMENT_CREATE_FAILED',
+      message: 'No se pudo crear la liquidación del gasto con amigos',
+      cause: input.cause,
+    });
+  }
+}

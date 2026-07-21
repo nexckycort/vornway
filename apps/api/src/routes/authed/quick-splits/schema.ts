@@ -58,7 +58,6 @@ export const createQuickSplitExpenseSchema = z
     amount: z.number().positive(),
     currency: z.string().trim().length(3),
     paidByParticipantId: z.string().min(1).optional(),
-    participantIds: z.array(z.string().min(1)).min(1).max(20),
     splitMethod: z.enum(['equal', 'percentage', 'exact']).default('equal'),
     percentageShares: z
       .record(z.string().min(1), z.number().positive())
@@ -67,13 +66,6 @@ export const createQuickSplitExpenseSchema = z
       .record(z.string().min(1), z.number().nonnegative())
       .optional(),
   })
-  .refine(
-    (data) => new Set(data.participantIds).size === data.participantIds.length,
-    {
-      message: 'No puedes repetir participantes',
-      path: ['participantIds'],
-    },
-  )
   .superRefine((data, ctx) => {
     if (data.splitMethod === 'percentage' && !data.percentageShares) {
       ctx.addIssue({
@@ -124,6 +116,24 @@ export type CreateQuickSplitExpenseResult = {
     share: number;
   }>;
   createdAt: string;
+};
+
+export const settleQuickSplitDebtSchema = z.object({
+  fromParticipantId: z.string().min(1),
+  toParticipantId: z.string().min(1),
+  amount: z.number().positive(),
+  currency: z.string().trim().length(3),
+});
+
+export type SettleQuickSplitDebtInput = z.infer<
+  typeof settleQuickSplitDebtSchema
+>;
+
+export type SettleQuickSplitDebtResult = {
+  id: string;
+  expenseId: string;
+  amount: number;
+  currency: string;
 };
 
 export type QuickSplitExpenseFeedItem = {
@@ -180,6 +190,22 @@ export type QuickSplitExpenseDetailResult = {
     image: string | null;
     share: number;
     role: string;
+  }>;
+  settlements: Array<{
+    id: string;
+    from: {
+      id: string;
+      userId: string | null;
+      name: string;
+    };
+    to: {
+      id: string;
+      userId: string | null;
+      name: string;
+    };
+    amount: number;
+    currency: string;
+    createdAt: string;
   }>;
 };
 

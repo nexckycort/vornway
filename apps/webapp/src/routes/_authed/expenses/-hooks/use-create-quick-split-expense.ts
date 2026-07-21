@@ -16,7 +16,6 @@ export type UpsertQuickSplitExpenseValues = {
   amount: number;
   currency: string;
   paidByParticipantId: string;
-  expenseParticipantIds: string[];
   splitMethod: 'equal' | 'percentage' | 'exact';
   percentageShares?: Record<string, number>;
   exactShares?: Record<string, number>;
@@ -39,7 +38,6 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
         amount: values.amount,
         currency: values.currency,
         paidByParticipantId: values.paidByParticipantId,
-        participantIds: values.expenseParticipantIds,
         splitMethod: values.splitMethod,
         ...(values.percentageShares
           ? { percentageShares: values.percentageShares }
@@ -101,17 +99,7 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
     values.paidByParticipantId === values.currentUserId
       ? currentUserParticipantId
       : participantIdByClientId.get(values.paidByParticipantId);
-  const expenseParticipantIds = values.expenseParticipantIds.map(
-    (participantId) =>
-      participantId === values.currentUserId
-        ? (currentUserParticipantId ?? participantId)
-        : (participantIdByClientId.get(participantId) ?? participantId),
-  );
-
-  if (
-    !paidByParticipantId ||
-    expenseParticipantIds.some((participantId) => !participantId)
-  ) {
+  if (!paidByParticipantId) {
     throw new Error(m['system.mapExpenseParticipantsFailed']());
   }
 
@@ -122,7 +110,6 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
       amount: values.amount,
       currency: values.currency,
       paidByParticipantId,
-      participantIds: expenseParticipantIds,
       splitMethod: values.splitMethod,
       ...(values.percentageShares
         ? {

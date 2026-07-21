@@ -16,6 +16,7 @@ import { useAuth } from '#/contexts/auth/use-auth';
 import { formatCurrency } from '#/lib/i18n';
 import { useDeleteQuickSplitExpenseMutation } from '#/routes/_authed/expenses/-hooks/use-delete-quick-split-expense';
 import { useQuickSplitExpenseQuery } from '#/routes/_authed/expenses/-hooks/use-quick-split-expense-query';
+import { useSettleQuickSplitDebt } from '#/routes/_authed/expenses/-hooks/use-settle-quick-split-debt';
 import { getQuickSplitMessages } from '#/routes/_authed/expenses/-messages';
 
 export const Route = createFileRoute(
@@ -60,6 +61,7 @@ function RouteComponent() {
   const expenseQuery = useQuickSplitExpenseQuery(quickSplitId, expenseId);
   const deleteExpenseMutation = useDeleteQuickSplitExpenseMutation();
   const [showDeleteDrawer, setShowDeleteDrawer] = useState(false);
+  const [showSettleDrawer, setShowSettleDrawer] = useState(false);
 
   const fallbackExpense = useMemo(() => {
     const cachedExpenses = queryClient.getQueryData<{
@@ -91,6 +93,23 @@ function RouteComponent() {
   }, [expenseId, quickSplitId, queryClient]);
 
   const expense = expenseQuery.data;
+  const {
+    participantOptions,
+    fromParticipantId,
+    toParticipantId,
+    amountInput,
+    canSettleExpense,
+    canSubmitSettlement,
+    isPending: isSettlingExpense,
+    setFromParticipantId,
+    setToParticipantId,
+    setAmountInput,
+    settleExpense,
+  } = useSettleQuickSplitDebt({
+    quickSplitId,
+    expenseId,
+    expense,
+  });
   const handleBack = () => {
     void navigate({ to: '/expenses/friends' });
   };
@@ -188,6 +207,37 @@ function RouteComponent() {
                     />
                   ))}
                 </div>
+
+                <p className="mb-4 mt-7 text-xs font-medium text-[#444444]">
+                  {t.settlementHistory}
+                </p>
+                {expense.settlements.length > 0 ? (
+                  <div className="space-y-4">
+                    {expense.settlements.map((settlement) => (
+                      <div
+                        key={settlement.id}
+                        className="flex items-center gap-3 rounded-2xl bg-[#f8f8f8] px-3 py-3"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-[#202124]">
+                            {t.settlementPaid(
+                              settlement.from.name,
+                              settlement.to.name,
+                            )}
+                          </p>
+                          <p className="mt-1 text-xs text-[#737373]">
+                            {formatDate(settlement.createdAt)}
+                          </p>
+                        </div>
+                        <span className="shrink-0 text-sm font-semibold text-[#202124]">
+                          {formatAmount(settlement.currency, settlement.amount)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-[#737373]">{t.settlementEmpty}</p>
+                )}
               </div>
 
               <div className="mt-auto flex items-center gap-3 px-5 pb-4 pt-6">
@@ -211,10 +261,18 @@ function RouteComponent() {
                       },
                     })
                   }
-                  className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[#080202] text-sm font-semibold text-white"
+                  className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#202124] shadow-[0_4px_12px_rgba(15,23,42,0.05)]"
+                  aria-label={t.editExpense}
                 >
                   <PencilLine className="size-4" />
-                  {t.editExpense}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSettleDrawer(true)}
+                  disabled={!canSettleExpense}
+                  className="flex h-12 flex-1 items-center justify-center rounded-full bg-[#080202] text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  {t.settleExpense}
                 </button>
               </div>
             </div>
@@ -235,7 +293,7 @@ function RouteComponent() {
               className="h-11 rounded-full"
               onClick={() => setShowDeleteDrawer(false)}
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button
               type="button"
@@ -246,6 +304,110 @@ function RouteComponent() {
               {deleteExpenseMutation.isPending
                 ? t.common.deleting
                 : t.common.delete}
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={showSettleDrawer} onOpenChange={setShowSettleDrawer}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{t.settleExpenseTitle}</DrawerTitle>
+            <DrawerDescription>{t.settleExpenseCopy}</DrawerDescription>
+          </DrawerHeader>
+          <div className="space-y-4 px-4 pb-2">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-[#202124]">
+                {t.settleFromLabel}
+              </p>
+              <div className="grid gap-2">
+                {participantOptions.map((participant) => (
+                  <button
+                    key={`from-${participant.id}`}
+                    type="button"
+                    onClick={() => setFromParticipantId(participant.id)}
+                    className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm ${
+                      fromParticipantId === participant.id
+                        ? 'border-[#080202] bg-[#080202] text-white'
+                        : 'border-[#e5e7eb] bg-white text-[#202124]'
+                    }`}
+                  >
+                    <span>
+                      {participant.name}
+                      {participant.userId === user?.id ? ` (${t.you})` : ''}
+                    </span>
+                    <span className="font-medium">
+                      {formatAmount(
+                        expense?.currency ?? 'COP',
+                        participant.share,
+                      )}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-[#202124]">
+                {t.settleToLabel}
+              </p>
+              <div className="grid gap-2">
+                {participantOptions.map((participant) => (
+                  <button
+                    key={`to-${participant.id}`}
+                    type="button"
+                    onClick={() => setToParticipantId(participant.id)}
+                    className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm ${
+                      toParticipantId === participant.id
+                        ? 'border-[#080202] bg-[#080202] text-white'
+                        : 'border-[#e5e7eb] bg-white text-[#202124]'
+                    }`}
+                  >
+                    <span>
+                      {participant.name}
+                      {participant.userId === user?.id ? ` (${t.you})` : ''}
+                    </span>
+                    <span className="font-medium">
+                      {formatAmount(
+                        expense?.currency ?? 'COP',
+                        participant.share,
+                      )}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-[#202124]">
+                {t.settleAmountLabel}
+              </span>
+              <input
+                value={amountInput}
+                onChange={(event) => setAmountInput(event.target.value)}
+                inputMode="decimal"
+                className="h-12 w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 text-sm text-[#202124] outline-none"
+              />
+            </label>
+          </div>
+          <DrawerFooter className="grid grid-cols-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-full"
+              onClick={() => setShowSettleDrawer(false)}
+            >
+              {t.common.cancel}
+            </Button>
+            <Button
+              type="button"
+              className="h-11 rounded-full"
+              onClick={() =>
+                void settleExpense().then(() => setShowSettleDrawer(false))
+              }
+              disabled={!canSubmitSettlement || isSettlingExpense}
+            >
+              {isSettlingExpense ? t.settleExpensePending : t.settleExpense}
             </Button>
           </DrawerFooter>
         </DrawerContent>

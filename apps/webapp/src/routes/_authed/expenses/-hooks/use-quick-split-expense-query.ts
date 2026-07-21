@@ -25,6 +25,22 @@ export type QuickSplitExpenseDetail = {
     share: number;
     role: string;
   }>;
+  settlements: Array<{
+    id: string;
+    from: {
+      id: string;
+      userId: string | null;
+      name: string;
+    };
+    to: {
+      id: string;
+      userId: string | null;
+      name: string;
+    };
+    amount: number;
+    currency: string;
+    createdAt: string;
+  }>;
 };
 
 const quickSplitExpenseEndpoint =

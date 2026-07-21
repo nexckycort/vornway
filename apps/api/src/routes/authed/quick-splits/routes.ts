@@ -9,6 +9,7 @@ import {
   listQuickSplitExpensesQuerySchema,
   quickSplitExpenseParamsSchema,
   quickSplitParamsSchema,
+  settleQuickSplitDebtSchema,
 } from './schema';
 
 const quickSplitExpenses = new Hono<AppContext>().get(
@@ -53,6 +54,25 @@ export const quickSplitsRoutes = new Hono<AppContext>()
         ...data,
         userId,
         quickSplitId: id,
+      });
+
+      return c.json(result, 201);
+    },
+  )
+  .post(
+    '/:id/expenses/:expenseId/settlements',
+    zValidator('param', quickSplitExpenseParamsSchema),
+    zValidator('json', settleQuickSplitDebtSchema),
+    async (c) => {
+      const { id, expenseId } = c.req.valid('param');
+      const data = c.req.valid('json');
+      const { id: userId } = c.get('user');
+
+      const result = await quickSplitOperations.settleDebt({
+        ...data,
+        userId,
+        quickSplitId: id,
+        expenseId,
       });
 
       return c.json(result, 201);

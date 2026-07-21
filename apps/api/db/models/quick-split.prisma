@@ -8,7 +8,7 @@ model QuickSplit {
 
   owner        User                  @relation("QuickSplitOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   participants QuickSplitParticipant[]
-  expenses     QuickSplitExpense[]
+  expense      QuickSplitExpense?
 
   @@index([ownerId, createdAt(sort: Desc)])
   @@map("quick_split")
@@ -20,12 +20,14 @@ model QuickSplitParticipant {
   userId       String?
   name         String
   role         String     @default("participant")
+  share        Float      @default(0)
   joinedAt     DateTime   @default(now())
 
   quickSplit   QuickSplit @relation(fields: [quickSplitId], references: [id], onDelete: Cascade)
   user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   paidExpenses QuickSplitExpense[] @relation("QuickSplitExpensePaidByParticipant")
-  expenseParticipations QuickSplitExpenseParticipant[]
+  settlementsFrom QuickSplitExpenseSettlement[] @relation("QuickSplitSettlementFrom")
+  settlementsTo QuickSplitExpenseSettlement[] @relation("QuickSplitSettlementTo")
 
   @@unique([quickSplitId, userId])
   @@index([userId, joinedAt(sort: Desc)])
@@ -34,7 +36,7 @@ model QuickSplitParticipant {
 
 model QuickSplitExpense {
   id           String   @id @default(cuid())
-  quickSplitId String
+  quickSplitId String @unique
   paidByParticipantId String
   description  String
   amount       Float
@@ -45,23 +47,28 @@ model QuickSplitExpense {
 
   quickSplit   QuickSplit                  @relation(fields: [quickSplitId], references: [id], onDelete: Cascade)
   paidByParticipant QuickSplitParticipant  @relation("QuickSplitExpensePaidByParticipant", fields: [paidByParticipantId], references: [id], onDelete: Cascade)
-  participants QuickSplitExpenseParticipant[]
+  settlements  QuickSplitExpenseSettlement[]
 
   @@index([quickSplitId, createdAt(sort: Desc)])
   @@index([paidByParticipantId, createdAt(sort: Desc)])
   @@map("quick_split_expense")
 }
 
-model QuickSplitExpenseParticipant {
-  id        String   @id @default(cuid())
-  expenseId String
-  participantId String
-  share     Float
+model QuickSplitExpenseSettlement {
+  id               String   @id @default(cuid())
+  expenseId        String
+  fromParticipantId String
+  toParticipantId  String
+  amount           Float
+  currency         String
+  createdAt        DateTime @default(now())
 
-  expense QuickSplitExpense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
-  participant QuickSplitParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  expense        QuickSplitExpense     @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  fromParticipant QuickSplitParticipant @relation("QuickSplitSettlementFrom", fields: [fromParticipantId], references: [id], onDelete: Cascade)
+  toParticipant   QuickSplitParticipant @relation("QuickSplitSettlementTo", fields: [toParticipantId], references: [id], onDelete: Cascade)
 
-  @@unique([expenseId, participantId])
-  @@index([participantId])
-  @@map("quick_split_expense_participant")
+  @@index([expenseId, createdAt(sort: Desc)])
+  @@index([fromParticipantId])
+  @@index([toParticipantId])
+  @@map("quick_split_expense_settlement")
 }

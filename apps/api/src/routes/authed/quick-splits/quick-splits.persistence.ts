@@ -62,6 +62,7 @@ export const quickSplitsPersistence = {
             userId: true,
             name: true,
             role: true,
+            share: true,
           },
           orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }],
         },
@@ -85,6 +86,7 @@ export const quickSplitsPersistence = {
             userId: true,
             name: true,
             role: true,
+            share: true,
           },
           orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }],
         },
@@ -102,12 +104,13 @@ export const quickSplitsPersistence = {
         paidByParticipantId: true,
         splitMethod: true,
         createdAt: true,
-        participants: {
+        quickSplit: {
           select: {
-            participantId: true,
-            share: true,
+            participants: {
+              select: { id: true, share: true },
+              orderBy: [{ id: 'asc' }],
+            },
           },
-          orderBy: [{ participantId: 'asc' }],
         },
       },
     }),
@@ -158,6 +161,7 @@ export const quickSplitsPersistence = {
                 userId: true,
                 name: true,
                 role: true,
+                share: true,
                 user: {
                   select: {
                     image: true,
@@ -168,12 +172,22 @@ export const quickSplitsPersistence = {
             },
           },
         },
-        participants: {
+        settlements: {
           select: {
-            participantId: true,
-            share: true,
+            id: true,
+            fromParticipantId: true,
+            toParticipantId: true,
+            amount: true,
+            currency: true,
+            createdAt: true,
+            fromParticipant: {
+              select: { id: true, userId: true, name: true },
+            },
+            toParticipant: {
+              select: { id: true, userId: true, name: true },
+            },
           },
-          orderBy: [{ participantId: 'asc' }],
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         },
       },
     }),
@@ -253,28 +267,21 @@ export const quickSplitsPersistence = {
             name: true,
           },
         },
-        participants: {
+        quickSplit: {
           select: {
-            share: true,
-            participant: {
+            name: true,
+            participants: {
               select: {
                 id: true,
                 userId: true,
                 name: true,
+                share: true,
                 user: {
-                  select: {
-                    image: true,
-                    updatedAt: true,
-                  },
+                  select: { image: true, updatedAt: true },
                 },
               },
+              orderBy: [{ id: 'asc' }],
             },
-          },
-          orderBy: [{ participantId: 'asc' }],
-        },
-        quickSplit: {
-          select: {
-            name: true,
             _count: {
               select: {
                 participants: true,
@@ -284,7 +291,7 @@ export const quickSplitsPersistence = {
         },
       },
     }),
-  createExpense: (
+  createExpense: async (
     tx: Tx,
     input: {
       id?: string;
@@ -297,8 +304,8 @@ export const quickSplitsPersistence = {
       shares: Record<string, number>;
       createdAt: Date;
     },
-  ) =>
-    tx.quickSplitExpense.create({
+  ) => {
+    const createdExpense = await tx.quickSplitExpense.create({
       data: {
         ...(input.id ? { id: input.id } : {}),
         quickSplitId: input.quickSplitId,
@@ -309,14 +316,6 @@ export const quickSplitsPersistence = {
         splitMethod: input.splitMethod,
         createdAt: input.createdAt,
         updatedAt: input.createdAt,
-        participants: {
-          create: Object.entries(input.shares).map(
-            ([participantId, share]) => ({
-              participantId,
-              share,
-            }),
-          ),
-        },
       },
       select: {
         id: true,
@@ -327,16 +326,69 @@ export const quickSplitsPersistence = {
         paidByParticipantId: true,
         splitMethod: true,
         createdAt: true,
-        participants: {
+      },
+    });
+
+    await Promise.all(
+      Object.entries(input.shares).map(([participantId, share]) =>
+        tx.quickSplitParticipant.update({
+          where: { id: participantId },
+          data: { share },
+        }),
+      ),
+    );
+
+    const expense = await tx.quickSplitExpense.findUniqueOrThrow({
+      where: { id: createdExpense.id },
+      select: {
+        id: true,
+        quickSplitId: true,
+        description: true,
+        amount: true,
+        currency: true,
+        paidByParticipantId: true,
+        splitMethod: true,
+        createdAt: true,
+        quickSplit: {
           select: {
-            participantId: true,
-            share: true,
+            participants: {
+              select: { id: true, share: true },
+              orderBy: [{ id: 'asc' }],
+            },
           },
-          orderBy: [{ participantId: 'asc' }],
         },
       },
+    });
+
+    return {
+      ...expense,
+      participants: expense.quickSplit.participants.map((participant) => ({
+        participantId: participant.id,
+        share: participant.share,
+      })),
+    };
+  },
+  createSettlement: (
+    tx: Tx,
+    input: {
+      expenseId: string;
+      fromParticipantId: string;
+      toParticipantId: string;
+      amount: number;
+      currency: string;
+      createdAt: Date;
+    },
+  ) =>
+    tx.quickSplitExpenseSettlement.create({
+      data: input,
+      select: {
+        id: true,
+        expenseId: true,
+        amount: true,
+        currency: true,
+      },
     }),
-  updateExpense: (
+  updateExpense: async (
     tx: Tx,
     input: {
       expenseId: string;
@@ -348,8 +400,8 @@ export const quickSplitsPersistence = {
       shares: Record<string, number>;
       updatedAt: Date;
     },
-  ) =>
-    tx.quickSplitExpense.update({
+  ) => {
+    const updatedExpense = await tx.quickSplitExpense.update({
       where: {
         id: input.expenseId,
       },
@@ -360,15 +412,6 @@ export const quickSplitsPersistence = {
         currency: input.currency,
         splitMethod: input.splitMethod,
         updatedAt: input.updatedAt,
-        participants: {
-          deleteMany: {},
-          create: Object.entries(input.shares).map(
-            ([participantId, share]) => ({
-              participantId,
-              share,
-            }),
-          ),
-        },
       },
       select: {
         id: true,
@@ -379,13 +422,46 @@ export const quickSplitsPersistence = {
         paidByParticipantId: true,
         splitMethod: true,
         createdAt: true,
-        participants: {
+      },
+    });
+
+    await Promise.all(
+      Object.entries(input.shares).map(([participantId, share]) =>
+        tx.quickSplitParticipant.update({
+          where: { id: participantId },
+          data: { share },
+        }),
+      ),
+    );
+
+    const expense = await tx.quickSplitExpense.findUniqueOrThrow({
+      where: { id: updatedExpense.id },
+      select: {
+        id: true,
+        quickSplitId: true,
+        description: true,
+        amount: true,
+        currency: true,
+        paidByParticipantId: true,
+        splitMethod: true,
+        createdAt: true,
+        quickSplit: {
           select: {
-            participantId: true,
-            share: true,
+            participants: {
+              select: { id: true, share: true },
+              orderBy: [{ id: 'asc' }],
+            },
           },
-          orderBy: [{ participantId: 'asc' }],
         },
       },
-    }),
+    });
+
+    return {
+      ...expense,
+      participants: expense.quickSplit.participants.map((participant) => ({
+        participantId: participant.id,
+        share: participant.share,
+      })),
+    };
+  },
 };

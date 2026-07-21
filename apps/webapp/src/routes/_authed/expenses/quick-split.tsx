@@ -73,8 +73,8 @@ function readCurrencyCode(
 function toInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return `${parts[0]![0] ?? ''}${parts[1]![0] ?? ''}`.toUpperCase();
+  if (parts.length === 1) return parts[0]?.slice(0, 2).toUpperCase() ?? '?';
+  return `${parts[0]?.[0] ?? ''}${parts[1]?.[0] ?? ''}`.toUpperCase();
 }
 
 function formatAmountInput(value: string): string {
@@ -91,11 +91,6 @@ function parseAmountInput(value: string): number {
 
 function formatEditableNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
-}
-
-function areIdsEqual(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false;
-  return left.every((value, index) => value === right[index]);
 }
 
 function RouteComponent() {
@@ -123,7 +118,6 @@ function RouteComponent() {
   const [debouncedFriendInput, setDebouncedFriendInput] = useState('');
   const [selectedFriends, setSelectedFriends] = useState<SelectedFriend[]>([]);
   const [paidByParticipantId, setPaidByParticipantId] = useState('');
-  const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
   const [participantValues, setParticipantValues] = useState<
     Record<string, string>
@@ -151,6 +145,10 @@ function RouteComponent() {
       })),
     ],
     [currentUserName, currentUserParticipantId, selectedFriends, user?.email],
+  );
+  const participantIds = useMemo(
+    () => people.map((person) => person.id),
+    [people],
   );
 
   useEffect(() => {
@@ -185,9 +183,6 @@ function RouteComponent() {
           email: '',
           userId: participant.userId ?? undefined,
         })),
-    );
-    setParticipantIds(
-      expenseQuery.data.participants.map((participant) => participant.id),
     );
     setSplitMethod(expenseQuery.data.splitMethod);
     setParticipantValues(
@@ -241,20 +236,6 @@ function RouteComponent() {
       return next;
     });
   }, [friendIds, recentFriends]);
-
-  useEffect(() => {
-    const allIds = people.map((person) => person.id);
-
-    setParticipantIds((current) => {
-      const filtered = current.filter((userId) => allIds.includes(userId));
-      const next =
-        filtered.length === 0
-          ? allIds
-          : Array.from(new Set([...filtered, ...allIds]));
-
-      return areIdsEqual(current, next) ? current : next;
-    });
-  }, [people]);
 
   useEffect(() => {
     if (splitMethod === 'equal') {
@@ -369,9 +350,6 @@ function RouteComponent() {
     setSelectedFriends((current) =>
       current.filter((friend) => friend.id !== friendId),
     );
-    setParticipantIds((current) =>
-      current.filter((participantUserId) => participantUserId !== friendId),
-    );
     setParticipantValues((current) => {
       const next = { ...current };
       delete next[friendId];
@@ -381,24 +359,6 @@ function RouteComponent() {
     if (paidByParticipantId === friendId) {
       setPaidByParticipantId(currentUserParticipantId);
     }
-  };
-
-  const toggleParticipant = (participantId: string) => {
-    setParticipantIds((current) =>
-      current.includes(participantId)
-        ? current.length <= 2
-          ? current
-          : current.filter((id) => id !== participantId)
-        : [...current, participantId],
-    );
-  };
-
-  const toggleAllParticipants = () => {
-    setParticipantIds((current) =>
-      current.length === people.length
-        ? [currentUserParticipantId]
-        : people.map((person) => person.id),
-    );
   };
 
   const setMethod = (nextMethod: SplitMethod) => {
@@ -456,7 +416,6 @@ function RouteComponent() {
         amount,
         currency,
         paidByParticipantId,
-        expenseParticipantIds: participantIds,
         splitMethod,
         ...(splitMethod === 'percentage'
           ? {
@@ -481,17 +440,14 @@ function RouteComponent() {
       });
 
       toast.success(isEditMode ? t.updateSuccess : t.createSuccess);
-      await navigate(
-        isEditMode
-          ? {
-              to: '/expenses/friends/$quickSplitId/$expenseId',
-              params: {
-                quickSplitId: quickSplitId!,
-                expenseId: expenseId!,
-              },
-            }
-          : { to: '/' },
-      );
+      if (isEditMode && quickSplitId && expenseId) {
+        await navigate({
+          to: '/expenses/friends/$quickSplitId/$expenseId',
+          params: { quickSplitId, expenseId },
+        });
+      } else {
+        await navigate({ to: '/' });
+      }
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -765,11 +721,7 @@ function RouteComponent() {
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={toggleAllParticipants}
-                  className="mt-4 flex w-full items-center gap-3"
-                >
+                <div className="mt-4 flex w-full items-center gap-3">
                   <div className="flex size-6 items-center justify-center rounded bg-rose-500">
                     <Plus className="size-4 text-white" />
                   </div>
@@ -783,11 +735,11 @@ function RouteComponent() {
                         ? `${splitSum.toFixed(2)}%`
                         : formatCurrency(currency, splitSum || 0)}
                   </span>
-                </button>
+                </div>
 
                 <div className="mt-4 space-y-3">
                   {people.map((person) => {
-                    const selected = participantIds.includes(person.id);
+                    const selected = true;
                     const computedAmount =
                       participantComputedAmounts[person.id] ?? 0;
 
@@ -796,11 +748,7 @@ function RouteComponent() {
                         key={person.id}
                         className="flex items-center justify-between gap-4"
                       >
-                        <button
-                          type="button"
-                          onClick={() => toggleParticipant(person.id)}
-                          className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                        >
+                        <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
                           <div
                             className={`flex size-6 items-center justify-center rounded-full ${
                               selected ? 'bg-rose-500' : 'bg-gray-300'
@@ -829,7 +777,7 @@ function RouteComponent() {
                               </span>
                             ) : null}
                           </div>
-                        </button>
+                        </div>
 
                         {selected ? (
                           splitMethod === 'equal' ? (

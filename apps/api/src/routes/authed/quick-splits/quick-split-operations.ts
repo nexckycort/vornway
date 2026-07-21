@@ -7,13 +7,15 @@ import {
   QuickSplitExpenseDeleteError,
   QuickSplitExpenseDetailError,
   QuickSplitExpenseNotFoundError,
-  QuickSplitExpenseParticipantsInvalidError,
   QuickSplitExpensePayerInvalidError,
   QuickSplitExpenseSharesInvalidError,
   QuickSplitExpensesListError,
   QuickSplitNotFoundError,
   QuickSplitParticipantsNotFoundError,
   QuickSplitParticipantsRequiredError,
+  QuickSplitSettlementAmountInvalidError,
+  QuickSplitSettlementCreateError,
+  QuickSplitSettlementParticipantsInvalidError,
 } from './errors';
 import { quickSplitsPersistence } from './quick-splits.persistence';
 import type {
@@ -26,6 +28,8 @@ import type {
   ListQuickSplitExpensesResult,
   QuickSplitExpenseDetailResult,
   QuickSplitExpenseFeedItem,
+  SettleQuickSplitDebtInput,
+  SettleQuickSplitDebtResult,
 } from './schema';
 
 function normalizeAmount(value: number): number {
@@ -188,20 +192,18 @@ function mapQuickSplitExpenseFeedItem(
       userId: string | null;
       name: string;
     };
-    participants: Array<{
-      share: number;
-      participant: {
+    quickSplit: {
+      name: string;
+      participants: Array<{
         id: string;
         userId: string | null;
         name: string;
+        share: number;
         user: {
           image: string | null;
           updatedAt: Date;
         } | null;
-      };
-    }>;
-    quickSplit: {
-      name: string;
+      }>;
       _count: {
         participants: number;
       };
@@ -210,8 +212,9 @@ function mapQuickSplitExpenseFeedItem(
   userId: string,
 ): QuickSplitExpenseFeedItem {
   const currentUserShare =
-    input.participants.find(({ participant }) => participant.userId === userId)
-      ?.share ?? 0;
+    input.quickSplit.participants.find(
+      (participant) => participant.userId === userId,
+    )?.share ?? 0;
   const currentUserBalance =
     input.paidByParticipant.userId === userId
       ? input.amount - currentUserShare
@@ -230,7 +233,7 @@ function mapQuickSplitExpenseFeedItem(
       userId: input.paidByParticipant.userId,
       name: input.paidByParticipant.name,
     },
-    participants: input.participants.map(({ participant }) => ({
+    participants: input.quickSplit.participants.map((participant) => ({
       id: participant.id,
       userId: participant.userId,
       name: participant.name,
@@ -282,13 +285,124 @@ function toCreateExpenseResult(input: {
   };
 }
 
-function normalizeParticipantIds(ids: string[]): string[] {
-  return Array.from(new Set(ids.map((id) => id.trim()))).filter(
-    (id) => id.length > 0,
-  );
-}
-
 export const quickSplitOperations = {
+  async settleDebt(
+    input: SettleQuickSplitDebtInput & {
+      userId: string;
+      quickSplitId: string;
+      expenseId: string;
+    },
+  ): Promise<SettleQuickSplitDebtResult> {
+    const {
+      userId,
+      quickSplitId,
+      fromParticipantId,
+      toParticipantId,
+      amount,
+      currency,
+    } = input;
+
+    let expense: Awaited<
+      ReturnType<typeof quickSplitsPersistence.findAccessibleExpenseDetail>
+    >;
+
+    try {
+      expense = await quickSplitsPersistence.findAccessibleExpenseDetail({
+        expenseId: input.expenseId,
+        userId,
+        quickSplitId,
+      });
+    } catch (cause) {
+      throw new QuickSplitSettlementCreateError({ cause });
+    }
+
+    if (!expense) {
+      throw new QuickSplitExpenseNotFoundError({
+        expenseId: input.expenseId,
+      });
+    }
+
+    const participantsById = new Map(
+      expense.quickSplit.participants.map((participant) => [
+        participant.id,
+        participant,
+      ]),
+    );
+    const fromParticipant = participantsById.get(fromParticipantId);
+    const toParticipant = participantsById.get(toParticipantId);
+
+    if (
+      !fromParticipant ||
+      !toParticipant ||
+      fromParticipant.id === toParticipant.id
+    ) {
+      throw new QuickSplitSettlementParticipantsInvalidError();
+    }
+
+    const normalizedAmount = normalizeAmount(amount);
+    const normalizedCurrency = currency.trim().toUpperCase();
+    if (normalizedCurrency !== expense.currency.trim().toUpperCase()) {
+      throw new QuickSplitSettlementAmountInvalidError();
+    }
+
+    const participantShare =
+      expense.quickSplit.participants.find(
+        (participant) => participant.id === fromParticipant.id,
+      )?.share ?? 0;
+    const alreadySettled = expense.settlements
+      .filter(
+        (settlement) =>
+          settlement.fromParticipantId === fromParticipant.id &&
+          settlement.currency.trim().toUpperCase() === normalizedCurrency,
+      )
+      .reduce((total, settlement) => total + settlement.amount, 0);
+    const outstandingAmount = normalizeAmount(
+      participantShare - alreadySettled,
+    );
+
+    if (normalizedAmount > outstandingAmount || outstandingAmount <= 0) {
+      throw new QuickSplitSettlementAmountInvalidError();
+    }
+
+    const now = new Date();
+
+    try {
+      const settlement = await db.$transaction(async (tx) => {
+        const createdSettlement = await quickSplitsPersistence.createSettlement(
+          tx,
+          {
+            expenseId: expense.id,
+            fromParticipantId: fromParticipant.id,
+            toParticipantId: toParticipant.id,
+            amount: normalizedAmount,
+            currency: normalizedCurrency,
+            createdAt: now,
+          },
+        );
+
+        await tx.quickSplitExpense.update({
+          where: { id: expense.id },
+          data: { updatedAt: now },
+        });
+        await tx.quickSplit.update({
+          where: { id: quickSplitId },
+          data: { updatedAt: now },
+        });
+
+        return createdSettlement;
+      });
+
+      return {
+        id: settlement.id,
+        expenseId: settlement.expenseId,
+        amount: settlement.amount,
+        currency: settlement.currency,
+      };
+    } catch (cause) {
+      throw new QuickSplitSettlementCreateError({ cause });
+    }
+  },
+
   async deleteExpense(input: {
     quickSplitId: string;
     expenseId: string;
@@ -386,11 +500,11 @@ export const quickSplitOperations = {
           expense.paidByParticipant.user?.updatedAt ?? null,
         ),
       },
-      participants: expense.participants.map((participant) => {
-        const meta = participantMeta.get(participant.participantId);
+      participants: expense.quickSplit.participants.map((participant) => {
+        const meta = participantMeta.get(participant.id);
 
         return {
-          id: participant.participantId,
+          id: participant.id,
           userId: meta?.userId ?? null,
           name: meta?.name ?? 'Participante',
           image: resolveUserImageUrl(
@@ -401,6 +515,22 @@ export const quickSplitOperations = {
           role: meta?.role ?? 'participant',
         };
       }),
+      settlements: expense.settlements.map((settlement) => ({
+        id: settlement.id,
+        from: {
+          id: settlement.fromParticipant.id,
+          userId: settlement.fromParticipant.userId,
+          name: settlement.fromParticipant.name,
+        },
+        to: {
+          id: settlement.toParticipant.id,
+          userId: settlement.toParticipant.userId,
+          name: settlement.toParticipant.name,
+        },
+        amount: settlement.amount,
+        currency: settlement.currency,
+        createdAt: settlement.createdAt.toISOString(),
+      })),
     };
   },
 
@@ -550,7 +680,6 @@ export const quickSplitOperations = {
       amount,
       currency,
       paidByParticipantId,
-      participantIds,
       splitMethod,
       percentageShares,
       exactShares,
@@ -576,23 +705,7 @@ export const quickSplitOperations = {
     const quickSplitParticipantIds = new Set(
       quickSplit.participants.map((participant) => participant.id),
     );
-    const normalizedParticipantIds = normalizeParticipantIds(participantIds);
-
-    if (normalizedParticipantIds.length === 0) {
-      throw new QuickSplitExpenseParticipantsInvalidError({
-        invalidUserIds: [],
-      });
-    }
-
-    const invalidParticipantIds = normalizedParticipantIds.filter(
-      (participantId) => !quickSplitParticipantIds.has(participantId),
-    );
-
-    if (invalidParticipantIds.length > 0) {
-      throw new QuickSplitExpenseParticipantsInvalidError({
-        invalidUserIds: invalidParticipantIds,
-      });
-    }
+    const normalizedParticipantIds = Array.from(quickSplitParticipantIds);
 
     const ownerParticipantId =
       quickSplit.participants.find(
@@ -634,7 +747,15 @@ export const quickSplitOperations = {
           });
         }
 
-        return toCreateExpenseResult(existingExpense);
+        return toCreateExpenseResult({
+          ...existingExpense,
+          participants: existingExpense.quickSplit.participants.map(
+            (participant) => ({
+              participantId: participant.id,
+              share: participant.share,
+            }),
+          ),
+        });
       }
     }
 
@@ -703,7 +824,6 @@ export const quickSplitOperations = {
       amount,
       currency,
       paidByParticipantId,
-      participantIds,
       splitMethod,
       percentageShares,
       exactShares,
@@ -747,23 +867,7 @@ export const quickSplitOperations = {
     const quickSplitParticipantIds = new Set(
       quickSplit.participants.map((participant) => participant.id),
     );
-    const normalizedParticipantIds = normalizeParticipantIds(participantIds);
-
-    if (normalizedParticipantIds.length === 0) {
-      throw new QuickSplitExpenseParticipantsInvalidError({
-        invalidUserIds: [],
-      });
-    }
-
-    const invalidParticipantIds = normalizedParticipantIds.filter(
-      (participantId) => !quickSplitParticipantIds.has(participantId),
-    );
-
-    if (invalidParticipantIds.length > 0) {
-      throw new QuickSplitExpenseParticipantsInvalidError({
-        invalidUserIds: invalidParticipantIds,
-      });
-    }
+    const normalizedParticipantIds = Array.from(quickSplitParticipantIds);
 
     const ownerParticipantId =
       quickSplit.participants.find(

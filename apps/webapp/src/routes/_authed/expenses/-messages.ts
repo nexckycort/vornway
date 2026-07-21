@@ -3,6 +3,7 @@ import { m } from '#/paraglide/messages.js';
 export function getQuickSplitMessages() {
   return {
     common: {
+      cancel: m['common.cancel'](),
       delete: m['common.delete'](),
       deleting: m['common.deleting'](),
     },
@@ -57,6 +58,19 @@ export function getQuickSplitMessages() {
     detailTitle: m['quickSplit.detailTitle'](),
     missingExpense: m['quickSplit.missingExpense'](),
     editExpense: m['quickSplit.editExpense'](),
+    settleExpense: m['quickSplit.settleExpense'](),
+    settleExpensePending: m['quickSplit.settleExpensePending'](),
+    settleExpenseSuccess: m['quickSplit.settleExpenseSuccess'](),
+    settleExpenseUnavailable: m['quickSplit.settleExpenseUnavailable'](),
+    settleExpenseTitle: m['quickSplit.settleExpenseTitle'](),
+    settleExpenseCopy: m['quickSplit.settleExpenseCopy'](),
+    settleFromLabel: m['quickSplit.settleFromLabel'](),
+    settleToLabel: m['quickSplit.settleToLabel'](),
+    settleAmountLabel: m['quickSplit.settleAmountLabel'](),
+    settlementHistory: m['quickSplit.settlementHistory'](),
+    settlementEmpty: m['quickSplit.settlementEmpty'](),
+    settlementPaid: (from: string, to: string) =>
+      m['quickSplit.settlementPaid']({ from, to }),
     deleteExpenseTitle: m['quickSplit.deleteExpenseTitle'](),
     deleteExpenseCopy: m['quickSplit.deleteExpenseCopy'](),
     deleted: m['quickSplit.deleted'](),

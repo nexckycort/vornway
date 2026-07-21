@@ -15,6 +15,13 @@ export default defineConfig({
   html: {
     template: './public/index.html',
   },
+  ...(import.meta.env.DEV && {
+    server: {
+      open: {
+        target: 'https://app.vornway.localhost',
+      },
+    },
+  }),
   tools: {
     rspack: {
       module: {

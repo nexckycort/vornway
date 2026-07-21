@@ -10,7 +10,7 @@
     "build": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && rsbuild build",
     "clean": "rm -rf node_modules && rm -rf dist",
     "check": "biome check --write",
-    "dev": "portless app.vornway rsbuild --open",
+    "dev": "portless app.vornway rsbuild",
     "deploy": "wrangler pages deploy --branch=main",
     "typecheck": "tsc --noEmit",
     "preview": "rsbuild preview",

@@ -47,6 +47,14 @@ export function createHttpApp(): Hono {
 
   app.onError((error, c) => {
     if (error instanceof AppError || isErrorMetadata(error)) {
+      if (error.status >= 500) {
+        console.error('Handled request error', {
+          code: error.code,
+          message: error.message,
+          cause: 'cause' in error ? error.cause : undefined,
+        });
+      }
+
       return c.json(
         {
           code: error.code,

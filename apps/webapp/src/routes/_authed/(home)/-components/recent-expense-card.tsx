@@ -1,6 +1,8 @@
 import { Link } from '@tanstack/react-router';
 import { Clock3, UsersRound } from 'lucide-react';
+import { formatCurrency } from '#/lib/i18n';
 import type { HomeRecentExpense } from '#/routes/_authed/(home)/-hooks/use-home-recent-expenses-query';
+import { getHomeMessages } from '#/routes/_authed/(home)/-messages';
 import {
   formatDate,
   formatMoney,
@@ -11,6 +13,8 @@ type RecentExpenseCardProps = {
 };
 
 export function RecentExpenseCard({ item }: RecentExpenseCardProps) {
+  const t = getHomeMessages();
+
   return (
     <Link
       to="/expenses/friends/$quickSplitId/$expenseId"
@@ -33,6 +37,21 @@ export function RecentExpenseCard({ item }: RecentExpenseCardProps) {
               </p>
               <p className="mt-1 text-xs text-[#9ca3af]">
                 {item.participantCount} personas
+              </p>
+              <p
+                className={`mt-1 text-xs font-medium ${
+                  item.currentUserBalance > 0
+                    ? 'text-[#16803c]'
+                    : item.currentUserBalance < 0
+                      ? 'text-[#d92d20]'
+                      : 'text-[#797979]'
+                }`}
+              >
+                {item.currentUserBalance > 0
+                  ? `${t.theyOwe} ${formatCurrency(item.currency, item.currentUserBalance)}`
+                  : item.currentUserBalance < 0
+                    ? `${t.youOwe} ${formatCurrency(item.currency, Math.abs(item.currentUserBalance))}`
+                    : t.noPendingBalances}
               </p>
             </div>
 

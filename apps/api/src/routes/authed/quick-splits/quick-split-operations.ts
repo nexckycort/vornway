@@ -208,6 +208,12 @@ function mapQuickSplitExpenseFeedItem(
         participants: number;
       };
     };
+    settlements: Array<{
+      fromParticipantId: string;
+      toParticipantId: string;
+      amount: number;
+      currency: string;
+    }>;
   },
   userId: string,
 ): QuickSplitExpenseFeedItem {
@@ -219,6 +225,29 @@ function mapQuickSplitExpenseFeedItem(
     input.paidByParticipant.userId === userId
       ? input.amount - currentUserShare
       : -currentUserShare;
+  const currentParticipantId = input.quickSplit.participants.find(
+    (participant) => participant.userId === userId,
+  )?.id;
+  const settlementAdjustment = currentParticipantId
+    ? input.settlements.reduce((total, settlement) => {
+        if (
+          settlement.currency.trim().toUpperCase() !==
+          input.currency.trim().toUpperCase()
+        ) {
+          return total;
+        }
+
+        if (settlement.fromParticipantId === currentParticipantId) {
+          return total + settlement.amount;
+        }
+
+        if (settlement.toParticipantId === currentParticipantId) {
+          return total - settlement.amount;
+        }
+
+        return total;
+      }, 0)
+    : 0;
 
   return {
     id: input.id,
@@ -242,7 +271,9 @@ function mapQuickSplitExpenseFeedItem(
         participant.user?.updatedAt ?? null,
       ),
     })),
-    currentUserBalance: normalizeAmount(currentUserBalance),
+    currentUserBalance: normalizeAmount(
+      currentUserBalance + settlementAdjustment,
+    ),
     createdAt: input.createdAt.toISOString(),
   };
 }

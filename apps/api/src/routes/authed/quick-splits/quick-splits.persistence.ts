@@ -289,6 +289,14 @@ export const quickSplitsPersistence = {
             },
           },
         },
+        settlements: {
+          select: {
+            fromParticipantId: true,
+            toParticipantId: true,
+            amount: true,
+            currency: true,
+          },
+        },
       },
     }),
   createExpense: async (

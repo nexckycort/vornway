@@ -89,6 +89,8 @@ function RouteComponent() {
   const deleteExpenseMutation = useDeleteQuickSplitExpenseMutation();
   const [showDeleteDrawer, setShowDeleteDrawer] = useState(false);
   const [showSettleDrawer, setShowSettleDrawer] = useState(false);
+  const [isSettlementAmountEditing, setIsSettlementAmountEditing] =
+    useState(false);
 
   const fallbackExpense = useMemo(() => {
     const cachedExpenses = queryClient.getQueryData<{
@@ -157,14 +159,22 @@ function RouteComponent() {
     (participant) => participant.id === fromParticipantId,
   );
   const appendSettlementAmount = (key: string) => {
+    setIsSettlementAmountEditing(true);
     setAmountInput((current) => {
       if (key === 'delete') return current.slice(0, -1);
-      if ((key === '.' || key === ',') && /[.,]/.test(current)) {
+
+      const editableAmount = isSettlementAmountEditing ? current : '';
+
+      if ((key === '.' || key === ',') && /[.,]/.test(editableAmount)) {
         return current;
       }
-      if (current === '0' && key !== '.' && key !== ',') return key;
-      return `${current}${key}`;
+      if (editableAmount === '0' && key !== '.' && key !== ',') return key;
+      return `${editableAmount}${key}`;
     });
+  };
+  const openSettleDrawer = () => {
+    setIsSettlementAmountEditing(false);
+    setShowSettleDrawer(true);
   };
 
   return (
@@ -295,7 +305,7 @@ function RouteComponent() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowSettleDrawer(true)}
+                  onClick={openSettleDrawer}
                   disabled={!canSettleExpense}
                   className="flex h-12 flex-1 items-center justify-center rounded-full bg-[#080202] text-sm font-semibold text-white disabled:opacity-50"
                 >
@@ -336,7 +346,13 @@ function RouteComponent() {
         </DrawerContent>
       </Drawer>
 
-      <Drawer open={showSettleDrawer} onOpenChange={setShowSettleDrawer}>
+      <Drawer
+        open={showSettleDrawer}
+        onOpenChange={(open) => {
+          setShowSettleDrawer(open);
+          if (open) setIsSettlementAmountEditing(false);
+        }}
+      >
         <DrawerContent className="data-[vaul-drawer-direction=bottom]:!mt-0 data-[vaul-drawer-direction=bottom]:!max-h-dvh data-[vaul-drawer-direction=bottom]:!rounded-t-none flex !h-dvh !max-h-dvh flex-col overflow-hidden rounded-none border-0 bg-[#fafafa]">
           <DrawerHeader className="shrink-0 border-b border-[#e5e7eb] bg-white px-4 pb-3 pt-5 text-left">
             <div className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center">
@@ -363,9 +379,9 @@ function RouteComponent() {
           <div className="h-2 shrink-0 bg-[#eeeeee]">
             <div className="h-full w-1/4 rounded-r-full bg-primary" />
           </div>
-          <div className="min-h-0 flex-1 overflow-hidden px-4 py-8">
-            <div className="mx-auto flex w-full max-w-md flex-col">
-              <div className="flex items-end justify-between gap-4">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-4 sm:py-8">
+            <div className="mx-auto flex h-full w-full max-w-md flex-col">
+              <div className="flex shrink-0 items-end justify-between gap-4">
                 <button
                   type="button"
                   className="flex items-center gap-2 pb-1 text-[2.1rem] font-medium leading-none text-[#202124]"
@@ -377,12 +393,12 @@ function RouteComponent() {
                   ${formatSettlementAmount(amountInput)}
                 </p>
               </div>
-              <p className="mt-3 flex items-center gap-1.5 text-xs text-[#737373]">
+              <p className="mt-2 flex shrink-0 items-center gap-1.5 text-xs text-[#737373] sm:mt-3">
                 <span className="size-3 rounded-full bg-[linear-gradient(to_bottom,_#fcd116_0_33%,_#003893_33%_66%,_#ce1126_66%_100%)]" />
                 {t.settleCurrencyName}
               </p>
 
-              <div className="mt-7 flex items-center rounded-2xl border border-[#ededed] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(15,23,42,0.02)]">
+              <div className="mt-4 flex shrink-0 items-center rounded-2xl border border-[#ededed] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(15,23,42,0.02)] sm:mt-7">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-[#737373]">{t.payerLabel}</p>
                   <p className="mt-1 truncate text-sm font-semibold text-[#202124]">
@@ -406,14 +422,14 @@ function RouteComponent() {
                 />
               </div>
 
-              <div className="mt-6 grid grid-cols-3 gap-3">
+              <div className="mt-4 grid min-h-0 flex-1 grid-cols-3 grid-rows-4 gap-2 sm:mt-6 sm:gap-3">
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0'].map(
                   (key) => (
                     <button
                       key={key}
                       type="button"
                       onClick={() => appendSettlementAmount(key)}
-                      className="flex aspect-square items-center justify-center rounded-2xl border border-[#ededed] bg-white text-4xl font-medium text-[#202124]"
+                      className="flex min-h-0 items-center justify-center rounded-2xl border border-[#ededed] bg-white text-3xl font-medium text-[#202124] sm:text-4xl"
                     >
                       {key}
                     </button>
@@ -422,7 +438,7 @@ function RouteComponent() {
                 <button
                   type="button"
                   onClick={() => appendSettlementAmount('delete')}
-                  className="flex aspect-square items-center justify-center rounded-2xl border border-[#ededed] bg-white text-[#202124]"
+                  className="flex min-h-0 items-center justify-center rounded-2xl border border-[#ededed] bg-white text-[#202124]"
                   aria-label={t.common.delete}
                 >
                   <Delete className="size-7" />

@@ -12,6 +12,7 @@ import {
   UserRound,
   UsersRound,
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 import { getBottomAppBarMessages } from '#/components/bottom-app-bar.messages';
 import { cn } from '#/lib/utils';
@@ -53,6 +54,9 @@ export function BottomAppBar() {
   const hasBottomNavRoot =
     (location.state as BottomNavState).bottomNavRoot === true;
   const bottomNavState = { bottomNavRoot: true } as never;
+  const [isMinimized, setIsMinimized] = useState(false);
+  const lastScrollTop = useRef(0);
+  const scrollFrame = useRef<number | null>(null);
   const items: BottomAppBarItem[] = [
     { id: 'home', label: t.home, icon: 'home', to: '/' },
     {
@@ -94,9 +98,59 @@ export function BottomAppBar() {
     await navigate({ to, state: bottomNavState });
   };
 
+  useEffect(() => {
+    const handleScroll = (event: Event) => {
+      if (scrollFrame.current !== null) return;
+
+      scrollFrame.current = window.requestAnimationFrame(() => {
+        const scrollElement = event.target;
+        const currentScrollTop =
+          scrollElement instanceof HTMLElement
+            ? scrollElement.scrollTop
+            : window.scrollY;
+        const scrollDelta = currentScrollTop - lastScrollTop.current;
+
+        if (currentScrollTop < 12 || scrollDelta < -6) {
+          setIsMinimized(false);
+        } else if (scrollDelta > 6) {
+          setIsMinimized(true);
+        }
+
+        lastScrollTop.current = Math.max(0, currentScrollTop);
+        scrollFrame.current = null;
+      });
+    };
+
+    document.addEventListener('scroll', handleScroll, true);
+    return () => {
+      document.removeEventListener('scroll', handleScroll, true);
+      if (scrollFrame.current !== null) {
+        window.cancelAnimationFrame(scrollFrame.current);
+      }
+    };
+  }, []);
+
+  const activeIndex = items.findIndex((item) =>
+    item.to === '/' ? pathname === '/' : pathname.startsWith(item.to),
+  );
+
   return (
-    <nav className="pointer-events-none fixed inset-x-0 bottom-[calc(0.85rem+env(safe-area-inset-bottom))] z-50 mx-auto w-[calc(100%-1.5rem)] max-w-[388px] md:max-w-[980px] rounded-[24px] border border-white/60 bg-white/90 px-4 pb-3 pt-2.5 shadow-[0_18px_42px_rgba(15,23,42,0.16)] backdrop-blur-xl">
-      <div className="pointer-events-auto flex items-end justify-between">
+    <nav
+      className={cn(
+        'pointer-events-none fixed inset-x-0 bottom-[calc(0.85rem+env(safe-area-inset-bottom))] z-50 mx-auto w-[calc(100%-1.5rem)] rounded-[24px] border border-white/60 bg-white/65 shadow-[0_18px_42px_rgba(15,23,42,0.16)] ring-1 ring-black/[0.03] backdrop-blur-2xl transition-[max-width,padding,border-radius] duration-300 ease-out before:pointer-events-none before:absolute before:inset-x-2 before:top-px before:h-px before:rounded-full before:bg-white/80 md:max-w-[980px]',
+        isMinimized
+          ? 'max-w-[320px] px-2 py-2'
+          : 'max-w-[388px] px-4 pb-3 pt-2.5',
+      )}
+    >
+      <div className="pointer-events-auto relative flex items-end justify-between">
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0 w-1/5 rounded-2xl bg-white/70 shadow-[0_5px_14px_rgba(15,23,42,0.12)] transition-transform duration-300 ease-out"
+          style={{
+            transform: `translateX(${Math.max(activeIndex, 0) * 100}%)`,
+          }}
+        />
         {items.map((item) => {
           const Icon = navIcons[item.icon];
           const active =
@@ -110,12 +164,19 @@ export function BottomAppBar() {
                 void navigateToTab(item.to);
               }}
               className={cn(
-                'flex min-w-0 flex-1 flex-col items-center justify-end gap-0.5 rounded-2xl px-1 py-1 text-[11px] font-medium leading-4 text-[#94a3b8] transition-colors',
+                'relative z-10 flex min-w-0 flex-1 flex-col items-center justify-end rounded-2xl px-1 py-1 text-[11px] font-medium leading-4 text-[#94a3b8] transition-colors',
                 active && 'text-primary',
               )}
             >
               <Icon className="size-5" aria-hidden="true" />
-              <span>{item.label}</span>
+              <span
+                className={cn(
+                  'max-h-4 overflow-hidden opacity-100 transition-[max-height,opacity,margin] duration-200 ease-out',
+                  isMinimized ? 'mt-0 max-h-0 opacity-0' : 'mt-0.5',
+                )}
+              >
+                {item.label}
+              </span>
             </button>
           );
         })}

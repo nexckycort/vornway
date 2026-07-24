@@ -120,7 +120,10 @@ function RouteComponent() {
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-32 pt-5">
+        <div
+          data-native-scroll
+          className="min-h-0 flex-1 overflow-y-auto px-4 pb-32 pt-5"
+        >
           <section>
             <h2 className="text-[20px] font-semibold leading-8 text-[#1e1e1e]">
               {t.entryTitle}

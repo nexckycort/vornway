@@ -106,7 +106,9 @@ function AuthedLayout() {
   return (
     <div className="mobile-shell">
       <div className="mobile-shell-frame">
-        <Outlet />
+        <div key={pathname} className="native-route-enter">
+          <Outlet />
+        </div>
         {showBottomBar ? <BottomAppBar /> : null}
       </div>
       <Dialog open={needsUsername}>

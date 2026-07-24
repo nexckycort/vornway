@@ -48,14 +48,15 @@ export function MobilePageLayout({
         <div
           className={
             scrollable
-              ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(var(--safe-bottom)+1.5rem)]'
-              : 'flex flex-1 flex-col px-4 pb-[calc(var(--safe-bottom)+1.5rem)]'
+              ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(var(--safe-bottom)+var(--keyboard-inset)+1.5rem)]'
+              : 'flex flex-1 flex-col px-4 pb-[calc(var(--safe-bottom)+var(--keyboard-inset)+1.5rem)]'
           }
+          data-native-scroll={scrollable || undefined}
         >
           {children}
         </div>
         {footer ? (
-          <footer className="shrink-0 border-t border-border bg-background/95 px-4 pb-[calc(var(--safe-bottom)+1rem)] pt-3 backdrop-blur-xl">
+          <footer className="shrink-0 border-t border-border bg-background/95 px-4 pb-[calc(var(--safe-bottom)+var(--keyboard-inset)+1rem)] pt-3 backdrop-blur-xl">
             {footer}
           </footer>
         ) : null}

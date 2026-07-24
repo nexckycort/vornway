@@ -47,6 +47,15 @@
     "network": {
       "offline": "Sin conexión"
     },
+    "native": {
+      "pullToRefresh": "Desliza para actualizar",
+      "refreshing": "Actualizando",
+      "syncingChanges": "Sincronizando {count} cambios pendientes",
+      "installTitle": "Usa Vornway como una app",
+      "installCopy": "Instálala para acceder más rápido y usarla a pantalla completa.",
+      "installAction": "Instalar",
+      "dismissInstall": "Cerrar sugerencia de instalación"
+    },
     "fullscreenLoader": {
       "title": "Cargando aplicación",
       "copy": "Estamos preparando tu sesión."

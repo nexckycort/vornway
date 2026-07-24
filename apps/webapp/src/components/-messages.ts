@@ -15,6 +15,16 @@ export function getSharedComponentMessages() {
     network: {
       offline: m['components.network.offline'](),
     },
+    native: {
+      pullToRefresh: m['components.native.pullToRefresh'](),
+      refreshing: m['components.native.refreshing'](),
+      syncingChanges: (count: number) =>
+        m['components.native.syncingChanges']({ count }),
+      installTitle: m['components.native.installTitle'](),
+      installCopy: m['components.native.installCopy'](),
+      installAction: m['components.native.installAction'](),
+      dismissInstall: m['components.native.dismissInstall'](),
+    },
     fullscreenLoader: {
       title: m['components.fullscreenLoader.title'](),
       copy: m['components.fullscreenLoader.copy'](),

@@ -67,6 +67,7 @@ export function getQuickSplitMessages() {
     settleFromLabel: m['quickSplit.settleFromLabel'](),
     settleToLabel: m['quickSplit.settleToLabel'](),
     settleAmountLabel: m['quickSplit.settleAmountLabel'](),
+    settleCurrencyName: m['quickSplit.settleCurrencyName'](),
     settlementHistory: m['quickSplit.settlementHistory'](),
     settlementEmpty: m['quickSplit.settlementEmpty'](),
     settlementPaid: (from: string, to: string) =>

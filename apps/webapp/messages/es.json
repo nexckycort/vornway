@@ -238,6 +238,7 @@
     "settleFromLabel": "Quién paga",
     "settleToLabel": "A quién le paga",
     "settleAmountLabel": "Monto",
+    "settleCurrencyName": "Pesos Colombianos",
     "settlementHistory": "Historial de liquidaciones",
     "settlementEmpty": "Aún no hay liquidaciones registradas.",
     "settlementPaid": "{from} pagó a {to}",

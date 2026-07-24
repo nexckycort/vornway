@@ -238,6 +238,7 @@
     "settleFromLabel": "Who pays",
     "settleToLabel": "Who receives it",
     "settleAmountLabel": "Amount",
+    "settleCurrencyName": "Colombian Pesos",
     "settlementHistory": "Settlement history",
     "settlementEmpty": "No settlements recorded yet.",
     "settlementPaid": "{from} paid {to}",

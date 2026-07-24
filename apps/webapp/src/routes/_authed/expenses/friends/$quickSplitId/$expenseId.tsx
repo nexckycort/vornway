@@ -2,8 +2,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   ArrowLeft,
+  ArrowRight,
   ChevronDown,
   ChevronUp,
+  Delete,
   PencilLine,
   Trash2,
   UsersRound,
@@ -51,6 +53,13 @@ function formatDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   return expenseDateFormatter.format(date);
+}
+
+function formatSettlementAmount(value: string): string {
+  const amount = Number.parseFloat(value.replace(',', '.')) || 0;
+  return new Intl.NumberFormat('es-CO', {
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 
 function getInitials(name: string): string {
@@ -111,8 +120,6 @@ function RouteComponent() {
     canSettleExpense,
     canSubmitSettlement,
     isPending: isSettlingExpense,
-    setFromParticipantId,
-    setToParticipantId,
     setAmountInput,
     settleExpense,
   } = useSettleQuickSplitDebt({
@@ -135,6 +142,22 @@ function RouteComponent() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t.deleteFailed);
     }
+  };
+  const fromParticipant = participantOptions.find(
+    (participant) => participant.id === fromParticipantId,
+  );
+  const toParticipant = participantOptions.find(
+    (participant) => participant.id === toParticipantId,
+  );
+  const appendSettlementAmount = (key: string) => {
+    setAmountInput((current) => {
+      if (key === 'delete') return current.slice(0, -1);
+      if ((key === '.' || key === ',') && /[.,]/.test(current)) {
+        return current;
+      }
+      if (current === '0' && key !== '.' && key !== ',') return key;
+      return `${current}${key}`;
+    });
   };
 
   return (
@@ -307,98 +330,103 @@ function RouteComponent() {
       </Drawer>
 
       <Drawer open={showSettleDrawer} onOpenChange={setShowSettleDrawer}>
-        <DrawerContent className="flex max-h-[85dvh] flex-col overflow-hidden">
-          <DrawerHeader>
-            <DrawerTitle>{t.settleExpenseTitle}</DrawerTitle>
-            <DrawerDescription>{t.settleExpenseCopy}</DrawerDescription>
+        <DrawerContent className="data-[vaul-drawer-direction=bottom]:!mt-0 data-[vaul-drawer-direction=bottom]:!max-h-dvh data-[vaul-drawer-direction=bottom]:!rounded-t-none flex !h-dvh !max-h-dvh flex-col overflow-hidden rounded-none border-0 bg-[#fafafa]">
+          <DrawerHeader className="shrink-0 border-b border-[#e5e7eb] bg-white px-4 pb-3 pt-5 text-left">
+            <div className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center">
+              <button
+                type="button"
+                onClick={() => setShowSettleDrawer(false)}
+                className="flex size-9 items-center justify-center rounded-full border border-[#e5e7eb] text-[#202124]"
+                aria-label={t.back}
+              >
+                <ArrowLeft className="size-4" />
+              </button>
+              <div className="text-center">
+                <p className="text-xs text-[#737373]">{t.step}</p>
+                <DrawerTitle className="text-sm text-[#202124]">
+                  {t.settleExpenseTitle}
+                </DrawerTitle>
+              </div>
+              <span aria-hidden="true" />
+            </div>
+            <DrawerDescription className="sr-only">
+              {t.settleExpenseCopy}
+            </DrawerDescription>
           </DrawerHeader>
-          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-2">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-[#202124]">
-                {t.settleFromLabel}
-              </p>
-              <div className="grid gap-2">
-                {participantOptions.map((participant) => (
-                  <button
-                    key={`from-${participant.id}`}
-                    type="button"
-                    onClick={() => setFromParticipantId(participant.id)}
-                    className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm ${
-                      fromParticipantId === participant.id
-                        ? 'border-[#080202] bg-[#080202] text-white'
-                        : 'border-[#e5e7eb] bg-white text-[#202124]'
-                    }`}
-                  >
-                    <span>
-                      {participant.name}
-                      {participant.userId === user?.id ? ` (${t.you})` : ''}
-                    </span>
-                    <span className="font-medium">
-                      {formatAmount(
-                        expense?.currency ?? 'COP',
-                        participant.share,
-                      )}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-[#202124]">
-                {t.settleToLabel}
-              </p>
-              <div className="grid gap-2">
-                {participantOptions.map((participant) => (
-                  <button
-                    key={`to-${participant.id}`}
-                    type="button"
-                    onClick={() => setToParticipantId(participant.id)}
-                    className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm ${
-                      toParticipantId === participant.id
-                        ? 'border-[#080202] bg-[#080202] text-white'
-                        : 'border-[#e5e7eb] bg-white text-[#202124]'
-                    }`}
-                  >
-                    <span>
-                      {participant.name}
-                      {participant.userId === user?.id ? ` (${t.you})` : ''}
-                    </span>
-                    <span className="font-medium">
-                      {formatAmount(
-                        expense?.currency ?? 'COP',
-                        participant.share,
-                      )}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-[#202124]">
-                {t.settleAmountLabel}
-              </span>
-              <input
-                value={amountInput}
-                onChange={(event) => setAmountInput(event.target.value)}
-                inputMode="decimal"
-                className="h-12 w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 text-sm text-[#202124] outline-none"
-              />
-            </label>
+          <div className="h-2 shrink-0 bg-[#eeeeee]">
+            <div className="h-full w-1/4 rounded-r-full bg-primary" />
           </div>
-          <DrawerFooter className="grid shrink-0 grid-cols-2">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8">
+            <div className="mx-auto flex w-full max-w-md flex-col">
+              <div className="flex items-end justify-between gap-4">
+                <button
+                  type="button"
+                  className="flex items-center gap-2 pb-1 text-[2.1rem] font-medium leading-none text-[#202124]"
+                >
+                  <span>{expense?.currency ?? 'COP'}</span>
+                  <ChevronDown className="size-4" />
+                </button>
+                <p className="text-[2.1rem] font-medium leading-none tracking-tight text-[#202124]">
+                  ${formatSettlementAmount(amountInput)}
+                </p>
+              </div>
+              <p className="mt-3 flex items-center gap-1.5 text-xs text-[#737373]">
+                <span className="size-3 rounded-full bg-[linear-gradient(to_bottom,_#fcd116_0_33%,_#003893_33%_66%,_#ce1126_66%_100%)]" />
+                {t.settleCurrencyName}
+              </p>
+
+              <div className="mt-7 flex items-center rounded-2xl border border-[#ededed] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(15,23,42,0.02)]">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-[#737373]">{t.payerLabel}</p>
+                  <p className="mt-1 truncate text-sm font-semibold text-[#202124]">
+                    {fromParticipant?.name ?? ''}
+                  </p>
+                </div>
+                <SettlementAvatar
+                  image={getSettlementParticipantImage(
+                    expense,
+                    fromParticipantId,
+                  )}
+                  name={fromParticipant?.name ?? ''}
+                />
+                <ArrowRight className="mx-3 size-4 text-[#737373]" />
+                <SettlementAvatar
+                  image={getSettlementParticipantImage(
+                    expense,
+                    toParticipantId,
+                  )}
+                  name={toParticipant?.name ?? ''}
+                />
+              </div>
+
+              <div className="mt-6 grid grid-cols-3 gap-3">
+                {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0'].map(
+                  (key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => appendSettlementAmount(key)}
+                      className="flex aspect-square items-center justify-center rounded-2xl border border-[#ededed] bg-white text-4xl font-medium text-[#202124]"
+                    >
+                      {key}
+                    </button>
+                  ),
+                )}
+                <button
+                  type="button"
+                  onClick={() => appendSettlementAmount('delete')}
+                  className="flex aspect-square items-center justify-center rounded-2xl border border-[#ededed] bg-white text-[#202124]"
+                  aria-label={t.common.delete}
+                >
+                  <Delete className="size-7" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <DrawerFooter className="shrink-0 bg-white px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-4">
             <Button
               type="button"
-              variant="outline"
-              className="h-11 rounded-full"
-              onClick={() => setShowSettleDrawer(false)}
-            >
-              {t.common.cancel}
-            </Button>
-            <Button
-              type="button"
-              className="h-11 rounded-full"
+              className="h-11 rounded-full bg-primary text-sm font-semibold text-white"
               onClick={() =>
                 void settleExpense().then(() => setShowSettleDrawer(false))
               }
@@ -410,6 +438,41 @@ function RouteComponent() {
         </DrawerContent>
       </Drawer>
     </main>
+  );
+}
+
+function getSettlementParticipantImage(
+  expense: QuickSplitExpenseDetail | undefined,
+  participantId: string,
+) {
+  if (!expense) return null;
+  if (expense.paidBy.id === participantId) return expense.paidBy.image;
+  return (
+    expense.participants.find((participant) => participant.id === participantId)
+      ?.image ?? null
+  );
+}
+
+function SettlementAvatar({
+  image,
+  name,
+}: {
+  image: string | null;
+  name: string;
+}) {
+  return (
+    <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#eeeeee] text-sm font-medium text-[#555555]">
+      {image ? (
+        <img
+          src={image}
+          alt={name}
+          className="size-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        getInitials(name)
+      )}
+    </span>
   );
 }
 

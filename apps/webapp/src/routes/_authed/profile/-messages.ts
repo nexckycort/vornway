@@ -27,6 +27,8 @@ export function getProfileMessages() {
     installApp: m['profile.installApp'](),
     installAppSubtitle: m['profile.installAppSubtitle'](),
     language: m['profile.language'](),
+    languageSpanish: m['profile.languageSpanish'](),
+    languageEnglish: m['profile.languageEnglish'](),
     username: m['profile.username'](),
     usernamePlaceholder: m['profile.usernamePlaceholder'](),
     usernamePreview: m['profile.usernamePreview'](),

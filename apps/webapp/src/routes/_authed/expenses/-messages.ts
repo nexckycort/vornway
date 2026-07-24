@@ -71,6 +71,9 @@ export function getQuickSplitMessages() {
     settlementEmpty: m['quickSplit.settlementEmpty'](),
     settlementPaid: (from: string, to: string) =>
       m['quickSplit.settlementPaid']({ from, to }),
+    settlementsShowMore: (count: number) =>
+      m['quickSplit.settlementsShowMore']({ count }),
+    settlementsShowLess: m['quickSplit.settlementsShowLess'](),
     deleteExpenseTitle: m['quickSplit.deleteExpenseTitle'](),
     deleteExpenseCopy: m['quickSplit.deleteExpenseCopy'](),
     deleted: m['quickSplit.deleted'](),

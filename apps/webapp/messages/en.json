@@ -241,6 +241,8 @@
     "settlementHistory": "Settlement history",
     "settlementEmpty": "No settlements recorded yet.",
     "settlementPaid": "{from} paid {to}",
+    "settlementsShowMore": "Show more ({count})",
+    "settlementsShowLess": "Show less",
     "deleteExpenseTitle": "Delete expense",
     "deleteExpenseCopy": "This action will delete the expense with friends.",
     "deleted": "Expense deleted",

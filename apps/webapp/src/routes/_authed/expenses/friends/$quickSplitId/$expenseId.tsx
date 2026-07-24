@@ -1,6 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, PencilLine, Trash2, UsersRound } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  PencilLine,
+  Trash2,
+  UsersRound,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '#/components/ui/button';
@@ -15,6 +22,7 @@ import {
 import { useAuth } from '#/contexts/auth/use-auth';
 import { formatCurrency } from '#/lib/i18n';
 import { useDeleteQuickSplitExpenseMutation } from '#/routes/_authed/expenses/-hooks/use-delete-quick-split-expense';
+import type { QuickSplitExpenseDetail } from '#/routes/_authed/expenses/-hooks/use-quick-split-expense-query';
 import { useQuickSplitExpenseQuery } from '#/routes/_authed/expenses/-hooks/use-quick-split-expense-query';
 import { useSettleQuickSplitDebt } from '#/routes/_authed/expenses/-hooks/use-settle-quick-split-debt';
 import { getQuickSplitMessages } from '#/routes/_authed/expenses/-messages';
@@ -51,6 +59,8 @@ function getInitials(name: string): string {
   if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
   return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
 }
+
+type Settlement = QuickSplitExpenseDetail['settlements'][number];
 
 function RouteComponent() {
   const t = getQuickSplitMessages();
@@ -198,46 +208,33 @@ function RouteComponent() {
                   {t.splitLabel}
                 </p>
                 <div className="space-y-5">
-                  {expense.participants.map((participant) => (
-                    <MemberLine
-                      key={participant.id}
-                      image={participant.image}
-                      name={`${participant.name}${participant.userId === user?.id ? ` (${t.you})` : ''}`}
-                      amount={formatAmount(expense.currency, participant.share)}
-                    />
-                  ))}
-                </div>
+                  {expense.participants.map((participant) => {
+                    const settlements = expense.settlements.filter(
+                      (settlement) => settlement.from.id === participant.id,
+                    );
 
-                <p className="mb-4 mt-7 text-xs font-medium text-[#444444]">
-                  {t.settlementHistory}
-                </p>
-                {expense.settlements.length > 0 ? (
-                  <div className="space-y-4">
-                    {expense.settlements.map((settlement) => (
-                      <div
-                        key={settlement.id}
-                        className="flex items-center gap-3 rounded-2xl bg-[#f8f8f8] px-3 py-3"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-[#202124]">
-                            {t.settlementPaid(
-                              settlement.from.name,
-                              settlement.to.name,
-                            )}
-                          </p>
-                          <p className="mt-1 text-xs text-[#737373]">
-                            {formatDate(settlement.createdAt)}
-                          </p>
-                        </div>
-                        <span className="shrink-0 text-sm font-semibold text-[#202124]">
-                          {formatAmount(settlement.currency, settlement.amount)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-[#737373]">{t.settlementEmpty}</p>
-                )}
+                    return (
+                      <MemberLine
+                        key={participant.id}
+                        image={participant.image}
+                        name={`${participant.name}${participant.userId === user?.id ? ` (${t.you})` : ''}`}
+                        amount={formatAmount(
+                          expense.currency,
+                          participant.share,
+                        )}
+                        settlements={settlements}
+                        settlementLabel={(settlement) =>
+                          t.settlementPaid(
+                            settlement.from.name,
+                            settlement.to.name,
+                          )
+                        }
+                        showMoreLabel={t.settlementsShowMore}
+                        showLessLabel={t.settlementsShowLess}
+                      />
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="mt-auto flex items-center gap-3 px-5 pb-4 pt-6">
@@ -420,34 +417,89 @@ function MemberLine({
   image,
   name,
   amount,
+  settlements,
+  settlementLabel,
+  showMoreLabel,
+  showLessLabel,
 }: {
   image: string | null;
   name: string;
   amount?: string;
+  settlements?: Settlement[];
+  settlementLabel?: (settlement: Settlement) => string;
+  showMoreLabel?: (count: number) => string;
+  showLessLabel?: string;
 }) {
+  const [showAllSettlements, setShowAllSettlements] = useState(false);
+  const visibleSettlements = showAllSettlements
+    ? settlements
+    : settlements?.slice(0, 2);
+  const remainingSettlements = Math.max(0, (settlements?.length ?? 0) - 2);
+
   return (
-    <div className="flex items-center gap-3">
-      {image ? (
-        <img
-          src={image}
-          alt={name}
-          className="size-9 rounded-full object-cover"
-          referrerPolicy="no-referrer"
-        />
-      ) : (
-        <span className="flex size-9 items-center justify-center rounded-full bg-[#eeeeee] text-sm font-medium text-[#555555]">
-          {getInitials(name)}
-        </span>
-      )}
-      <div className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium text-[#202124]">
-          {name}
-        </span>
+    <div>
+      <div className="flex items-center gap-3">
+        {image ? (
+          <img
+            src={image}
+            alt={name}
+            className="size-9 rounded-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <span className="flex size-9 items-center justify-center rounded-full bg-[#eeeeee] text-sm font-medium text-[#555555]">
+            {getInitials(name)}
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-[#202124]">
+            {name}
+          </span>
+        </div>
+        {amount ? (
+          <span className="shrink-0 text-sm font-semibold text-[#202124]">
+            {amount}
+          </span>
+        ) : null}
       </div>
-      {amount ? (
-        <span className="shrink-0 text-sm font-semibold text-[#202124]">
-          {amount}
-        </span>
+
+      {visibleSettlements?.length ? (
+        <div className="ml-12 mt-3 space-y-2 border-l border-[#e5e7eb] pl-3">
+          {visibleSettlements.map((settlement) => (
+            <div
+              key={settlement.id}
+              className="flex items-center justify-between gap-3 rounded-xl bg-[#f8f8f8] px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-xs font-medium text-[#202124]">
+                  {settlementLabel?.(settlement)}
+                </p>
+                <p className="mt-0.5 text-[11px] text-[#737373]">
+                  {formatDate(settlement.createdAt)}
+                </p>
+              </div>
+              <span className="shrink-0 text-xs font-semibold text-[#202124]">
+                {formatAmount(settlement.currency, settlement.amount)}
+              </span>
+            </div>
+          ))}
+          {remainingSettlements > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowAllSettlements((current) => !current)}
+              className="flex w-full items-center justify-center gap-2 pt-1 text-xs font-medium text-[#202124]"
+            >
+              {showAllSettlements
+                ? showLessLabel
+                : showMoreLabel?.(remainingSettlements)}
+              {showAllSettlements ? (
+                <ChevronUp className="size-3.5" />
+              ) : (
+                <ChevronDown className="size-3.5" />
+              )}
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

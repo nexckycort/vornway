@@ -241,6 +241,8 @@
     "settlementHistory": "Historial de liquidaciones",
     "settlementEmpty": "Aún no hay liquidaciones registradas.",
     "settlementPaid": "{from} pagó a {to}",
+    "settlementsShowMore": "Ver más ({count})",
+    "settlementsShowLess": "Ver menos",
     "deleteExpenseTitle": "Eliminar gasto",
     "deleteExpenseCopy": "Esta acción eliminará el gasto con amigos.",
     "deleted": "Gasto eliminado",

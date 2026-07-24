@@ -307,12 +307,12 @@ function RouteComponent() {
       </Drawer>
 
       <Drawer open={showSettleDrawer} onOpenChange={setShowSettleDrawer}>
-        <DrawerContent className="h-[84dvh]">
-          <DrawerHeader className="shrink-0">
+        <DrawerContent className="flex max-h-[85dvh] flex-col overflow-hidden">
+          <DrawerHeader>
             <DrawerTitle>{t.settleExpenseTitle}</DrawerTitle>
             <DrawerDescription>{t.settleExpenseCopy}</DrawerDescription>
           </DrawerHeader>
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 pb-2">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-2">
             <div className="space-y-2">
               <p className="text-sm font-medium text-[#202124]">
                 {t.settleFromLabel}

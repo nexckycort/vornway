@@ -354,7 +354,10 @@ function RouteComponent() {
           if (open) setIsSettlementAmountEditing(false);
         }}
       >
-        <DrawerContent className="data-[vaul-drawer-direction=bottom]:!mt-0 data-[vaul-drawer-direction=bottom]:!max-h-dvh data-[vaul-drawer-direction=bottom]:!rounded-t-none flex !h-dvh !max-h-dvh flex-col overflow-hidden rounded-none border-0 bg-[#fafafa]">
+        <DrawerContent
+          presentation="fullScreen"
+          className="flex overflow-hidden bg-[#fafafa]"
+        >
           <DrawerHeader className="shrink-0 border-b border-[#e5e7eb] bg-white px-4 pb-3 pt-5 text-left">
             <div className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center">
               <button

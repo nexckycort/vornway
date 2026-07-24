@@ -509,7 +509,7 @@ function RouteComponent() {
           }
         }}
       >
-        <DrawerContent className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden rounded-t-[32px] pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+        <DrawerContent className="pb-[calc(var(--safe-bottom)+0.75rem)]">
           <DrawerHeader className="px-4 pt-3">
             <DrawerTitle className="text-[1.75rem] leading-[1.05] tracking-tight">
               {t.participants.createdTitle(

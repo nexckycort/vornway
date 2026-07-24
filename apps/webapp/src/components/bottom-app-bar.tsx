@@ -134,6 +134,7 @@ export function BottomAppBar() {
 
   return (
     <nav
+      aria-label={t.ariaLabel}
       className={cn(
         'pointer-events-none fixed inset-x-0 bottom-[calc(0.85rem+env(safe-area-inset-bottom))] z-50 mx-auto w-[calc(100%-1.5rem)] rounded-[24px] border border-white/45 bg-[linear-gradient(135deg,rgba(255,255,255,0.5),rgba(255,255,255,0.18))] shadow-[0_18px_42px_rgba(15,23,42,0.14),inset_0_1px_rgba(255,255,255,0.5)] ring-1 ring-black/[0.02] backdrop-blur-2xl backdrop-saturate-150 transition-[max-width,padding,border-radius] duration-300 ease-out before:pointer-events-none before:absolute before:inset-x-3 before:top-px before:h-px before:rounded-full before:bg-white/75 after:pointer-events-none after:absolute after:inset-x-5 after:bottom-0 after:h-px after:bg-white/20 md:max-w-[980px]',
         isMinimized
@@ -161,8 +162,9 @@ export function BottomAppBar() {
               onClick={() => {
                 void navigateToTab(item.to);
               }}
+              aria-current={active ? 'page' : undefined}
               className={cn(
-                'relative z-10 flex min-w-0 flex-1 flex-col items-center justify-end rounded-2xl px-1 py-1 text-[11px] font-medium leading-4 text-[#94a3b8] transition-colors',
+                'native-tap relative z-10 flex min-h-11 min-w-0 flex-1 flex-col items-center justify-end rounded-2xl px-1 py-1 text-[11px] font-medium leading-4 text-[#94a3b8] transition-colors',
                 active && 'text-primary',
               )}
             >

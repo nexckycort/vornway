@@ -780,7 +780,7 @@ function RouteComponent() {
         open={showContributionDrawer}
         onOpenChange={setShowContributionDrawer}
       >
-        <DrawerContent className="mt-0 h-dvh max-h-dvh rounded-none">
+        <DrawerContent presentation="fullScreen" className="mt-0">
           <DrawerHeader className="shrink-0">
             <DrawerTitle>{t.detail.registerContributionTitle}</DrawerTitle>
             <DrawerDescription>
@@ -890,7 +890,7 @@ function RouteComponent() {
       </Drawer>
 
       <Drawer open={showEditDrawer} onOpenChange={setShowEditDrawer}>
-        <DrawerContent className="mt-0 h-dvh max-h-dvh rounded-none">
+        <DrawerContent presentation="fullScreen" className="mt-0">
           <DrawerHeader className="shrink-0">
             <DrawerTitle>{t.detail.editGoalTitle}</DrawerTitle>
             <DrawerDescription>{t.detail.editGoalCopy}</DrawerDescription>

@@ -7,5 +7,6 @@ export function getBottomAppBarMessages() {
     groups: m['bottomBar.groups'](),
     goals: m['bottomBar.goals'](),
     profile: m['bottomBar.profile'](),
+    ariaLabel: m['bottomBar.ariaLabel'](),
   };
 }

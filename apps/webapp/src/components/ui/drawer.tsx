@@ -122,20 +122,27 @@ function DrawerOverlay({
 function DrawerContent({
   className,
   children,
+  presentation = 'sheet',
+  scrollable = false,
   ...props
-}: React.ComponentProps<typeof DrawerPrimitive.Content>) {
+}: React.ComponentProps<typeof DrawerPrimitive.Content> & {
+  presentation?: 'sheet' | 'fullScreen';
+  scrollable?: boolean;
+}) {
   return (
     <DrawerPortal data-slot="drawer-portal">
       <DrawerOverlay />
       <DrawerPrimitive.Content
         data-slot="drawer-content"
+        data-presentation={presentation}
+        data-scrollable={scrollable || undefined}
         className={cn(
-          'bg-background/97 flex h-auto flex-col text-sm data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:max-h-[84vh] data-[vaul-drawer-direction=bottom]:rounded-t-[1.75rem] data-[vaul-drawer-direction=bottom]:border-t data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=left]:rounded-r-[1.75rem] data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:rounded-l-[1.75rem] data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[84vh] data-[vaul-drawer-direction=top]:rounded-b-[1.75rem] data-[vaul-drawer-direction=top]:border-b data-[vaul-drawer-direction=left]:sm:max-w-sm data-[vaul-drawer-direction=right]:sm:max-w-sm group/drawer-content fixed z-50 shadow-[0_28px_55px_-35px_color-mix(in_oklch,var(--foreground)_40%,transparent)] backdrop-blur-xl',
+          'bg-background/97 group/drawer-content fixed z-50 flex h-auto flex-col text-sm shadow-[0_28px_55px_-35px_color-mix(in_oklch,var(--foreground)_40%,transparent)] backdrop-blur-xl data-[scrollable=true]:overflow-y-auto data-[scrollable=true]:overscroll-contain data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:max-h-[84vh] data-[vaul-drawer-direction=bottom]:rounded-t-[1.75rem] data-[vaul-drawer-direction=bottom]:border-t data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=left]:rounded-r-[1.75rem] data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:rounded-l-[1.75rem] data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[84vh] data-[vaul-drawer-direction=top]:rounded-b-[1.75rem] data-[vaul-drawer-direction=top]:border-b data-[vaul-drawer-direction=left]:sm:max-w-sm data-[vaul-drawer-direction=right]:sm:max-w-sm data-[presentation=fullScreen]:!inset-0 data-[presentation=fullScreen]:!h-dvh data-[presentation=fullScreen]:!max-h-dvh data-[presentation=fullScreen]:!rounded-none data-[presentation=fullScreen]:!border-0 data-[presentation=fullScreen]:!pt-[var(--safe-top)] data-[presentation=fullScreen]:data-[vaul-drawer-direction=bottom]:!mt-0',
           className,
         )}
         {...props}
       >
-        <div className="bg-muted mt-4 h-1.5 w-[88px] rounded-full mx-auto hidden shrink-0 group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
+        <div className="bg-muted mx-auto mt-4 hidden h-1.5 w-[88px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block group-data-[presentation=fullScreen]/drawer-content:hidden" />
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>
@@ -159,7 +166,10 @@ function DrawerFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="drawer-footer"
-      className={cn('gap-2 p-5 mt-auto flex flex-col', className)}
+      className={cn(
+        'mt-auto flex flex-col gap-2 p-5 group-data-[vaul-drawer-direction=bottom]/drawer-content:pb-[calc(1.25rem+var(--safe-bottom))]',
+        className,
+      )}
       {...props}
     />
   );

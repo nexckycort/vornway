@@ -8,24 +8,28 @@ type MobilePageLayoutProps = {
   title: string;
   onBack: () => void;
   children: ReactNode;
+  footer?: ReactNode;
+  scrollable?: boolean;
 };
 
 export function MobilePageLayout({
   title,
   onBack,
   children,
+  footer,
+  scrollable = true,
 }: MobilePageLayoutProps) {
   const t = getSharedComponentMessages();
 
   return (
-    <main className="min-h-dvh bg-white">
-      <div className="flex min-h-dvh w-full flex-col bg-white">
-        <header className="flex items-center justify-between px-4 pt-6 pb-4">
+    <main className="h-dvh bg-white md:h-[calc(100dvh-2.5rem)]">
+      <div className="flex h-full w-full flex-col bg-white">
+        <header className="flex shrink-0 items-center justify-between px-4 pb-4 pt-[calc(var(--safe-top)+1rem)]">
           <Button
             type="button"
             variant="outline"
             onClick={onBack}
-            className="flex size-8 items-center justify-center"
+            className="flex size-11 items-center justify-center"
             aria-label={t.mobilePageLayout.backAria}
           >
             <HugeiconsIcon
@@ -38,10 +42,23 @@ export function MobilePageLayout({
             {title}
           </h1>
 
-          <div className="size-8" />
+          <div className="size-11" />
         </header>
 
-        <div className="flex flex-1 flex-col px-4 pb-6">{children}</div>
+        <div
+          className={
+            scrollable
+              ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(var(--safe-bottom)+1.5rem)]'
+              : 'flex flex-1 flex-col px-4 pb-[calc(var(--safe-bottom)+1.5rem)]'
+          }
+        >
+          {children}
+        </div>
+        {footer ? (
+          <footer className="shrink-0 border-t border-border bg-background/95 px-4 pb-[calc(var(--safe-bottom)+1rem)] pt-3 backdrop-blur-xl">
+            {footer}
+          </footer>
+        ) : null}
       </div>
     </main>
   );

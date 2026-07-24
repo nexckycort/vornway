@@ -1135,7 +1135,11 @@ function RouteComponent() {
   if (isLoading) {
     return (
       <AddExpenseSkeleton
-        title={isEditMode ? 'Editar gasto' : 'Nuevo gasto'}
+        title={
+          isEditMode
+            ? groupMessages.expense.editExpenseTitle
+            : groupMessages.expense.newExpenseTitle
+        }
         onBack={() => navigateToGroupRoot(true)}
       />
     );
@@ -1151,7 +1155,11 @@ function RouteComponent() {
 
     return (
       <MobilePageLayout
-        title={isEditMode ? 'Editar gasto' : 'Nuevo gasto'}
+        title={
+          isEditMode
+            ? groupMessages.expense.editExpenseTitle
+            : groupMessages.expense.newExpenseTitle
+        }
         onBack={() => navigateToGroupRoot(true)}
       >
         <div className="flex flex-1 flex-col justify-center bg-white px-4">
@@ -1163,7 +1171,7 @@ function RouteComponent() {
             onClick={() => navigateToGroupRoot(true)}
             className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"
           >
-            Volver al espacio
+            {groupMessages.expense.backToSpace}
           </button>
         </div>
       </MobilePageLayout>
@@ -1172,7 +1180,11 @@ function RouteComponent() {
 
   return (
     <MobilePageLayout
-      title={isEditMode ? 'Editar gasto' : 'Nuevo gasto'}
+      title={
+        isEditMode
+          ? groupMessages.expense.editExpenseTitle
+          : groupMessages.expense.newExpenseTitle
+      }
       onBack={() => navigateToGroupRoot(true)}
     >
       <div className="px-2 pb-6">
@@ -1246,7 +1258,7 @@ function RouteComponent() {
 
         {showDescriptionError ? (
           <p className="-mt-3 px-4 text-xs font-medium text-red-600">
-            Agrega un nombre al gasto
+            {groupMessages.expense.descriptionRequired}
           </p>
         ) : null}
 
@@ -1445,7 +1457,7 @@ function RouteComponent() {
 
           {showParticipantsError ? (
             <p className="mb-3 text-xs font-medium text-red-600">
-              Debes elegir al menos una persona con quien dividir el gasto
+              {groupMessages.expense.participantsRequired}
             </p>
           ) : null}
 
@@ -1496,10 +1508,10 @@ function RouteComponent() {
 
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900">
-                    Gasto compartido
+                    {groupMessages.expense.sharedExpenseTitle}
                   </p>
                   <p className="text-xs text-gray-500">
-                    Servicio, propina o algo para todos
+                    {groupMessages.expense.sharedExpenseDescription}
                   </p>
                 </div>
               </div>
@@ -1551,13 +1563,15 @@ function RouteComponent() {
 
               {showSharedExpenseItemsError ? (
                 <p className="mt-3 text-xs font-medium text-red-600">
-                  Completa el nombre y valor de cada gasto compartido
+                  {groupMessages.expense.sharedExpenseItemsRequired}
                 </p>
               ) : null}
 
               {normalizedSharedAmount > 0 && selectedCount > 0 ? (
                 <p className="mt-2 text-xs text-gray-500">
-                  +{formatMoney(currency, sharedShare)} por persona
+                  {groupMessages.expense.sharedAmountPerPerson(
+                    formatMoney(currency, sharedShare),
+                  )}
                 </p>
               ) : null}
             </div>
@@ -1705,10 +1719,24 @@ function RouteComponent() {
 
         <p className="text-xs text-gray-500">
           {selectedCount === 0
-            ? 'Selecciona al menos una persona para dividir este gasto'
+            ? groupMessages.expense.selectParticipantToSplit
             : splitMethod === 'percentage'
-              ? `${selectedCount} participantes · ${splitSum.toFixed(2)}% sobre ${formatMoney(currency, baseAmount)} · total ${formatMoney(currency, normalizedAmount)}`
-              : `${selectedCount} participantes · ${formatMoney(currency, splitMethod === 'equal' ? normalizedAmount : splitSum + normalizedSharedAmount)} de ${formatMoney(currency, normalizedAmount)}`}
+              ? groupMessages.expense.splitSummaryPercentage(
+                  selectedCount,
+                  splitSum.toFixed(2),
+                  formatMoney(currency, baseAmount),
+                  formatMoney(currency, normalizedAmount),
+                )
+              : groupMessages.expense.splitSummaryAmount(
+                  selectedCount,
+                  formatMoney(
+                    currency,
+                    splitMethod === 'equal'
+                      ? normalizedAmount
+                      : splitSum + normalizedSharedAmount,
+                  ),
+                  formatMoney(currency, normalizedAmount),
+                )}
         </p>
       </div>
 
@@ -1721,8 +1749,8 @@ function RouteComponent() {
         >
           {isSubmitLocked
             ? isEditMode
-              ? 'Guardando...'
-              : 'Agregando...'
+              ? groupMessages.expense.savingExpense
+              : groupMessages.expense.addingExpense
             : isEditMode
               ? groupMessages.common.saveChanges
               : groupMessages.expense.addExpense}
@@ -1734,7 +1762,7 @@ function RouteComponent() {
           <DrawerHeader>
             <DrawerTitle>{groupMessages.expense.splitMethodTitle}</DrawerTitle>
             <DrawerDescription>
-              Elige cómo se repartirá este gasto.
+              {groupMessages.expense.splitMethodDescription}
             </DrawerDescription>
           </DrawerHeader>
 
@@ -1756,10 +1784,10 @@ function RouteComponent() {
                     </p>
                     <p className="text-sm text-[#64748b]">
                       {method.value === 'equal'
-                        ? 'Todos pagan lo mismo de este gasto.'
+                        ? groupMessages.expense.splitEqualDescription
                         : method.value === 'percentage'
-                          ? 'Cada persona paga un porcentaje del total.'
-                          : 'Cada persona paga un monto distinto.'}
+                          ? groupMessages.expense.splitPercentageDescription
+                          : groupMessages.expense.splitExactDescription}
                     </p>
                   </div>
                   {active ? (
@@ -1883,18 +1911,18 @@ function RouteComponent() {
         open={showAdvancedDetailsDrawer}
         onOpenChange={setShowAdvancedDetailsDrawer}
       >
-        <DrawerContent className="h-dvh max-h-dvh">
+        <DrawerContent presentation="fullScreen">
           <DrawerHeader>
             <DrawerTitle>{groupMessages.expense.placeDetailsTitle}</DrawerTitle>
             <DrawerDescription>
-              Agrega datos útiles para el viaje sin cambiar el gasto.
+              {groupMessages.expense.advancedDetailsDescription}
             </DrawerDescription>
           </DrawerHeader>
 
           <div className="flex-1 space-y-5 overflow-y-auto px-5 pb-5">
             <section>
               <p className="mb-3 text-sm font-medium text-gray-900">
-                Tipo de información
+                {groupMessages.expense.advancedDetailsTypeTitle}
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {advancedDetailsTypeOptions.map((option) => {
@@ -2143,14 +2171,14 @@ function RouteComponent() {
                 className="h-11 rounded-full"
                 onClick={() => setAdvancedDetails(emptyAdvancedDetails)}
               >
-                Limpiar
+                {groupMessages.expense.clearAdvancedDetails}
               </Button>
               <Button
                 type="button"
                 className="h-11 rounded-full bg-primary text-white hover:bg-primary/90"
                 onClick={() => setShowAdvancedDetailsDrawer(false)}
               >
-                Guardar
+                {groupMessages.expense.saveAdvancedDetails}
               </Button>
             </div>
           </div>
@@ -2162,7 +2190,7 @@ function RouteComponent() {
           <DrawerHeader>
             <DrawerTitle>{groupMessages.expense.categoryTitle}</DrawerTitle>
             <DrawerDescription>
-              Elige una categoría para este gasto.
+              {groupMessages.expense.categoryDescription}
             </DrawerDescription>
             <Button
               type="button"
@@ -2171,7 +2199,7 @@ function RouteComponent() {
               onClick={openCreateCategoryDialog}
             >
               <HugeiconsIcon icon={Add01Icon} className="mr-2 size-4" />
-              Crear una nueva categoría
+              {groupMessages.expense.createNewCategory}
             </Button>
           </DrawerHeader>
 
@@ -2186,7 +2214,7 @@ function RouteComponent() {
             >
               <div className="min-w-0">
                 <p className="truncate text-base font-medium text-gray-900">
-                  Sin categoría
+                  {groupMessages.expense.withoutCategory}
                 </p>
               </div>
               <span
@@ -2271,17 +2299,17 @@ function RouteComponent() {
         <DialogContent className="max-h-[88dvh] max-w-[calc(100%-2rem)] gap-0 overflow-hidden rounded-[28px] p-0 sm:max-h-[85vh] sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="px-5 pt-5 text-left text-base">
-              Crear categoría
+              {groupMessages.expense.createCategoryTitle}
             </DialogTitle>
             <DialogDescription className="px-5 text-left">
-              Agrega una nueva categoría para este espacio.
+              {groupMessages.expense.createCategoryDescription}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5 overflow-y-auto px-5 pb-5 pt-4">
             <label className="flex flex-col gap-2">
               <span className="text-sm font-medium text-gray-900">
-                Nombre de la categoría
+                {groupMessages.expense.categoryNameLabel}
               </span>
               <input
                 value={newCategoryName}
@@ -2293,7 +2321,7 @@ function RouteComponent() {
 
             <section>
               <p className="mb-3 text-sm font-medium text-gray-900">
-                Selecciona un icono
+                {groupMessages.expense.selectIcon}
               </p>
               <div className="grid grid-cols-6 gap-3">
                 {categoryIconOptions.map((option) => {
@@ -2354,7 +2382,7 @@ function RouteComponent() {
 
             <section>
               <p className="mb-3 text-sm font-medium text-gray-900">
-                Selecciona un color
+                {groupMessages.expense.selectColor}
               </p>
               <div className="flex flex-wrap gap-4">
                 {categoryColorOptions.map((color) => {
@@ -2368,7 +2396,7 @@ function RouteComponent() {
                       className={`flex size-9 items-center justify-center rounded-full border transition-transform active:scale-95 ${
                         active ? 'border-rose-500' : 'border-transparent'
                       }`}
-                      aria-label={`Color ${color}`}
+                      aria-label={groupMessages.expense.colorAria(color)}
                     >
                       <span
                         className="size-7 rounded-full"
@@ -2416,7 +2444,7 @@ function RouteComponent() {
               }
             >
               {createCategoryMutation.isPending
-                ? 'Creando...'
+                ? groupMessages.expense.creatingCategory
                 : groupMessages.settings.saveCategory}
             </Button>
           </div>
@@ -2428,7 +2456,7 @@ function RouteComponent() {
           <DrawerHeader>
             <DrawerTitle>{groupMessages.expense.currencyTitle}</DrawerTitle>
             <DrawerDescription>
-              Elige la moneda de este gasto.
+              {groupMessages.expense.currencyDescription}
             </DrawerDescription>
           </DrawerHeader>
 

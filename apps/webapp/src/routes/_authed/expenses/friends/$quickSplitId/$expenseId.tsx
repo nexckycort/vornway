@@ -21,6 +21,14 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '#/components/ui/dropdown-menu';
 import { useAuth } from '#/contexts/auth/use-auth';
 import { formatCurrency } from '#/lib/i18n';
 import { useDeleteQuickSplitExpenseMutation } from '#/routes/_authed/expenses/-hooks/use-delete-quick-split-expense';
@@ -120,6 +128,8 @@ function RouteComponent() {
     canSettleExpense,
     canSubmitSettlement,
     isPending: isSettlingExpense,
+    setFromParticipantId,
+    setToParticipantId,
     setAmountInput,
     settleExpense,
   } = useSettleQuickSplitDebt({
@@ -145,9 +155,6 @@ function RouteComponent() {
   };
   const fromParticipant = participantOptions.find(
     (participant) => participant.id === fromParticipantId,
-  );
-  const toParticipant = participantOptions.find(
-    (participant) => participant.id === toParticipantId,
   );
   const appendSettlementAmount = (key: string) => {
     setAmountInput((current) => {
@@ -356,7 +363,7 @@ function RouteComponent() {
           <div className="h-2 shrink-0 bg-[#eeeeee]">
             <div className="h-full w-1/4 rounded-r-full bg-primary" />
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8">
+          <div className="min-h-0 flex-1 overflow-hidden px-4 py-8">
             <div className="mx-auto flex w-full max-w-md flex-col">
               <div className="flex items-end justify-between gap-4">
                 <button
@@ -382,20 +389,20 @@ function RouteComponent() {
                     {fromParticipant?.name ?? ''}
                   </p>
                 </div>
-                <SettlementAvatar
-                  image={getSettlementParticipantImage(
-                    expense,
-                    fromParticipantId,
-                  )}
-                  name={fromParticipant?.name ?? ''}
+                <SettlementParticipantSelect
+                  ariaLabel={t.settleFromLabel}
+                  expense={expense}
+                  participants={participantOptions}
+                  selectedId={fromParticipantId}
+                  onValueChange={setFromParticipantId}
                 />
                 <ArrowRight className="mx-3 size-4 text-[#737373]" />
-                <SettlementAvatar
-                  image={getSettlementParticipantImage(
-                    expense,
-                    toParticipantId,
-                  )}
-                  name={toParticipant?.name ?? ''}
+                <SettlementParticipantSelect
+                  ariaLabel={t.settleToLabel}
+                  expense={expense}
+                  participants={participantOptions}
+                  selectedId={toParticipantId}
+                  onValueChange={setToParticipantId}
                 />
               </div>
 
@@ -473,6 +480,62 @@ function SettlementAvatar({
         getInitials(name)
       )}
     </span>
+  );
+}
+
+function SettlementParticipantSelect({
+  ariaLabel,
+  expense,
+  participants,
+  selectedId,
+  onValueChange,
+}: {
+  ariaLabel: string;
+  expense: QuickSplitExpenseDetail | undefined;
+  participants: Array<{
+    id: string;
+    name: string;
+  }>;
+  selectedId: string;
+  onValueChange: (participantId: string) => void;
+}) {
+  const selectedParticipant = participants.find(
+    (participant) => participant.id === selectedId,
+  );
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+        aria-label={ariaLabel}
+      >
+        <SettlementAvatar
+          image={getSettlementParticipantImage(expense, selectedId)}
+          name={selectedParticipant?.name ?? ''}
+        />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuGroup>
+          <DropdownMenuRadioGroup
+            value={selectedId}
+            onValueChange={onValueChange}
+          >
+            {participants.map((participant) => (
+              <DropdownMenuRadioItem
+                key={participant.id}
+                value={participant.id}
+              >
+                <SettlementAvatar
+                  image={getSettlementParticipantImage(expense, participant.id)}
+                  name={participant.name}
+                />
+                <span className="truncate">{participant.name}</span>
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

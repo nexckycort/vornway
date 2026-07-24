@@ -137,7 +137,7 @@ export function BottomAppBar() {
   return (
     <nav
       className={cn(
-        'pointer-events-none fixed inset-x-0 bottom-[calc(0.85rem+env(safe-area-inset-bottom))] z-50 mx-auto w-[calc(100%-1.5rem)] rounded-[24px] border border-white/60 bg-white/65 shadow-[0_18px_42px_rgba(15,23,42,0.16)] ring-1 ring-black/[0.03] backdrop-blur-2xl transition-[max-width,padding,border-radius] duration-300 ease-out before:pointer-events-none before:absolute before:inset-x-2 before:top-px before:h-px before:rounded-full before:bg-white/80 md:max-w-[980px]',
+        'pointer-events-none fixed inset-x-0 bottom-[calc(0.85rem+env(safe-area-inset-bottom))] z-50 mx-auto w-[calc(100%-1.5rem)] rounded-[24px] border border-white/45 bg-[linear-gradient(135deg,rgba(255,255,255,0.5),rgba(255,255,255,0.18))] shadow-[0_18px_42px_rgba(15,23,42,0.14),inset_0_1px_rgba(255,255,255,0.5)] ring-1 ring-black/[0.02] backdrop-blur-2xl backdrop-saturate-150 transition-[max-width,padding,border-radius] duration-300 ease-out before:pointer-events-none before:absolute before:inset-x-3 before:top-px before:h-px before:rounded-full before:bg-white/75 after:pointer-events-none after:absolute after:inset-x-5 after:bottom-0 after:h-px after:bg-white/20 md:max-w-[980px]',
         isMinimized
           ? 'max-w-[320px] px-2 py-2'
           : 'max-w-[388px] px-4 pb-3 pt-2.5',
@@ -146,7 +146,7 @@ export function BottomAppBar() {
       <div className="pointer-events-auto relative flex items-end justify-between">
         <span
           aria-hidden="true"
-          className="absolute inset-y-0 left-0 w-1/5 rounded-2xl bg-white/70 shadow-[0_5px_14px_rgba(15,23,42,0.12)] transition-transform duration-300 ease-out"
+          className="absolute inset-y-0 left-0 w-1/5 rounded-2xl border border-white/45 bg-[linear-gradient(145deg,rgba(255,255,255,0.6),rgba(255,255,255,0.22))] shadow-[0_5px_14px_rgba(15,23,42,0.1),inset_0_1px_rgba(255,255,255,0.72)] backdrop-blur-xl transition-transform duration-300 ease-out"
           style={{
             transform: `translateX(${Math.max(activeIndex, 0) * 100}%)`,
           }}

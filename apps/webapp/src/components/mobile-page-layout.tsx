@@ -1,4 +1,5 @@
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeftIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import type { ReactNode } from 'react';
 import { getSharedComponentMessages } from './-messages';
 import { Button } from './ui/button';
@@ -27,7 +28,10 @@ export function MobilePageLayout({
             className="flex size-8 items-center justify-center"
             aria-label={t.mobilePageLayout.backAria}
           >
-            <ChevronLeft className="size-6 text-gray-800" />
+            <HugeiconsIcon
+              icon={ChevronLeftIcon}
+              className="size-6 text-gray-800"
+            />
           </Button>
 
           <h1 className="truncate px-2 text-base font-medium text-gray-900">

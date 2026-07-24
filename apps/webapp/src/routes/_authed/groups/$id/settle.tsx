@@ -1,7 +1,12 @@
+import {
+  ArrowLeftIcon,
+  ChevronDownIcon,
+  DeleteIcon,
+  RepeatIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute } from '@tanstack/react-router';
-import { ArrowLeft, ChevronDown, Delete, Repeat2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { m } from '#/paraglide/messages.js';
 import {
@@ -13,7 +18,6 @@ import {
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
-
 export const Route = createFileRoute('/_authed/groups/$id/settle')({
   validateSearch: (search: Record<string, unknown>) => ({
     settlementExpenseId:
@@ -484,7 +488,7 @@ function RouteComponent() {
               className="flex size-9 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#334155]"
               aria-label={t.common.back}
             >
-              <ArrowLeft className="size-4" />
+              <HugeiconsIcon icon={ArrowLeftIcon} className="size-4" />
             </button>
 
             <div className="text-center">
@@ -549,7 +553,10 @@ function RouteComponent() {
                       onClick={() => setStep(1)}
                     >
                       <span>{selected.currency}</span>
-                      <ChevronDown className="mt-1 size-4 text-[#64748b]" />
+                      <HugeiconsIcon
+                        icon={ChevronDownIcon}
+                        className="mt-1 size-4 text-[#64748b]"
+                      />
                     </button>
                     <div className="mt-2 flex items-center gap-1.5 text-sm text-[#94a3b8]">
                       <span>{selectedCurrency.flag}</span>
@@ -583,7 +590,7 @@ function RouteComponent() {
                     </div>
                   </div>
                   <span className="flex size-8 items-center justify-center rounded-full text-[#94a3b8]">
-                    <Repeat2 className="size-4" />
+                    <HugeiconsIcon icon={RepeatIcon} className="size-4" />
                   </span>
                 </button>
 
@@ -604,7 +611,9 @@ function RouteComponent() {
                   />
                   <KeypadButton label="," onClick={() => appendDigits(',')} />
                   <KeypadButton
-                    label={<Delete className="size-5" />}
+                    label={
+                      <HugeiconsIcon icon={DeleteIcon} className="size-5" />
+                    }
                     onClick={deleteDigit}
                     borderless
                   />

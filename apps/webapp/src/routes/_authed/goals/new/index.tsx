@@ -1,14 +1,14 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
-  CalendarDays,
-  Check,
-  ChevronRight,
-  Mail,
-  UserPlus,
-  X,
-} from 'lucide-react';
+  CalendarDaysIcon,
+  Cancel01Icon,
+  CheckIcon,
+  ChevronRightIcon,
+  MailIcon,
+  UserAdd01Icon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import { formatCurrency } from '#/lib/i18n';
@@ -23,7 +23,6 @@ import {
   goalTypes,
 } from '../-lib/goal-experience';
 import { getGoalsMessages } from '../-messages';
-
 export const Route = createFileRoute('/_authed/goals/new/')({
   component: RouteComponent,
 });
@@ -247,7 +246,7 @@ function RouteComponent() {
                           color: type.accent,
                         }}
                       >
-                        <Icon className="size-5" />
+                        <HugeiconsIcon icon={Icon} className="size-5" />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-base font-semibold text-[#0f172a]">
@@ -258,7 +257,10 @@ function RouteComponent() {
                         </span>
                       </span>
                       {active ? (
-                        <Check className="size-5 text-primary" />
+                        <HugeiconsIcon
+                          icon={CheckIcon}
+                          className="size-5 text-primary"
+                        />
                       ) : null}
                     </button>
                   );
@@ -383,7 +385,10 @@ function RouteComponent() {
                           </p>
                         </div>
                         {active ? (
-                          <Check className="size-5 text-primary" />
+                          <HugeiconsIcon
+                            icon={CheckIcon}
+                            className="size-5 text-primary"
+                          />
                         ) : null}
                       </div>
                     </button>
@@ -438,7 +443,7 @@ function RouteComponent() {
                   disabled={!participantInput.trim()}
                   aria-label={t.addParticipantAria}
                 >
-                  <UserPlus className="size-5" />
+                  <HugeiconsIcon icon={UserAdd01Icon} className="size-5" />
                 </Button>
               </div>
 
@@ -503,7 +508,7 @@ function RouteComponent() {
                       className="flex size-9 items-center justify-center rounded-full text-[#94a3b8]"
                       aria-label={`Eliminar ${participant.name}`}
                     >
-                      <X className="size-4" />
+                      <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
                     </button>
                   </div>
                 ))}
@@ -581,7 +586,7 @@ function RouteComponent() {
               className="h-14 w-full rounded-full bg-primary text-base font-semibold text-white"
             >
               Continuar
-              <ChevronRight className="ml-1 size-4" />
+              <HugeiconsIcon icon={ChevronRightIcon} className="ml-1 size-4" />
             </Button>
           ) : (
             <Button
@@ -682,7 +687,7 @@ function DateField({
   return (
     <label className="rounded-[22px] border border-[#e2e8f0] bg-white px-4 py-3">
       <span className="flex items-center gap-2 text-xs text-[#64748b]">
-        <CalendarDays className="size-3.5" />
+        <HugeiconsIcon icon={CalendarDaysIcon} className="size-3.5" />
         {label}
       </span>
       <input
@@ -733,7 +738,9 @@ function MemberAvatar({
 
   return (
     <span className="flex size-10 items-center justify-center rounded-full bg-[#f1f5f9] text-sm font-semibold text-[#0f172a]">
-      {name.trim().charAt(0).toUpperCase() || <Mail className="size-4" />}
+      {name.trim().charAt(0).toUpperCase() || (
+        <HugeiconsIcon icon={MailIcon} className="size-4" />
+      )}
     </span>
   );
 }

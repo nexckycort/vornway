@@ -1,5 +1,6 @@
+import { Clock03Icon, UserGroupIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { Link } from '@tanstack/react-router';
-import { Clock3, UsersRound } from 'lucide-react';
 import { formatCurrency } from '#/lib/i18n';
 import type { HomeRecentExpense } from '#/routes/_authed/(home)/-hooks/use-home-recent-expenses-query';
 import { getHomeMessages } from '#/routes/_authed/(home)/-messages';
@@ -23,7 +24,7 @@ export function RecentExpenseCard({ item }: RecentExpenseCardProps) {
     >
       <div className="flex min-w-0 items-center gap-3">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff1f5] text-primary">
-          <UsersRound className="size-5" />
+          <HugeiconsIcon icon={UserGroupIcon} className="size-5" />
         </span>
 
         <div className="min-w-0 flex-1">
@@ -60,7 +61,7 @@ export function RecentExpenseCard({ item }: RecentExpenseCardProps) {
                 {formatMoney(item.currency, item.amount)}
               </p>
               <p className="mt-1 inline-flex items-center gap-1 text-xs text-[#6b7280]">
-                <Clock3 className="size-3.5" />
+                <HugeiconsIcon icon={Clock03Icon} className="size-3.5" />
                 {formatDate(item.createdAt)}
               </p>
             </div>

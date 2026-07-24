@@ -1,4 +1,11 @@
-import { ArrowDownLeft, Clock3, Pencil, Pin, Trash2 } from 'lucide-react';
+import {
+  ArrowDownLeftIcon,
+  Clock03Icon,
+  Delete02Icon,
+  PencilIcon,
+  PinIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { type MouseEvent, type TouchEvent, useRef, useState } from 'react';
 import { getGroupDetailMessages } from '../-messages';
 import type { ExpenseItem } from '../-types/group-detail.types';
@@ -239,7 +246,7 @@ export function GroupExpenseRow({
             onClick={handleDelete}
             className="flex h-full w-full flex-col items-center justify-center text-white"
           >
-            <Trash2 className="mb-1 size-5" />
+            <HugeiconsIcon icon={Delete02Icon} className="mb-1 size-5" />
             <span className="text-xs font-medium">{t.detail.deleteSwipe}</span>
           </button>
         </div>
@@ -248,7 +255,7 @@ export function GroupExpenseRow({
       {showEditAction ? (
         <div className="absolute inset-y-0 left-0 z-0 flex w-[88px] items-center justify-center bg-[#0f172a]">
           <div className="flex h-full w-full flex-col items-center justify-center text-white">
-            <Pencil className="mb-1 size-5" />
+            <HugeiconsIcon icon={PencilIcon} className="mb-1 size-5" />
             <span className="text-xs font-medium">{t.detail.edit}</span>
           </div>
         </div>
@@ -283,7 +290,10 @@ export function GroupExpenseRow({
         ) : null}
         {isPinned ? (
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#f59e0b]">
-            <Pin className="size-4 shrink-0 fill-current" />
+            <HugeiconsIcon
+              icon={PinIcon}
+              className="size-4 shrink-0 fill-current"
+            />
           </span>
         ) : null}
         <div
@@ -293,7 +303,10 @@ export function GroupExpenseRow({
             className={`flex ${isSettlement ? 'size-10' : 'size-12'} shrink-0 items-center justify-center rounded-full ${iconTone}`}
           >
             {isSettlement ? (
-              <ArrowDownLeft className="size-4.5 text-emerald-700" />
+              <HugeiconsIcon
+                icon={ArrowDownLeftIcon}
+                className="size-4.5 text-emerald-700"
+              />
             ) : (
               <CategoryIcon
                 icon={expense.category?.icon}
@@ -358,7 +371,7 @@ export function GroupExpenseRow({
           <div className="mt-1.5 space-y-2 pb-0.5">
             {isPendingSync ? (
               <span className="inline-flex items-center gap-1 rounded-xl bg-white/70 px-4 py-1.5 text-sm font-semibold text-amber-700">
-                <Clock3 className="size-3" />
+                <HugeiconsIcon icon={Clock03Icon} className="size-3" />
                 Pendiente
               </span>
             ) : null}

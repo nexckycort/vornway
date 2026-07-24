@@ -1,21 +1,21 @@
+import {
+  Add01Icon,
+  ArrowLeftIcon,
+  Award01Icon,
+  CheckIcon,
+  Delete02Icon,
+  Edit03Icon,
+  Share02Icon,
+  SparklesIcon,
+  UserAdd01Icon,
+  UserGroupIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import {
-  ArrowLeft,
-  Check,
-  Edit3,
-  Plus,
-  Share2,
-  Sparkles,
-  Trash2,
-  Trophy,
-  UserPlus,
-  Users,
-} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-
 import { Button } from '#/components/ui/button';
 import {
   Drawer,
@@ -388,7 +388,7 @@ function RouteComponent() {
                 className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
                 aria-label={t.detail.backAria}
               >
-                <ArrowLeft className="size-4" />
+                <HugeiconsIcon icon={ArrowLeftIcon} className="size-4" />
               </button>
 
               <div className="min-w-0 flex-1">
@@ -418,7 +418,7 @@ function RouteComponent() {
                   className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
                   aria-label={t.detail.editAria}
                 >
-                  <Edit3 className="size-4" />
+                  <HugeiconsIcon icon={Edit03Icon} className="size-4" />
                 </button>
               ) : null}
             </div>
@@ -488,19 +488,19 @@ function RouteComponent() {
             <div className="mt-2.5 grid grid-cols-3 gap-2">
               {isAdmin ? (
                 <HeaderAction
-                  icon={<Plus className="size-5" />}
+                  icon={<HugeiconsIcon icon={Add01Icon} className="size-5" />}
                   label={t.detail.contribution}
                   primary
                   onClick={openAddContributionDrawer}
                 />
               ) : null}
               <HeaderAction
-                icon={<Users className="size-5" />}
+                icon={<HugeiconsIcon icon={UserGroupIcon} className="size-5" />}
                 label={t.detail.invite}
                 onClick={() => participantInputRef.current?.focus()}
               />
               <HeaderAction
-                icon={<Share2 className="size-5" />}
+                icon={<HugeiconsIcon icon={Share02Icon} className="size-5" />}
                 label={t.detail.share}
                 onClick={() => {
                   void navigator.clipboard?.writeText(window.location.href);
@@ -522,7 +522,9 @@ function RouteComponent() {
 
               {recentContributions.length === 0 ? (
                 <EmptyCard
-                  icon={<Sparkles className="size-5" />}
+                  icon={
+                    <HugeiconsIcon icon={SparklesIcon} className="size-5" />
+                  }
                   title={t.detail.emptyContributions}
                   copy={t.detail.emptyContributionsCopy}
                 />
@@ -561,7 +563,10 @@ function RouteComponent() {
                           className="flex size-9 items-center justify-center rounded-full text-red-500"
                           aria-label={t.detail.deleteContributionAria}
                         >
-                          <Trash2 className="size-4" />
+                          <HugeiconsIcon
+                            icon={Delete02Icon}
+                            className="size-4"
+                          />
                         </button>
                       ) : null}
                     </article>
@@ -607,7 +612,7 @@ function RouteComponent() {
                       }
                       aria-label={t.detail.addParticipantAria}
                     >
-                      <UserPlus className="size-5" />
+                      <HugeiconsIcon icon={UserAdd01Icon} className="size-5" />
                     </Button>
                   </div>
 
@@ -676,7 +681,10 @@ function RouteComponent() {
                         </p>
                       </div>
                       {index === 0 && amount > 0 ? (
-                        <Trophy className="size-4 text-amber-500" />
+                        <HugeiconsIcon
+                          icon={Award01Icon}
+                          className="size-4 text-amber-500"
+                        />
                       ) : null}
                     </div>
                     <div className="mt-4 flex items-end justify-between">
@@ -803,7 +811,10 @@ function RouteComponent() {
                     </p>
                   </div>
                   {contributionMemberId === member.id ? (
-                    <Check className="size-4 text-primary" />
+                    <HugeiconsIcon
+                      icon={CheckIcon}
+                      className="size-4 text-primary"
+                    />
                   ) : null}
                 </button>
               ))}

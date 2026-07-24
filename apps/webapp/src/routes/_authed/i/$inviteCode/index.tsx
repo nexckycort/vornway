@@ -1,8 +1,12 @@
+import {
+  CheckIcon,
+  Loading01Icon,
+  UserGroupIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Check, Loader2, Users } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
-
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import { getGroupFlowEntryState } from '#/lib/group-flow-navigation';
@@ -12,7 +16,6 @@ import {
   useInvitePreviewQuery,
 } from '#/routes/_authed/i/-hooks/use-invite-preview-query';
 import { getInviteMessages } from '#/routes/_authed/i/-messages';
-
 export const Route = createFileRoute('/_authed/i/$inviteCode/')({
   component: RouteComponent,
 });
@@ -132,7 +135,10 @@ function RouteComponent() {
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-[#fff1f4] text-primary">
-                        <Users className="size-7" />
+                        <HugeiconsIcon
+                          icon={UserGroupIcon}
+                          className="size-7"
+                        />
                       </div>
                     )}
                   </div>
@@ -184,7 +190,10 @@ function RouteComponent() {
                   >
                     {acceptMutation.isPending ? (
                       <>
-                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        <HugeiconsIcon
+                          icon={Loading01Icon}
+                          className="mr-2 size-4 animate-spin"
+                        />
                         {t.linking}
                       </>
                     ) : (
@@ -206,7 +215,10 @@ function RouteComponent() {
                   >
                     {acceptMutation.isPending ? (
                       <>
-                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        <HugeiconsIcon
+                          icon={Loading01Icon}
+                          className="mr-2 size-4 animate-spin"
+                        />
                         {t.continuing}
                       </>
                     ) : (
@@ -240,7 +252,10 @@ function RouteComponent() {
                 >
                   {acceptMutation.isPending ? (
                     <>
-                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      <HugeiconsIcon
+                        icon={Loading01Icon}
+                        className="mr-2 size-4 animate-spin"
+                      />
                       {t.continuing}
                     </>
                   ) : (
@@ -371,7 +386,7 @@ function AlreadyMemberState({
     <section className="rounded-[28px] border border-[#e2e8f0] bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
       <div className="flex items-center gap-3">
         <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-          <Check className="size-5" />
+          <HugeiconsIcon icon={CheckIcon} className="size-5" />
         </div>
         <div>
           <p className="text-base font-semibold text-[#0f172a]">

@@ -1,16 +1,17 @@
-import { createFileRoute } from '@tanstack/react-router';
 import {
-  CalendarClock,
-  Camera,
-  Check,
-  ChevronDown,
-  Link as LinkIcon,
-  MapPin,
-  Minus,
-  Phone,
-  Plus,
-  Trash2,
-} from 'lucide-react';
+  Add01Icon,
+  CalendarClockIcon,
+  Call02Icon,
+  CameraIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  Delete02Icon,
+  LinkIcon,
+  MapPinIcon,
+  MinusSignIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { createFileRoute } from '@tanstack/react-router';
 import {
   type InputHTMLAttributes,
   type ReactNode,
@@ -1184,7 +1185,10 @@ function RouteComponent() {
             <span className="text-4xl font-light text-gray-900">
               {currentCurrency.label}
             </span>
-            <ChevronDown className="size-5 text-gray-600" />
+            <HugeiconsIcon
+              icon={ChevronDownIcon}
+              className="size-5 text-gray-600"
+            />
           </button>
 
           <label className="min-w-0 flex-1 text-right">
@@ -1262,7 +1266,7 @@ function RouteComponent() {
               <CategoryIcon
                 icon={selectedCategory?.icon}
                 color={selectedCategory?.color}
-                fallback={<Plus className="size-4" />}
+                fallback={<HugeiconsIcon icon={Add01Icon} className="size-4" />}
               />
             </span>
             <div className="min-w-0">
@@ -1275,7 +1279,10 @@ function RouteComponent() {
               </p>
             </div>
           </div>
-          <ChevronDown className="size-4 text-gray-400" />
+          <HugeiconsIcon
+            icon={ChevronDownIcon}
+            className="size-4 text-gray-400"
+          />
         </button>
 
         {advancedDetailsEnabled ? (
@@ -1286,7 +1293,7 @@ function RouteComponent() {
           >
             <div className="flex min-w-0 items-center gap-3">
               <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-500">
-                <MapPin className="size-5" />
+                <HugeiconsIcon icon={MapPinIcon} className="size-5" />
               </span>
               <div className="min-w-0">
                 <p className="text-xs text-gray-500">
@@ -1298,7 +1305,10 @@ function RouteComponent() {
                 </p>
               </div>
             </div>
-            <ChevronDown className="size-4 text-gray-400" />
+            <HugeiconsIcon
+              icon={ChevronDownIcon}
+              className="size-4 text-gray-400"
+            />
           </button>
         ) : null}
 
@@ -1340,7 +1350,11 @@ function RouteComponent() {
                         : 'border-gray-300 bg-white text-transparent'
                     }`}
                   >
-                    {selected ? <Check className="size-2.5" /> : '•'}
+                    {selected ? (
+                      <HugeiconsIcon icon={CheckIcon} className="size-2.5" />
+                    ) : (
+                      '•'
+                    )}
                   </span>
                   <span className="mt-1.5 max-w-[60px] truncate text-xs text-gray-600">
                     {member.isCurrentUser
@@ -1425,7 +1439,7 @@ function RouteComponent() {
               <span className="text-sm font-medium">
                 {splitMethods.find((item) => item.value === splitMethod)?.label}
               </span>
-              <ChevronDown className="size-4" />
+              <HugeiconsIcon icon={ChevronDownIcon} className="size-4" />
             </button>
           </div>
 
@@ -1442,9 +1456,12 @@ function RouteComponent() {
           >
             <div className="flex size-6 items-center justify-center rounded bg-rose-500">
               {selectedCount === members.length && members.length > 0 ? (
-                <Minus className="size-4 text-white" />
+                <HugeiconsIcon
+                  icon={MinusSignIcon}
+                  className="size-4 text-white"
+                />
               ) : (
-                <Plus className="size-4 text-white" />
+                <HugeiconsIcon icon={Add01Icon} className="size-4 text-white" />
               )}
             </div>
             <span className="text-sm font-medium text-gray-900">
@@ -1471,7 +1488,10 @@ function RouteComponent() {
                   className="flex size-6 shrink-0 items-center justify-center rounded bg-rose-500"
                   aria-label={groupMessages.expense.addSharedExpenseAria}
                 >
-                  <Plus className="size-4 text-white" />
+                  <HugeiconsIcon
+                    icon={Add01Icon}
+                    className="size-4 text-white"
+                  />
                 </button>
 
                 <div className="min-w-0 flex-1">
@@ -1522,7 +1542,7 @@ function RouteComponent() {
                           groupMessages.expense.removeSharedExpenseAria
                         }
                       >
-                        <Trash2 className="size-4" />
+                        <HugeiconsIcon icon={Delete02Icon} className="size-4" />
                       </button>
                     </div>
                   ))}
@@ -1565,9 +1585,15 @@ function RouteComponent() {
                         }`}
                       >
                         {selected ? (
-                          <Check className="size-4 text-white" />
+                          <HugeiconsIcon
+                            icon={CheckIcon}
+                            className="size-4 text-white"
+                          />
                         ) : (
-                          <Plus className="size-4 text-white" />
+                          <HugeiconsIcon
+                            icon={Add01Icon}
+                            className="size-4 text-white"
+                          />
                         )}
                       </div>
                       <ParticipantAvatar
@@ -1637,7 +1663,10 @@ function RouteComponent() {
                               )}
                               className="flex size-9 items-center justify-center rounded-full border border-gray-200 text-rose-500 transition-colors hover:bg-rose-50"
                             >
-                              <Plus className="size-4" />
+                              <HugeiconsIcon
+                                icon={Add01Icon}
+                                className="size-4"
+                              />
                             </button>
                           ) : null}
                         </div>
@@ -1733,7 +1762,12 @@ function RouteComponent() {
                           : 'Cada persona paga un monto distinto.'}
                     </p>
                   </div>
-                  {active ? <Check className="size-5 text-rose-500" /> : null}
+                  {active ? (
+                    <HugeiconsIcon
+                      icon={CheckIcon}
+                      className="size-5 text-rose-500"
+                    />
+                  ) : null}
                 </button>
               );
             })}
@@ -1791,7 +1825,7 @@ function RouteComponent() {
                   aria-label={lineItemsMessages.removeItem}
                   className="flex size-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50"
                 >
-                  <Trash2 className="size-4" />
+                  <HugeiconsIcon icon={Delete02Icon} className="size-4" />
                 </button>
               </div>
             ))}
@@ -1802,7 +1836,7 @@ function RouteComponent() {
                 onClick={() => addLineItem(lineItemsDrawerMember.id)}
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-dashed border-rose-300 text-sm font-medium text-rose-500 transition-colors hover:bg-rose-50"
               >
-                <Plus className="size-4" />
+                <HugeiconsIcon icon={Add01Icon} className="size-4" />
                 {lineItemsMessages.addItem}
               </button>
             ) : null}
@@ -1922,7 +1956,7 @@ function RouteComponent() {
                 }))
               }
               placeholder={groupMessages.expense.addressPlaceholder}
-              icon={<MapPin className="size-4" />}
+              icon={<HugeiconsIcon icon={MapPinIcon} className="size-4" />}
             />
 
             <AdvancedDetailsInput
@@ -1936,7 +1970,7 @@ function RouteComponent() {
               }
               placeholder={groupMessages.expense.mapUrlPlaceholder}
               inputMode="url"
-              icon={<MapPin className="size-4" />}
+              icon={<HugeiconsIcon icon={MapPinIcon} className="size-4" />}
             />
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1963,7 +1997,7 @@ function RouteComponent() {
                 }
                 placeholder="+57..."
                 inputMode="tel"
-                icon={<Phone className="size-4" />}
+                icon={<HugeiconsIcon icon={Call02Icon} className="size-4" />}
               />
             </div>
 
@@ -2003,7 +2037,9 @@ function RouteComponent() {
                   }))
                 }
                 placeholder={groupMessages.expense.dateOrTimePlaceholder}
-                icon={<CalendarClock className="size-4" />}
+                icon={
+                  <HugeiconsIcon icon={CalendarClockIcon} className="size-4" />
+                }
               />
             </div>
 
@@ -2018,7 +2054,7 @@ function RouteComponent() {
               }
               placeholder={groupMessages.expense.externalLinkPlaceholder}
               inputMode="url"
-              icon={<LinkIcon className="size-4" />}
+              icon={<HugeiconsIcon icon={LinkIcon} className="size-4" />}
             />
 
             <section>
@@ -2032,7 +2068,7 @@ function RouteComponent() {
                     onClick={clearAttachmentSelection}
                     className="inline-flex items-center gap-1 text-xs font-medium text-rose-500"
                   >
-                    <Trash2 className="size-3.5" />
+                    <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
                     Quitar nueva imagen
                   </button>
                 ) : null}
@@ -2061,7 +2097,7 @@ function RouteComponent() {
                   />
                 ) : (
                   <span className="flex size-20 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
-                    <Camera className="size-6" />
+                    <HugeiconsIcon icon={CameraIcon} className="size-6" />
                   </span>
                 )}
                 <span className="min-w-0 flex-1">
@@ -2134,7 +2170,7 @@ function RouteComponent() {
               className="mt-2 h-10 w-full justify-start rounded-full px-0 text-rose-500 hover:bg-rose-50 hover:text-rose-500"
               onClick={openCreateCategoryDialog}
             >
-              <Plus className="mr-2 size-4" />
+              <HugeiconsIcon icon={Add01Icon} className="mr-2 size-4" />
               Crear una nueva categoría
             </Button>
           </DrawerHeader>
@@ -2160,7 +2196,12 @@ function RouteComponent() {
                     : 'border-gray-300 bg-white'
                 }`}
               >
-                {!categoryId ? <Check className="size-4 text-white" /> : null}
+                {!categoryId ? (
+                  <HugeiconsIcon
+                    icon={CheckIcon}
+                    className="size-4 text-white"
+                  />
+                ) : null}
               </span>
             </button>
 
@@ -2188,7 +2229,9 @@ function RouteComponent() {
                       <CategoryIcon
                         icon={category.icon}
                         color={category.color}
-                        fallback={<Plus className="size-4" />}
+                        fallback={
+                          <HugeiconsIcon icon={Add01Icon} className="size-4" />
+                        }
                       />
                     </span>
                     <p className="truncate text-base font-medium text-gray-900">
@@ -2202,7 +2245,12 @@ function RouteComponent() {
                         : 'border-gray-300 bg-white'
                     }`}
                   >
-                    {active ? <Check className="size-4 text-white" /> : null}
+                    {active ? (
+                      <HugeiconsIcon
+                        icon={CheckIcon}
+                        className="size-4 text-white"
+                      />
+                    ) : null}
                   </span>
                 </button>
               );
@@ -2264,7 +2312,7 @@ function RouteComponent() {
                       }`}
                       aria-label={option.label}
                     >
-                      <Icon className="size-4" />
+                      <HugeiconsIcon icon={Icon} className="size-4" />
                     </button>
                   );
                 })}
@@ -2278,7 +2326,7 @@ function RouteComponent() {
                   }`}
                   aria-label={groupMessages.expense.keyboardIconAria}
                 >
-                  <Plus className="size-4" />
+                  <HugeiconsIcon icon={Add01Icon} className="size-4" />
                 </button>
               </div>
 
@@ -2348,7 +2396,9 @@ function RouteComponent() {
                         : newCategoryIcon
                     }
                     color={newCategoryColor}
-                    fallback={<Plus className="size-5" />}
+                    fallback={
+                      <HugeiconsIcon icon={Add01Icon} className="size-5" />
+                    }
                   />
                 </span>
                 <p className="min-w-0 truncate text-base font-semibold text-gray-900">
@@ -2409,7 +2459,12 @@ function RouteComponent() {
                         : 'border-gray-300 bg-white'
                     }`}
                   >
-                    {active ? <Check className="size-4 text-white" /> : null}
+                    {active ? (
+                      <HugeiconsIcon
+                        icon={CheckIcon}
+                        className="size-4 text-white"
+                      />
+                    ) : null}
                   </span>
                 </button>
               );

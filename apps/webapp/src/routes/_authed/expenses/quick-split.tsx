@@ -1,5 +1,12 @@
+import {
+  Add01Icon,
+  CheckIcon,
+  ChevronDownIcon,
+  Edit03Icon,
+  SearchIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Check, ChevronDown, PencilLine, Plus, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
@@ -526,7 +533,10 @@ function RouteComponent() {
             <span className="text-4xl font-light text-gray-900">
               {selectedCurrency.code}
             </span>
-            <ChevronDown className="size-5 text-gray-600" />
+            <HugeiconsIcon
+              icon={ChevronDownIcon}
+              className="size-5 text-gray-600"
+            />
           </button>
 
           <label className="min-w-0 flex-1 text-right">
@@ -553,7 +563,10 @@ function RouteComponent() {
         <section className="overflow-hidden rounded-[24px] border border-[#ebebeb] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
           <div className="px-4 py-4">
             <div className="flex h-11 items-center gap-2 rounded-[24px] border border-[#ebebeb] bg-[#fafafa] px-4">
-              <PencilLine className="size-4 text-[#626262]" />
+              <HugeiconsIcon
+                icon={Edit03Icon}
+                className="size-4 text-[#626262]"
+              />
               <input
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
@@ -571,7 +584,7 @@ function RouteComponent() {
               <div className="px-4 py-4">
                 <div className="flex items-center gap-3">
                   <div className="flex size-10 items-center justify-center rounded-full bg-[#fff8ed] text-[#ff7a00]">
-                    <Search className="size-4" />
+                    <HugeiconsIcon icon={SearchIcon} className="size-4" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-normal leading-4 text-[#626262]">
@@ -584,7 +597,10 @@ function RouteComponent() {
                       className="mt-0.5 h-5 w-full bg-transparent text-sm font-semibold text-[#1e1e1e] outline-none placeholder:font-normal placeholder:text-[#94a3b8]"
                     />
                   </div>
-                  <Search className="size-4 text-[#b0b0b0]" />
+                  <HugeiconsIcon
+                    icon={SearchIcon}
+                    className="size-4 text-[#b0b0b0]"
+                  />
                 </div>
               </div>
             </>
@@ -695,7 +711,14 @@ function RouteComponent() {
                               : 'border-gray-300 bg-white text-transparent'
                           }`}
                         >
-                          {isSelected ? <Check className="size-2.5" /> : '•'}
+                          {isSelected ? (
+                            <HugeiconsIcon
+                              icon={CheckIcon}
+                              className="size-2.5"
+                            />
+                          ) : (
+                            '•'
+                          )}
                         </span>
                         <span className="mt-1.5 max-w-[60px] truncate text-xs text-gray-600">
                           {person.isCurrentUser ? t.you : person.name}
@@ -717,13 +740,16 @@ function RouteComponent() {
                     <span className="text-sm font-medium">
                       {getSplitMethodLabel(splitMethod, t)}
                     </span>
-                    <ChevronDown className="size-4" />
+                    <HugeiconsIcon icon={ChevronDownIcon} className="size-4" />
                   </button>
                 </div>
 
                 <div className="mt-4 flex w-full items-center gap-3">
                   <div className="flex size-6 items-center justify-center rounded bg-rose-500">
-                    <Plus className="size-4 text-white" />
+                    <HugeiconsIcon
+                      icon={Add01Icon}
+                      className="size-4 text-white"
+                    />
                   </div>
                   <span className="text-sm font-medium text-gray-900">
                     {t.splitAll}
@@ -755,9 +781,15 @@ function RouteComponent() {
                             }`}
                           >
                             {selected ? (
-                              <Check className="size-4 text-white" />
+                              <HugeiconsIcon
+                                icon={CheckIcon}
+                                className="size-4 text-white"
+                              />
                             ) : (
-                              <Plus className="size-4 text-white" />
+                              <HugeiconsIcon
+                                icon={Add01Icon}
+                                className="size-4 text-white"
+                              />
                             )}
                           </div>
                           <ParticipantAvatar name={person.name} />
@@ -932,7 +964,12 @@ function RouteComponent() {
                       {getSplitMethodDescription(method, t)}
                     </p>
                   </div>
-                  {active ? <Check className="size-5 text-rose-500" /> : null}
+                  {active ? (
+                    <HugeiconsIcon
+                      icon={CheckIcon}
+                      className="size-5 text-rose-500"
+                    />
+                  ) : null}
                 </button>
               );
             })}

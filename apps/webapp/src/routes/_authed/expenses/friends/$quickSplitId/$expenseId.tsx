@@ -1,15 +1,16 @@
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  Delete02Icon,
+  DeleteIcon,
+  Edit03Icon,
+  UserGroupIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import {
-  ArrowLeft,
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
-  Delete,
-  PencilLine,
-  Trash2,
-  UsersRound,
-} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '#/components/ui/button';
@@ -187,7 +188,7 @@ function RouteComponent() {
             className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[#334155] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
             aria-label={t.back}
           >
-            <ArrowLeft className="size-4" />
+            <HugeiconsIcon icon={ArrowLeftIcon} className="size-4" />
           </button>
           <div className="min-w-0 text-center">
             <h1 className="truncate text-base font-semibold text-[#0f172a]">
@@ -212,7 +213,7 @@ function RouteComponent() {
             <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_18px_42px_rgba(15,23,42,0.06)]">
               <div className="px-5 pb-4 pt-4 text-center">
                 <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-[#fff1f5] text-primary">
-                  <UsersRound className="size-6" />
+                  <HugeiconsIcon icon={UserGroupIcon} className="size-6" />
                 </div>
                 <h2 className="truncate text-base font-medium text-[#444444]">
                   {expense.description}
@@ -284,7 +285,7 @@ function RouteComponent() {
                   className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#202124] shadow-[0_4px_12px_rgba(15,23,42,0.05)]"
                   aria-label={t.deleteExpenseTitle}
                 >
-                  <Trash2 className="size-4" />
+                  <HugeiconsIcon icon={Delete02Icon} className="size-4" />
                 </button>
                 <button
                   type="button"
@@ -301,7 +302,7 @@ function RouteComponent() {
                   className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#202124] shadow-[0_4px_12px_rgba(15,23,42,0.05)]"
                   aria-label={t.editExpense}
                 >
-                  <PencilLine className="size-4" />
+                  <HugeiconsIcon icon={Edit03Icon} className="size-4" />
                 </button>
                 <button
                   type="button"
@@ -362,7 +363,7 @@ function RouteComponent() {
                 className="flex size-9 items-center justify-center rounded-full border border-[#e5e7eb] text-[#202124]"
                 aria-label={t.back}
               >
-                <ArrowLeft className="size-4" />
+                <HugeiconsIcon icon={ArrowLeftIcon} className="size-4" />
               </button>
               <div className="text-center">
                 <p className="text-xs text-[#737373]">{t.step}</p>
@@ -387,7 +388,7 @@ function RouteComponent() {
                   className="flex items-center gap-2 pb-1 text-[2.1rem] font-medium leading-none text-[#202124]"
                 >
                   <span>{expense?.currency ?? 'COP'}</span>
-                  <ChevronDown className="size-4" />
+                  <HugeiconsIcon icon={ChevronDownIcon} className="size-4" />
                 </button>
                 <p className="text-[2.1rem] font-medium leading-none tracking-tight text-[#202124]">
                   ${formatSettlementAmount(amountInput)}
@@ -412,7 +413,10 @@ function RouteComponent() {
                   selectedId={fromParticipantId}
                   onValueChange={setFromParticipantId}
                 />
-                <ArrowRight className="mx-3 size-4 text-[#737373]" />
+                <HugeiconsIcon
+                  icon={ArrowRightIcon}
+                  className="mx-3 size-4 text-[#737373]"
+                />
                 <SettlementParticipantSelect
                   ariaLabel={t.settleToLabel}
                   expense={expense}
@@ -441,7 +445,7 @@ function RouteComponent() {
                   className="flex min-h-0 items-center justify-center rounded-2xl border border-[#ededed] bg-white text-[#202124]"
                   aria-label={t.common.delete}
                 >
-                  <Delete className="size-7" />
+                  <HugeiconsIcon icon={DeleteIcon} className="size-7" />
                 </button>
               </div>
             </div>
@@ -635,9 +639,9 @@ function MemberLine({
                 ? showLessLabel
                 : showMoreLabel?.(remainingSettlements)}
               {showAllSettlements ? (
-                <ChevronUp className="size-3.5" />
+                <HugeiconsIcon icon={ChevronUpIcon} className="size-3.5" />
               ) : (
-                <ChevronDown className="size-3.5" />
+                <HugeiconsIcon icon={ChevronDownIcon} className="size-3.5" />
               )}
             </button>
           ) : null}

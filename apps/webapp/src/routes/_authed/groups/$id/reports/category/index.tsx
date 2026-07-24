@@ -1,8 +1,12 @@
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
-
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import { Calendar } from '#/components/ui/calendar';
@@ -636,13 +640,19 @@ function RouteComponent() {
             <span className="max-w-[144px] truncate">
               {participantFilterLabel}
             </span>
-            <ChevronDown className="size-3.5 shrink-0 text-[#71717a]" />
+            <HugeiconsIcon
+              icon={ChevronDownIcon}
+              className="size-3.5 shrink-0 text-[#71717a]"
+            />
           </button>
 
           <DropdownMenu open={isDateMenuOpen} onOpenChange={setIsDateMenuOpen}>
             <DropdownMenuTrigger className="inline-flex min-w-0 flex-1 items-center gap-1 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-sm font-medium text-[#4c4c4c] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none">
               <span className="truncate">{dateFilterLabel}</span>
-              <ChevronDown className="size-3.5 shrink-0 text-[#71717a]" />
+              <HugeiconsIcon
+                icon={ChevronDownIcon}
+                className="size-3.5 shrink-0 text-[#71717a]"
+              />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuGroup>
@@ -669,7 +679,10 @@ function RouteComponent() {
           <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-sm font-medium text-[#4c4c4c] shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <span className="text-sm leading-none">🇨🇴</span>
             <span>{currency}</span>
-            <ChevronDown className="size-3.5 shrink-0 text-[#71717a]" />
+            <HugeiconsIcon
+              icon={ChevronDownIcon}
+              className="size-3.5 shrink-0 text-[#71717a]"
+            />
           </span>
         </section>
 
@@ -828,7 +841,10 @@ function RouteComponent() {
                               </p>
                               <div className="mt-1 inline-flex items-center gap-1 text-xs text-[#94a3b8]">
                                 <span>{formatLongDate(expense.date)}</span>
-                                <ChevronRight className="size-3.5" />
+                                <HugeiconsIcon
+                                  icon={ChevronRightIcon}
+                                  className="size-3.5"
+                                />
                               </div>
                             </div>
                           </div>
@@ -980,7 +996,7 @@ function CheckboxMark({ checked }: { checked: boolean }) {
           : 'border-[#d4d4d8] bg-white text-transparent',
       ].join(' ')}
     >
-      <Check className="size-3.5" strokeWidth={3} />
+      <HugeiconsIcon icon={CheckIcon} className="size-3.5" strokeWidth={3} />
     </span>
   );
 }

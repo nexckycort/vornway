@@ -1,15 +1,15 @@
+import {
+  Alert02Icon,
+  ArrowLeftIcon,
+  BarChartIcon,
+  FolderKanbanIcon,
+  UserGroupIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import {
-  ArrowLeft,
-  BarChart3,
-  FolderKanban,
-  MessageSquareWarning,
-  Users,
-} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { adminClient } from '#/api/admin';
-
 import { Button } from '#/components/ui/button';
 import { useAuth } from '#/contexts/auth/use-auth';
 import { getProfileMessages } from '#/routes/_authed/profile/-messages';
@@ -70,7 +70,7 @@ function RouteComponent() {
         <div className="mx-auto flex min-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col justify-center">
           <div className="rounded-[28px] border border-[#e2e8f0] bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
             <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <BarChart3 className="size-5" />
+              <HugeiconsIcon icon={BarChartIcon} className="size-5" />
             </div>
             <h1 className="mt-4 text-2xl font-semibold leading-8 text-[#0f172a]">
               {t.statsPage.title}
@@ -84,7 +84,7 @@ function RouteComponent() {
               className="mt-5 h-12 w-full rounded-full"
               onClick={() => navigate({ to: '/profile' })}
             >
-              <ArrowLeft className="mr-2 size-4" />
+              <HugeiconsIcon icon={ArrowLeftIcon} className="mr-2 size-4" />
               {t.statsPage.backToProfile}
             </Button>
           </div>
@@ -114,7 +114,7 @@ function RouteComponent() {
             onClick={() => navigate({ to: '/profile' })}
             aria-label={t.statsPage.backAria}
           >
-            <ArrowLeft className="size-4" />
+            <HugeiconsIcon icon={ArrowLeftIcon} className="size-4" />
           </Button>
         </header>
 
@@ -137,12 +137,14 @@ function RouteComponent() {
           ) : statsQuery.data ? (
             <div className="mt-4 grid grid-cols-2 gap-3">
               <StatCard
-                icon={<Users className="size-5" />}
+                icon={<HugeiconsIcon icon={UserGroupIcon} className="size-5" />}
                 label={t.statsPage.users}
                 value={formatNumber(statsQuery.data.totalUsers)}
               />
               <StatCard
-                icon={<FolderKanban className="size-5" />}
+                icon={
+                  <HugeiconsIcon icon={FolderKanbanIcon} className="size-5" />
+                }
                 label={t.statsPage.groups}
                 value={formatNumber(statsQuery.data.totalGroups)}
               />
@@ -161,7 +163,7 @@ function RouteComponent() {
               </p>
             </div>
             <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <MessageSquareWarning className="size-5" />
+              <HugeiconsIcon icon={Alert02Icon} className="size-5" />
             </div>
           </div>
 

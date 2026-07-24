@@ -1,23 +1,24 @@
+import {
+  AlertCircleIcon,
+  AtSignIcon,
+  BarChartIcon,
+  BellIcon,
+  BulbIcon,
+  CalendarClockIcon,
+  CameraIcon,
+  ChevronRightIcon,
+  DownloadIcon,
+  LanguageCircleIcon,
+  LaptopIcon,
+  Logout01Icon,
+  QrCodeIcon,
+  ShieldIcon,
+  SmartPhone01Icon,
+  UserIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import {
-  AlertCircle,
-  AtSign,
-  BarChart3,
-  Bell,
-  CalendarClock,
-  Camera,
-  ChevronRight,
-  Download,
-  Languages,
-  LaptopMinimal,
-  Lightbulb,
-  LogOut,
-  QrCode,
-  Shield,
-  Smartphone,
-  UserRound,
-} from 'lucide-react';
 import {
   type ChangeEvent,
   type ReactNode,
@@ -47,10 +48,10 @@ import { useAuth } from '#/contexts/auth/use-auth';
 import { usePWAInstall } from '#/hooks/use-pwa-install';
 import { listSessions, revokeSession, useSession } from '#/lib/auth-client';
 import {
+  type AppLocale,
   changeLocale,
   formatDateTime,
   getCurrentLocale,
-  languages,
 } from '#/lib/i18n';
 import { compressImageFileToDataUrl } from '#/lib/image-compression';
 import {
@@ -60,7 +61,6 @@ import {
 } from '#/lib/push-notifications';
 import { QrScannerDialog } from './-components/qr-scanner-dialog';
 import { getProfileMessages } from './-messages';
-
 export const Route = createFileRoute('/_authed/profile/')({
   component: RouteComponent,
 });
@@ -73,6 +73,10 @@ type NotificationStatus =
 
 function RouteComponent() {
   const t = getProfileMessages();
+  const languageLabels: Record<AppLocale, string> = {
+    es: t.languageSpanish,
+    en: t.languageEnglish,
+  };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const auth = useAuth();
@@ -308,7 +312,7 @@ function RouteComponent() {
     await revokeSessionMutation.mutateAsync(sessionToken);
   }
 
-  async function handleChangeLocale(locale: keyof typeof languages) {
+  async function handleChangeLocale(locale: AppLocale) {
     if (locale === currentLocale) {
       setShowLanguageDrawer(false);
       return;
@@ -357,13 +361,13 @@ function RouteComponent() {
                     />
                   ) : (
                     <div className="flex size-full items-center justify-center rounded-3xl bg-[#f1f5f9] text-primary">
-                      <UserRound className="size-6" />
+                      <HugeiconsIcon icon={UserIcon} className="size-6" />
                     </div>
                   )}
                 </div>
                 <span className="absolute inset-0 bg-black/0 transition-colors hover:bg-black/5" />
                 <span className="absolute -right-1 -bottom-1 z-10 flex size-7 items-center justify-center rounded-full border border-white bg-primary text-white shadow-lg">
-                  <Camera className="size-3.5" />
+                  <HugeiconsIcon icon={CameraIcon} className="size-3.5" />
                 </span>
               </button>
 
@@ -393,14 +397,14 @@ function RouteComponent() {
 
           <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-2 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
             <ProfileActionRow
-              icon={<AtSign className="size-5" />}
+              icon={<HugeiconsIcon icon={AtSignIcon} className="size-5" />}
               title={t.username}
               subtitle={username ? `@${username}` : t.configureUsername}
               onClick={() => setShowUsernameDialog(true)}
               trailing={t.edit}
             />
             <ProfileActionRow
-              icon={<Bell className="size-5" />}
+              icon={<HugeiconsIcon icon={BellIcon} className="size-5" />}
               title={t.notifications}
               subtitle={notificationLabel}
               onClick={() => {
@@ -419,7 +423,7 @@ function RouteComponent() {
             />
             {!isInstalled ? (
               <ProfileActionRow
-                icon={<Download className="size-5" />}
+                icon={<HugeiconsIcon icon={DownloadIcon} className="size-5" />}
                 title={t.installApp}
                 subtitle={t.installAppSubtitle}
                 onClick={() => {
@@ -430,20 +434,22 @@ function RouteComponent() {
             ) : null}
             {isStatsUser && (
               <ProfileActionRow
-                icon={<Languages className="size-5" />}
+                icon={
+                  <HugeiconsIcon icon={LanguageCircleIcon} className="size-5" />
+                }
                 title={t.language}
-                subtitle={languages[currentLocale]}
+                subtitle={languageLabels[currentLocale]}
                 onClick={() => setShowLanguageDrawer(true)}
               />
             )}
             <ProfileActionRow
-              icon={<Shield className="size-5" />}
+              icon={<HugeiconsIcon icon={ShieldIcon} className="size-5" />}
               title={t.security}
               subtitle={t.securitySubtitle}
               onClick={() => setShowSessionsDialog(true)}
             />
             <ProfileActionRow
-              icon={<AlertCircle className="size-5" />}
+              icon={<HugeiconsIcon icon={AlertCircleIcon} className="size-5" />}
               title={t.reportBug}
               subtitle={t.reportBugSubtitle}
               onClick={() =>
@@ -454,7 +460,7 @@ function RouteComponent() {
               }
             />
             <ProfileActionRow
-              icon={<Lightbulb className="size-5" />}
+              icon={<HugeiconsIcon icon={BulbIcon} className="size-5" />}
               title={t.requestFeature}
               subtitle={t.requestFeatureSubtitle}
               onClick={() =>
@@ -466,7 +472,7 @@ function RouteComponent() {
             />
             {isStatsUser && (
               <ProfileActionRow
-                icon={<BarChart3 className="size-5" />}
+                icon={<HugeiconsIcon icon={BarChartIcon} className="size-5" />}
                 title={t.stats}
                 subtitle={t.statsSubtitle}
                 onClick={() =>
@@ -478,7 +484,7 @@ function RouteComponent() {
               />
             )}
             <ProfileActionRow
-              icon={<QrCode className="size-5" />}
+              icon={<HugeiconsIcon icon={QrCodeIcon} className="size-5" />}
               title={t.qrScanner}
               subtitle={t.qrScannerSubtitle}
               onClick={() => setShowQrScannerDialog(true)}
@@ -499,7 +505,7 @@ function RouteComponent() {
               disabled={isLoggingOut}
               className="mt-4 h-12 w-full rounded-full bg-destructive text-base font-medium text-white shadow-[0_10px_30px_rgba(239,68,68,0.22)] hover:bg-destructive/90"
             >
-              <LogOut className="mr-2 size-4" />
+              <HugeiconsIcon icon={Logout01Icon} className="mr-2 size-4" />
               {isLoggingOut ? t.loggingOut : t.logout}
             </Button>
           </section>
@@ -676,9 +682,15 @@ function RouteComponent() {
                       <div className="flex items-start gap-3">
                         <div className="flex size-10 items-center justify-center rounded-2xl bg-white text-[#0f172a] shadow-[0_6px_18px_rgba(15,23,42,0.06)]">
                           {isMobileSession(session.userAgent) ? (
-                            <Smartphone className="size-4" />
+                            <HugeiconsIcon
+                              icon={SmartPhone01Icon}
+                              className="size-4"
+                            />
                           ) : (
-                            <LaptopMinimal className="size-4" />
+                            <HugeiconsIcon
+                              icon={LaptopIcon}
+                              className="size-4"
+                            />
                           )}
                         </div>
 
@@ -694,7 +706,10 @@ function RouteComponent() {
                             ) : null}
                           </div>
                           <p className="mt-1 flex items-center gap-1 text-xs text-[#64748b]">
-                            <CalendarClock className="size-3.5 shrink-0" />
+                            <HugeiconsIcon
+                              icon={CalendarClockIcon}
+                              className="size-3.5 shrink-0"
+                            />
                             {t.startedAt(
                               formatDateTime(session.createdAt, t.unknownDate),
                             )}
@@ -747,16 +762,14 @@ function RouteComponent() {
           </DrawerHeader>
 
           <div className="space-y-2 px-4 pb-4">
-            {Object.entries(languages).map(([locale, label]) => {
+            {Object.entries(languageLabels).map(([locale, label]) => {
               const active = locale === currentLocale;
 
               return (
                 <button
                   key={locale}
                   type="button"
-                  onClick={() =>
-                    void handleChangeLocale(locale as keyof typeof languages)
-                  }
+                  onClick={() => void handleChangeLocale(locale as AppLocale)}
                   className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors ${
                     active
                       ? 'border-primary bg-primary/5 text-primary'
@@ -771,7 +784,7 @@ function RouteComponent() {
                       </p>
                     ) : null}
                   </div>
-                  <ChevronRight className="size-4" />
+                  <HugeiconsIcon icon={ChevronRightIcon} className="size-4" />
                 </button>
               );
             })}
@@ -815,7 +828,10 @@ function ProfileActionRow({
         {trailing ? (
           <span className="text-xs font-medium text-[#64748b]">{trailing}</span>
         ) : null}
-        <ChevronRight className="size-4 text-[#94a3b8]" />
+        <HugeiconsIcon
+          icon={ChevronRightIcon}
+          className="size-4 text-[#94a3b8]"
+        />
       </div>
     </button>
   );

@@ -1,13 +1,12 @@
 import {
-  CalendarDays,
-  Gift,
-  Landmark,
-  Plane,
-  Sparkles,
-  WalletCards,
-} from 'lucide-react';
+  CalendarDaysIcon,
+  GiftIcon,
+  LandmarkIcon,
+  PlaneIcon,
+  SparklesIcon,
+  WalletCardsIcon,
+} from '@hugeicons/core-free-icons';
 import { m } from '#/paraglide/messages.js';
-
 export type GoalType = 'trip' | 'gift' | 'saving' | 'event' | 'custom';
 export type ContributionMode = 'manual' | 'monthly' | 'flexible' | 'suggested';
 
@@ -18,7 +17,7 @@ export const goalTypes: Array<{
   emoji: string;
   accent: string;
   soft: string;
-  icon: typeof Plane;
+  icon: typeof PlaneIcon;
 }> = [
   {
     id: 'trip',
@@ -27,7 +26,7 @@ export const goalTypes: Array<{
     emoji: '✈️',
     accent: '#0ea5e9',
     soft: '#e0f2fe',
-    icon: Plane,
+    icon: PlaneIcon,
   },
   {
     id: 'gift',
@@ -36,7 +35,7 @@ export const goalTypes: Array<{
     emoji: '🎁',
     accent: '#f97316',
     soft: '#ffedd5',
-    icon: Gift,
+    icon: GiftIcon,
   },
   {
     id: 'saving',
@@ -45,7 +44,7 @@ export const goalTypes: Array<{
     emoji: '💰',
     accent: '#10b981',
     soft: '#d1fae5',
-    icon: Landmark,
+    icon: LandmarkIcon,
   },
   {
     id: 'event',
@@ -54,7 +53,7 @@ export const goalTypes: Array<{
     emoji: '🎉',
     accent: '#e11d48',
     soft: '#ffe4e6',
-    icon: CalendarDays,
+    icon: CalendarDaysIcon,
   },
   {
     id: 'custom',
@@ -63,7 +62,7 @@ export const goalTypes: Array<{
     emoji: '✨',
     accent: '#7c3aed',
     soft: '#ede9fe',
-    icon: Sparkles,
+    icon: SparklesIcon,
   },
 ];
 
@@ -126,4 +125,4 @@ export function getProgressTone(progress: number) {
   return m['goals.progressNew']();
 }
 
-export const defaultGoalIcon = WalletCards;
+export const defaultGoalIcon = WalletCardsIcon;

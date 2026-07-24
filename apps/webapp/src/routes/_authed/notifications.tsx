@@ -1,5 +1,10 @@
+import {
+  Add01Icon,
+  BellRingIcon,
+  Refresh01Icon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { BellRing, Plus, RefreshCcw } from 'lucide-react';
 import { useEffect } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { m } from '#/paraglide/messages.js';
@@ -112,14 +117,14 @@ function NotificationIcon({
   if (type === 'expense.created') {
     return (
       <span className={baseClass}>
-        <Plus className="size-5" />
+        <HugeiconsIcon icon={Add01Icon} className="size-5" />
       </span>
     );
   }
 
   return (
     <span className={baseClass}>
-      <RefreshCcw className="size-5" />
+      <HugeiconsIcon icon={Refresh01Icon} className="size-5" />
     </span>
   );
 }
@@ -163,7 +168,7 @@ function RouteComponent() {
           <div className="flex min-h-[calc(100dvh-180px)] items-center justify-center px-4 text-center">
             <div className="-mt-10 flex flex-col items-center">
               <span className="mb-3 inline-flex size-14 items-center justify-center rounded-full bg-[#fff1f5] text-[#ff4d6a]">
-                <BellRing className="size-6" />
+                <HugeiconsIcon icon={BellRingIcon} className="size-6" />
               </span>
               <p className="text-base font-semibold leading-6 text-[#202124]">
                 {m['notifications.emptyTitle']()}

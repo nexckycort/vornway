@@ -1,8 +1,11 @@
+import { Button, buttonVariants } from '#/components/ui/button.tsx';
+import { cn } from '#/lib/utils.ts';
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-} from 'lucide-react';
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import * as React from 'react';
 import {
   type DayButton,
@@ -10,8 +13,6 @@ import {
   getDefaultClassNames,
   type Locale,
 } from 'react-day-picker';
-import { Button, buttonVariants } from '#/components/ui/button.tsx';
-import { cn } from '#/lib/utils.ts';
 
 function Calendar({
   className,
@@ -149,13 +150,18 @@ function Calendar({
         Chevron: ({ className, orientation, ...props }) => {
           if (orientation === 'left') {
             return (
-              <ChevronLeftIcon className={cn('size-4', className)} {...props} />
+              <HugeiconsIcon
+                icon={ChevronLeftIcon}
+                className={cn('size-4', className)}
+                {...props}
+              />
             );
           }
 
           if (orientation === 'right') {
             return (
-              <ChevronRightIcon
+              <HugeiconsIcon
+                icon={ChevronRightIcon}
                 className={cn('size-4', className)}
                 {...props}
               />
@@ -163,7 +169,11 @@ function Calendar({
           }
 
           return (
-            <ChevronDownIcon className={cn('size-4', className)} {...props} />
+            <HugeiconsIcon
+              icon={ChevronDownIcon}
+              className={cn('size-4', className)}
+              {...props}
+            />
           );
         },
         DayButton: ({ ...props }) => (

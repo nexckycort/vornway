@@ -1,4 +1,5 @@
-import { Trash2 } from 'lucide-react';
+import { Delete02Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { m } from '#/paraglide/messages.js';
 import { getProfileMessages } from '#/routes/_authed/profile/-messages';
 import type { FeedbackItem, FeedbackStatus } from '../-hooks/use-feedback-page';
@@ -103,7 +104,7 @@ function FeedbackCard({
             className="flex size-8 items-center justify-center rounded-full border border-[#e2e8f0] bg-white text-[#64748b]"
             aria-label={t.feedback.removeReportAria}
           >
-            <Trash2 className="size-4" />
+            <HugeiconsIcon icon={Delete02Icon} className="size-4" />
           </button>
         </div>
       </div>

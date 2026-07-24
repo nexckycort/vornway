@@ -1,7 +1,7 @@
+import { Add01Icon, SearchIcon, TargetIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Plus, Search, Target } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-
 import { getGoalsMessages } from '#/routes/_authed/goals/-messages';
 import { GoalCard } from './-components/goal-card';
 import { GoalsSkeleton } from './-components/goals-skeleton';
@@ -64,12 +64,15 @@ function RouteComponent() {
             onClick={() => void navigate({ to: '/goals/new' })}
             className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-medium text-white shadow-[0_10px_24px_rgba(59,130,246,0.22)]"
           >
-            <Plus className="size-4" />
+            <HugeiconsIcon icon={Add01Icon} className="size-4" />
             {t.createNew}
           </button>
 
           <label className="mt-4 flex h-12 items-center gap-3 rounded-full border border-[#e2e8f0] bg-white px-4 shadow-[0_6px_16px_rgba(15,23,42,0.04)]">
-            <Search className="size-4 shrink-0 text-[#94a3b8]" />
+            <HugeiconsIcon
+              icon={SearchIcon}
+              className="size-4 shrink-0 text-[#94a3b8]"
+            />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -88,7 +91,10 @@ function RouteComponent() {
             ) : goals.length === 0 ? (
               <div className="rounded-[28px] border border-[#e2e8f0] bg-white px-5 py-8 text-center shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
                 <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-[#eef2ff]">
-                  <Target className="size-7 text-primary" />
+                  <HugeiconsIcon
+                    icon={TargetIcon}
+                    className="size-7 text-primary"
+                  />
                 </div>
                 <p className="text-base font-semibold text-[#0f172a]">
                   {t.emptyTitle}

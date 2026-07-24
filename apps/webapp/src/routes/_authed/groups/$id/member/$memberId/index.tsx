@@ -1,7 +1,7 @@
+import { ChevronRightIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
-
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { m } from '#/paraglide/messages.js';
@@ -18,7 +18,6 @@ import {
   getExpenseEmoji,
   getInitials,
 } from '../../-components/group-detail.utils';
-
 export const Route = createFileRoute('/_authed/groups/$id/member/$memberId/')({
   validateSearch: (search: Record<string, unknown>) => ({
     categoryId:
@@ -474,7 +473,10 @@ function MemberExpenseRow({
         <p className="text-sm font-semibold text-[#132238]">
           {formatMoney(expense.currency, expense.amount)}
         </p>
-        <ChevronRight className="size-4 shrink-0 text-[#94a3b8]" />
+        <HugeiconsIcon
+          icon={ChevronRightIcon}
+          className="size-4 shrink-0 text-[#94a3b8]"
+        />
       </div>
     </button>
   );

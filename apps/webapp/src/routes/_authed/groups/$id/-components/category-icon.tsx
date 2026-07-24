@@ -1,18 +1,17 @@
 import {
-  Bed,
-  BriefcaseBusiness,
-  Car,
-  Gift,
-  Landmark,
-  type LucideIcon,
-  PartyPopper,
-  Plane,
-  ShoppingBag,
-  TreePine,
-  Utensils,
-} from 'lucide-react';
+  BedIcon,
+  BriefcaseBusinessIcon,
+  CarIcon,
+  GiftIcon,
+  KitchenUtensilsIcon,
+  LandmarkIcon,
+  PartyIcon,
+  PineTreeIcon,
+  PlaneIcon,
+  ShoppingBagIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import type { ReactNode } from 'react';
-
 export type CategoryVisual = {
   icon?: string | null;
   color?: string | null;
@@ -20,19 +19,19 @@ export type CategoryVisual = {
 
 export const categoryIconOptions: Array<{
   id: string;
-  icon: LucideIcon;
+  icon: IconSvgElement;
   label: string;
 }> = [
-  { id: 'food', icon: Utensils, label: 'Comida' },
-  { id: 'transport', icon: Car, label: 'Transporte' },
-  { id: 'hotel', icon: Bed, label: 'Alojamiento' },
-  { id: 'party', icon: PartyPopper, label: 'Entretenimiento' },
-  { id: 'activities', icon: TreePine, label: 'Actividades' },
-  { id: 'shopping', icon: ShoppingBag, label: 'Compras' },
-  { id: 'travel', icon: Plane, label: 'Viaje' },
-  { id: 'work', icon: BriefcaseBusiness, label: 'Trabajo' },
-  { id: 'bank', icon: Landmark, label: 'Banco' },
-  { id: 'gift', icon: Gift, label: 'Regalos' },
+  { id: 'food', icon: KitchenUtensilsIcon, label: 'Comida' },
+  { id: 'transport', icon: CarIcon, label: 'Transporte' },
+  { id: 'hotel', icon: BedIcon, label: 'Alojamiento' },
+  { id: 'party', icon: PartyIcon, label: 'Entretenimiento' },
+  { id: 'activities', icon: PineTreeIcon, label: 'Actividades' },
+  { id: 'shopping', icon: ShoppingBagIcon, label: 'Compras' },
+  { id: 'travel', icon: PlaneIcon, label: 'Viaje' },
+  { id: 'work', icon: BriefcaseBusinessIcon, label: 'Trabajo' },
+  { id: 'bank', icon: LandmarkIcon, label: 'Banco' },
+  { id: 'gift', icon: GiftIcon, label: 'Regalos' },
 ];
 
 export const categoryIconById = new Map(
@@ -53,7 +52,7 @@ export function CategoryIcon({
 
     if (iconOption) {
       const Icon = iconOption.icon;
-      return <Icon className={className} />;
+      return <HugeiconsIcon icon={Icon} className={className} />;
     }
 
     return (

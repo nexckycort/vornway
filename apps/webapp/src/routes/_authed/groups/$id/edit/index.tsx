@@ -1,10 +1,11 @@
+import { Cancel01Icon, ImageAdd01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import {
   createFileRoute,
   useLocation,
   useNavigate,
   useRouter,
 } from '@tanstack/react-router';
-import { ImagePlus, X } from 'lucide-react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
@@ -15,9 +16,7 @@ import {
 import { useUpdateGroupMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
-
 import { compressGroupImageFile } from '#/routes/_authed/groups/new/-lib/group-create-draft';
-
 export const Route = createFileRoute('/_authed/groups/$id/edit/')({
   component: RouteComponent,
 });
@@ -218,7 +217,10 @@ function RouteComponent() {
                   className="size-full object-cover"
                 />
               ) : (
-                <ImagePlus className="size-6 text-[#94a3b8]" />
+                <HugeiconsIcon
+                  icon={ImageAdd01Icon}
+                  className="size-6 text-[#94a3b8]"
+                />
               )}
             </div>
 
@@ -268,7 +270,7 @@ function RouteComponent() {
                   setImageError(null);
                 }}
               >
-                <X className="size-4" />
+                <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
               </Button>
             ) : null}
           </div>

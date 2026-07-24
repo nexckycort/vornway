@@ -1,26 +1,24 @@
 import {
-  Bell,
-  Compass,
-  Home,
-  type LucideIcon,
-  MoveUpRight,
-  PiggyBank,
-  Plus,
-  Repeat2,
-  Shirt,
-  UserRound,
-} from 'lucide-react';
-
+  Add01Icon,
+  ArrowMoveUpRightIcon,
+  BellIcon,
+  CompassIcon,
+  HomeIcon,
+  PiggyBankIcon,
+  RepeatIcon,
+  ShirtIcon,
+  UserIcon,
+} from '@hugeicons/core-free-icons';
+import type { IconSvgElement } from '@hugeicons/react';
 import type { HomeIconName } from '#/routes/_authed/(home)/-hooks/use-home-query';
-
-export const homeIcons: Record<HomeIconName, LucideIcon> = {
-  bell: Bell,
-  compass: Compass,
-  home: Home,
-  'piggy-bank': PiggyBank,
-  plus: Plus,
-  'move-up-right': MoveUpRight,
-  repeat: Repeat2,
-  shirt: Shirt,
-  user: UserRound,
+export const homeIcons: Record<HomeIconName, IconSvgElement> = {
+  bell: BellIcon,
+  compass: CompassIcon,
+  home: HomeIcon,
+  'piggy-bank': PiggyBankIcon,
+  plus: Add01Icon,
+  'move-up-right': ArrowMoveUpRightIcon,
+  repeat: RepeatIcon,
+  shirt: ShirtIcon,
+  user: UserIcon,
 };

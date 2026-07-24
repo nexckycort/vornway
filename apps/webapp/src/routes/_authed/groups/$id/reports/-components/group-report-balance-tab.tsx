@@ -1,5 +1,8 @@
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
-
+import {
+  ArrowDownLeftIcon,
+  ArrowUpRightIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { Button } from '#/components/ui/button';
 import type { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import { formatMoney, getInitials } from '../../-components/group-detail.utils';
@@ -93,9 +96,15 @@ export function GroupReportBalanceTab({
                       className="flex items-center gap-2 rounded-2xl bg-[#f8fafc] px-4 py-3"
                     >
                       {amount > 0 ? (
-                        <ArrowUpRight className="size-4 shrink-0 text-rose-600" />
+                        <HugeiconsIcon
+                          icon={ArrowUpRightIcon}
+                          className="size-4 shrink-0 text-rose-600"
+                        />
                       ) : (
-                        <ArrowDownLeft className="size-4 shrink-0 text-emerald-600" />
+                        <HugeiconsIcon
+                          icon={ArrowDownLeftIcon}
+                          className="size-4 shrink-0 text-emerald-600"
+                        />
                       )}
                       <p className="min-w-0 flex-1 text-sm text-[#334155]">
                         {amount > 0

@@ -1,3 +1,4 @@
+import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 
 import { Button } from '#/components/ui/button';
@@ -82,7 +83,7 @@ function RouteComponent() {
                   aria-label={t.notificationsAria}
                   onClick={() => navigate({ to: '/notifications' })}
                 >
-                  <BellIcon />
+                  <HugeiconsIcon icon={BellIcon} />
                   {hasUnreadNotifications ? (
                     <span className="absolute right-0 top-0 size-2 rounded-full bg-primary" />
                   ) : null}
@@ -135,7 +136,7 @@ function RouteComponent() {
                       }}
                       className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-base font-medium text-[#202124] shadow-[0_6px_16px_rgba(0,0,0,0.05)] transition-transform active:translate-y-px"
                     >
-                      <PlusIcon className="mr-2 size-5" />
+                      <HugeiconsIcon icon={PlusIcon} className="mr-2 size-5" />
                       Crear espacio
                     </Link>
                   </div>

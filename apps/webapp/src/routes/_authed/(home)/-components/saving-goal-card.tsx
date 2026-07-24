@@ -1,3 +1,4 @@
+import { HugeiconsIcon } from '@hugeicons/react';
 import { Link } from '@tanstack/react-router';
 import { cn } from '#/lib/utils';
 import type { SavingGoal } from '#/routes/_authed/(home)/-hooks/use-home-query';
@@ -25,7 +26,7 @@ export function SavingGoalCard({ goal }: SavingGoalCardProps) {
               : 'bg-[#fff0f2] text-primary',
           )}
         >
-          <Icon className="size-5" aria-hidden="true" />
+          <HugeiconsIcon icon={Icon} className="size-5" aria-hidden="true" />
         </span>
         <div className="min-w-0">
           <h3 className="truncate text-base font-semibold leading-6">

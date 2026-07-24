@@ -1,16 +1,16 @@
-import { Link } from '@tanstack/react-router';
 import {
-  ArrowLeft,
-  ArrowUpRight,
-  BarChart3,
-  Info,
-  MoreHorizontal,
-  Plus,
-  QrCode,
-} from 'lucide-react';
+  Add01Icon,
+  ArrowLeftIcon,
+  ArrowUpRightIcon,
+  BarChartIcon,
+  InformationCircleIcon,
+  MoreHorizontalIcon,
+  QrCodeIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Link } from '@tanstack/react-router';
 import type { keepGroupFlowState } from '#/lib/group-flow-navigation';
 import { getGroupDetailMessages } from '../-messages';
-
 import { formatMoney } from './group-detail.utils';
 
 const currencyMeta: Record<string, { flag: string; label: string }> = {
@@ -85,7 +85,7 @@ export function GroupDetailHeader({
           className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
           aria-label={t.common.back}
         >
-          <ArrowLeft className="size-4" />
+          <HugeiconsIcon icon={ArrowLeftIcon} className="size-4" />
         </button>
 
         <div className="min-w-0 flex-1">
@@ -113,7 +113,7 @@ export function GroupDetailHeader({
           className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
           aria-label={t.header.qrAria}
         >
-          <QrCode className="size-6" />
+          <HugeiconsIcon icon={QrCodeIcon} className="size-6" />
         </button>
       </div>
 
@@ -194,7 +194,10 @@ export function GroupDetailHeader({
         {hasMultipleCurrencies ? (
           <p className="mt-1 mb-2 flex items-center gap-2 px-1 text-[10px] font-light text-white/85">
             <span>{t.header.multiCurrencyHint}</span>
-            <Info className="size-4 shrink-0 text-white" />
+            <HugeiconsIcon
+              icon={InformationCircleIcon}
+              className="size-4 shrink-0 text-white"
+            />
           </p>
         ) : null}
       </section>
@@ -207,7 +210,7 @@ export function GroupDetailHeader({
           className="flex min-w-0 flex-col items-center gap-1"
         >
           <span className="flex h-9 w-full items-center justify-center rounded-xl bg-[#ff4d6a] text-white shadow-[0_8px_18px_rgba(255,77,106,0.35)]">
-            <Plus className="size-5" />
+            <HugeiconsIcon icon={Add01Icon} className="size-5" />
           </span>
           <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
             {t.actions.createExpense}
@@ -222,7 +225,7 @@ export function GroupDetailHeader({
           className="flex min-w-0 flex-col items-center gap-1"
         >
           <span className="flex h-9 w-full items-center justify-center rounded-xl bg-white/10 text-white">
-            <ArrowUpRight className="size-5" />
+            <HugeiconsIcon icon={ArrowUpRightIcon} className="size-5" />
           </span>
           <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
             {t.actions.settle}
@@ -235,7 +238,7 @@ export function GroupDetailHeader({
           className="flex min-w-0 flex-col items-center gap-1"
         >
           <span className="flex h-9 w-full items-center justify-center rounded-xl bg-white/10 text-white">
-            <BarChart3 className="size-5" />
+            <HugeiconsIcon icon={BarChartIcon} className="size-5" />
           </span>
           <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
             {t.actions.reports}
@@ -248,7 +251,7 @@ export function GroupDetailHeader({
           className="flex min-w-0 flex-col items-center gap-1"
         >
           <span className="flex h-9 w-full items-center justify-center rounded-xl bg-white/10 text-white">
-            <MoreHorizontal className="size-5" />
+            <HugeiconsIcon icon={MoreHorizontalIcon} className="size-5" />
           </span>
           <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
             {t.actions.settings}

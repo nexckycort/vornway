@@ -1,4 +1,4 @@
-minimumReleaseAge: 1440 # minutes
+minimumReleaseAge: 4320 # minutes
 
 sharedWorkspaceLockfile: false
 

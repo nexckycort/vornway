@@ -1,4 +1,9 @@
-import { ImagePlus, Loader2, X } from 'lucide-react';
+import {
+  Cancel01Icon,
+  ImageAdd01Icon,
+  Loading01Icon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import type { ChangeEvent, RefObject } from 'react';
 import { Button } from '#/components/ui/button';
 import { getProfileMessages } from '#/routes/_authed/profile/-messages';
@@ -121,7 +126,7 @@ export function FeedbackForm({
           disabled={draftImages.length >= 5}
           className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] text-sm font-medium text-[#475569] disabled:opacity-50"
         >
-          <ImagePlus className="size-4" />
+          <HugeiconsIcon icon={ImageAdd01Icon} className="size-4" />
           {t.feedback.addImages}
         </button>
 
@@ -143,7 +148,7 @@ export function FeedbackForm({
                   className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white"
                   aria-label={t.feedback.removeImageAria}
                 >
-                  <X className="size-4" />
+                  <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
                 </button>
               </div>
             ))}
@@ -159,7 +164,10 @@ export function FeedbackForm({
       >
         {isSubmitting ? (
           <>
-            <Loader2 className="mr-2 size-4 animate-spin" />
+            <HugeiconsIcon
+              icon={Loading01Icon}
+              className="mr-2 size-4 animate-spin"
+            />
             Enviando...
           </>
         ) : type === 'BUG' ? (

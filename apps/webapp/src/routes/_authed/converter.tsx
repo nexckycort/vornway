@@ -1,11 +1,12 @@
+import {
+  ArrowLeftRightIcon,
+  ArrowUpDownIcon,
+  ChevronLeftIcon,
+  Refresh01Icon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import {
-  ArrowLeftRight,
-  ChevronLeft,
-  ChevronsUpDown,
-  RefreshCw,
-} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { converterClient } from '#/api/converter';
 import type { InferResponseType } from '#/api/types';
@@ -138,14 +139,14 @@ function RouteComponent() {
             aria-label={t.common.back}
             className="inline-flex items-center gap-2 text-sm font-medium text-[#1f2937]"
           >
-            <ChevronLeft className="size-5" />
+            <HugeiconsIcon icon={ChevronLeftIcon} className="size-5" />
             {t.common.back}
           </button>
 
           <div className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-sm">
             <div className="flex items-start gap-3">
               <div className="flex size-11 items-center justify-center rounded-2xl bg-[#fff1f5] text-primary">
-                <ArrowLeftRight className="size-5" />
+                <HugeiconsIcon icon={ArrowLeftRightIcon} className="size-5" />
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]">
@@ -173,7 +174,7 @@ function RouteComponent() {
               </p>
             </div>
             <span className="inline-flex items-center gap-1 rounded-full bg-[#f8fafc] px-3 py-1 text-xs font-medium text-[#475569]">
-              <RefreshCw className="size-3.5" />
+              <HugeiconsIcon icon={Refresh01Icon} className="size-3.5" />
               {t.approximate}
             </span>
           </div>
@@ -217,7 +218,10 @@ function RouteComponent() {
                     </option>
                   ))}
                 </select>
-                <ChevronsUpDown className="pointer-events-none absolute right-0 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
+                <HugeiconsIcon
+                  icon={ArrowUpDownIcon}
+                  className="pointer-events-none absolute right-0 top-1/2 size-4 -translate-y-1/2 text-[#64748b]"
+                />
               </div>
               <p className="mt-1 truncate text-xs text-[#64748b]">
                 {CURRENCY_META[fromCurrency]?.name ?? t.fromFallback}
@@ -232,7 +236,7 @@ function RouteComponent() {
               }}
               className="mb-1 inline-flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm"
             >
-              <ArrowLeftRight className="size-4" />
+              <HugeiconsIcon icon={ArrowLeftRightIcon} className="size-4" />
             </button>
 
             <div className="rounded-[22px] border border-[#e2e8f0] bg-[#f8fafc] p-3">
@@ -253,7 +257,10 @@ function RouteComponent() {
                     </option>
                   ))}
                 </select>
-                <ChevronsUpDown className="pointer-events-none absolute right-0 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
+                <HugeiconsIcon
+                  icon={ArrowUpDownIcon}
+                  className="pointer-events-none absolute right-0 top-1/2 size-4 -translate-y-1/2 text-[#64748b]"
+                />
               </div>
               <p className="mt-1 truncate text-xs text-[#64748b]">
                 {CURRENCY_META[toCurrency]?.name ?? t.toFallback}

@@ -1,7 +1,12 @@
+import {
+  Add01Icon,
+  ArrowDataTransferHorizontalIcon,
+  ChevronRightIcon,
+  Delete02Icon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ArrowRightLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import {
@@ -24,7 +29,6 @@ import {
   categoryIconOptions,
 } from '../../-components/category-icon';
 import { getGroupDetailMessages } from '../../-messages';
-
 export const Route = createFileRoute(
   '/_authed/groups/$id/settings/categories/',
 )({
@@ -250,7 +254,7 @@ function RouteComponent() {
         >
           <div className="flex items-center gap-3">
             <span className="flex size-11 items-center justify-center rounded-full bg-white text-[#e11d48] shadow-sm">
-              <Plus className="size-5" />
+              <HugeiconsIcon icon={Add01Icon} className="size-5" />
             </span>
             <div>
               <p className="text-sm font-medium text-[#132238]">
@@ -261,7 +265,10 @@ function RouteComponent() {
               </p>
             </div>
           </div>
-          <ChevronRight className="size-4 text-[#94a3b8]" />
+          <HugeiconsIcon
+            icon={ChevronRightIcon}
+            className="size-4 text-[#94a3b8]"
+          />
         </button>
 
         <div className="mt-5 space-y-3">
@@ -289,7 +296,9 @@ function RouteComponent() {
                   <CategoryIcon
                     icon={category.icon}
                     color={category.color}
-                    fallback={<Plus className="size-4" />}
+                    fallback={
+                      <HugeiconsIcon icon={Add01Icon} className="size-4" />
+                    }
                     className="size-5"
                   />
                 </span>
@@ -365,7 +374,7 @@ function RouteComponent() {
                       }`}
                       aria-label={option.label}
                     >
-                      <Icon className="size-4" />
+                      <HugeiconsIcon icon={Icon} className="size-4" />
                     </button>
                   );
                 })}
@@ -379,7 +388,7 @@ function RouteComponent() {
                   }`}
                   aria-label={t.settings.pickKeyboardIcon}
                 >
-                  <Plus className="size-4" />
+                  <HugeiconsIcon icon={Add01Icon} className="size-4" />
                 </button>
               </div>
 
@@ -445,7 +454,9 @@ function RouteComponent() {
                   <CategoryIcon
                     icon={isCustomIcon ? customIconValue || null : categoryIcon}
                     color={categoryColor}
-                    fallback={<Plus className="size-5" />}
+                    fallback={
+                      <HugeiconsIcon icon={Add01Icon} className="size-5" />
+                    }
                   />
                 </span>
                 <p className="min-w-0 truncate text-base font-semibold text-[#132238]">
@@ -466,7 +477,7 @@ function RouteComponent() {
                   (selectedCategory?.expenseCount ?? 0) > 0
                 }
               >
-                <Trash2 className="mr-2 size-4" />
+                <HugeiconsIcon icon={Delete02Icon} className="mr-2 size-4" />
                 {deleteCategoryMutation.isPending
                   ? 'Eliminando...'
                   : (selectedCategory?.expenseCount ?? 0) > 0
@@ -483,7 +494,10 @@ function RouteComponent() {
                   className="h-11 w-full rounded-full border-[#dbe4f0] text-[#132238]"
                   onClick={openMoveDrawer}
                 >
-                  <ArrowRightLeft className="mr-2 size-4" />
+                  <HugeiconsIcon
+                    icon={ArrowDataTransferHorizontalIcon}
+                    className="mr-2 size-4"
+                  />
                   {t.settings.moveExpenses}
                 </Button>
                 <p className="px-2 text-xs leading-5 text-[#64748b]">
@@ -542,7 +556,10 @@ function RouteComponent() {
                     {t.settings.withoutCategoryCopy}
                   </p>
                 </div>
-                <ChevronRight className="size-4 text-[#94a3b8]" />
+                <HugeiconsIcon
+                  icon={ChevronRightIcon}
+                  className="size-4 text-[#94a3b8]"
+                />
               </button>
 
               {movableCategories.map((category) => (
@@ -565,7 +582,9 @@ function RouteComponent() {
                       <CategoryIcon
                         icon={category.icon}
                         color={category.color}
-                        fallback={<Plus className="size-4" />}
+                        fallback={
+                          <HugeiconsIcon icon={Add01Icon} className="size-4" />
+                        }
                         className="size-5"
                       />
                     </span>
@@ -578,7 +597,10 @@ function RouteComponent() {
                       </p>
                     </div>
                   </div>
-                  <ChevronRight className="size-4 shrink-0 text-[#94a3b8]" />
+                  <HugeiconsIcon
+                    icon={ChevronRightIcon}
+                    className="size-4 shrink-0 text-[#94a3b8]"
+                  />
                 </button>
               ))}
 

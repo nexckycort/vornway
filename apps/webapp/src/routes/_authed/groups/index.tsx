@@ -1,5 +1,10 @@
+import {
+  SearchIcon,
+  UserGroupIcon,
+  WifiOffIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, Link, useLocation } from '@tanstack/react-router';
-import { Search, Users, WifiOff } from 'lucide-react';
 import {
   useEffect,
   useMemo,
@@ -201,7 +206,10 @@ function RouteComponent() {
           </Link>
 
           <label className="mt-4 flex h-12 items-center gap-3 rounded-full border border-[#e2e8f0] bg-white px-4 shadow-[0_6px_16px_rgba(15,23,42,0.04)]">
-            <Search className="size-4 shrink-0 text-[#94a3b8]" />
+            <HugeiconsIcon
+              icon={SearchIcon}
+              className="size-4 shrink-0 text-[#94a3b8]"
+            />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -252,7 +260,10 @@ function RouteComponent() {
         visiblePendingGroups.length === 0 ? (
           <div className="mt-5 rounded-[28px] border border-[#e2e8f0] bg-white px-5 py-8 text-center shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
             <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-[#eef2ff]">
-              <Users className="size-7 text-primary" />
+              <HugeiconsIcon
+                icon={UserGroupIcon}
+                className="size-7 text-primary"
+              />
             </div>
             <p className="text-base font-semibold text-[#0f172a]">
               {t.noGroupsTitle}
@@ -298,7 +309,7 @@ function RouteComponent() {
                         </p>
                       </div>
                       <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
-                        <WifiOff className="size-3" />
+                        <HugeiconsIcon icon={WifiOffIcon} className="size-3" />
                         {t.pendingBadge}
                       </span>
                     </div>

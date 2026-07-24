@@ -1,12 +1,12 @@
+import { ChevronLeftIcon, SearchIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ChevronLeft, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '#/components/ui/button';
 import { Checkbox } from '#/components/ui/checkbox';
 import { cn } from '#/lib/utils';
 import { useExpenseEntryData } from './-hooks/use-expense-entry-data';
 import { getQuickSplitMessages } from './-messages';
-
 export const Route = createFileRoute('/_authed/expenses/new')({
   component: RouteComponent,
 });
@@ -100,7 +100,7 @@ function RouteComponent() {
               onClick={() => navigate({ to: '/' })}
             >
               <span className="sr-only">{t.back}</span>
-              <ChevronLeft className="size-4" />
+              <HugeiconsIcon icon={ChevronLeftIcon} className="size-4" />
             </Button>
 
             <div className="min-w-0 flex-1 text-center">
@@ -131,7 +131,10 @@ function RouteComponent() {
           </section>
 
           <label className="mt-5 flex h-12 items-center gap-3 rounded-full border border-[#e2e8f0] bg-white px-4 shadow-[0_6px_16px_rgba(15,23,42,0.04)]">
-            <Search className="size-4 shrink-0 text-[#94a3b8]" />
+            <HugeiconsIcon
+              icon={SearchIcon}
+              className="size-4 shrink-0 text-[#94a3b8]"
+            />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}

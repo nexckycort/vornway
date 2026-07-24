@@ -1,13 +1,18 @@
 import {
+  Add01Icon,
+  ReceiptTextIcon,
+  SearchIcon,
+  UserGroupIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
+import {
   createFileRoute,
   Link,
   Outlet,
   useNavigate,
   useRouterState,
 } from '@tanstack/react-router';
-import { Plus, ReceiptText, Search, UsersRound } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar';
 import { Button } from '#/components/ui/button';
 import {
@@ -25,7 +30,6 @@ import {
   type QuickSplitExpenseListItem,
   useQuickSplitExpensesInfiniteQuery,
 } from './-hooks/use-quick-split-expenses-infinite-query';
-
 export const Route = createFileRoute('/_authed/expenses/friends')({
   component: RouteComponent,
 });
@@ -122,7 +126,7 @@ function FriendsExpensesPage() {
             onClick={() => void navigate({ to: '/expenses/new' })}
             className="mt-4 h-11 w-full rounded-full text-base font-medium shadow-none"
           >
-            <Plus className="size-4" />
+            <HugeiconsIcon icon={Add01Icon} className="size-4" />
             {t.newExpense}
           </Button>
         </header>
@@ -130,7 +134,10 @@ function FriendsExpensesPage() {
         <section className="mt-8" aria-label={t.search}>
           <InputGroup className="h-10 border-[#d9d9d9] bg-white shadow-none">
             <InputGroupAddon className="pl-4 pr-2">
-              <Search className="size-4 text-[#797979]" />
+              <HugeiconsIcon
+                icon={SearchIcon}
+                className="size-4 text-[#797979]"
+              />
             </InputGroupAddon>
             <InputGroupInput
               value={search}
@@ -170,7 +177,7 @@ function FriendsExpensesPage() {
               className="flex w-12 shrink-0 flex-col items-center gap-2"
             >
               <span className="flex size-10 items-center justify-center rounded-full border border-dashed border-primary bg-[#fff0f5] text-primary">
-                <Plus className="size-4" />
+                <HugeiconsIcon icon={Add01Icon} className="size-4" />
               </span>
               <span className="w-14 truncate text-center text-xs text-[#4c4c4c]">
                 {t.add}
@@ -274,7 +281,7 @@ function ExpenseCard({
       className="flex min-h-[66px] items-center gap-3 rounded-2xl border border-[#ebebeb] bg-white p-3 shadow-[0_1px_1px_rgba(0,0,0,0.05)] transition-transform active:translate-y-px"
     >
       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#f0f0f0] text-[#4c4c4c]">
-        <ReceiptText className="size-5" />
+        <HugeiconsIcon icon={ReceiptTextIcon} className="size-5" />
       </span>
 
       <div className="min-w-0 flex-1">
@@ -327,7 +334,10 @@ function ExpenseCard({
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="rounded-2xl border border-dashed border-[#d9d9d9] bg-white px-4 py-8 text-center">
-      <UsersRound className="mx-auto size-6 text-[#a3a3a3]" />
+      <HugeiconsIcon
+        icon={UserGroupIcon}
+        className="mx-auto size-6 text-[#a3a3a3]"
+      />
       <p className="mt-2 text-sm text-[#626262]">{message}</p>
     </div>
   );

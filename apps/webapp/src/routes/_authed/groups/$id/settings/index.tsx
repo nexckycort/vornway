@@ -1,14 +1,15 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
-  Copy,
-  Download,
-  LogOut,
-  Pencil,
-  QrCode,
-  Share2,
-  Sparkles,
-  Trash2,
-} from 'lucide-react';
+  CopyIcon,
+  Delete02Icon,
+  DownloadIcon,
+  Logout01Icon,
+  PencilIcon,
+  QrCodeIcon,
+  Share02Icon,
+  SparklesIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import QRCode from 'qrcode';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -36,7 +37,6 @@ import {
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
-
 export const Route = createFileRoute('/_authed/groups/$id/settings/')({
   component: RouteComponent,
 });
@@ -245,7 +245,7 @@ function RouteComponent() {
                 />
               ) : (
                 <span className="text-[#e11d48]">
-                  <QrCode className="size-5" />
+                  <HugeiconsIcon icon={QrCodeIcon} className="size-5" />
                 </span>
               )}
             </div>
@@ -274,7 +274,7 @@ function RouteComponent() {
               }
               aria-label={t.settings.editGroupAria}
             >
-              <Pencil className="size-4" />
+              <HugeiconsIcon icon={PencilIcon} className="size-4" />
             </button>
           </div>
         </section>
@@ -290,7 +290,7 @@ function RouteComponent() {
             onClick={() => setShowQrDrawer(true)}
           >
             <span className="flex size-9 items-center justify-center text-[#132238]">
-              <QrCode className="size-5" />
+              <HugeiconsIcon icon={QrCodeIcon} className="size-5" />
             </span>
             <span className="flex-1 text-sm text-[#132238]">
               {t.settings.viewQrCode}
@@ -303,7 +303,7 @@ function RouteComponent() {
             onClick={() => setShowShareDrawer(true)}
           >
             <span className="flex size-9 items-center justify-center text-[#132238]">
-              <Share2 className="size-5" />
+              <HugeiconsIcon icon={Share02Icon} className="size-5" />
             </span>
             <span className="flex-1 text-sm text-[#132238]">
               {t.settings.shareInvitationLink}
@@ -327,7 +327,7 @@ function RouteComponent() {
             }
           >
             <span className="flex size-9 items-center justify-center text-[#132238]">
-              <QrCode className="size-5" />
+              <HugeiconsIcon icon={QrCodeIcon} className="size-5" />
             </span>
             <span className="flex-1 text-sm text-[#132238]">
               {t.settings.manageCategoriesTitle}
@@ -343,7 +343,7 @@ function RouteComponent() {
             disabled={exportGroupCsvMutation.isPending}
           >
             <span className="flex size-9 items-center justify-center text-[#132238]">
-              <Download className="size-5" />
+              <HugeiconsIcon icon={DownloadIcon} className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm text-[#132238]">
@@ -361,7 +361,7 @@ function RouteComponent() {
           {canManageAdvancedExpenseDetails ? (
             <div className="flex w-full min-w-0 items-center gap-3 overflow-hidden px-1 py-2 text-left">
               <span className="flex size-9 items-center justify-center text-[#132238]">
-                <Sparkles className="size-5" />
+                <HugeiconsIcon icon={SparklesIcon} className="size-5" />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm text-[#132238]">
@@ -400,9 +400,9 @@ function RouteComponent() {
             }}
           >
             {isOwner ? (
-              <Trash2 className="size-5" />
+              <HugeiconsIcon icon={Delete02Icon} className="size-5" />
             ) : (
-              <LogOut className="size-5" />
+              <HugeiconsIcon icon={Logout01Icon} className="size-5" />
             )}
             {isOwner ? t.settings.deleteGroupTitle : t.settings.leaveGroupTitle}
           </button>
@@ -468,7 +468,7 @@ function RouteComponent() {
                 {isLinkCopied ? (
                   <span className="text-xs font-semibold">{t.common.ok}</span>
                 ) : (
-                  <Copy className="size-5" />
+                  <HugeiconsIcon icon={CopyIcon} className="size-5" />
                 )}
               </Button>
             </div>
@@ -480,7 +480,7 @@ function RouteComponent() {
                 await shareInvite();
               }}
             >
-              <Share2 className="mr-2 size-4" />
+              <HugeiconsIcon icon={Share02Icon} className="mr-2 size-4" />
               {t.settings.shareLink}
             </Button>
           </div>

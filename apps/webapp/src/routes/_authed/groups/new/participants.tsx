@@ -1,5 +1,12 @@
+import {
+  Cancel01Icon,
+  CirclePlusIcon,
+  CopyIcon,
+  Share02Icon,
+  UserAdd01Icon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Copy, PlusCircle, Share2, UserPlus, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
@@ -29,7 +36,6 @@ import {
   type GroupCreateDraft,
   loadGroupDraft,
 } from '#/routes/_authed/groups/new/-lib/group-create-draft';
-
 export const Route = createFileRoute('/_authed/groups/new/participants')({
   validateSearch: (search: Record<string, unknown>) => ({
     name: typeof search.name === 'string' ? search.name : '',
@@ -348,7 +354,7 @@ function RouteComponent() {
             disabled={!canAddParticipant}
             aria-label={t.participants.addAria}
           >
-            <UserPlus className="size-5" />
+            <HugeiconsIcon icon={UserAdd01Icon} className="size-5" />
           </Button>
         </div>
 
@@ -455,7 +461,7 @@ function RouteComponent() {
                 className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[#64748b]"
                 aria-label={`Eliminar a ${participant.name}`}
               >
-                <X className="size-4" />
+                <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
               </button>
             </div>
           ))}
@@ -484,7 +490,7 @@ function RouteComponent() {
               onClick={handleCreate}
               disabled={isSubmitting}
             >
-              <PlusCircle data-icon="inline-start" />
+              <HugeiconsIcon icon={CirclePlusIcon} data-icon="inline-start" />
               {isSubmitting ? t.participants.creating : t.common.createGroup}
             </Button>
           </div>
@@ -529,7 +535,7 @@ function RouteComponent() {
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-[#fff4f7] text-primary">
-                      <UserPlus className="size-6" />
+                      <HugeiconsIcon icon={UserAdd01Icon} className="size-6" />
                     </div>
                   )}
                 </div>
@@ -561,7 +567,8 @@ function RouteComponent() {
                     setIsLinkCopied(true);
                   }}
                 >
-                  <Copy
+                  <HugeiconsIcon
+                    icon={CopyIcon}
                     className={`size-4 transition-transform ${
                       isLinkCopied ? 'scale-110' : ''
                     }`}
@@ -590,7 +597,7 @@ function RouteComponent() {
                   await navigator.clipboard.writeText(createdInviteLink);
                 }}
               >
-                <Share2 className="mr-2 size-4" />
+                <HugeiconsIcon icon={Share02Icon} className="mr-2 size-4" />
                 {t.participants.shareLink}
               </Button>
             </div>

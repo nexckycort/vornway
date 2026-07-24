@@ -18,6 +18,8 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
+    "@hugeicons/core-free-icons": "^4.2.3",
+    "@hugeicons/react": "^1.1.9",
     "@tanstack/db": "^0.6.5",
     "@tanstack/query-core": "^5.100.11",
     "@tanstack/query-db-collection": "^1.0.36",
@@ -31,7 +33,6 @@
     "embla-carousel-react": "^8.6.0",
     "html5-qrcode": "^2.3.8",
     "input-otp": "^1.4.2",
-    "lucide-react": "^1.14.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.5",
     "react-day-picker": "^10.0.1",

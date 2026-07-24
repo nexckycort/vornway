@@ -1,11 +1,15 @@
 import {
+  ArrowLeftIcon,
+  Cancel01Icon,
+  ImageAdd01Icon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
+import {
   createFileRoute,
   useNavigate,
   useRouter,
 } from '@tanstack/react-router';
-import { ArrowLeft, ImagePlus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-
 import { Button } from '#/components/ui/button';
 import {
   compressGroupImageFile,
@@ -14,7 +18,6 @@ import {
   saveGroupDraft,
 } from '#/routes/_authed/groups/new/-lib/group-create-draft';
 import { getGroupDetailMessages } from '../$id/-messages';
-
 export const Route = createFileRoute('/_authed/groups/new/')({
   validateSearch: (search: Record<string, unknown>) => ({
     name: typeof search.name === 'string' ? search.name : '',
@@ -146,7 +149,7 @@ function RouteComponent() {
             onClick={() => navigate({ to: '/groups' })}
             className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#334155]"
           >
-            <ArrowLeft className="size-4" />
+            <HugeiconsIcon icon={ArrowLeftIcon} className="size-4" />
             {t.form.back}
           </button>
           <h1 className="text-2xl font-semibold leading-8 text-[#0f172a]">
@@ -210,7 +213,10 @@ function RouteComponent() {
                     className="size-full object-cover"
                   />
                 ) : (
-                  <ImagePlus className="size-6 text-[#94a3b8]" />
+                  <HugeiconsIcon
+                    icon={ImageAdd01Icon}
+                    className="size-6 text-[#94a3b8]"
+                  />
                 )}
               </div>
 
@@ -268,7 +274,7 @@ function RouteComponent() {
                     }
                   }}
                 >
-                  <X className="size-4" />
+                  <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
                 </Button>
               ) : null}
             </div>

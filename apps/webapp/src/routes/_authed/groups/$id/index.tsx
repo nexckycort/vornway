@@ -1,5 +1,6 @@
+import { Delete02Icon, PencilIcon, PinIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Pencil, Pin, Trash2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import {
   useCallback,
@@ -41,7 +42,6 @@ import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
 import { GroupParticipantsStrip } from './-components/group-participants-strip';
 import { getGroupDetailMessages } from './-messages';
 import type { ExpenseItem, GroupSummary } from './-types/group-detail.types';
-
 export const Route = createFileRoute('/_authed/groups/$id/')({
   component: RouteComponent,
 });
@@ -590,7 +590,10 @@ function RouteComponent() {
                   }}
                   className="flex w-full items-center gap-3 rounded-2xl p-1 text-left"
                 >
-                  <Pencil className="size-5 text-[#202124]" />
+                  <HugeiconsIcon
+                    icon={PencilIcon}
+                    className="size-5 text-[#202124]"
+                  />
                   <span className="font-medium text-[#132238]">
                     Editar gasto
                   </span>
@@ -607,7 +610,10 @@ function RouteComponent() {
                   }
                   className="flex w-full items-center gap-3 rounded-2xl p-1 text-left disabled:opacity-60"
                 >
-                  <Pin className="size-5 text-[#202124]" />
+                  <HugeiconsIcon
+                    icon={PinIcon}
+                    className="size-5 text-[#202124]"
+                  />
                   <span className="font-medium text-[#132238]">
                     {pinnedExpenseIds.includes(expenseForOptions.id)
                       ? 'Desfijar'
@@ -626,7 +632,10 @@ function RouteComponent() {
                   }}
                   className="flex w-full items-center gap-3 rounded-2xl p-1 text-left"
                 >
-                  <Trash2 className="size-5 text-red-500" />
+                  <HugeiconsIcon
+                    icon={Delete02Icon}
+                    className="size-5 text-red-500"
+                  />
                   <span className="font-medium text-red-500">
                     {t.detail.delete}
                   </span>

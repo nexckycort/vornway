@@ -1,3 +1,4 @@
+import { HugeiconsIcon } from '@hugeicons/react';
 import { Link } from '@tanstack/react-router';
 import { cn } from '#/lib/utils';
 import type { HomeAction as HomeActionData } from '#/routes/_authed/(home)/-hooks/use-home-query';
@@ -28,7 +29,7 @@ export function HomeAction({ action, onSelect }: HomeActionProps) {
           isPrimary ? 'bg-white text-primary' : 'bg-[#fff0f2] text-primary',
         )}
       >
-        <Icon className="size-5" aria-hidden="true" />
+        <HugeiconsIcon icon={Icon} className="size-5" aria-hidden="true" />
       </span>
       <span className="max-w-[120px] text-sm font-semibold leading-5">
         {action.label}

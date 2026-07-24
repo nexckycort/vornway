@@ -1,22 +1,20 @@
 import {
+  CompassIcon,
+  HomeIcon,
+  PiggyBankIcon,
+  UserGroupIcon,
+  UserIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
+import {
   useLocation,
   useNavigate,
   useRouter,
   useRouterState,
 } from '@tanstack/react-router';
-import {
-  Compass,
-  Home,
-  type LucideIcon,
-  PiggyBank,
-  UserRound,
-  UsersRound,
-} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-
 import { getBottomAppBarMessages } from '#/components/bottom-app-bar.messages';
 import { cn } from '#/lib/utils';
-
 export type BottomAppBarIconName =
   | 'compass'
   | 'home'
@@ -35,12 +33,12 @@ type BottomNavState = {
   bottomNavRoot?: true;
 };
 
-const navIcons: Record<BottomAppBarIconName, LucideIcon> = {
-  compass: Compass,
-  home: Home,
-  users: UsersRound,
-  'piggy-bank': PiggyBank,
-  user: UserRound,
+const navIcons: Record<BottomAppBarIconName, IconSvgElement> = {
+  compass: CompassIcon,
+  home: HomeIcon,
+  users: UserGroupIcon,
+  'piggy-bank': PiggyBankIcon,
+  user: UserIcon,
 };
 
 export function BottomAppBar() {
@@ -168,7 +166,11 @@ export function BottomAppBar() {
                 active && 'text-primary',
               )}
             >
-              <Icon className="size-5" aria-hidden="true" />
+              <HugeiconsIcon
+                icon={Icon}
+                className="size-5"
+                aria-hidden="true"
+              />
               <span
                 className={cn(
                   'max-h-4 overflow-hidden opacity-100 transition-[max-height,opacity,margin] duration-200 ease-out',

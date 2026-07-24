@@ -1,12 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router';
 import {
-  Crown,
-  Link2Off,
-  Share2,
-  Trash2,
-  UserCog,
-  UserPlus,
-} from 'lucide-react';
+  CrownIcon,
+  Delete02Icon,
+  Share02Icon,
+  UnlinkIcon,
+  UserAdd01Icon,
+  UserSettings01Icon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
@@ -175,7 +176,7 @@ function RouteComponent() {
             className="size-11 rounded-2xl"
             onClick={shareInvite}
           >
-            <Share2 className="size-4" />
+            <HugeiconsIcon icon={Share02Icon} className="size-4" />
           </Button>
         </div>
       </section>
@@ -212,7 +213,7 @@ function RouteComponent() {
             disabled={!name.trim() || addMemberMutation.isPending}
             onClick={addMember}
           >
-            <UserPlus className="size-5" />
+            <HugeiconsIcon icon={UserAdd01Icon} className="size-5" />
           </Button>
         </div>
 
@@ -320,7 +321,7 @@ function RouteComponent() {
                 ) : null}
                 {group?.ownerId === member.userId ? (
                   <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-                    <Crown className="size-3" />
+                    <HugeiconsIcon icon={CrownIcon} className="size-3" />
                     {t.participants.owner}
                   </span>
                 ) : null}
@@ -357,7 +358,10 @@ function RouteComponent() {
                     className="size-10 rounded-2xl text-primary"
                     onClick={() => setMemberToTransferOwner(member)}
                   >
-                    <UserCog className="size-4" />
+                    <HugeiconsIcon
+                      icon={UserSettings01Icon}
+                      className="size-4"
+                    />
                   </Button>
                 ) : null}
                 {member.userId ? (
@@ -368,7 +372,7 @@ function RouteComponent() {
                     className="size-10 rounded-2xl text-amber-600"
                     onClick={() => setMemberToUnlink(member)}
                   >
-                    <Link2Off className="size-4" />
+                    <HugeiconsIcon icon={UnlinkIcon} className="size-4" />
                   </Button>
                 ) : null}
                 <Button
@@ -379,7 +383,7 @@ function RouteComponent() {
                   disabled={member.expenseCount > 0}
                   onClick={() => setMemberToRemove(member)}
                 >
-                  <Trash2 className="size-4" />
+                  <HugeiconsIcon icon={Delete02Icon} className="size-4" />
                 </Button>
               </div>
             ) : null}

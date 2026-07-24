@@ -1,8 +1,8 @@
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDownIcon, ChevronRightIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { useEffect, useMemo, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { Pie, PieChart } from 'recharts';
-
 import { Button } from '#/components/ui/button';
 import { Calendar } from '#/components/ui/calendar';
 import { ChartContainer } from '#/components/ui/chart';
@@ -224,7 +224,10 @@ export function GroupReportTotalsTab({
           >
             <DropdownMenuTrigger className="inline-flex min-w-0 flex-1 items-center justify-between gap-2 rounded-full border border-[#e2e8f0] bg-white px-4 py-3 text-left text-sm font-medium text-[#3f3f46] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition-colors hover:bg-[#fafafa] focus-visible:ring-2 focus-visible:ring-[#111111]/15 sm:min-w-[220px] sm:flex-none sm:px-5">
               <span className="min-w-0 truncate">{selectedPeriodLabel}</span>
-              <ChevronDown className="size-4 shrink-0 text-[#71717a]" />
+              <HugeiconsIcon
+                icon={ChevronDownIcon}
+                className="size-4 shrink-0 text-[#71717a]"
+              />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-64">
               <DropdownMenuGroup>
@@ -258,7 +261,10 @@ export function GroupReportTotalsTab({
                 </span>
                 <span>{selectedCurrencyMeta.label}</span>
               </span>
-              <ChevronDown className="size-4 shrink-0 text-[#71717a]" />
+              <HugeiconsIcon
+                icon={ChevronDownIcon}
+                className="size-4 shrink-0 text-[#71717a]"
+              />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48">
               <DropdownMenuGroup>
@@ -521,7 +527,10 @@ export function GroupReportTotalsTab({
                       {formatMoney(selectedCurrency, member.visibleShare)}
                     </p>
                   </div>
-                  <ChevronRight className="size-4 shrink-0 text-[#94a3b8]" />
+                  <HugeiconsIcon
+                    icon={ChevronRightIcon}
+                    className="size-4 shrink-0 text-[#94a3b8]"
+                  />
                 </div>
               </button>
             );

@@ -1,12 +1,13 @@
+import {
+  ArrowLeftIcon,
+  CircleDashedIcon,
+  Clock03Icon,
+  FolderKanbanIcon,
+  Search01Icon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import {
-  ArrowLeft,
-  CircleDashed,
-  Clock3,
-  FolderKanban,
-  SearchCheck,
-} from 'lucide-react';
 import { type ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { adminClient } from '#/api/admin';
@@ -164,7 +165,7 @@ function RouteComponent() {
               className="mt-5 h-12 w-full rounded-full"
               onClick={() => navigate({ to: '/profile' })}
             >
-              <ArrowLeft className="mr-2 size-4" />
+              <HugeiconsIcon icon={ArrowLeftIcon} className="mr-2 size-4" />
               {t.statsPage.backToProfile}
             </Button>
           </div>
@@ -194,28 +195,28 @@ function RouteComponent() {
             onClick={() => navigate({ to: '/profile/stats' })}
             aria-label={t.statsPage.back}
           >
-            <ArrowLeft className="size-4" />
+            <HugeiconsIcon icon={ArrowLeftIcon} className="size-4" />
           </Button>
         </header>
 
         <section className="mt-5 grid grid-cols-2 gap-3">
           <MiniStatCard
-            icon={<FolderKanban className="size-4" />}
+            icon={<HugeiconsIcon icon={FolderKanbanIcon} className="size-4" />}
             label={t.statsPage.total}
             value={String(counters.total)}
           />
           <MiniStatCard
-            icon={<CircleDashed className="size-4" />}
+            icon={<HugeiconsIcon icon={CircleDashedIcon} className="size-4" />}
             label={t.statsPage.open}
             value={String(counters.open)}
           />
           <MiniStatCard
-            icon={<SearchCheck className="size-4" />}
+            icon={<HugeiconsIcon icon={Search01Icon} className="size-4" />}
             label={t.statsPage.review}
             value={String(counters.inReview)}
           />
           <MiniStatCard
-            icon={<Clock3 className="size-4" />}
+            icon={<HugeiconsIcon icon={Clock03Icon} className="size-4" />}
             label={t.statsPage.planned}
             value={String(counters.planned)}
           />

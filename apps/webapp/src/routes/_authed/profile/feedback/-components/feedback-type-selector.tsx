@@ -1,18 +1,23 @@
-import { AlertCircle, Check, Lightbulb } from 'lucide-react';
+import {
+  AlertCircleIcon,
+  BulbIcon,
+  CheckIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import { getProfileMessages } from '#/routes/_authed/profile/-messages';
 import type { FeedbackType } from '../-hooks/use-feedback-page';
 
 const feedbackTypeOptions: Array<{
   value: FeedbackType;
-  icon: typeof AlertCircle;
+  icon: IconSvgElement;
 }> = [
   {
     value: 'BUG',
-    icon: AlertCircle,
+    icon: AlertCircleIcon,
   },
   {
     value: 'FEATURE_REQUEST',
-    icon: Lightbulb,
+    icon: BulbIcon,
   },
 ];
 
@@ -61,7 +66,7 @@ export function FeedbackTypeSelector({
                     : 'bg-[#f8fafc] text-[#475569]'
                 }`}
               >
-                <Icon className="size-5" />
+                <HugeiconsIcon icon={Icon} className="size-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-3">
@@ -70,7 +75,7 @@ export function FeedbackTypeSelector({
                   </p>
                   {active ? (
                     <span className="flex size-5 items-center justify-center rounded-full bg-primary text-white">
-                      <Check className="size-3" />
+                      <HugeiconsIcon icon={CheckIcon} className="size-3" />
                     </span>
                   ) : null}
                 </div>

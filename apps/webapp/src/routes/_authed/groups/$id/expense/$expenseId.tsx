@@ -1,6 +1,11 @@
+import {
+  ArrowLeftIcon,
+  Delete02Icon,
+  HandCoinsIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, HandCoins, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '#/components/ui/button';
 import {
@@ -24,7 +29,6 @@ import { CategoryIcon } from '../-components/category-icon';
 import { getExpenseEmoji } from '../-components/group-detail.utils';
 import type { ExpenseItem, GroupSummary } from '../-types/group-detail.types';
 import { getExpenseLineItemsMessages } from '../add-expense/-line-items-messages';
-
 export const Route = createFileRoute('/_authed/groups/$id/expense/$expenseId')({
   component: RouteComponent,
 });
@@ -286,7 +290,7 @@ function RouteComponent() {
             className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[#334155] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
             aria-label={t.expense.backAria}
           >
-            <ArrowLeft className="size-4" />
+            <HugeiconsIcon icon={ArrowLeftIcon} className="size-4" />
           </button>
           <div className="min-w-0 text-center">
             <h1 className="truncate text-base font-semibold text-[#0f172a]">
@@ -312,7 +316,7 @@ function RouteComponent() {
               <div className="px-5 pb-4 pt-4 text-center">
                 <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-teal-50 text-teal-600">
                   {isSettlement ? (
-                    <HandCoins className="size-6" />
+                    <HugeiconsIcon icon={HandCoinsIcon} className="size-6" />
                   ) : (
                     <CategoryIcon
                       icon={expense.category?.icon}
@@ -578,7 +582,7 @@ function RouteComponent() {
                       : t.expense.deleteExpenseTitle
                   }
                 >
-                  <Trash2 className="size-4" />
+                  <HugeiconsIcon icon={Delete02Icon} className="size-4" />
                 </button>
                 <button
                   type="button"

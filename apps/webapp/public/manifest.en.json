@@ -31,13 +31,7 @@
     "params": {
       "title": "title",
       "text": "text",
-      "url": "url",
-      "files": [
-        {
-          "name": "receipt",
-          "accept": ["image/jpeg", "image/png", "image/webp"]
-        }
-      ]
+      "url": "url"
     }
   },
   "background_color": "#fafafa",

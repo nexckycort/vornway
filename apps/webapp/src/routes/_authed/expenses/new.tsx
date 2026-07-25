@@ -5,27 +5,11 @@ import { useMemo, useState } from 'react';
 import { Button } from '#/components/ui/button';
 import { Checkbox } from '#/components/ui/checkbox';
 import { cn } from '#/lib/utils';
-import { m } from '#/paraglide/messages.js';
 import { useExpenseEntryData } from './-hooks/use-expense-entry-data';
 import { getQuickSplitMessages } from './-messages';
 export const Route = createFileRoute('/_authed/expenses/new')({
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): {
-    from: 'friends' | 'home';
-    sharedReceipt?: string;
-    sharedReceiptError?: 'type' | 'size';
-  } => ({
+  validateSearch: (search: Record<string, unknown>) => ({
     from: search.from === 'friends' ? ('friends' as const) : ('home' as const),
-    sharedReceipt:
-      typeof search.sharedReceipt === 'string' && search.sharedReceipt
-        ? search.sharedReceipt
-        : undefined,
-    sharedReceiptError:
-      search.sharedReceiptError === 'type' ||
-      search.sharedReceiptError === 'size'
-        ? search.sharedReceiptError
-        : undefined,
   }),
   component: RouteComponent,
 });
@@ -54,7 +38,7 @@ function getGroupCardGradient(groupId: string) {
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const { from, sharedReceipt, sharedReceiptError } = Route.useSearch();
+  const { from } = Route.useSearch();
   const t = getQuickSplitMessages();
   const { spaces, recentFriends, isLoading } = useExpenseEntryData();
   const [search, setSearch] = useState('');
@@ -154,13 +138,6 @@ function RouteComponent() {
             <p className="mt-1 text-base leading-6 text-[#626262]">
               {t.entryDescription}
             </p>
-            {sharedReceiptError ? (
-              <p className="mt-3 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {sharedReceiptError === 'size'
-                  ? m['components.native.sharedReceiptTooLarge']()
-                  : m['components.native.sharedReceiptInvalidType']()}
-              </p>
-            ) : null}
           </section>
 
           <label className="mt-5 flex h-12 items-center gap-3 rounded-full border border-[#e2e8f0] bg-white px-4 shadow-[0_6px_16px_rgba(15,23,42,0.04)]">
@@ -190,7 +167,6 @@ function RouteComponent() {
                     navigate({
                       to: '/groups/$id/add-expense',
                       params: { id: space.id },
-                      search: { sharedReceipt },
                     })
                   }
                   className="flex items-start gap-3 rounded-[24px] border border-[#ebebeb] bg-white p-4 text-left shadow-[0_1px_1px_rgba(0,0,0,0.05)]"

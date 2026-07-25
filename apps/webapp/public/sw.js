@@ -6,15 +6,6 @@ const IMAGE_CACHE_NAME = 'vornway-images-v1';
 const MAX_IMAGE_ENTRIES = 120;
 const SETTINGS_CACHE_NAME = 'vornway-settings-v1';
 const LOCALE_SETTINGS_KEY = '/__vornway-settings__/locale';
-const SHARED_RECEIPTS_CACHE = 'vornway-shared-receipts-v1';
-const SHARED_RECEIPT_PATH = '/__vornway-share-target__/receipt/';
-const MAX_SHARED_RECEIPTS = 5;
-const MAX_SHARED_RECEIPT_BYTES = 10 * 1024 * 1024;
-const ACCEPTED_SHARED_RECEIPT_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]);
 
 async function readLocale() {
   const cache = await caches.open(SETTINGS_CACHE_NAME);
@@ -70,44 +61,12 @@ async function handleShareTarget(request) {
   const title = formData.get('title');
   const text = formData.get('text');
   const url = formData.get('url');
-  const receipt = formData.get('receipt');
   const invitePath = extractInvitePath(url, text, title);
-  let destination = invitePath ?? '/';
 
-  if (receipt && typeof receipt === 'object' && 'size' in receipt) {
-    if (!ACCEPTED_SHARED_RECEIPT_TYPES.has(receipt.type)) {
-      destination = '/expenses/new?from=home&sharedReceiptError=type';
-    } else if (receipt.size > MAX_SHARED_RECEIPT_BYTES) {
-      destination = '/expenses/new?from=home&sharedReceiptError=size';
-    } else if (receipt.size > 0) {
-      const receiptId = crypto.randomUUID();
-      const receiptUrl = new URL(
-        `${SHARED_RECEIPT_PATH}${receiptId}`,
-        self.location.origin,
-      ).href;
-      const cache = await caches.open(SHARED_RECEIPTS_CACHE);
-      await cache.put(
-        receiptUrl,
-        new Response(receipt, {
-          headers: {
-            'Content-Type': receipt.type,
-            'X-Vornway-Filename': encodeURIComponent(
-              receipt.name || 'receipt-image',
-            ),
-          },
-        }),
-      );
-      const sharedReceipts = await cache.keys();
-      await Promise.all(
-        sharedReceipts
-          .slice(0, Math.max(0, sharedReceipts.length - MAX_SHARED_RECEIPTS))
-          .map((request) => cache.delete(request)),
-      );
-      destination = `/expenses/new?from=home&sharedReceipt=${receiptId}`;
-    }
-  }
-
-  return Response.redirect(new URL(destination, self.location.origin), 303);
+  return Response.redirect(
+    new URL(invitePath ?? '/', self.location.origin),
+    303,
+  );
 }
 
 function hashString(value) {

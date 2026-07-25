@@ -206,6 +206,7 @@ export function GroupDetailHeader({
         <Link
           to="/groups/$id/add-expense"
           params={{ id: groupId }}
+          preload="intent"
           state={flowState}
           className="flex min-w-0 flex-col items-center gap-1"
         >

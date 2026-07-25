@@ -9,11 +9,17 @@ import {
 
 type GoalCardProps = {
   goal: GoalListItem;
+  onPreload?: () => void;
   onPress: () => void;
   featured?: boolean;
 };
 
-export function GoalCard({ goal, onPress, featured = false }: GoalCardProps) {
+export function GoalCard({
+  goal,
+  onPreload,
+  onPress,
+  featured = false,
+}: GoalCardProps) {
   const theme = getGoalTheme(goal.goalType, goal.themeColor);
   const progress = Math.min(100, Math.max(0, goal.progress));
 
@@ -21,6 +27,9 @@ export function GoalCard({ goal, onPress, featured = false }: GoalCardProps) {
     <button
       type="button"
       onClick={onPress}
+      onFocus={onPreload}
+      onPointerDown={onPreload}
+      onTouchStart={onPreload}
       className={[
         'group relative w-full overflow-hidden rounded-[30px] text-left transition duration-300 active:scale-[0.985]',
         featured

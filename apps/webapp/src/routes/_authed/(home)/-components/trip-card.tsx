@@ -17,6 +17,7 @@ export function TripCard({ trip }: TripCardProps) {
     <Link
       to="/groups/$id"
       params={{ id: trip.id }}
+      preload="intent"
       state={getGroupFlowEntryState(returnTo)}
       className="block rounded-[24px] bg-white px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-transform active:translate-y-px"
     >

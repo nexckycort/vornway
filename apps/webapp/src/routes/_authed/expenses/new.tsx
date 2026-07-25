@@ -1,7 +1,11 @@
 import { ChevronLeftIcon, SearchIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useMemo, useState } from 'react';
+import {
+  createFileRoute,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '#/components/ui/button';
 import { Checkbox } from '#/components/ui/checkbox';
 import { cn } from '#/lib/utils';
@@ -38,6 +42,7 @@ function getGroupCardGradient(groupId: string) {
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const router = useRouter();
   const { from } = Route.useSearch();
   const t = getQuickSplitMessages();
   const { spaces, recentFriends, isLoading } = useExpenseEntryData();
@@ -69,6 +74,25 @@ function RouteComponent() {
       recentFriends.filter((friend) => selectedFriendIds.includes(friend.id)),
     [recentFriends, selectedFriendIds],
   );
+
+  useEffect(() => {
+    if (selectedFriendIds.length === 0) return;
+
+    void router.preloadRoute({
+      to: '/expenses/quick-split',
+      search: {
+        friendIds: selectedFriendIds,
+        from,
+      },
+    });
+  }, [from, router, selectedFriendIds]);
+
+  const preloadSpaceExpense = (spaceId: string) => {
+    void router.preloadRoute({
+      to: '/groups/$id/add-expense',
+      params: { id: spaceId },
+    });
+  };
 
   const toggleFriend = (friendId: string) => {
     setSelectedFriendIds((current) =>
@@ -163,6 +187,9 @@ function RouteComponent() {
                 <button
                   key={space.id}
                   type="button"
+                  onFocus={() => preloadSpaceExpense(space.id)}
+                  onPointerDown={() => preloadSpaceExpense(space.id)}
+                  onTouchStart={() => preloadSpaceExpense(space.id)}
                   onClick={() =>
                     navigate({
                       to: '/groups/$id/add-expense',

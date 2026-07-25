@@ -1,6 +1,10 @@
 import { Add01Icon, SearchIcon, TargetIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getGoalsMessages } from '#/routes/_authed/goals/-messages';
 import { GoalCard } from './-components/goal-card';
@@ -15,6 +19,7 @@ function RouteComponent() {
   const t = getGoalsMessages();
   const isProduction = import.meta.env.PROD;
   const navigate = useNavigate();
+  const router = useRouter();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
   const goalsQuery = useGoalsInfiniteQuery(search);
@@ -121,6 +126,13 @@ function RouteComponent() {
                   <GoalCard
                     key={goal.id}
                     goal={goal}
+                    onPreload={() => {
+                      void router.preloadRoute({
+                        to: '/goals/$id',
+                        params: { id: goal.id },
+                        search: { from: 'goals' },
+                      });
+                    }}
                     onPress={() => {
                       void navigate({
                         to: '/goals/$id',

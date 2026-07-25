@@ -25,6 +25,10 @@ import { getCurrentLocale } from './lib/i18n';
 import { initOfflineSync } from './lib/offline-sync';
 import { registerPushServiceWorker } from './lib/push-notifications';
 import {
+  createFirstVisitTracker,
+  scheduleRoutePreloads,
+} from './lib/route-preloading';
+import {
   installServiceWorkerNavigation,
   resolveNotificationUrl,
   syncServiceWorkerLocale,
@@ -53,6 +57,16 @@ const router = createRouter({
   context: undefined as unknown as {
     auth: AuthContextProps;
   },
+});
+
+const firstVisitTracker = createFirstVisitTracker(window.location.pathname);
+
+router.subscribe('onBeforeNavigate', ({ toLocation }) => {
+  firstVisitTracker.start(toLocation.pathname);
+});
+
+router.subscribe('onRendered', ({ toLocation }) => {
+  firstVisitTracker.finish(toLocation.pathname);
 });
 
 browserBackNavigation.configure({
@@ -88,6 +102,44 @@ declare module '@tanstack/react-router' {
 
 function App() {
   const auth = useAuth();
+
+  React.useEffect(() => {
+    if (!auth.isAuthenticated) return;
+
+    return scheduleRoutePreloads([
+      () => router.preloadRoute({ to: '/expenses/friends' }),
+      () => router.preloadRoute({ to: '/groups' }),
+      () => router.preloadRoute({ to: '/goals' }),
+      () => router.preloadRoute({ to: '/profile' }),
+      () =>
+        router.preloadRoute({
+          to: '/expenses/new',
+          search: { from: 'home' },
+        }),
+      () =>
+        router.preloadRoute({
+          to: '/expenses/quick-split',
+          search: { friendIds: [], from: 'home' },
+        }),
+      () =>
+        router.preloadRoute({
+          to: '/groups/new',
+          search: {
+            description: '',
+            draftId: '',
+            from: 'home',
+            name: '',
+            type: '',
+          },
+        }),
+      () =>
+        router.preloadRoute({
+          to: '/goals/new',
+          search: { from: 'home' },
+        }),
+      () => router.preloadRoute({ to: '/notifications' }),
+    ]);
+  }, [auth.isAuthenticated]);
 
   React.useEffect(() => {
     const scheduleBackgroundSetup = () => {

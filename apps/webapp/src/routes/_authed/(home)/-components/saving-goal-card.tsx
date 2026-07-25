@@ -15,6 +15,7 @@ export function SavingGoalCard({ goal }: SavingGoalCardProps) {
     <Link
       to="/goals/$id"
       params={{ id: goal.id }}
+      preload="intent"
       search={{ from: 'home' }}
       className="block rounded-[24px] border border-[#f4f4f4] bg-white px-5 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.04)] transition-transform active:translate-y-px"
     >

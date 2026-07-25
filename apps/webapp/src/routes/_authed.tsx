@@ -84,15 +84,9 @@ function MainTabBackToHome() {
       event.preventDefault();
     };
 
-    const handlePopState = () => {
-      returnToHome();
-    };
-
     window.addEventListener('vornway:back', handleNativeBack);
-    window.addEventListener('popstate', handlePopState);
     return () => {
       window.removeEventListener('vornway:back', handleNativeBack);
-      window.removeEventListener('popstate', handlePopState);
     };
   }, [navigate]);
 

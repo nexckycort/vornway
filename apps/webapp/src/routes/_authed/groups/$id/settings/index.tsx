@@ -153,10 +153,18 @@ function RouteComponent() {
     void navigateToGroupRoot(true);
   };
 
+  const navigateToGroupsAfterMembershipChange = async () => {
+    await navigate({ to: '/', replace: true });
+    await navigate({
+      to: '/groups',
+      state: { bottomNavRoot: true } as never,
+    });
+  };
+
   const handleConfirmDeleteGroup = async () => {
     try {
       await deleteGroupMutation.mutateAsync();
-      void navigate({ to: '/groups', replace: true });
+      await navigateToGroupsAfterMembershipChange();
     } catch (error) {
       setShareMessage(
         error instanceof Error ? error.message : t.settings.deleteFailed,
@@ -174,7 +182,7 @@ function RouteComponent() {
 
     try {
       await unlinkMemberMutation.mutateAsync({ memberId });
-      void navigate({ to: '/groups', replace: true });
+      await navigateToGroupsAfterMembershipChange();
     } catch (error) {
       setShareMessage(
         error instanceof Error ? error.message : t.settings.leaveFailed,

@@ -88,6 +88,7 @@ function RouteComponent() {
   const [showSuccessDrawer, setShowSuccessDrawer] = useState(false);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
   const [isSavingOffline, setIsSavingOffline] = useState(false);
+  const isOpeningCreatedGroupRef = useRef(false);
   const [createdGroup, setCreatedGroup] = useState<{
     id: string;
     name: string;
@@ -160,6 +161,15 @@ function RouteComponent() {
         from,
       },
       replace: true,
+    });
+  };
+
+  const navigateToCreatedGroup = async (groupId: string) => {
+    await navigate({ to: '/groups', replace: true });
+    await navigate({
+      to: '/groups/$id',
+      params: { id: groupId },
+      state: getGroupFlowEntryState('/groups'),
     });
   };
 
@@ -239,12 +249,7 @@ function RouteComponent() {
           clearGroupDraft(draftId);
         }
         void syncPendingGroupsQueue();
-        await navigate({
-          to: '/groups/$id',
-          params: { id: queuedGroup.id },
-          replace: true,
-          state: getGroupFlowEntryState('/groups'),
-        });
+        await navigateToCreatedGroup(queuedGroup.id);
       } catch (offlineError) {
         setError(
           offlineError instanceof Error
@@ -262,12 +267,7 @@ function RouteComponent() {
         clearGroupDraft(draftId);
       }
       if ('queued' in result && result.queued) {
-        await navigate({
-          to: '/groups/$id',
-          params: { id: result.id },
-          replace: true,
-          state: getGroupFlowEntryState('/groups'),
-        });
+        await navigateToCreatedGroup(result.id);
         return;
       }
       setCreatedGroup({
@@ -275,6 +275,7 @@ function RouteComponent() {
         name: result.name,
         inviteCode: result.inviteCode,
       });
+      isOpeningCreatedGroupRef.current = false;
       setShowSuccessDrawer(true);
     } catch (submitError) {
       setError(
@@ -506,7 +507,7 @@ function RouteComponent() {
           if (!open) {
             setIsLinkCopied(false);
           }
-          if (!open) {
+          if (!open && !isOpeningCreatedGroupRef.current) {
             void navigate({ to: '/groups', replace: true });
           }
         }}
@@ -635,14 +636,10 @@ function RouteComponent() {
               type="button"
               className="h-12 w-full rounded-full bg-primary text-base font-medium text-white"
               onClick={() => {
-                setShowSuccessDrawer(false);
                 if (!createdGroup) return;
-                void navigate({
-                  to: '/groups/$id',
-                  params: { id: createdGroup.id },
-                  replace: true,
-                  state: getGroupFlowEntryState('/groups'),
-                });
+                isOpeningCreatedGroupRef.current = true;
+                setShowSuccessDrawer(false);
+                void navigateToCreatedGroup(createdGroup.id);
               }}
               disabled={!createdGroup}
             >

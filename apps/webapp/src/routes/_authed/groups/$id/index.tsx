@@ -68,6 +68,23 @@ function RouteComponent() {
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [groupQrCode, setGroupQrCode] = useState<string | null>(null);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      if (
+        document.querySelector(
+          '[data-slot="drawer-content"], [data-slot="dialog-content"]',
+        )
+      ) {
+        return;
+      }
+
+      void navigateToFlowBack();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [navigateToFlowBack]);
+
   const groupQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
   const getPendingExpensesSnapshot = useCallback(

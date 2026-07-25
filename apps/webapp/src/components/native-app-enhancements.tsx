@@ -142,13 +142,14 @@ export function NativeAppEnhancements() {
         const deltaX = touch ? touch.clientX - edge.x : 0;
         const deltaY = touch ? touch.clientY - edge.y : 0;
 
-        if (
-          deltaX >= EDGE_BACK_TRIGGER_PX &&
-          deltaX > Math.abs(deltaY) * 1.5 &&
-          window.history.length > 1
-        ) {
+        if (deltaX >= EDGE_BACK_TRIGGER_PX && deltaX > Math.abs(deltaY) * 1.5) {
           vibrate(10);
-          window.history.back();
+          const backEvent = new Event('vornway:back', { cancelable: true });
+          window.dispatchEvent(backEvent);
+
+          if (!backEvent.defaultPrevented && window.history.length > 1) {
+            window.history.back();
+          }
         }
 
         edgeStart.current = null;

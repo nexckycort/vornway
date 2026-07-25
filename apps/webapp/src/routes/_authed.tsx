@@ -3,9 +3,10 @@ import {
   createFileRoute,
   Outlet,
   redirect,
+  useNavigate,
   useRouterState,
 } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { usersClient } from '#/api/users';
 import { BottomAppBar } from '#/components/bottom-app-bar';
@@ -47,6 +48,56 @@ const MAIN_VIEWS = new Set([
   '/profile',
   '/profile/',
 ]);
+
+function isNonHomeMainView(pathname: string) {
+  return MAIN_VIEWS.has(pathname) && pathname !== '/';
+}
+
+function MainTabBackToHome() {
+  const navigate = useNavigate();
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  const pathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
+  useEffect(() => {
+    const returnToHome = () => {
+      if (!isNonHomeMainView(pathnameRef.current)) return false;
+      if (
+        document.querySelector(
+          '[data-slot="drawer-content"], [data-slot="dialog-content"]',
+        )
+      ) {
+        return false;
+      }
+
+      void navigate({ to: '/', replace: true });
+      return true;
+    };
+
+    const handleNativeBack = (event: Event) => {
+      if (!returnToHome()) return;
+      event.preventDefault();
+    };
+
+    const handlePopState = () => {
+      returnToHome();
+    };
+
+    window.addEventListener('vornway:back', handleNativeBack);
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('vornway:back', handleNativeBack);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [navigate]);
+
+  return null;
+}
 
 function AuthedLayout() {
   const auth = useAuth();
@@ -105,6 +156,7 @@ function AuthedLayout() {
 
   return (
     <div className="mobile-shell">
+      <MainTabBackToHome />
       <div className="mobile-shell-frame">
         <div key={pathname} className="native-route-enter">
           <Outlet />

@@ -58,6 +58,7 @@ export function HomeAction({ action, onSelect }: HomeActionProps) {
           type: '',
           description: '',
           draftId: '',
+          from: 'home',
         }}
         className={className}
       >

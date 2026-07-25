@@ -25,6 +25,7 @@ export const Route = createFileRoute('/_authed/groups/new/')({
     description:
       typeof search.description === 'string' ? search.description : '',
     draftId: typeof search.draftId === 'string' ? search.draftId : '',
+    from: search.from === 'home' ? 'home' : 'groups',
   }),
   component: RouteComponent,
 });
@@ -42,6 +43,7 @@ function RouteComponent() {
     type: searchType,
     description: searchDescription,
     draftId,
+    from,
   } = Route.useSearch();
 
   const [name, setName] = useState(searchName);
@@ -81,9 +83,10 @@ function RouteComponent() {
         name: name.trim(),
         type: type.trim(),
         description: description.trim(),
+        from,
       },
     });
-  }, [description, draftId, isValid, name, router, type]);
+  }, [description, draftId, from, isValid, name, router, type]);
 
   const handleImageSelect = async (file: File | null) => {
     if (!file) return;
@@ -136,6 +139,7 @@ function RouteComponent() {
         name: name.trim(),
         type: type.trim(),
         description: description.trim(),
+        from,
       },
     });
   };
@@ -146,7 +150,7 @@ function RouteComponent() {
         <header className="mb-6">
           <button
             type="button"
-            onClick={() => navigate({ to: '/groups' })}
+            onClick={() => navigate({ to: from === 'home' ? '/' : '/groups' })}
             className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#334155]"
           >
             <HugeiconsIcon icon={ArrowLeftIcon} className="size-4" />

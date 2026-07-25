@@ -43,6 +43,7 @@ export const Route = createFileRoute('/_authed/groups/new/participants')({
     description:
       typeof search.description === 'string' ? search.description : '',
     draftId: typeof search.draftId === 'string' ? search.draftId : '',
+    from: search.from === 'home' ? 'home' : 'groups',
   }),
   component: RouteComponent,
 });
@@ -74,7 +75,7 @@ function normalizeText(value: string) {
 function RouteComponent() {
   const navigate = useNavigate();
   const t = getGroupDetailMessages();
-  const { name, type, description, draftId } = Route.useSearch();
+  const { name, type, description, draftId, from } = Route.useSearch();
   const createGroupMutation = useCreateGroupMutation();
   const network = useNetworkState();
 
@@ -156,6 +157,7 @@ function RouteComponent() {
         type,
         description,
         draftId: draftId || '',
+        from,
       },
       replace: true,
     });

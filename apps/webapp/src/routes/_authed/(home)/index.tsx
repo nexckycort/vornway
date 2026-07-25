@@ -133,6 +133,7 @@ function RouteComponent() {
                         type: '',
                         description: '',
                         draftId: '',
+                        from: 'home',
                       }}
                       className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-base font-medium text-[#202124] shadow-[0_6px_16px_rgba(0,0,0,0.05)] transition-transform active:translate-y-px"
                     >

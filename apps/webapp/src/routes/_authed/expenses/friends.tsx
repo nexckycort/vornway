@@ -123,7 +123,12 @@ function FriendsExpensesPage() {
           <h1 className="text-2xl font-semibold leading-8">{t.title}</h1>
           <Button
             type="button"
-            onClick={() => void navigate({ to: '/expenses/new' })}
+            onClick={() =>
+              void navigate({
+                to: '/expenses/new',
+                search: { from: 'friends' },
+              })
+            }
             className="mt-4 h-11 w-full rounded-full text-base font-medium shadow-none"
           >
             <HugeiconsIcon icon={Add01Icon} className="size-4" />
@@ -173,7 +178,12 @@ function FriendsExpensesPage() {
           <div className="-mx-4 mt-4 flex gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
               type="button"
-              onClick={() => void navigate({ to: '/expenses/new' })}
+              onClick={() =>
+                void navigate({
+                  to: '/expenses/new',
+                  search: { from: 'friends' },
+                })
+              }
               className="flex w-12 shrink-0 flex-col items-center gap-2"
             >
               <span className="flex size-10 items-center justify-center rounded-full border border-dashed border-primary bg-[#fff0f5] text-primary">
@@ -194,7 +204,7 @@ function FriendsExpensesPage() {
                   onClick={() =>
                     void navigate({
                       to: '/expenses/quick-split',
-                      search: { friendIds: [friend.id] },
+                      search: { friendIds: [friend.id], from: 'friends' },
                     })
                   }
                   className="flex w-12 shrink-0 flex-col items-center gap-2"

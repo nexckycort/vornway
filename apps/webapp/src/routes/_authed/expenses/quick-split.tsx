@@ -33,6 +33,7 @@ export const Route = createFileRoute('/_authed/expenses/quick-split')({
     search: Record<string, unknown>,
   ): {
     friendIds: string[];
+    from: 'home' | 'friends';
     quickSplitId?: string;
     expenseId?: string;
   } => ({
@@ -41,6 +42,7 @@ export const Route = createFileRoute('/_authed/expenses/quick-split')({
           (value): value is string => typeof value === 'string',
         )
       : [],
+    from: search.from === 'friends' ? ('friends' as const) : ('home' as const),
     quickSplitId:
       typeof search.quickSplitId === 'string' ? search.quickSplitId : undefined,
     expenseId:
@@ -101,7 +103,7 @@ function formatEditableNumber(value: number): string {
 }
 
 function RouteComponent() {
-  const { friendIds, quickSplitId, expenseId } = Route.useSearch();
+  const { friendIds, from, quickSplitId, expenseId } = Route.useSearch();
   const navigate = useNavigate();
   const t = getQuickSplitMessages();
   const { user } = useAuth();
@@ -451,10 +453,10 @@ function RouteComponent() {
         await navigate({
           to: '/expenses/friends/$quickSplitId/$expenseId',
           params: { quickSplitId, expenseId },
-          search: { from: 'friends' },
+          search: { from },
         });
       } else {
-        await navigate({ to: '/' });
+        await navigate({ to: from === 'friends' ? '/expenses/friends' : '/' });
       }
     } catch (error) {
       toast.error(
@@ -473,8 +475,9 @@ function RouteComponent() {
         ? {
             to: '/expenses/friends/$quickSplitId/$expenseId',
             params: { quickSplitId, expenseId },
+            search: { from },
           }
-        : { to: '/expenses/new' },
+        : { to: '/expenses/new', search: { from } },
     );
   };
 

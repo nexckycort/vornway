@@ -12,7 +12,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useQueryClient } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -43,6 +43,9 @@ import {
 import { getGoalsMessages } from '../-messages';
 
 export const Route = createFileRoute('/_authed/goals/$id/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    from: search.from === 'home' ? ('home' as const) : ('goals' as const),
+  }),
   component: RouteComponent,
 });
 
@@ -111,6 +114,8 @@ function isMemberOnTrack(input: {
 function RouteComponent() {
   const t = getGoalsMessages();
   const { id } = Route.useParams();
+  const { from } = Route.useSearch();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const goalQuery = useGoalDetailQuery(id);
   const goal = goalQuery.data;
@@ -188,12 +193,7 @@ function RouteComponent() {
   }, [goal, showEditDrawer]);
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      window.history.back();
-      return;
-    }
-
-    window.location.replace('/goals');
+    void navigate({ to: from === 'home' ? '/' : '/goals' });
   };
 
   const addParticipant = async (participant: {

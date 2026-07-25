@@ -8,6 +8,9 @@ import { cn } from '#/lib/utils';
 import { useExpenseEntryData } from './-hooks/use-expense-entry-data';
 import { getQuickSplitMessages } from './-messages';
 export const Route = createFileRoute('/_authed/expenses/new')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    from: search.from === 'friends' ? ('friends' as const) : ('home' as const),
+  }),
   component: RouteComponent,
 });
 
@@ -35,6 +38,7 @@ function getGroupCardGradient(groupId: string) {
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const { from } = Route.useSearch();
   const t = getQuickSplitMessages();
   const { spaces, recentFriends, isLoading } = useExpenseEntryData();
   const [search, setSearch] = useState('');
@@ -83,6 +87,7 @@ function RouteComponent() {
       to: '/expenses/quick-split',
       search: {
         friendIds: selectedFriendIds,
+        from,
       },
     });
   };
@@ -97,7 +102,9 @@ function RouteComponent() {
               variant="outline"
               size="icon-sm"
               className="rounded-full border-[#ebebeb] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.05)]"
-              onClick={() => navigate({ to: '/' })}
+              onClick={() =>
+                navigate({ to: from === 'friends' ? '/expenses/friends' : '/' })
+              }
             >
               <span className="sr-only">{t.back}</span>
               <HugeiconsIcon icon={ChevronLeftIcon} className="size-4" />

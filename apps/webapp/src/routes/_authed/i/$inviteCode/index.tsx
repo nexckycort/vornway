@@ -64,6 +64,7 @@ function RouteComponent() {
       await navigate({
         to: '/goals/$id',
         params: { id: groupId },
+        search: { from: 'goals' },
         replace: true,
       });
       return;

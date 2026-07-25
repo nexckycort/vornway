@@ -39,7 +39,7 @@ function RouteComponent() {
     (notificationsSummaryQuery.data?.unreadCount ?? 0) > 0;
 
   const handleCreateExpense = () => {
-    void navigate({ to: '/expenses/new' });
+    void navigate({ to: '/expenses/new', search: { from: 'home' } });
   };
 
   const handleSelectAction = (action: (typeof data.actions)[number]) => {
@@ -200,7 +200,12 @@ function RouteComponent() {
                         </p>
                         <button
                           type="button"
-                          onClick={() => void navigate({ to: '/goals/new' })}
+                          onClick={() =>
+                            void navigate({
+                              to: '/goals/new',
+                              search: { from: 'home' },
+                            })
+                          }
                           className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"
                         >
                           {t.createGoal}

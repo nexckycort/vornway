@@ -24,6 +24,9 @@ import {
 } from '../-lib/goal-experience';
 import { getGoalsMessages } from '../-messages';
 export const Route = createFileRoute('/_authed/goals/new/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    from: search.from === 'home' ? ('home' as const) : ('goals' as const),
+  }),
   component: RouteComponent,
 });
 
@@ -40,6 +43,7 @@ function normalizeText(value: string) {
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const { from } = Route.useSearch();
   const t = getGoalsMessages();
   const createGoalMutation = useCreateGoalMutation();
   const nameRef = useRef<HTMLInputElement | null>(null);
@@ -183,6 +187,7 @@ function RouteComponent() {
       await navigate({
         to: '/goals/$id',
         params: { id: result.id },
+        search: { from },
         replace: true,
       });
     } catch (submitError) {
@@ -197,7 +202,7 @@ function RouteComponent() {
   const nextStep = () => setStep((current) => Math.min(5, current + 1));
   const previousStep = () => {
     if (step === 0) {
-      void navigate({ to: '/goals', replace: true });
+      void navigate({ to: from === 'home' ? '/' : '/goals', replace: true });
       return;
     }
     setStep((current) => Math.max(0, current - 1));

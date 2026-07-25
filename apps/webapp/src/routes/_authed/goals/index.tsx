@@ -61,7 +61,9 @@ function RouteComponent() {
 
           <button
             type="button"
-            onClick={() => void navigate({ to: '/goals/new' })}
+            onClick={() =>
+              void navigate({ to: '/goals/new', search: { from: 'goals' } })
+            }
             className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-medium text-white shadow-[0_10px_24px_rgba(59,130,246,0.22)]"
           >
             <HugeiconsIcon icon={Add01Icon} className="size-4" />
@@ -102,7 +104,12 @@ function RouteComponent() {
                 <p className="mt-2 text-sm text-[#64748b]">{t.emptyCopy}</p>
                 <button
                   type="button"
-                  onClick={() => void navigate({ to: '/goals/new' })}
+                  onClick={() =>
+                    void navigate({
+                      to: '/goals/new',
+                      search: { from: 'goals' },
+                    })
+                  }
                   className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white"
                 >
                   {t.common.createGoal}
@@ -118,6 +125,7 @@ function RouteComponent() {
                       void navigate({
                         to: '/goals/$id',
                         params: { id: goal.id },
+                        search: { from: 'goals' },
                       });
                     }}
                   />

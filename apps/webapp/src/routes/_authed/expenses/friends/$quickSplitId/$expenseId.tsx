@@ -42,7 +42,7 @@ export const Route = createFileRoute(
   '/_authed/expenses/friends/$quickSplitId/$expenseId',
 )({
   validateSearch: (search: Record<string, unknown>) => ({
-    from: search.from === 'home' ? 'home' : undefined,
+    from: search.from === 'home' ? ('home' as const) : ('friends' as const),
   }),
   component: RouteComponent,
 });
@@ -298,6 +298,7 @@ function RouteComponent() {
                       to: '/expenses/quick-split',
                       search: {
                         friendIds: [],
+                        from,
                         quickSplitId,
                         expenseId,
                       },

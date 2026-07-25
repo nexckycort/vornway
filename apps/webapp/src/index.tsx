@@ -7,7 +7,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { AppUpdateBanner } from './components/app-update-banner';
 import { FullscreenLoader } from './components/fullscreen-loader';
+import {
+  NativeAppEnhancements,
+  OfflineSyncStatus,
+} from './components/native-app-enhancements';
 import { NetworkOfflineBanner } from './components/network-offline-banner';
+import { PwaInstallPrompt } from './components/pwa-install-prompt';
 import { Toaster } from './components/ui/sonner';
 import { ThemeProvider } from './components/ui/theme-provider';
 import {
@@ -100,6 +105,9 @@ if (rootEl) {
           <QueryClientProvider client={queryClient}>
             <App />
             <NetworkOfflineBanner />
+            <OfflineSyncStatus />
+            <NativeAppEnhancements />
+            <PwaInstallPrompt />
             <AppUpdateBanner />
             <Toaster richColors />
           </QueryClientProvider>

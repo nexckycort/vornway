@@ -5,6 +5,9 @@
   "start_url": "/",
   "display": "standalone",
   "id": "/",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "background_color": "#fafafa",
   "theme_color": "#DE034D",
   "icons": [

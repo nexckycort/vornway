@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog';
 import { useAuth } from '#/contexts/auth/use-auth';
+import { MAIN_VIEW_PATHS } from '#/lib/browser-back-navigation';
 import { m } from '#/paraglide/messages.js';
 
 export const Route = createFileRoute('/_authed')({
@@ -38,19 +39,8 @@ export const Route = createFileRoute('/_authed')({
   },
 });
 
-const MAIN_VIEWS = new Set([
-  '/',
-  '/expenses/friends',
-  '/groups',
-  '/groups/',
-  '/goals',
-  '/goals/',
-  '/profile',
-  '/profile/',
-]);
-
 function isNonHomeMainView(pathname: string) {
-  return MAIN_VIEWS.has(pathname) && pathname !== '/';
+  return MAIN_VIEW_PATHS.has(pathname) && pathname !== '/';
 }
 
 function MainTabBackToHome() {
@@ -98,7 +88,7 @@ function AuthedLayout() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
-  const showBottomBar = MAIN_VIEWS.has(pathname);
+  const showBottomBar = MAIN_VIEW_PATHS.has(pathname);
   const [username, setUsername] = useState('');
   const normalizedExistingUsername = auth.user?.username?.trim() ?? '';
   const needsUsername = Boolean(

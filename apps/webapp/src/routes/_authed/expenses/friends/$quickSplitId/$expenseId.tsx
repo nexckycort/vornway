@@ -41,6 +41,9 @@ import { getQuickSplitMessages } from '#/routes/_authed/expenses/-messages';
 export const Route = createFileRoute(
   '/_authed/expenses/friends/$quickSplitId/$expenseId',
 )({
+  validateSearch: (search: Record<string, unknown>) => ({
+    from: search.from === 'home' ? 'home' : undefined,
+  }),
   component: RouteComponent,
 });
 
@@ -83,6 +86,7 @@ type Settlement = QuickSplitExpenseDetail['settlements'][number];
 function RouteComponent() {
   const t = getQuickSplitMessages();
   const { quickSplitId, expenseId } = Route.useParams();
+  const { from } = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -141,7 +145,7 @@ function RouteComponent() {
     expense,
   });
   const handleBack = () => {
-    void navigate({ to: '/expenses/friends' });
+    void navigate({ to: from === 'home' ? '/' : '/expenses/friends' });
   };
   const handleConfirmDelete = async () => {
     try {
@@ -151,7 +155,7 @@ function RouteComponent() {
       });
       setShowDeleteDrawer(false);
       toast.success(t.deleted);
-      await navigate({ to: '/expenses/friends' });
+      await navigate({ to: from === 'home' ? '/' : '/expenses/friends' });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t.deleteFailed);
     }

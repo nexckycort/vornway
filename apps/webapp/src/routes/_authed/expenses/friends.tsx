@@ -278,6 +278,7 @@ function ExpenseCard({
         quickSplitId: expense.quickSplitId,
         expenseId: expense.id,
       }}
+      search={{ from: 'friends' }}
       className="flex min-h-[66px] items-center gap-3 rounded-2xl border border-[#ebebeb] bg-white p-3 shadow-[0_1px_1px_rgba(0,0,0,0.05)] transition-transform active:translate-y-px"
     >
       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#f0f0f0] text-[#4c4c4c]">

@@ -451,6 +451,7 @@ function RouteComponent() {
         await navigate({
           to: '/expenses/friends/$quickSplitId/$expenseId',
           params: { quickSplitId, expenseId },
+          search: { from: 'friends' },
         });
       } else {
         await navigate({ to: '/' });

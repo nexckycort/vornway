@@ -131,21 +131,6 @@
     }
   }
 
-  @keyframes native-route-enter {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .native-route-enter {
-    animation: native-route-enter 180ms ease-out both;
-  }
-
   * {
     @apply border-border outline-ring/50;
   }

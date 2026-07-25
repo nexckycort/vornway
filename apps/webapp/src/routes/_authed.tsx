@@ -142,7 +142,7 @@ function AuthedLayout() {
     <div className="mobile-shell">
       <MainTabBackToHome />
       <div className="mobile-shell-frame">
-        <div key={pathname} className="native-route-enter">
+        <div>
           <Outlet />
         </div>
         {showBottomBar ? <BottomAppBar /> : null}

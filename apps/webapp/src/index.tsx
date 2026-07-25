@@ -20,6 +20,7 @@ import {
   AuthProvider,
 } from './contexts/auth/auth-context';
 import { useAuth } from './contexts/auth/use-auth';
+import { installBrowserBackNavigation } from './lib/browser-back-navigation';
 import { getCurrentLocale } from './lib/i18n';
 import { initOfflineSync } from './lib/offline-sync';
 import { registerPushServiceWorker } from './lib/push-notifications';
@@ -31,6 +32,8 @@ if (typeof document !== 'undefined') {
   document.documentElement.lang = getCurrentLocale();
 }
 
+const browserBackNavigation = installBrowserBackNavigation();
+
 const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
@@ -38,6 +41,24 @@ const router = createRouter({
   context: undefined as unknown as {
     auth: AuthContextProps;
   },
+});
+
+browserBackNavigation.configure({
+  getGroupReturnTo: () => {
+    const state = router.state.resolvedLocation?.state as
+      | {
+          returnTo?: string;
+        }
+      | undefined;
+    return state?.returnTo?.startsWith('/') ? state.returnTo : undefined;
+  },
+  navigate: (to) => {
+    void router.navigate({ to, replace: true } as never);
+  },
+});
+
+router.subscribe('onResolved', ({ toLocation }) => {
+  browserBackNavigation.setCurrentPathname(toLocation.pathname);
 });
 
 const queryClient = new QueryClient();

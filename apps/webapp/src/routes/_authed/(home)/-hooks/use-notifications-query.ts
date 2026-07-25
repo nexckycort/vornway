@@ -26,5 +26,8 @@ export function useNotificationsQuery() {
 }
 
 export async function markNotificationsAsRead() {
-  await notificationsMarkReadEndpoint();
+  const response = await notificationsMarkReadEndpoint();
+  if (!response.ok) {
+    throw new Error(m['notifications.loadFailed']());
+  }
 }

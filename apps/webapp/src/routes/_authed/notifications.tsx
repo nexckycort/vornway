@@ -4,9 +4,14 @@ import {
   Refresh01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
+import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
+import {
+  clearVisibleNotifications,
+  resolveNotificationUrl,
+} from '#/lib/service-worker-messages';
 import { m } from '#/paraglide/messages.js';
 import {
   markNotificationsAsRead,
@@ -30,6 +35,12 @@ type NotificationGroup = {
     actorImage: string | null;
     type: string;
   }>;
+};
+
+type NotificationsSummaryCache = {
+  data: unknown[];
+  pagination: unknown;
+  unreadCount: number;
 };
 
 const relativeDateFormatter = new Intl.DateTimeFormat('es-CO', {
@@ -131,6 +142,7 @@ function NotificationIcon({
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const notificationsQuery = useNotificationsQuery();
 
   const notifications = notificationsQuery.data?.data ?? [];
@@ -138,9 +150,20 @@ function RouteComponent() {
 
   useEffect(() => {
     return () => {
-      void markNotificationsAsRead();
+      void markNotificationsAsRead()
+        .then(() => {
+          clearVisibleNotifications();
+          queryClient.setQueryData<NotificationsSummaryCache>(
+            ['notifications-summary'],
+            (current) => (current ? { ...current, unreadCount: 0 } : current),
+          );
+          void queryClient.invalidateQueries({
+            queryKey: ['notifications-summary'],
+          });
+        })
+        .catch(() => undefined);
     };
-  }, []);
+  }, [queryClient]);
 
   return (
     <MobilePageLayout
@@ -193,7 +216,8 @@ function RouteComponent() {
                   className="block w-full px-3 py-4 text-left transition-colors active:bg-[#f6f6f6]"
                   onClick={() => {
                     if (!item.url) return;
-                    window.location.href = item.url;
+                    resolveNotificationUrl(item.url);
+                    void navigate({ to: item.url as never });
                   }}
                 >
                   <div className="flex items-start gap-3">

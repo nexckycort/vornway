@@ -41,6 +41,7 @@ import { Skeleton } from '#/components/ui/skeleton';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { compressImageFileToDataUrl } from '#/lib/image-compression';
 import { enqueueExpenseOffline } from '#/lib/offline-expense-query-collection';
+import { consumeSharedReceipt } from '#/lib/shared-intake';
 import { m } from '#/paraglide/messages.js';
 import {
   useCreateCategoryMutation,
@@ -333,10 +334,15 @@ function AdvancedDetailsInput({
 export const Route = createFileRoute('/_authed/groups/$id/add-expense/')({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { expenseId?: string } => ({
+  ): { expenseId?: string; sharedReceipt?: string } => ({
     expenseId:
       typeof search.expenseId === 'string' && search.expenseId.length > 0
         ? search.expenseId
+        : undefined,
+    sharedReceipt:
+      typeof search.sharedReceipt === 'string' &&
+      search.sharedReceipt.length > 0
+        ? search.sharedReceipt
         : undefined,
   }),
   component: RouteComponent,
@@ -376,7 +382,7 @@ function createExpenseLineItem(
 
 function RouteComponent() {
   const { id } = Route.useParams();
-  const { expenseId } = Route.useSearch();
+  const { expenseId, sharedReceipt } = Route.useSearch();
   const isEditMode = Boolean(expenseId);
   const { navigateToGroupRoot } = useGroupFlowNavigation(id);
   const lineItemsMessages = getExpenseLineItemsMessages();
@@ -441,6 +447,7 @@ function RouteComponent() {
   const submitLockRef = useRef(false);
   const didMountAmountRef = useRef(false);
   const didInitializePayersRef = useRef(false);
+  const didConsumeSharedReceiptRef = useRef(false);
 
   const members = groupQuery.data?.members ?? [];
   const categories = groupQuery.data?.categories ?? [];
@@ -994,6 +1001,32 @@ function RouteComponent() {
     }
   };
 
+  useEffect(() => {
+    if (!sharedReceipt || isEditMode || didConsumeSharedReceiptRef.current) {
+      return;
+    }
+
+    didConsumeSharedReceiptRef.current = true;
+    void consumeSharedReceipt(sharedReceipt)
+      .then(async (file) => {
+        if (!file) {
+          throw new Error(m['components.native.sharedReceiptLoadFailed']());
+        }
+
+        const dataUrl = await compressImageFileToDataUrl(file);
+        setAttachmentDataUrl(dataUrl);
+        attachmentFileNameRef.current = file.name;
+      })
+      .catch((receiptError: unknown) => {
+        const message =
+          receiptError instanceof Error
+            ? receiptError.message
+            : m['components.native.sharedReceiptLoadFailed']();
+        setAttachmentError(message);
+        setError(message);
+      });
+  }, [isEditMode, sharedReceipt]);
+
   const clearAttachmentSelection = () => {
     setAttachmentDataUrl(null);
     attachmentFileNameRef.current = null;
@@ -1092,7 +1125,7 @@ function RouteComponent() {
               }))
             : [],
         sharedSplit,
-        ...(advancedDetailsEnabled && attachmentDataUrl
+        ...(attachmentDataUrl
           ? {
               attachmentImage: {
                 dataUrl: attachmentDataUrl,

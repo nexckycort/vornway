@@ -54,7 +54,10 @@
       "installTitle": "Use Vornway like an app",
       "installCopy": "Install it for quicker access and a full-screen experience.",
       "installAction": "Install",
-      "dismissInstall": "Dismiss install prompt"
+      "dismissInstall": "Dismiss install prompt",
+      "sharedReceiptInvalidType": "Share a JPG, PNG, or WebP receipt image.",
+      "sharedReceiptTooLarge": "The receipt image cannot exceed 10 MB.",
+      "sharedReceiptLoadFailed": "We could not load the shared receipt image."
     },
     "fullscreenLoader": {
       "title": "Loading app",

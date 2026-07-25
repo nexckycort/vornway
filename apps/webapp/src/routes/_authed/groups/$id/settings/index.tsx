@@ -29,6 +29,7 @@ import {
   keepGroupFlowState,
   useGroupFlowNavigation,
 } from '#/lib/group-flow-navigation';
+import { copyText as copyToClipboard, shareOrCopy } from '#/lib/native-share';
 import {
   useDeleteGroupMutation,
   useExportGroupCsvMutation,
@@ -110,8 +111,8 @@ function RouteComponent() {
 
   const copyText = async (value: string, label: string) => {
     try {
-      await navigator.clipboard.writeText(value);
-      setShareMessage(`${label} copiado`);
+      await copyToClipboard(value);
+      setShareMessage(t.settings.copySuccess(label));
       setIsLinkCopied(true);
 
       if (copiedResetTimeoutRef.current) {
@@ -138,12 +139,10 @@ function RouteComponent() {
     if (!inviteLink) return;
 
     try {
-      if (navigator.share) {
-        await navigator.share({ url: inviteLink });
-        return;
+      const result = await shareOrCopy({ url: inviteLink });
+      if (result === 'copied') {
+        setShareMessage(t.settings.copySuccess(t.settings.inviteLinkLabel));
       }
-
-      await copyText(inviteLink, 'Enlace');
     } catch {
       setShareMessage(t.settings.shareFailed);
     }

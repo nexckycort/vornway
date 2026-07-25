@@ -8,33 +8,71 @@
   "launch_handler": {
     "client_mode": "navigate-existing"
   },
+  "shortcuts": [
+    {
+      "name": "Crear gasto",
+      "short_name": "Nuevo gasto",
+      "description": "Registra un gasto compartido",
+      "url": "/expenses/new?from=home&source=shortcut",
+      "icons": [{ "src": "/android/launchericon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Crear espacio",
+      "short_name": "Nuevo espacio",
+      "description": "Crea un espacio para organizar gastos",
+      "url": "/groups/new?from=home&source=shortcut",
+      "icons": [{ "src": "/android/launchericon-96x96.png", "sizes": "96x96" }]
+    }
+  ],
+  "share_target": {
+    "action": "/share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "receipt",
+          "accept": ["image/jpeg", "image/png", "image/webp"]
+        }
+      ]
+    }
+  },
   "background_color": "#fafafa",
   "theme_color": "#DE034D",
   "icons": [
     {
-      "src": "android/launchericon-512-512.png",
+      "src": "/android/launchericon-512x512.png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "android/launchericon-192-192.png",
+      "src": "/android/launchericon-maskable-1254x1254.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/android/launchericon-192x192.png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "android/launchericon-144-144.png",
+      "src": "/android/launchericon-144x144.png",
       "sizes": "144x144"
     },
     {
-      "src": "android/launchericon-96-96.png",
+      "src": "/android/launchericon-96x96.png",
       "sizes": "96x96"
     },
     {
-      "src": "android/launchericon-72-72.png",
+      "src": "/android/launchericon-72x72.png",
       "sizes": "72x72"
     },
     {
-      "src": "android/launchericon-48-48.png",
+      "src": "/android/launchericon-48x48.png",
       "sizes": "48x48"
     },
     {

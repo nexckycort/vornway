@@ -24,12 +24,24 @@ import { installBrowserBackNavigation } from './lib/browser-back-navigation';
 import { getCurrentLocale } from './lib/i18n';
 import { initOfflineSync } from './lib/offline-sync';
 import { registerPushServiceWorker } from './lib/push-notifications';
+import {
+  installServiceWorkerNavigation,
+  resolveNotificationUrl,
+  syncServiceWorkerLocale,
+} from './lib/service-worker-messages';
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
 
 if (typeof document !== 'undefined') {
-  document.documentElement.lang = getCurrentLocale();
+  const locale = getCurrentLocale();
+  document.documentElement.lang = locale;
+  document
+    .querySelector<HTMLLinkElement>('link[rel="manifest"]')
+    ?.setAttribute(
+      'href',
+      locale === 'en' ? '/manifest.en.json' : '/manifest.json',
+    );
 }
 
 const browserBackNavigation = installBrowserBackNavigation();
@@ -59,6 +71,11 @@ browserBackNavigation.configure({
 
 router.subscribe('onResolved', ({ toLocation }) => {
   browserBackNavigation.setCurrentPathname(toLocation.pathname);
+  resolveNotificationUrl(toLocation.pathname);
+});
+
+installServiceWorkerNavigation((path) => {
+  void router.navigate({ to: path as never });
 });
 
 const queryClient = new QueryClient();
@@ -74,7 +91,9 @@ function App() {
 
   React.useEffect(() => {
     const scheduleBackgroundSetup = () => {
-      void registerPushServiceWorker();
+      void registerPushServiceWorker().then(() => {
+        syncServiceWorkerLocale(getCurrentLocale());
+      });
       initOfflineSync();
     };
 

@@ -1,5 +1,5 @@
 import { pushClient } from '#/api/push';
-import { API_URL, VAPID_PUBLIC_KEY } from '#/config/env';
+import { VAPID_PUBLIC_KEY } from '#/config/env';
 
 type PushPermissionStatus =
   | 'unsupported'
@@ -30,7 +30,7 @@ function base64UrlToUint8Array(base64String: string): Uint8Array {
 }
 
 export async function registerPushServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  if (!isPushSupported()) {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
     return null;
   }
 
@@ -101,27 +101,13 @@ async function sendPushTestNotification() {
 }
 
 async function revokePushSubscription(subscription: PushSubscription) {
-  if (!API_URL) {
-    throw new Error('Falta API_URL');
-  }
-
   const subscriptionData = subscription.toJSON() as {
     endpoint: string;
   };
 
-  const response = await fetch(
-    `${API_URL.replace(/\/$/, '')}/api/push/subscriptions`,
-    {
-      method: 'DELETE',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        endpoint: subscriptionData.endpoint,
-      }),
-    },
-  );
+  const response = await pushClient.subscriptions.$delete({
+    json: { endpoint: subscriptionData.endpoint },
+  });
 
   if (!response.ok) {
     throw new Error(m['system.pushDisableFailed']());

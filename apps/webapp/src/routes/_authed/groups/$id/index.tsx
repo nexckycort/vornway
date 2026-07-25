@@ -21,6 +21,7 @@ import {
 } from '#/components/ui/drawer';
 import { usePinnedExpenseIds } from '#/lib/expense-pins';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
+import { shareOrCopy } from '#/lib/native-share';
 import {
   getEmptyPendingExpenses,
   getPendingExpensesForGroup,
@@ -303,25 +304,14 @@ function RouteComponent() {
     }, {}),
   ).filter(([, amount]) => Math.abs(amount) >= 0.01);
 
-  const copyText = async (value: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setShareMessage(`${label} copiado`);
-    } catch {
-      setShareMessage(t.detail.copyFailed);
-    }
-  };
-
   const shareInvite = async () => {
     if (!inviteLink) return;
 
     try {
-      if (navigator.share) {
-        await navigator.share({ url: inviteLink });
-        return;
+      const result = await shareOrCopy({ url: inviteLink });
+      if (result === 'copied') {
+        setShareMessage(t.settings.copySuccess(t.settings.inviteLinkLabel));
       }
-
-      await copyText(inviteLink, 'Enlace');
     } catch {
       setShareMessage(t.detail.shareFailed);
     }

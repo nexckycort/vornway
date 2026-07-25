@@ -19,6 +19,7 @@ import {
 } from '#/components/ui/drawer';
 import { useNetworkState } from '#/hooks/use-network-state';
 import { getGroupFlowEntryState } from '#/lib/group-flow-navigation';
+import { copyText, shareOrCopy } from '#/lib/native-share';
 import {
   enqueueGroupOffline,
   syncPendingGroupsQueue,
@@ -566,7 +567,7 @@ function RouteComponent() {
                       : ''
                   }`}
                   onClick={async () => {
-                    await navigator.clipboard.writeText(createdInviteLink);
+                    await copyText(createdInviteLink);
                     setIsLinkCopied(true);
                   }}
                 >
@@ -584,20 +585,14 @@ function RouteComponent() {
                 variant="ghost"
                 className="mt-2 h-11 w-full rounded-full border border-[#e2e8f0] text-[#334155]"
                 onClick={async () => {
-                  if (navigator.share) {
-                    await navigator.share({
-                      title:
-                        createdGroup?.name ??
-                        t.participants.createdGroupFallback,
-                      text: t.participants.shareCreatedText(
-                        createdGroup?.name ?? t.participants.shareFallbackName,
-                      ),
-                      url: createdInviteLink,
-                    });
-                    return;
-                  }
-
-                  await navigator.clipboard.writeText(createdInviteLink);
+                  await shareOrCopy({
+                    title:
+                      createdGroup?.name ?? t.participants.createdGroupFallback,
+                    text: t.participants.shareCreatedText(
+                      createdGroup?.name ?? t.participants.shareFallbackName,
+                    ),
+                    url: createdInviteLink,
+                  });
                 }}
               >
                 <HugeiconsIcon icon={Share02Icon} className="mr-2 size-4" />

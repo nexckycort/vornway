@@ -2,6 +2,113 @@ const buildVersion = new URL(self.location.href).searchParams.get('v') || 'v1';
 let CACHE_NAME = `vornway-app-shell-${buildVersion}`;
 const APP_CACHE_PREFIX = 'vornway-app-shell-';
 const MAX_APP_CACHES = 3;
+const IMAGE_CACHE_NAME = 'vornway-images-v1';
+const MAX_IMAGE_ENTRIES = 120;
+const SETTINGS_CACHE_NAME = 'vornway-settings-v1';
+const LOCALE_SETTINGS_KEY = '/__vornway-settings__/locale';
+const SHARED_RECEIPTS_CACHE = 'vornway-shared-receipts-v1';
+const SHARED_RECEIPT_PATH = '/__vornway-share-target__/receipt/';
+const MAX_SHARED_RECEIPTS = 5;
+const MAX_SHARED_RECEIPT_BYTES = 10 * 1024 * 1024;
+const ACCEPTED_SHARED_RECEIPT_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
+async function readLocale() {
+  const cache = await caches.open(SETTINGS_CACHE_NAME);
+  const response = await cache.match(LOCALE_SETTINGS_KEY);
+  return response ? response.text() : 'es';
+}
+
+async function writeLocale(locale) {
+  const cache = await caches.open(SETTINGS_CACHE_NAME);
+  await cache.put(
+    LOCALE_SETTINGS_KEY,
+    new Response(locale === 'en' ? 'en' : 'es'),
+  );
+}
+
+async function closeNotifications(predicate = () => true) {
+  const notifications = await self.registration.getNotifications();
+  notifications.forEach((notification) => {
+    if (predicate(notification)) notification.close();
+  });
+}
+
+function extractInvitePath(...values) {
+  for (const value of values) {
+    if (typeof value !== 'string' || !value.trim()) continue;
+
+    const urlMatches = value.match(/https?:\/\/[^\s]+/g) ?? [value.trim()];
+    for (const candidate of urlMatches) {
+      try {
+        const url = new URL(candidate, self.location.origin);
+        const segments = url.pathname.split('/').filter(Boolean);
+        const inviteCode =
+          url.hostname === 'join.vornway.com'
+            ? segments[0]
+            : url.origin === self.location.origin && segments[0] === 'i'
+              ? segments[1]
+              : null;
+
+        if (inviteCode && /^[a-zA-Z0-9-]{1,128}$/.test(inviteCode)) {
+          return `/i/${inviteCode}`;
+        }
+      } catch {
+        // Continue checking other shared values.
+      }
+    }
+  }
+
+  return null;
+}
+
+async function handleShareTarget(request) {
+  const formData = await request.formData();
+  const title = formData.get('title');
+  const text = formData.get('text');
+  const url = formData.get('url');
+  const receipt = formData.get('receipt');
+  const invitePath = extractInvitePath(url, text, title);
+  let destination = invitePath ?? '/';
+
+  if (receipt && typeof receipt === 'object' && 'size' in receipt) {
+    if (!ACCEPTED_SHARED_RECEIPT_TYPES.has(receipt.type)) {
+      destination = '/expenses/new?from=home&sharedReceiptError=type';
+    } else if (receipt.size > MAX_SHARED_RECEIPT_BYTES) {
+      destination = '/expenses/new?from=home&sharedReceiptError=size';
+    } else if (receipt.size > 0) {
+      const receiptId = crypto.randomUUID();
+      const receiptUrl = new URL(
+        `${SHARED_RECEIPT_PATH}${receiptId}`,
+        self.location.origin,
+      ).href;
+      const cache = await caches.open(SHARED_RECEIPTS_CACHE);
+      await cache.put(
+        receiptUrl,
+        new Response(receipt, {
+          headers: {
+            'Content-Type': receipt.type,
+            'X-Vornway-Filename': encodeURIComponent(
+              receipt.name || 'receipt-image',
+            ),
+          },
+        }),
+      );
+      const sharedReceipts = await cache.keys();
+      await Promise.all(
+        sharedReceipts
+          .slice(0, Math.max(0, sharedReceipts.length - MAX_SHARED_RECEIPTS))
+          .map((request) => cache.delete(request)),
+      );
+      destination = `/expenses/new?from=home&sharedReceipt=${receiptId}`;
+    }
+  }
+
+  return Response.redirect(new URL(destination, self.location.origin), 303);
+}
 
 function hashString(value) {
   let hash = 0;
@@ -42,6 +149,28 @@ async function pruneOldAppCaches() {
   );
 }
 
+async function pruneImageCache(cache) {
+  const keys = await cache.keys();
+  const staleKeys = keys.slice(0, Math.max(0, keys.length - MAX_IMAGE_ENTRIES));
+  await Promise.all(staleKeys.map((key) => cache.delete(key)));
+}
+
+async function cacheImage(request) {
+  const cache = await caches.open(IMAGE_CACHE_NAME);
+  const cached = await cache.match(request);
+  const networkResponse = fetch(request)
+    .then(async (response) => {
+      if (response.ok || response.type === 'opaque') {
+        await cache.put(request, response.clone());
+        await pruneImageCache(cache);
+      }
+      return response;
+    })
+    .catch(() => cached || new Response('', { status: 504 }));
+
+  return cached || networkResponse;
+}
+
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 
@@ -79,7 +208,9 @@ self.addEventListener('install', (event) => {
       const cache = await caches.open(CACHE_NAME);
       const urlsToCache = Array.from(
         new Set([
-          ...coreAssets.map((asset) => new URL(asset, self.location.origin).href),
+          ...coreAssets.map(
+            (asset) => new URL(asset, self.location.origin).href,
+          ),
           ...assets,
         ]),
       );
@@ -108,11 +239,41 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
+    return;
+  }
+
+  if (event.data?.type === 'SET_LOCALE') {
+    event.waitUntil(writeLocale(event.data.locale));
+    return;
+  }
+
+  if (event.data?.type === 'CLEAR_NOTIFICATIONS') {
+    event.waitUntil(closeNotifications());
+    return;
+  }
+
+  if (
+    event.data?.type === 'NOTIFICATION_RESOLVED' &&
+    typeof event.data.url === 'string'
+  ) {
+    event.waitUntil(
+      closeNotifications(
+        (notification) => notification.data?.url === event.data.url,
+      ),
+    );
   }
 });
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
+
+  if (
+    request.method === 'POST' &&
+    new URL(request.url).pathname === '/share-target'
+  ) {
+    event.respondWith(handleShareTarget(request));
+    return;
+  }
 
   if (request.method !== 'GET') {
     return;
@@ -123,6 +284,11 @@ self.addEventListener('fetch', (event) => {
     request.mode === 'navigate' ||
     (request.headers.get('accept') || '').includes('text/html');
 
+  if (request.destination === 'image') {
+    event.respondWith(cacheImage(request));
+    return;
+  }
+
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) {
     return;
   }
@@ -130,6 +296,25 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     (async () => {
       const cache = await caches.open(CACHE_NAME);
+
+      if (
+        url.pathname === '/manifest.json' ||
+        url.pathname === '/manifest.en.json'
+      ) {
+        try {
+          const response = await fetch(request, { cache: 'no-store' });
+          if (response?.ok) {
+            void cache.put(request, response.clone());
+          }
+          return response;
+        } catch (_error) {
+          const cachedManifest = await matchFromAnyCache(request);
+          if (cachedManifest) {
+            return cachedManifest;
+          }
+          return fetch(request);
+        }
+      }
 
       if (isNavigation) {
         try {
@@ -188,6 +373,8 @@ self.addEventListener('push', (event) => {
     title: 'Vornway',
     body: '',
     url: '/',
+    type: 'activity',
+    tag: null,
     groupId: null,
     expenseId: null,
   };
@@ -203,21 +390,54 @@ self.addEventListener('push', (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(payload.title, {
-      body: payload.body,
-      icon: '/logo.webp',
-      badge: '/favicon.ico',
-      data: {
-        url: payload.url,
-        groupId: payload.groupId,
-        expenseId: payload.expenseId,
-      },
-    }),
+    (async () => {
+      const locale = await readLocale();
+      const tag =
+        payload.tag ||
+        (payload.groupId
+          ? `group:${payload.groupId}:${payload.type || 'activity'}`
+          : `vornway:${payload.type || 'activity'}`);
+
+      await self.registration.showNotification(payload.title, {
+        body: payload.body,
+        icon: '/logo.webp',
+        badge: '/favicon.ico',
+        tag,
+        renotify: true,
+        actions: [
+          {
+            action: 'open',
+            title: locale === 'en' ? 'Open' : 'Abrir',
+          },
+          {
+            action: 'dismiss',
+            title: locale === 'en' ? 'Dismiss' : 'Descartar',
+          },
+        ],
+        data: {
+          url: payload.url,
+          type: payload.type,
+          tag,
+          groupId: payload.groupId,
+          expenseId: payload.expenseId,
+        },
+      });
+
+      try {
+        await self.navigator.setAppBadge?.();
+      } catch {
+        // Badging is optional.
+      }
+    })(),
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+
+  if (event.action === 'dismiss') {
+    return;
+  }
 
   const data = event.notification.data || {};
   const targetUrl =
@@ -225,23 +445,23 @@ self.addEventListener('notificationclick', (event) => {
     (data.groupId && data.expenseId
       ? `/groups/${data.groupId}/expenses/${data.expenseId}`
       : '/');
-  const absoluteUrl = new URL(targetUrl, self.location.origin).href;
-
   event.waitUntil(
-    clients
-      .matchAll({ type: 'window', includeUncontrolled: true })
-      .then((windowClients) => {
-        for (const client of windowClients) {
-          if (client.url === absoluteUrl && 'focus' in client) {
-            return client.focus();
-          }
-        }
+    (async () => {
+      const windowClients = await clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+      const existingClient =
+        windowClients.find((client) => client.visibilityState === 'visible') ??
+        windowClients[0];
 
-        if (clients.openWindow) {
-          return clients.openWindow(targetUrl);
-        }
+      if (existingClient && 'focus' in existingClient) {
+        await existingClient.focus();
+        existingClient.postMessage({ type: 'NAVIGATE', url: targetUrl });
+        return;
+      }
 
-        return undefined;
-      }),
+      await clients.openWindow?.(targetUrl);
+    })(),
   );
 });

@@ -50,6 +50,8 @@ export const pushRoutes = new Hono<AppContext>()
         title: 'Push notifications enabled',
         body: `Hi ${name?.trim() || email || 'Usuario'}, this is a test notification from Vornway.`,
         url: '/profile',
+        type: 'push.test',
+        tag: 'vornway:push-test',
         groupId: 'test',
         expenseId: 'test',
       });

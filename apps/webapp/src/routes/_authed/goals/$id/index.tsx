@@ -26,6 +26,7 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer';
 import { formatCurrency } from '#/lib/i18n';
+import { copyText } from '#/lib/native-share';
 import { m } from '#/paraglide/messages.js';
 import { useAddMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
@@ -503,7 +504,7 @@ function RouteComponent() {
                 icon={<HugeiconsIcon icon={Share02Icon} className="size-5" />}
                 label={t.detail.share}
                 onClick={() => {
-                  void navigator.clipboard?.writeText(window.location.href);
+                  void copyText(window.location.href);
                   toast.success('Enlace copiado');
                 }}
               />

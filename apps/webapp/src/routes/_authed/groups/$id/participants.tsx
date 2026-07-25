@@ -20,6 +20,7 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
+import { shareOrCopy } from '#/lib/native-share';
 import { m } from '#/paraglide/messages.js';
 import {
   useAddMemberMutation,
@@ -98,12 +99,10 @@ function RouteComponent() {
   const shareInvite = async () => {
     if (!inviteLink) return;
     try {
-      if (navigator.share) {
-        await navigator.share({ url: inviteLink });
-        return;
+      const result = await shareOrCopy({ url: inviteLink });
+      if (result === 'copied') {
+        setMessage(t.participants.linkCopied);
       }
-      await navigator.clipboard.writeText(inviteLink);
-      setMessage(t.participants.linkCopied);
     } catch {
       setMessage(t.participants.shareFailed);
     }

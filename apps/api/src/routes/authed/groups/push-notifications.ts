@@ -61,6 +61,8 @@ export function buildExpensePushPayload(input: {
     title: `Nuevo gasto en ${input.groupName}`,
     body: `${input.createdByName} agregó ${formattedAmount} por ${input.expenseTitle}`,
     url: `/groups/${input.groupId}/expense/${input.expenseId}`,
+    type: 'expense.created',
+    tag: `group:${input.groupId}:expenses`,
     groupId: input.groupId,
     expenseId: input.expenseId,
   };
@@ -75,7 +77,9 @@ export function buildGroupMemberAddedPushPayload(input: {
     title: `Te agregaron a ${input.groupName}`,
     body: `${input.addedByName} te agregó al grupo`,
     url: `/groups/${input.groupId}`,
+    type: 'group.member.added',
+    tag: `group:${input.groupId}:members`,
     groupId: input.groupId,
-    expenseId: input.groupId,
+    expenseId: null,
   };
 }

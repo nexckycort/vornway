@@ -9,6 +9,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { usersClient } from '#/api/users';
+import { AppBadgeSync } from '#/components/app-badge-sync';
 import { BottomAppBar } from '#/components/bottom-app-bar';
 import { Button } from '#/components/ui/button';
 import {
@@ -140,6 +141,7 @@ function AuthedLayout() {
 
   return (
     <div className="mobile-shell">
+      <AppBadgeSync />
       <MainTabBackToHome />
       <div className="mobile-shell-frame">
         <div>

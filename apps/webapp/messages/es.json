@@ -54,7 +54,10 @@
       "installTitle": "Usa Vornway como una app",
       "installCopy": "Instálala para acceder más rápido y usarla a pantalla completa.",
       "installAction": "Instalar",
-      "dismissInstall": "Cerrar sugerencia de instalación"
+      "dismissInstall": "Cerrar sugerencia de instalación",
+      "sharedReceiptInvalidType": "Comparte una imagen del recibo en formato JPG, PNG o WebP.",
+      "sharedReceiptTooLarge": "La imagen del recibo no puede superar 10 MB.",
+      "sharedReceiptLoadFailed": "No pudimos cargar la imagen del recibo compartido."
     },
     "fullscreenLoader": {
       "title": "Cargando aplicación",

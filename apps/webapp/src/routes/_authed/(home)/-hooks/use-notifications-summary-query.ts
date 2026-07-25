@@ -17,6 +17,9 @@ const notificationsEndpoint = notificationsClient.index.$get;
 export function useNotificationsSummaryQuery() {
   return useQuery({
     queryKey: ['notifications-summary'],
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const response = await notificationsEndpoint({
         query: { limit: '1' },

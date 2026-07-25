@@ -10,6 +10,8 @@ export type PushNotificationPayload = {
   title: string;
   body: string;
   url: string;
+  type: string;
+  tag: string;
   groupId: string;
   expenseId: string | null;
 };

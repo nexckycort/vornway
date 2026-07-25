@@ -14,14 +14,26 @@
       "short_name": "New expense",
       "description": "Record a shared expense",
       "url": "/expenses/new?from=home&source=shortcut",
-      "icons": [{ "src": "/android/launchericon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/shortcuts/addexpense.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Create space",
       "short_name": "New space",
       "description": "Create a space to organize expenses",
       "url": "/groups/new?from=home&source=shortcut",
-      "icons": [{ "src": "/android/launchericon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/shortcuts/creategroup.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ],
   "share_target": {

@@ -42,10 +42,17 @@ function RouteComponent() {
     setIsGoogleLoading(true);
 
     try {
-      await signIn.social({
+      const result = await signIn.social({
         provider: 'google',
         callbackURL,
+        disableRedirect: true,
       });
+
+      if (result.error || !result.data?.url) {
+        throw new Error(result.error?.message ?? 'GOOGLE_REDIRECT_UNAVAILABLE');
+      }
+
+      window.location.replace(result.data.url);
     } catch (rawError) {
       console.error('Error signing in with Google:', rawError);
       setError(t.googleError);

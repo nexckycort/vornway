@@ -15,6 +15,7 @@ export const Route = createFileRoute('/_public')({
     if (context.auth.isAuthenticated) {
       throw redirect({
         to: (search as Record<string, string>).redirect || fallback,
+        replace: true,
       });
     }
   },

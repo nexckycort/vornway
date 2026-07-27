@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import {
   Carousel,
@@ -9,7 +9,11 @@ import {
 import { cn } from '#/lib/utils';
 import { getLoginMessages } from '#/routes/_public/login/-messages';
 
-export function OnboardingCarousel() {
+type OnboardingCarouselProps = {
+  actions: ReactNode;
+};
+
+export function OnboardingCarousel({ actions }: OnboardingCarouselProps) {
   const t = getLoginMessages();
   const [api, setApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -46,53 +50,61 @@ export function OnboardingCarousel() {
     };
   }, [api]);
 
+  const current = slides[currentSlide] ?? slides[0];
+
   return (
-    <Carousel
-      className="absolute inset-x-0 top-0 -bottom-6 overflow-hidden [&_[data-slot=carousel-content]]:h-full lg:bottom-0"
-      opts={{ loop: true }}
-      setApi={setApi}
-    >
-      <CarouselContent className="-ml-0 h-full">
-        {slides.map((slide) => (
-          <CarouselItem key={slide.title} className="h-full pl-0">
-            <div className="relative h-full min-h-[280px] w-full overflow-hidden">
+    <div className="relative size-full overflow-hidden">
+      <Carousel
+        className="absolute inset-0 overflow-hidden [&_[data-slot=carousel-content]]:h-full"
+        opts={{ loop: true }}
+        setApi={setApi}
+      >
+        <CarouselContent className="-ml-0 h-full">
+          {slides.map((slide) => (
+            <CarouselItem key={slide.title} className="relative h-full pl-0">
               <img
                 src={slide.image}
                 alt=""
                 className="absolute inset-0 size-full object-cover object-center"
               />
-              <div className="absolute inset-0 bg-black/50 lg:bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.12)_38%,rgba(0,0,0,0.78)_100%)]" />
-              <div className="absolute inset-x-0 bottom-11 flex flex-col items-center gap-4 px-5 text-center text-white lg:bottom-12 lg:items-start lg:gap-6 lg:px-12 lg:text-left">
-                <div className="flex max-w-[380px] flex-col gap-1 lg:max-w-[520px] lg:gap-3">
-                  <h2 className="text-2xl leading-8 font-semibold text-balance lg:text-[42px] lg:leading-[1.12] lg:tracking-[-0.035em]">
-                    {slide.title}
-                  </h2>
-                  <p className="text-xs leading-4 text-balance text-[#bdbdbd] lg:max-w-[460px] lg:text-sm lg:leading-6 lg:text-white/80">
-                    {slide.description}
-                  </p>
-                </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
 
-                <fieldset className="flex items-center gap-1.5 lg:self-start">
-                  <legend className="sr-only">{`${currentSlide + 1} de ${slides.length}`}</legend>
-                  {slides.map((item, index) => (
-                    <button
-                      key={item.title}
-                      type="button"
-                      onClick={() => api?.scrollTo(index)}
-                      aria-label={`Ir a la diapositiva ${index + 1}`}
-                      aria-current={index === currentSlide ? 'true' : undefined}
-                      className={cn(
-                        'h-2 rounded-full bg-white/80 transition-[width,opacity] duration-200',
-                        index === currentSlide ? 'w-10 opacity-100' : 'w-5',
-                      )}
-                    />
-                  ))}
-                </fieldset>
-              </div>
-            </div>
-          </CarouselItem>
-        ))}
-      </CarouselContent>
-    </Carousel>
+      <div className="pointer-events-none absolute inset-0 bg-black/50" />
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-4 px-6 pt-4 pb-[calc(2rem+env(safe-area-inset-bottom))] text-left text-white">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[clamp(2rem,8.75vw,2.25rem)] leading-10 font-semibold text-balance">
+            {current.title}
+          </h1>
+          <p className="text-base leading-6 text-[#bdbdbd]">
+            {current.description}
+          </p>
+        </div>
+
+        <fieldset className="pointer-events-auto flex items-center gap-1.5">
+          <legend className="sr-only">
+            {t.slideProgress(currentSlide + 1, slides.length)}
+          </legend>
+          {slides.map((slide, index) => (
+            <button
+              key={slide.title}
+              type="button"
+              onClick={() => api?.scrollTo(index)}
+              aria-label={t.goToSlide(index + 1)}
+              aria-current={index === currentSlide ? 'true' : undefined}
+              className={cn(
+                'h-2 rounded-full bg-white/80 transition-[width,opacity] duration-200',
+                index === currentSlide ? 'w-10 opacity-100' : 'w-5',
+              )}
+            />
+          ))}
+        </fieldset>
+
+        <div className="pointer-events-auto mt-0.5">{actions}</div>
+      </div>
+    </div>
   );
 }

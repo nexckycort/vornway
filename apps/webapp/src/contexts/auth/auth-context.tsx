@@ -6,7 +6,7 @@ import {
   useState,
 } from 'react';
 import { resolveAssetUrl } from '#/lib/asset-url';
-import { signIn, signOut, useSession } from '#/lib/auth-client';
+import { signOut, useSession } from '#/lib/auth-client';
 
 const AUTH_USER_CACHE_KEY = 'vornway.auth.cached-user';
 
@@ -83,7 +83,6 @@ function clearCachedUser() {
 export type AuthContextProps = {
   loading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, otp: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
   user: User | null;
@@ -102,16 +101,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isAuthenticated =
     !forcedLoggedOut && (data !== null || currentUser !== null);
-
-  const login = useCallback(async (email: string, otp: string) => {
-    const result = await signIn.emailOtp({
-      email,
-      otp,
-    });
-    if (result.error) {
-      throw new Error(result.error.code);
-    }
-  }, []);
 
   const logout = useCallback(async () => {
     setForcedLoggedOut(true);
@@ -170,7 +159,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         loading: loading,
         isAuthenticated,
-        login,
         logout,
         refresh,
         user: currentUser,

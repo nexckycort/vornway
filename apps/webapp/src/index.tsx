@@ -24,10 +24,7 @@ import { installBrowserBackNavigation } from './lib/browser-back-navigation';
 import { getCurrentLocale } from './lib/i18n';
 import { initOfflineSync } from './lib/offline-sync';
 import { registerPushServiceWorker } from './lib/push-notifications';
-import {
-  createFirstVisitTracker,
-  scheduleRoutePreloads,
-} from './lib/route-preloading';
+import { scheduleRoutePreloads } from './lib/route-preloading';
 import {
   installServiceWorkerNavigation,
   resolveNotificationUrl,
@@ -57,16 +54,6 @@ const router = createRouter({
   context: undefined as unknown as {
     auth: AuthContextProps;
   },
-});
-
-const firstVisitTracker = createFirstVisitTracker(window.location.pathname);
-
-router.subscribe('onBeforeNavigate', ({ toLocation }) => {
-  firstVisitTracker.start(toLocation.pathname);
-});
-
-router.subscribe('onRendered', ({ toLocation }) => {
-  firstVisitTracker.finish(toLocation.pathname);
 });
 
 browserBackNavigation.configure({

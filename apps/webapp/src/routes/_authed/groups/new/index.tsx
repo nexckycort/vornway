@@ -428,8 +428,8 @@ function SpaceTypeSelection({
   };
 
   return (
-    <main className="min-h-dvh bg-[#efefef] text-foreground">
-      <div className="mx-auto flex min-h-dvh w-full max-w-[412px] flex-col bg-white">
+    <main className="h-dvh max-h-dvh overflow-hidden bg-[#efefef] text-foreground">
+      <div className="mx-auto flex h-dvh max-h-dvh w-full max-w-[412px] flex-col overflow-hidden bg-white">
         <header className="relative flex h-16 shrink-0 items-center justify-center border-b border-[#f0f0f0] px-16">
           <button
             type="button"

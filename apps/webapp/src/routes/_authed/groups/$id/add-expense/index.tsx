@@ -447,6 +447,7 @@ function RouteComponent() {
   const members = groupQuery.data?.members ?? [];
   const categories = groupQuery.data?.categories ?? [];
   const expense = expenseQuery.data;
+  const isPersonalSpace = groupQuery.data?.type === 'personal';
   const currentCurrency = currencyMeta[currency] ?? currencyMeta.COP;
   const selectedCategory = categories.find((item) => item.id === categoryId);
   const advancedDetailsEnabled =
@@ -608,7 +609,9 @@ function RouteComponent() {
       );
       setPayerValues(restoredPayerValues ?? {});
       setParticipantIds(
-        expense.participants.map((participant) => participant.memberId),
+        isPersonalSpace
+          ? [groupQuery.data?.myMembership?.id ?? expense.paidBy.id]
+          : expense.participants.map((participant) => participant.memberId),
       );
       setSplitMethod(sharedSplit?.splitMethod ?? expense.splitMethod);
       setParticipantValues(
@@ -651,8 +654,19 @@ function RouteComponent() {
 
     didInitializePayersRef.current = true;
     setPaidByIds([groupQuery.data.myMembership?.id ?? members[0]?.id ?? '']);
-    setParticipantIds(members.map((member) => member.id));
-  }, [expense, groupQuery.data, isEditMode, members, restoredPayerValues]);
+    setParticipantIds(
+      isPersonalSpace
+        ? [groupQuery.data.myMembership?.id ?? members[0]?.id ?? '']
+        : members.map((member) => member.id),
+    );
+  }, [
+    expense,
+    groupQuery.data,
+    isEditMode,
+    isPersonalSpace,
+    members,
+    restoredPayerValues,
+  ]);
 
   useEffect(() => {
     if (splitMethod === 'equal') return;
@@ -1328,392 +1342,414 @@ function RouteComponent() {
           </button>
         ) : null}
 
-        <section>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="text-sm text-gray-600">
-              {groupMessages.expense.paidBy}
-            </p>
-            <span className="text-xs text-gray-400">
-              {paidByIds.length} seleccionada{paidByIds.length === 1 ? '' : 's'}
-            </span>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-1">
-            {members.map((member) => {
-              const selected = paidByIds.includes(member.id);
-
-              return (
-                <button
-                  key={member.id}
-                  type="button"
-                  onClick={() => togglePayer(member.id)}
-                  className="flex min-w-[72px] flex-col items-center"
-                >
-                  <div
-                    className={`flex size-11 items-center justify-center overflow-hidden rounded-full border-2 ${
-                      selected ? 'border-rose-500' : 'border-transparent'
-                    }`}
-                  >
-                    <ParticipantAvatar
-                      name={member.name}
-                      image={member.image}
-                      sizeClassName="size-full"
-                    />
-                  </div>
-                  <span
-                    className={`mt-1 inline-flex size-4 items-center justify-center rounded-full border text-[10px] font-semibold ${
-                      selected
-                        ? 'border-rose-500 bg-rose-500 text-white'
-                        : 'border-gray-300 bg-white text-transparent'
-                    }`}
-                  >
-                    {selected ? (
-                      <HugeiconsIcon icon={CheckIcon} className="size-2.5" />
-                    ) : (
-                      '•'
-                    )}
-                  </span>
-                  <span className="mt-1.5 max-w-[60px] truncate text-xs text-gray-600">
-                    {member.isCurrentUser
-                      ? groupMessages.expense.you
-                      : member.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {paidByIds.length > 1 ? (
-            <div className="mt-4 rounded-[28px] border border-gray-200 px-3 py-2">
-              <div className="space-y-1">
-                {paidByIds.map((payerId) => {
-                  const payer = members.find((member) => member.id === payerId);
-                  if (!payer) return null;
+        {isPersonalSpace ? null : (
+          <>
+            <section>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-sm text-gray-600">
+                  {groupMessages.expense.paidBy}
+                </p>
+                <span className="text-xs text-gray-400">
+                  {paidByIds.length} seleccionada
+                  {paidByIds.length === 1 ? '' : 's'}
+                </span>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {members.map((member) => {
+                  const selected = paidByIds.includes(member.id);
 
                   return (
-                    <label
-                      key={payerId}
-                      className="flex items-center gap-3 px-1 py-1"
-                    >
-                      <ParticipantAvatar
-                        name={payer.name}
-                        image={payer.image}
-                        sizeClassName="size-9 shrink-0"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <input
-                          value={payerValues[payerId] ?? ''}
-                          onChange={(event) =>
-                            setPayerValues((current) => ({
-                              ...current,
-                              [payerId]: event.target.value,
-                            }))
-                          }
-                          inputMode="decimal"
-                          placeholder={
-                            groupMessages.expense.totalPaidPlaceholder
-                          }
-                          className="h-11 w-full rounded-full border border-gray-200 bg-white px-4 text-sm font-medium text-gray-900 outline-none placeholder:text-gray-400 focus:border-rose-500"
-                        />
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-center justify-between px-1 text-xs">
-                <span
-                  className={
-                    payerSplitIsValid ? 'text-gray-400' : 'text-red-500'
-                  }
-                >
-                  {payerSplitIsValid
-                    ? groupMessages.expense.payersTotalValid
-                    : groupMessages.expense.payersTotalInvalid}
-                </span>
-                <span
-                  className={
-                    payerSplitIsValid ? 'text-gray-500' : 'text-red-500'
-                  }
-                >
-                  {formatMoney(currency, payerSum)}
-                </span>
-              </div>
-            </div>
-          ) : null}
-        </section>
-
-        <section>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="text-sm text-gray-600">
-              {groupMessages.expense.splitWith}
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowSplitDrawer(true)}
-              className="inline-flex items-center gap-1 text-rose-500"
-            >
-              <span className="text-sm font-medium">
-                {splitMethods.find((item) => item.value === splitMethod)?.label}
-              </span>
-              <HugeiconsIcon icon={ChevronDownIcon} className="size-4" />
-            </button>
-          </div>
-
-          {showParticipantsError ? (
-            <p className="mb-3 text-xs font-medium text-red-600">
-              {groupMessages.expense.participantsRequired}
-            </p>
-          ) : null}
-
-          <button
-            type="button"
-            onClick={toggleAllParticipants}
-            className="mt-4 flex w-full items-center gap-3"
-          >
-            <div className="flex size-6 items-center justify-center rounded bg-rose-500">
-              {selectedCount === members.length && members.length > 0 ? (
-                <HugeiconsIcon
-                  icon={MinusSignIcon}
-                  className="size-4 text-white"
-                />
-              ) : (
-                <HugeiconsIcon icon={Add01Icon} className="size-4 text-white" />
-              )}
-            </div>
-            <span className="text-sm font-medium text-gray-900">
-              {groupMessages.expense.all}
-            </span>
-            <span className="ml-auto text-sm text-gray-500">
-              {splitMethod === 'equal'
-                ? formatMoney(currency, equalShare || 0)
-                : splitMethod === 'percentage'
-                  ? `${splitSum.toFixed(2)}% · +${formatMoney(currency, normalizedSharedAmount)}`
-                  : formatMoney(
-                      currency,
-                      splitSum + normalizedSharedAmount || 0,
-                    )}
-            </span>
-          </button>
-
-          {splitMethod !== 'equal' ? (
-            <div className="mt-4 rounded-2xl border border-gray-200 px-4 py-3">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={addSharedExpenseItem}
-                  className="flex size-6 shrink-0 items-center justify-center rounded bg-rose-500"
-                  aria-label={groupMessages.expense.addSharedExpenseAria}
-                >
-                  <HugeiconsIcon
-                    icon={Add01Icon}
-                    className="size-4 text-white"
-                  />
-                </button>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    {groupMessages.expense.sharedExpenseTitle}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {groupMessages.expense.sharedExpenseDescription}
-                  </p>
-                </div>
-              </div>
-
-              {sharedExpenseItems.length > 0 ? (
-                <div className="mt-4 space-y-3">
-                  {sharedExpenseItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="grid grid-cols-[minmax(0,1fr)_7rem_2.5rem] items-center gap-2"
-                    >
-                      <input
-                        value={item.name}
-                        onChange={(event) =>
-                          updateSharedExpenseItem(item.id, {
-                            name: event.target.value,
-                          })
-                        }
-                        placeholder={
-                          groupMessages.expense.sharedExpenseNamePlaceholder
-                        }
-                        className="h-11 rounded-full border border-gray-200 px-4 text-sm text-gray-900 outline-none placeholder:text-gray-400"
-                      />
-                      <input
-                        value={item.amount}
-                        onChange={(event) =>
-                          updateSharedExpenseItem(item.id, {
-                            amount: event.target.value,
-                          })
-                        }
-                        inputMode="decimal"
-                        placeholder="0"
-                        className="h-11 rounded-full border border-gray-200 px-4 text-right text-sm text-gray-900 outline-none placeholder:text-gray-400"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeSharedExpenseItem(item.id)}
-                        className="flex size-10 items-center justify-center rounded-full border border-gray-200 text-gray-500"
-                        aria-label={
-                          groupMessages.expense.removeSharedExpenseAria
-                        }
-                      >
-                        <HugeiconsIcon icon={Delete02Icon} className="size-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-
-              {showSharedExpenseItemsError ? (
-                <p className="mt-3 text-xs font-medium text-red-600">
-                  {groupMessages.expense.sharedExpenseItemsRequired}
-                </p>
-              ) : null}
-
-              {normalizedSharedAmount > 0 && selectedCount > 0 ? (
-                <p className="mt-2 text-xs text-gray-500">
-                  {groupMessages.expense.sharedAmountPerPerson(
-                    formatMoney(currency, sharedShare),
-                  )}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-
-          <div className="mt-4 space-y-3">
-            {members.map((member) => {
-              const selected = participantIds.includes(member.id);
-              const computedAmount = participantComputedAmounts[member.id] ?? 0;
-              const memberLineItems = lineItems.filter(
-                (item) => item.memberId === member.id,
-              );
-
-              return (
-                <div key={member.id}>
-                  <div className="flex items-center justify-between gap-4">
                     <button
+                      key={member.id}
                       type="button"
-                      onClick={() => toggleParticipant(member.id)}
-                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                      onClick={() => togglePayer(member.id)}
+                      className="flex min-w-[72px] flex-col items-center"
                     >
                       <div
-                        className={`flex size-6 items-center justify-center rounded-full ${
-                          selected ? 'bg-rose-500' : 'bg-gray-300'
+                        className={`flex size-11 items-center justify-center overflow-hidden rounded-full border-2 ${
+                          selected ? 'border-rose-500' : 'border-transparent'
+                        }`}
+                      >
+                        <ParticipantAvatar
+                          name={member.name}
+                          image={member.image}
+                          sizeClassName="size-full"
+                        />
+                      </div>
+                      <span
+                        className={`mt-1 inline-flex size-4 items-center justify-center rounded-full border text-[10px] font-semibold ${
+                          selected
+                            ? 'border-rose-500 bg-rose-500 text-white'
+                            : 'border-gray-300 bg-white text-transparent'
                         }`}
                       >
                         {selected ? (
                           <HugeiconsIcon
                             icon={CheckIcon}
-                            className="size-4 text-white"
+                            className="size-2.5"
                           />
                         ) : (
-                          <HugeiconsIcon
-                            icon={Add01Icon}
-                            className="size-4 text-white"
-                          />
+                          '•'
                         )}
-                      </div>
-                      <ParticipantAvatar
-                        name={member.name}
-                        image={member.image}
-                        sizeClassName="size-9 shrink-0"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <span className="block truncate text-sm text-gray-900">
-                          {member.name}
-                          {member.isCurrentUser ? (
-                            <span className="text-gray-500">
-                              {' '}
-                              {groupMessages.expense.you}
-                            </span>
-                          ) : null}
-                        </span>
-                        {splitMethod !== 'equal' && selected ? (
-                          <span className="block text-xs text-gray-500">
-                            {formatMoney(currency, computedAmount)}
-                            {memberLineItems.length > 0
-                              ? ` · ${lineItemsMessages.itemCount(memberLineItems.length)}`
-                              : ''}
-                          </span>
-                        ) : null}
-                      </div>
+                      </span>
+                      <span className="mt-1.5 max-w-[60px] truncate text-xs text-gray-600">
+                        {member.isCurrentUser
+                          ? groupMessages.expense.you
+                          : member.name}
+                      </span>
                     </button>
+                  );
+                })}
+              </div>
 
-                    {selected ? (
-                      splitMethod === 'equal' ? (
-                        <span className="shrink-0 text-sm font-medium text-gray-900">
-                          {formatMoney(currency, equalShare || 0)}
-                        </span>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <input
-                            value={participantValues[member.id] ?? ''}
-                            onChange={(event) =>
-                              setParticipantValues((current) => ({
-                                ...current,
-                                [member.id]: event.target.value,
-                              }))
-                            }
-                            readOnly={
-                              splitMethod === 'exact' &&
-                              memberLineItems.length > 0
-                            }
-                            inputMode="decimal"
-                            placeholder={
-                              splitMethod === 'percentage' ? '0' : '0.00'
-                            }
-                            className={`h-10 w-20 rounded-full border border-gray-200 px-3 text-right text-sm text-gray-900 outline-none ${
-                              memberLineItems.length > 0 ? 'bg-gray-50' : ''
-                            }`}
+              {paidByIds.length > 1 ? (
+                <div className="mt-4 rounded-[28px] border border-gray-200 px-3 py-2">
+                  <div className="space-y-1">
+                    {paidByIds.map((payerId) => {
+                      const payer = members.find(
+                        (member) => member.id === payerId,
+                      );
+                      if (!payer) return null;
+
+                      return (
+                        <label
+                          key={payerId}
+                          className="flex items-center gap-3 px-1 py-1"
+                        >
+                          <ParticipantAvatar
+                            name={payer.name}
+                            image={payer.image}
+                            sizeClassName="size-9 shrink-0"
                           />
-                          <span className="text-xs text-gray-400">
-                            {splitMethod === 'percentage' ? '%' : currency}
-                          </span>
-                          {splitMethod === 'exact' ? (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setLineItemsDrawerMemberId(member.id)
+                          <div className="min-w-0 flex-1">
+                            <input
+                              value={payerValues[payerId] ?? ''}
+                              onChange={(event) =>
+                                setPayerValues((current) => ({
+                                  ...current,
+                                  [payerId]: event.target.value,
+                                }))
                               }
-                              aria-label={lineItemsMessages.drawerTitle(
-                                member.name,
-                              )}
-                              className="flex size-9 items-center justify-center rounded-full border border-gray-200 text-rose-500 transition-colors hover:bg-rose-50"
-                            >
-                              <HugeiconsIcon
-                                icon={Add01Icon}
-                                className="size-4"
-                              />
-                            </button>
-                          ) : null}
-                        </div>
-                      )
-                    ) : (
-                      <span className="shrink-0 text-sm text-gray-400">0</span>
-                    )}
+                              inputMode="decimal"
+                              placeholder={
+                                groupMessages.expense.totalPaidPlaceholder
+                              }
+                              className="h-11 w-full rounded-full border border-gray-200 bg-white px-4 text-sm font-medium text-gray-900 outline-none placeholder:text-gray-400 focus:border-rose-500"
+                            />
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex items-center justify-between px-1 text-xs">
+                    <span
+                      className={
+                        payerSplitIsValid ? 'text-gray-400' : 'text-red-500'
+                      }
+                    >
+                      {payerSplitIsValid
+                        ? groupMessages.expense.payersTotalValid
+                        : groupMessages.expense.payersTotalInvalid}
+                    </span>
+                    <span
+                      className={
+                        payerSplitIsValid ? 'text-gray-500' : 'text-red-500'
+                      }
+                    >
+                      {formatMoney(currency, payerSum)}
+                    </span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ) : null}
+            </section>
 
-          {showLineItemsError ? (
-            <p className="mt-3 text-xs font-medium text-red-600">
-              {lineItemsMessages.validation}
-            </p>
-          ) : null}
-        </section>
+            <section>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-sm text-gray-600">
+                  {groupMessages.expense.splitWith}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowSplitDrawer(true)}
+                  className="inline-flex items-center gap-1 text-rose-500"
+                >
+                  <span className="text-sm font-medium">
+                    {
+                      splitMethods.find((item) => item.value === splitMethod)
+                        ?.label
+                    }
+                  </span>
+                  <HugeiconsIcon icon={ChevronDownIcon} className="size-4" />
+                </button>
+              </div>
 
-        {!splitIsValid && selectedCount > 0 ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            {sharedAmountExceedsTotal
-              ? groupMessages.expense.sharedAmountExceedsTotal
-              : splitMethod === 'percentage'
-                ? m['quickSplit.invalidPercentage']()
-                : groupMessages.expense.sharedSplitInvalid}
-          </div>
-        ) : null}
+              {showParticipantsError ? (
+                <p className="mb-3 text-xs font-medium text-red-600">
+                  {groupMessages.expense.participantsRequired}
+                </p>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={toggleAllParticipants}
+                className="mt-4 flex w-full items-center gap-3"
+              >
+                <div className="flex size-6 items-center justify-center rounded bg-rose-500">
+                  {selectedCount === members.length && members.length > 0 ? (
+                    <HugeiconsIcon
+                      icon={MinusSignIcon}
+                      className="size-4 text-white"
+                    />
+                  ) : (
+                    <HugeiconsIcon
+                      icon={Add01Icon}
+                      className="size-4 text-white"
+                    />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-900">
+                  {groupMessages.expense.all}
+                </span>
+                <span className="ml-auto text-sm text-gray-500">
+                  {splitMethod === 'equal'
+                    ? formatMoney(currency, equalShare || 0)
+                    : splitMethod === 'percentage'
+                      ? `${splitSum.toFixed(2)}% · +${formatMoney(currency, normalizedSharedAmount)}`
+                      : formatMoney(
+                          currency,
+                          splitSum + normalizedSharedAmount || 0,
+                        )}
+                </span>
+              </button>
+
+              {splitMethod !== 'equal' ? (
+                <div className="mt-4 rounded-2xl border border-gray-200 px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={addSharedExpenseItem}
+                      className="flex size-6 shrink-0 items-center justify-center rounded bg-rose-500"
+                      aria-label={groupMessages.expense.addSharedExpenseAria}
+                    >
+                      <HugeiconsIcon
+                        icon={Add01Icon}
+                        className="size-4 text-white"
+                      />
+                    </button>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900">
+                        {groupMessages.expense.sharedExpenseTitle}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {groupMessages.expense.sharedExpenseDescription}
+                      </p>
+                    </div>
+                  </div>
+
+                  {sharedExpenseItems.length > 0 ? (
+                    <div className="mt-4 space-y-3">
+                      {sharedExpenseItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className="grid grid-cols-[minmax(0,1fr)_7rem_2.5rem] items-center gap-2"
+                        >
+                          <input
+                            value={item.name}
+                            onChange={(event) =>
+                              updateSharedExpenseItem(item.id, {
+                                name: event.target.value,
+                              })
+                            }
+                            placeholder={
+                              groupMessages.expense.sharedExpenseNamePlaceholder
+                            }
+                            className="h-11 rounded-full border border-gray-200 px-4 text-sm text-gray-900 outline-none placeholder:text-gray-400"
+                          />
+                          <input
+                            value={item.amount}
+                            onChange={(event) =>
+                              updateSharedExpenseItem(item.id, {
+                                amount: event.target.value,
+                              })
+                            }
+                            inputMode="decimal"
+                            placeholder="0"
+                            className="h-11 rounded-full border border-gray-200 px-4 text-right text-sm text-gray-900 outline-none placeholder:text-gray-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeSharedExpenseItem(item.id)}
+                            className="flex size-10 items-center justify-center rounded-full border border-gray-200 text-gray-500"
+                            aria-label={
+                              groupMessages.expense.removeSharedExpenseAria
+                            }
+                          >
+                            <HugeiconsIcon
+                              icon={Delete02Icon}
+                              className="size-4"
+                            />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {showSharedExpenseItemsError ? (
+                    <p className="mt-3 text-xs font-medium text-red-600">
+                      {groupMessages.expense.sharedExpenseItemsRequired}
+                    </p>
+                  ) : null}
+
+                  {normalizedSharedAmount > 0 && selectedCount > 0 ? (
+                    <p className="mt-2 text-xs text-gray-500">
+                      {groupMessages.expense.sharedAmountPerPerson(
+                        formatMoney(currency, sharedShare),
+                      )}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className="mt-4 space-y-3">
+                {members.map((member) => {
+                  const selected = participantIds.includes(member.id);
+                  const computedAmount =
+                    participantComputedAmounts[member.id] ?? 0;
+                  const memberLineItems = lineItems.filter(
+                    (item) => item.memberId === member.id,
+                  );
+
+                  return (
+                    <div key={member.id}>
+                      <div className="flex items-center justify-between gap-4">
+                        <button
+                          type="button"
+                          onClick={() => toggleParticipant(member.id)}
+                          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                        >
+                          <div
+                            className={`flex size-6 items-center justify-center rounded-full ${
+                              selected ? 'bg-rose-500' : 'bg-gray-300'
+                            }`}
+                          >
+                            {selected ? (
+                              <HugeiconsIcon
+                                icon={CheckIcon}
+                                className="size-4 text-white"
+                              />
+                            ) : (
+                              <HugeiconsIcon
+                                icon={Add01Icon}
+                                className="size-4 text-white"
+                              />
+                            )}
+                          </div>
+                          <ParticipantAvatar
+                            name={member.name}
+                            image={member.image}
+                            sizeClassName="size-9 shrink-0"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <span className="block truncate text-sm text-gray-900">
+                              {member.name}
+                              {member.isCurrentUser ? (
+                                <span className="text-gray-500">
+                                  {' '}
+                                  {groupMessages.expense.you}
+                                </span>
+                              ) : null}
+                            </span>
+                            {splitMethod !== 'equal' && selected ? (
+                              <span className="block text-xs text-gray-500">
+                                {formatMoney(currency, computedAmount)}
+                                {memberLineItems.length > 0
+                                  ? ` · ${lineItemsMessages.itemCount(memberLineItems.length)}`
+                                  : ''}
+                              </span>
+                            ) : null}
+                          </div>
+                        </button>
+
+                        {selected ? (
+                          splitMethod === 'equal' ? (
+                            <span className="shrink-0 text-sm font-medium text-gray-900">
+                              {formatMoney(currency, equalShare || 0)}
+                            </span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <input
+                                value={participantValues[member.id] ?? ''}
+                                onChange={(event) =>
+                                  setParticipantValues((current) => ({
+                                    ...current,
+                                    [member.id]: event.target.value,
+                                  }))
+                                }
+                                readOnly={
+                                  splitMethod === 'exact' &&
+                                  memberLineItems.length > 0
+                                }
+                                inputMode="decimal"
+                                placeholder={
+                                  splitMethod === 'percentage' ? '0' : '0.00'
+                                }
+                                className={`h-10 w-20 rounded-full border border-gray-200 px-3 text-right text-sm text-gray-900 outline-none ${
+                                  memberLineItems.length > 0 ? 'bg-gray-50' : ''
+                                }`}
+                              />
+                              <span className="text-xs text-gray-400">
+                                {splitMethod === 'percentage' ? '%' : currency}
+                              </span>
+                              {splitMethod === 'exact' ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setLineItemsDrawerMemberId(member.id)
+                                  }
+                                  aria-label={lineItemsMessages.drawerTitle(
+                                    member.name,
+                                  )}
+                                  className="flex size-9 items-center justify-center rounded-full border border-gray-200 text-rose-500 transition-colors hover:bg-rose-50"
+                                >
+                                  <HugeiconsIcon
+                                    icon={Add01Icon}
+                                    className="size-4"
+                                  />
+                                </button>
+                              ) : null}
+                            </div>
+                          )
+                        ) : (
+                          <span className="shrink-0 text-sm text-gray-400">
+                            0
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {showLineItemsError ? (
+                <p className="mt-3 text-xs font-medium text-red-600">
+                  {lineItemsMessages.validation}
+                </p>
+              ) : null}
+            </section>
+
+            {!splitIsValid && selectedCount > 0 ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                {sharedAmountExceedsTotal
+                  ? groupMessages.expense.sharedAmountExceedsTotal
+                  : splitMethod === 'percentage'
+                    ? m['quickSplit.invalidPercentage']()
+                    : groupMessages.expense.sharedSplitInvalid}
+              </div>
+            ) : null}
+          </>
+        )}
 
         {error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -1721,27 +1757,29 @@ function RouteComponent() {
           </div>
         ) : null}
 
-        <p className="text-xs text-gray-500">
-          {selectedCount === 0
-            ? groupMessages.expense.selectParticipantToSplit
-            : splitMethod === 'percentage'
-              ? groupMessages.expense.splitSummaryPercentage(
-                  selectedCount,
-                  splitSum.toFixed(2),
-                  formatMoney(currency, baseAmount),
-                  formatMoney(currency, normalizedAmount),
-                )
-              : groupMessages.expense.splitSummaryAmount(
-                  selectedCount,
-                  formatMoney(
-                    currency,
-                    splitMethod === 'equal'
-                      ? normalizedAmount
-                      : splitSum + normalizedSharedAmount,
-                  ),
-                  formatMoney(currency, normalizedAmount),
-                )}
-        </p>
+        {isPersonalSpace ? null : (
+          <p className="text-xs text-gray-500">
+            {selectedCount === 0
+              ? groupMessages.expense.selectParticipantToSplit
+              : splitMethod === 'percentage'
+                ? groupMessages.expense.splitSummaryPercentage(
+                    selectedCount,
+                    splitSum.toFixed(2),
+                    formatMoney(currency, baseAmount),
+                    formatMoney(currency, normalizedAmount),
+                  )
+                : groupMessages.expense.splitSummaryAmount(
+                    selectedCount,
+                    formatMoney(
+                      currency,
+                      splitMethod === 'equal'
+                        ? normalizedAmount
+                        : splitSum + normalizedSharedAmount,
+                    ),
+                    formatMoney(currency, normalizedAmount),
+                  )}
+          </p>
+        )}
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-gray-200 bg-white px-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4">

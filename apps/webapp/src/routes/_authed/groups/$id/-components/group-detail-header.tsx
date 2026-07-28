@@ -109,14 +109,16 @@ export function GroupDetailHeader({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={onOpenQr}
-          className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
-          aria-label={t.header.qrAria}
-        >
-          <HugeiconsIcon icon={QrCodeIcon} className="size-6" />
-        </button>
+        {!isPersonalSpace && (
+          <button
+            type="button"
+            onClick={onOpenQr}
+            className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
+            aria-label={t.header.qrAria}
+          >
+            <HugeiconsIcon icon={QrCodeIcon} className="size-6" />
+          </button>
+        )}
       </div>
 
       <section className="-mx-1 overflow-hidden">

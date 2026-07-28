@@ -3,6 +3,7 @@ import {
   getGroupFlowEntryState,
   getLocationHref,
 } from '#/lib/group-flow-navigation';
+import { m } from '#/paraglide/messages.js';
 import type { Trip } from '#/routes/_authed/(home)/-hooks/use-home-query';
 
 type TripCardProps = {
@@ -33,7 +34,14 @@ export function TripCard({ trip }: TripCardProps) {
           ) : null}
           <div className="min-w-0">
             <h3 className="text-lg font-semibold leading-7">{trip.name}</h3>
-            <p className="text-xs leading-4">{trip.dates}</p>
+            <div className="mt-1 flex items-center gap-2">
+              <p className="text-xs leading-4">{trip.dates}</p>
+              {trip.isPersonal ? (
+                <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium leading-4 text-rose-600">
+                  {m['groups.form.typePersonal']()}
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
 

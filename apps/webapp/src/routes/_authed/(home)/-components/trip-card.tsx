@@ -38,31 +38,34 @@ export function TripCard({ trip }: TripCardProps) {
         </div>
 
         <div className="flex items-center">
-          {trip.avatars.map((avatar) =>
-            avatar.image ? (
-              <img
-                key={`${avatar.name}-${avatar.image}`}
-                src={avatar.image}
-                alt={avatar.name}
-                className="-mr-1.5 size-8 rounded-full border border-border object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <span
-                key={avatar.name}
-                className="-mr-1.5 flex size-8 items-center justify-center rounded-full border border-border bg-[#fafafa] text-sm font-medium leading-5"
-              >
-                {toInitials(avatar.name)}
-              </span>
-            ),
-          )}
-          <span className="flex size-8 items-center justify-center rounded-full border border-border bg-white text-sm font-medium leading-5 shadow-sm">
-            +{trip.extraPeople}
-          </span>
+          {!trip.isPersonal &&
+            trip.avatars.map((avatar) =>
+              avatar.image ? (
+                <img
+                  key={`${avatar.name}-${avatar.image}`}
+                  src={avatar.image}
+                  alt={avatar.name}
+                  className="-mr-1.5 size-8 rounded-full border border-border object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span
+                  key={avatar.name}
+                  className="-mr-1.5 flex size-8 items-center justify-center rounded-full border border-border bg-[#fafafa] text-sm font-medium leading-5"
+                >
+                  {toInitials(avatar.name)}
+                </span>
+              ),
+            )}
+          {!trip.isPersonal ? (
+            <span className="flex size-8 items-center justify-center rounded-full border border-border bg-white text-sm font-medium leading-5 shadow-sm">
+              +{trip.extraPeople}
+            </span>
+          ) : null}
         </div>
       </div>
 
-      {trip.balanceItems ? (
+      {!trip.isPersonal && trip.balanceItems ? (
         <div className="mt-4 flex flex-col gap-2">
           <p className="text-base font-medium leading-6 text-[#047857]">
             {trip.balanceLabel}
@@ -84,11 +87,11 @@ export function TripCard({ trip }: TripCardProps) {
             </p>
           ) : null}
         </div>
-      ) : (
+      ) : !trip.isPersonal ? (
         <p className="mt-4 text-base font-medium leading-6">
           {trip.emptyLabel}
         </p>
-      )}
+      ) : null}
     </Link>
   );
 }

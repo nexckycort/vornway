@@ -71,7 +71,10 @@ browserBackNavigation.configure({
 });
 
 router.subscribe('onResolved', ({ toLocation }) => {
-  browserBackNavigation.setCurrentPathname(toLocation.pathname);
+  browserBackNavigation.setCurrentPathname(
+    toLocation.pathname,
+    toLocation.searchStr,
+  );
   resolveNotificationUrl(toLocation.pathname);
 });
 

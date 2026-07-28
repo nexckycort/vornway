@@ -31,6 +31,7 @@ export type Trip = {
   name: string;
   dates: string;
   imageUrl: string | null;
+  isPersonal?: boolean;
   avatars: Array<{
     name: string;
     image: string | null;
@@ -90,8 +91,10 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
     },
   ];
   const trips: Trip[] = apiData.groups.map((group) => {
-    const avatars =
-      group.members.length <= 2
+    const isPersonal = group.type === 'personal';
+    const avatars = isPersonal
+      ? []
+      : group.members.length <= 2
         ? group.members
         : ([group.members[0], group.members[group.members.length - 1]].filter(
             Boolean,
@@ -100,6 +103,19 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
             image: string | null;
           }>);
     const extraPeople = Math.max(0, group.members.length - avatars.length);
+
+    if (isPersonal) {
+      return {
+        id: group.id,
+        name: group.name,
+        dates: t.createdAt(formatShortDate(group.createdAt)),
+        imageUrl: group.imageUrl,
+        isPersonal: true,
+        avatars: [],
+        extraPeople: 0,
+        emptyLabel: '',
+      };
+    }
 
     const balances = group.participantBalances.map((item) => ({
       person: item.memberName,

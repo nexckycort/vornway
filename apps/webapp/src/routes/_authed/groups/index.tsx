@@ -95,6 +95,20 @@ function RouteComponent() {
   const groupTrips = useMemo(
     () =>
       groups.map((group) => {
+        const isPersonal = group.type === 'personal';
+        if (isPersonal) {
+          return {
+            id: group.id,
+            name: group.name,
+            dates: t.home.createdAt(formatShortDate(group.createdAt)),
+            imageUrl: group.imageUrl,
+            isPersonal: true,
+            avatars: [],
+            extraPeople: 0,
+            emptyLabel: '',
+            createdAt: group.createdAt,
+          };
+        }
         const balanceTotalsByCurrency = new Map<string, number>();
         for (const item of group.participantBalances) {
           const signedAmount =

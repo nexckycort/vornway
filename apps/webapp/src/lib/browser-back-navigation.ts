@@ -26,16 +26,23 @@ function hasOpenOverlay() {
 
 export function installBrowserBackNavigation() {
   let currentPathname = window.location.pathname;
+  let currentSearch = window.location.search;
   let options: BrowserBackNavigationOptions | null = null;
 
   const handlePopState = (event: PopStateEvent) => {
     if (!options || hasOpenOverlay()) return;
 
-    const target = GROUP_DETAIL_PATH.test(currentPathname)
-      ? (options.getGroupReturnTo() ?? '/groups')
-      : MAIN_VIEW_PATHS.has(currentPathname) && currentPathname !== '/'
+    const isGroupCreationPath = /^\/groups\/new(?:\/|$)/.test(currentPathname);
+    const creationSource = new URLSearchParams(currentSearch).get('from');
+    const target = isGroupCreationPath
+      ? creationSource === 'home'
         ? '/'
-        : null;
+        : '/groups'
+      : GROUP_DETAIL_PATH.test(currentPathname)
+        ? (options.getGroupReturnTo() ?? '/groups')
+        : MAIN_VIEW_PATHS.has(currentPathname) && currentPathname !== '/'
+          ? '/'
+          : null;
 
     if (!target) return;
 
@@ -49,8 +56,9 @@ export function installBrowserBackNavigation() {
     configure(nextOptions: BrowserBackNavigationOptions) {
       options = nextOptions;
     },
-    setCurrentPathname(pathname: string) {
+    setCurrentPathname(pathname: string, search = '') {
       currentPathname = pathname;
+      currentSearch = search;
     },
   };
 }

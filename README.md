@@ -19,6 +19,37 @@ Open-source expense sharing and group finance application.
 - `apps/join`: Invite flow
 - `apps/landing`: Public website
 
+## Local Development
+
+Install the workspace dependencies:
+
+```bash
+bun install
+```
+
+Before starting the project for the first time, configure and start the
+Portless HTTPS proxy. This is a one-time machine setup:
+
+```bash
+portless proxy start --https --tld dev.vornway.com
+```
+
+Start all development services from the repository root:
+
+```bash
+bun dev
+```
+
+Once the services are running, open another terminal and trust the local
+Portless certificate:
+
+```bash
+portless trust
+```
+
+The trust command may request administrator permissions. It only needs to be
+completed once per development machine unless the local certificate changes.
+
 ## Project Status
 
 ⚠️ **This project is currently under active development and should be considered experimental.**

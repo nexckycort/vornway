@@ -166,7 +166,7 @@ function mapExpenseDetailToExpenseItem(
     date: expense.date,
     isDeleted: expense.isDeleted ?? false,
     isSettlement: expense.isSettlement ?? false,
-    isPersonal: false,
+    isPersonal: expense.participants?.length === 0,
     expenseType: 'standard',
     subExpenseCount: 0,
     settlementToName: null,

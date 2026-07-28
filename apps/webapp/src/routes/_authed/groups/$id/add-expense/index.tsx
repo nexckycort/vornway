@@ -1098,7 +1098,7 @@ function RouteComponent() {
         currency,
         ...(categoryId ? { categoryId } : {}),
         paidByIds,
-        participantIds,
+        participantIds: isPersonalSpace ? [] : participantIds,
         splitMethod: payloadSplitMethod,
         exactShares,
         lineItems:

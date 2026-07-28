@@ -279,6 +279,7 @@ export function createGroupExpensesHealth() {
         },
         select: {
           id: true,
+          type: true,
           GroupMember: {
             select: {
               id: true,
@@ -381,7 +382,9 @@ export function createGroupExpensesHealth() {
         data: pageRows.map((row) => ({
           ...(() => {
             const isSettlement = Boolean(row.notes?.includes('[SETTLEMENT:'));
-            const isPersonal = !isSettlement && row.participants.length === 0;
+            const isPersonal =
+              !isSettlement &&
+              (group.type === 'personal' || row.participants.length === 0);
             const currentParticipation = currentMember
               ? row.participants.find(
                   (participant) => participant.memberId === currentMember.id,
@@ -464,6 +467,7 @@ export function createGroupExpensesHealth() {
         },
         select: {
           id: true,
+          type: true,
           GroupMember: {
             select: {
               id: true,
@@ -656,7 +660,9 @@ export function createGroupExpensesHealth() {
         data: pageRows.map((row) => ({
           ...(() => {
             const isSettlement = Boolean(row.notes?.includes('[SETTLEMENT:'));
-            const isPersonal = !isSettlement && row.participants.length === 0;
+            const isPersonal =
+              !isSettlement &&
+              (group.type === 'personal' || row.participants.length === 0);
             const currentParticipation = currentMember
               ? row.participants.find(
                   (participant) => participant.memberId === currentMember.id,

@@ -7,6 +7,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { type MouseEvent, type TouchEvent, useRef, useState } from 'react';
+import { formatShortDate } from '#/lib/i18n';
 import { getGroupDetailMessages } from '../-messages';
 import type { ExpenseItem } from '../-types/group-detail.types';
 import { CategoryIcon } from './category-icon';
@@ -340,10 +341,13 @@ export function GroupExpenseRow({
                     </p>
                   </div>
                   <p className="mt-0.5 truncate text-xs leading-5 text-[#555555]">
-                    Pagado por {paidBySummary}
-                    {expense.participantCount > 0
-                      ? ` · ${expense.participantCount} persona${expense.participantCount === 1 ? '' : 's'}`
-                      : ''}
+                    {expense.isPersonal
+                      ? formatShortDate(expense.date)
+                      : `Pagado por ${paidBySummary}${
+                          expense.participantCount > 0
+                            ? ` · ${expense.participantCount} persona${expense.participantCount === 1 ? '' : 's'}`
+                            : ''
+                        }`}
                   </p>
                 </div>
 

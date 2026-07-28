@@ -23,7 +23,7 @@ export function createHttpApp(): Hono {
     cors({
       origin:
         env.NODE_ENV === 'development'
-          ? 'https://app.vornway.localhost'
+          ? 'https://app.dev.vornway.com'
           : [
               'https://vornway.com',
               'https://www.vornway.com',

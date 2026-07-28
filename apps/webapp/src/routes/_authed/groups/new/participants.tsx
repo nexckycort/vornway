@@ -17,6 +17,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
+import { useUsernameRequirement } from '#/contexts/username-requirement/use-username-requirement';
 import { useNetworkState } from '#/hooks/use-network-state';
 import { getGroupFlowEntryState } from '#/lib/group-flow-navigation';
 import { copyText, shareOrCopy } from '#/lib/native-share';
@@ -75,6 +76,7 @@ function normalizeText(value: string) {
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const { ensureUsername } = useUsernameRequirement();
   const t = getGroupDetailMessages();
   const { name, type, description, draftId, from } = Route.useSearch();
   const createGroupMutation = useCreateGroupMutation();
@@ -217,6 +219,7 @@ function RouteComponent() {
 
   const handleCreate = async () => {
     if (!isValidGroupData || isSubmitting) return;
+    if (!(await ensureUsername())) return;
 
     setError(null);
 

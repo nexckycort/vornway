@@ -10,7 +10,10 @@ const ONE_YEAR_IN_SECONDS = 60 * 60 * 24 * 365;
 
 const authConfig = {
   baseURL: env.BETTER_AUTH_URL,
-  trustedOrigins: ['https://app.vornway.com'],
+  trustedOrigins: [
+    'https://app.vornway.com',
+    ...(env.NODE_ENV === 'development' ? ['https://app.dev.vornway.com'] : []),
+  ],
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),

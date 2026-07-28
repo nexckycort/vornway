@@ -11,6 +11,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
+import { useUsernameRequirement } from '#/contexts/username-requirement/use-username-requirement';
 import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
@@ -42,6 +43,7 @@ function normalizeText(value: string) {
 }
 
 function RouteComponent() {
+  const { ensureUsername } = useUsernameRequirement();
   const navigate = useNavigate();
   const { from } = Route.useSearch();
   const t = getGoalsMessages();
@@ -159,6 +161,7 @@ function RouteComponent() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit || createGoalMutation.isPending) return;
+    if (!(await ensureUsername())) return;
 
     setError(null);
 

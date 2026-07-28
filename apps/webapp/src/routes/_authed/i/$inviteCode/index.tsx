@@ -9,6 +9,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
+import { useUsernameRequirement } from '#/contexts/username-requirement/use-username-requirement';
 import { getGroupFlowEntryState } from '#/lib/group-flow-navigation';
 import { useAcceptInvite } from '#/routes/_authed/i/-hooks/use-accept-invite';
 import {
@@ -26,6 +27,7 @@ function RouteComponent() {
   const { inviteCode } = Route.useParams();
   const t = getInviteMessages();
   const navigate = useNavigate();
+  const { ensureUsername } = useUsernameRequirement();
   const queryClient = useQueryClient();
   const previewQuery = useInvitePreviewQuery(inviteCode);
   const acceptMutation = useAcceptInvite(inviteCode);
@@ -80,6 +82,7 @@ function RouteComponent() {
 
   const handleAccept = async (mode: 'new' | 'linked') => {
     if (!group) return;
+    if (!(await ensureUsername())) return;
 
     setSubmitError(null);
 

@@ -19,6 +19,7 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer';
 import { useAuth } from '#/contexts/auth/use-auth';
+import { useUsernameRequirement } from '#/contexts/username-requirement/use-username-requirement';
 import { formatCurrency } from '#/lib/i18n';
 import { cn } from '#/lib/utils';
 import { m } from '#/paraglide/messages.js';
@@ -103,6 +104,7 @@ function formatEditableNumber(value: number): string {
 }
 
 function RouteComponent() {
+  const { ensureUsername } = useUsernameRequirement();
   const { friendIds, from, quickSplitId, expenseId } = Route.useSearch();
   const navigate = useNavigate();
   const t = getQuickSplitMessages();
@@ -407,6 +409,8 @@ function RouteComponent() {
       );
       return;
     }
+
+    if (!isEditMode && !(await ensureUsername())) return;
 
     try {
       await createExpenseMutation.mutateAsync({

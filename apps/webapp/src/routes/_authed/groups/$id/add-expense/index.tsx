@@ -38,6 +38,7 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer';
 import { Skeleton } from '#/components/ui/skeleton';
+import { useUsernameRequirement } from '#/contexts/username-requirement/use-username-requirement';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { compressImageFileToDataUrl } from '#/lib/image-compression';
 import { enqueueExpenseOffline } from '#/lib/offline-expense-query-collection';
@@ -375,6 +376,7 @@ function createExpenseLineItem(
 }
 
 function RouteComponent() {
+  const { ensureUsername } = useUsernameRequirement();
   const { id } = Route.useParams();
   const { expenseId } = Route.useSearch();
   const isEditMode = Boolean(expenseId);
@@ -1014,6 +1016,8 @@ function RouteComponent() {
       }
       return;
     }
+
+    if (!isEditMode && !(await ensureUsername())) return;
 
     submitLockRef.current = true;
     setIsSubmitting(true);

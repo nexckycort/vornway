@@ -9,14 +9,18 @@ type GroupParticipantsStripProps = {
   groupId: string;
   members: GroupMemberIdentity[];
   participantCount: number;
+  isPersonalSpace?: boolean;
 };
 
 export function GroupParticipantsStrip({
   groupId,
   members,
   participantCount,
+  isPersonalSpace = false,
 }: GroupParticipantsStripProps) {
   const { flowState } = useGroupFlowNavigation(groupId);
+
+  if (isPersonalSpace) return null;
 
   return (
     <section className="mt-2">

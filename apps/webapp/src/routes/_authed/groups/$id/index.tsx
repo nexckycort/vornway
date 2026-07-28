@@ -424,6 +424,7 @@ function RouteComponent() {
               state: flowState,
             })
           }
+          isPersonalSpace={group.type === 'personal'}
         />
 
         <div className="flex-1 rounded-t-[32px] bg-[#fafafa] px-4 pb-8 pt-3 shadow-[0_-16px_40px_rgba(0,0,0,0.12)]">
@@ -432,6 +433,7 @@ function RouteComponent() {
               groupId={id}
               members={group.members}
               participantCount={group.participantCount}
+              isPersonalSpace={group.type === 'personal'}
             />
           </div>
 

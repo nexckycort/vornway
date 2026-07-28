@@ -35,6 +35,7 @@ type GroupDetailHeaderProps = {
   onOpenSettings: () => void;
   onOpenReports: () => void;
   flowState: ReturnType<typeof keepGroupFlowState>;
+  isPersonalSpace?: boolean;
   isRefreshing?: boolean;
 };
 
@@ -51,6 +52,7 @@ export function GroupDetailHeader({
   onOpenSettings,
   onOpenReports,
   flowState,
+  isPersonalSpace = false,
   isRefreshing = false,
 }: GroupDetailHeaderProps) {
   const t = getGroupDetailMessages();
@@ -202,7 +204,9 @@ export function GroupDetailHeader({
         ) : null}
       </section>
 
-      <div className="mt-2.5 grid grid-cols-4 gap-2">
+      <div
+        className={`mt-2.5 grid gap-2 ${isPersonalSpace ? 'grid-cols-3' : 'grid-cols-4'}`}
+      >
         <Link
           to="/groups/$id/add-expense"
           params={{ id: groupId }}
@@ -218,20 +222,22 @@ export function GroupDetailHeader({
           </span>
         </Link>
 
-        <Link
-          to="/groups/$id/settle"
-          params={{ id: groupId }}
-          search={{ settlementExpenseId: undefined }}
-          state={flowState}
-          className="flex min-w-0 flex-col items-center gap-1"
-        >
-          <span className="flex h-9 w-full items-center justify-center rounded-xl bg-white/10 text-white">
-            <HugeiconsIcon icon={ArrowUpRightIcon} className="size-5" />
-          </span>
-          <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
-            {t.actions.settle}
-          </span>
-        </Link>
+        {isPersonalSpace ? null : (
+          <Link
+            to="/groups/$id/settle"
+            params={{ id: groupId }}
+            search={{ settlementExpenseId: undefined }}
+            state={flowState}
+            className="flex min-w-0 flex-col items-center gap-1"
+          >
+            <span className="flex h-9 w-full items-center justify-center rounded-xl bg-white/10 text-white">
+              <HugeiconsIcon icon={ArrowUpRightIcon} className="size-5" />
+            </span>
+            <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
+              {t.actions.settle}
+            </span>
+          </Link>
+        )}
 
         <button
           type="button"

@@ -26,6 +26,10 @@ export const Route = createFileRoute('/_authed/groups/new/')({
       typeof search.description === 'string' ? search.description : '',
     draftId: typeof search.draftId === 'string' ? search.draftId : '',
     from: search.from === 'home' ? 'home' : 'groups',
+    ...(search.step === 'details' ? { step: 'details' as const } : {}),
+    ...(search.spaceKind === 'shared' || search.spaceKind === 'personal'
+      ? { spaceKind: search.spaceKind }
+      : {}),
   }),
   component: RouteComponent,
 });
@@ -44,6 +48,8 @@ function RouteComponent() {
     description: searchDescription,
     draftId,
     from,
+    step,
+    spaceKind,
   } = Route.useSearch();
 
   const [name, setName] = useState(searchName);
@@ -53,14 +59,33 @@ function RouteComponent() {
   const [imageFileName, setImageFileName] = useState<string | null>(null);
   const [isCompressingImage, setIsCompressingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [selectedSpaceKind, setSelectedSpaceKind] = useState<
+    'shared' | 'personal' | null
+  >(
+    spaceKind === 'shared'
+      ? 'shared'
+      : spaceKind === 'personal'
+        ? 'personal'
+        : step === 'details'
+          ? searchType === 'personal'
+            ? 'personal'
+            : 'shared'
+          : null,
+  );
+
+  const showSelection =
+    step !== 'details' && !searchName && !searchType && !draftId;
 
   const isValid = name.trim().length > 0 && type.trim().length > 0;
+  const isPersonalSpace = selectedSpaceKind === 'personal';
 
   useEffect(() => {
+    if (showSelection) return;
     nameInputRef.current?.focus();
-  }, []);
+  }, [showSelection]);
 
   useEffect(() => {
+    if (showSelection) return;
     if (!draftId) return;
 
     const draft = loadGroupDraft(draftId);
@@ -71,9 +96,10 @@ function RouteComponent() {
     setDescription(draft.description);
     setImageDataUrl(draft.image?.dataUrl ?? null);
     setImageFileName(draft.image?.fileName ?? null);
-  }, [draftId]);
+  }, [draftId, showSelection]);
 
   useEffect(() => {
+    if (showSelection) return;
     if (!isValid) return;
 
     void router.preloadRoute({
@@ -84,9 +110,20 @@ function RouteComponent() {
         type: type.trim(),
         description: description.trim(),
         from,
+        spaceKind: selectedSpaceKind ?? 'shared',
       },
     });
-  }, [description, draftId, from, isValid, name, router, type]);
+  }, [
+    description,
+    draftId,
+    from,
+    isValid,
+    name,
+    router,
+    selectedSpaceKind,
+    showSelection,
+    type,
+  ]);
 
   const handleImageSelect = async (file: File | null) => {
     if (!file) return;
@@ -140,9 +177,36 @@ function RouteComponent() {
         type: type.trim(),
         description: description.trim(),
         from,
+        spaceKind: selectedSpaceKind ?? 'shared',
       },
     });
   };
+
+  if (showSelection) {
+    return (
+      <SpaceTypeSelection
+        selected={selectedSpaceKind}
+        onSelect={setSelectedSpaceKind}
+        onBack={() => navigate({ to: from === 'home' ? '/' : '/groups' })}
+        onContinue={() => {
+          if (!selectedSpaceKind) return;
+          void navigate({
+            to: '/groups/new',
+            search: {
+              step: 'details',
+              spaceKind: selectedSpaceKind,
+              name: '',
+              type: selectedSpaceKind === 'personal' ? 'personal' : 'viajes',
+              description: '',
+              draftId: '',
+              from,
+            },
+          });
+        }}
+        t={t}
+      />
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">
@@ -177,22 +241,24 @@ function RouteComponent() {
             />
           </label>
 
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-[#334155]">
-              {t.form.type}
-            </span>
-            <select
-              value={type}
-              onChange={(event) => setType(event.target.value)}
-              className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none transition-colors focus:border-primary"
-            >
-              {groupTypes.map((item) => (
-                <option key={item} value={item}>
-                  {getGroupTypeLabel(item, t)}
-                </option>
-              ))}
-            </select>
-          </label>
+          {isPersonalSpace ? null : (
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-[#334155]">
+                {t.form.type}
+              </span>
+              <select
+                value={type}
+                onChange={(event) => setType(event.target.value)}
+                className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none transition-colors focus:border-primary"
+              >
+                {groupTypes.map((item) => (
+                  <option key={item} value={item}>
+                    {getGroupTypeLabel(item, t)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <label className="flex flex-col gap-2">
             <span className="text-sm font-medium text-[#334155]">
@@ -298,6 +364,110 @@ function RouteComponent() {
             </Button>
           </div>
         </form>
+      </div>
+    </main>
+  );
+}
+
+function SpaceTypeSelection({
+  selected,
+  onSelect,
+  onBack,
+  onContinue,
+  t,
+}: {
+  selected: 'shared' | 'personal' | null;
+  onSelect: (value: 'shared' | 'personal') => void;
+  onBack: () => void;
+  onContinue: () => void;
+  t: ReturnType<typeof getGroupDetailMessages>;
+}) {
+  const Card = ({ kind }: { kind: 'shared' | 'personal' }) => {
+    const isSelected = selected === kind;
+    const isShared = kind === 'shared';
+    return (
+      <button
+        type="button"
+        aria-pressed={isSelected}
+        onClick={() => onSelect(kind)}
+        className={`relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border-2 p-4 text-left transition-colors ${
+          isSelected
+            ? 'border-[#ff658a] bg-[#fff0f2]'
+            : 'border-[#ebebeb] bg-white'
+        }`}
+      >
+        <span
+          className={`absolute right-4 top-4 flex size-6 items-center justify-center rounded-full border text-sm font-semibold ${
+            isSelected
+              ? 'border-[#de034d] bg-[#de034d] text-white'
+              : 'border-[#d1d5db] bg-white text-transparent'
+          }`}
+          aria-hidden="true"
+        >
+          ✓
+        </span>
+        <span className="pr-9 text-base font-semibold text-[#171717]">
+          {isShared ? t.form.sharedSpace : t.form.personalSpace}
+        </span>
+        <span className="mt-1 max-w-[300px] text-sm leading-5 text-[#737373]">
+          {isShared ? t.form.sharedSpaceCopy : t.form.personalSpaceCopy}
+        </span>
+        <span className="mt-3 flex min-h-0 flex-1 items-center justify-center">
+          <img
+            src={
+              isShared
+                ? '/images/group-space-shared.png'
+                : '/images/group-space-personal.png'
+            }
+            alt=""
+            className="max-h-full w-full object-contain"
+          />
+        </span>
+      </button>
+    );
+  };
+
+  return (
+    <main className="min-h-dvh bg-[#efefef] text-foreground">
+      <div className="mx-auto flex min-h-dvh w-full max-w-[412px] flex-col bg-white">
+        <header className="relative flex h-16 shrink-0 items-center justify-center border-b border-[#f0f0f0] px-16">
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label={t.form.back}
+            className="absolute left-4 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border border-[#e6e6e6] text-[#555]"
+          >
+            <HugeiconsIcon icon={ArrowLeftIcon} className="size-4" />
+          </button>
+          <div className="text-center leading-tight">
+            <p className="text-xs text-[#777]">{t.form.selectionStep}</p>
+            <h1 className="text-sm font-semibold text-[#171717]">
+              {t.form.selectionTitle}
+            </h1>
+          </div>
+        </header>
+        <div className="h-2 shrink-0 bg-[#e9e9e9]">
+          <div className="h-full w-1/2 rounded-r-full bg-gradient-to-r from-[#ffc8da] via-[#fd407f] to-[#d000bf]" />
+        </div>
+        <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-4 pb-4 pt-4">
+          <p className="shrink-0 text-center text-base leading-6 text-[#171717]">
+            {t.form.selectionCopy}
+          </p>
+          <div className="grid min-h-0 flex-1 grid-rows-2 gap-4">
+            <Card kind="shared" />
+            <Card kind="personal" />
+          </div>
+        </section>
+        <footer className="shrink-0 border-t border-[#ededed] bg-white px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+          <Button
+            type="button"
+            onClick={onContinue}
+            disabled={!selected}
+            className="h-10 w-full rounded-full bg-[#de034d] text-sm font-semibold hover:bg-[#c80346]"
+          >
+            {t.common.continue}
+          </Button>
+        </footer>
       </div>
     </main>
   );

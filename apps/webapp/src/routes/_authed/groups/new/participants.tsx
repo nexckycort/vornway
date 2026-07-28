@@ -46,6 +46,9 @@ export const Route = createFileRoute('/_authed/groups/new/participants')({
       typeof search.description === 'string' ? search.description : '',
     draftId: typeof search.draftId === 'string' ? search.draftId : '',
     from: search.from === 'home' ? 'home' : 'groups',
+    ...(search.spaceKind === 'shared' || search.spaceKind === 'personal'
+      ? { spaceKind: search.spaceKind }
+      : {}),
   }),
   component: RouteComponent,
 });
@@ -78,7 +81,8 @@ function RouteComponent() {
   const navigate = useNavigate();
   const { ensureUsername } = useUsernameRequirement();
   const t = getGroupDetailMessages();
-  const { name, type, description, draftId, from } = Route.useSearch();
+  const { name, type, description, draftId, from, spaceKind } =
+    Route.useSearch();
   const createGroupMutation = useCreateGroupMutation();
   const network = useNetworkState();
 
@@ -100,6 +104,7 @@ function RouteComponent() {
 
   const isSubmitting = createGroupMutation.isPending || isSavingOffline;
   const isValidGroupData = name.trim().length > 0 && type.trim().length > 0;
+  const personalCreationStartedRef = useRef(false);
 
   const searchQuery = useUserSearchQuery(debouncedSearch);
   const searchResults = searchQuery.data?.data ?? [];
@@ -162,6 +167,7 @@ function RouteComponent() {
         description,
         draftId: draftId || '',
         from,
+        ...(spaceKind ? { spaceKind } : {}),
       },
       replace: true,
     });
@@ -219,13 +225,16 @@ function RouteComponent() {
 
   const handleCreate = async () => {
     if (!isValidGroupData || isSubmitting) return;
-    if (!(await ensureUsername())) return;
+    if (!(await ensureUsername())) {
+      personalCreationStartedRef.current = false;
+      return;
+    }
 
     setError(null);
 
     const groupValues: CreateGroupFormValues = {
       name: draft?.name ?? name,
-      type: draft?.type ?? type,
+      type: spaceKind === 'personal' ? 'personal' : (draft?.type ?? type),
       description: draft?.description ?? description,
       ...(draft?.image
         ? {
@@ -274,6 +283,10 @@ function RouteComponent() {
         await navigateToCreatedGroup(result.id);
         return;
       }
+      if (spaceKind === 'personal') {
+        await navigateToCreatedGroup(result.id);
+        return;
+      }
       setCreatedGroup({
         id: result.id,
         name: result.name,
@@ -289,6 +302,29 @@ function RouteComponent() {
       );
     }
   };
+
+  useEffect(() => {
+    if (
+      spaceKind !== 'personal' ||
+      !isValidGroupData ||
+      personalCreationStartedRef.current
+    ) {
+      return;
+    }
+
+    personalCreationStartedRef.current = true;
+    void handleCreate();
+  }, [isValidGroupData, spaceKind]);
+
+  if (spaceKind === 'personal') {
+    return (
+      <MobilePageLayout title={t.form.personalSpace} onBack={goBack}>
+        <div className="flex min-h-[55vh] items-center justify-center">
+          <p className="text-sm text-[#64748b]">{t.participants.creating}</p>
+        </div>
+      </MobilePageLayout>
+    );
+  }
 
   if (!isValidGroupData) {
     return (

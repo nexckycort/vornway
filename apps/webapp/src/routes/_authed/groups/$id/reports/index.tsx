@@ -70,8 +70,9 @@ function RouteComponent() {
     from: today,
     to: today,
   });
-  const activeTab = tab;
   const group = groupQuery.data;
+  const isPersonalSpace = group?.type === 'personal';
+  const activeTab = isPersonalSpace ? 'totales' : tab;
   const reportFilter = useMemo(() => {
     if (dateFilterMode === 'day') {
       return {
@@ -248,28 +249,32 @@ function RouteComponent() {
     >
       <div className="flex flex-1 flex-col pb-28">
         <section className="rounded-[28px] border border-[#e2e8f0] bg-white p-2 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
-          <div className="grid grid-cols-2 gap-1 rounded-[20px] bg-[#eef2f7] p-1">
-            <button
-              type="button"
-              onClick={() =>
-                void navigate({
-                  search: (current) => ({
-                    ...current,
-                    tab: 'balance',
-                  }),
-                  replace: true,
-                  state: flowState,
-                })
-              }
-              className={[
-                'inline-flex h-10 items-center justify-center rounded-[16px] text-sm font-semibold transition-colors',
-                activeTab === 'balance'
-                  ? 'bg-white text-[#132238] shadow-[0_4px_14px_rgba(15,23,42,0.08)]'
-                  : 'text-[#64748b]',
-              ].join(' ')}
-            >
-              {t.reports.balance}
-            </button>
+          <div
+            className={`grid gap-1 rounded-[20px] bg-[#eef2f7] p-1 ${isPersonalSpace ? 'grid-cols-1' : 'grid-cols-2'}`}
+          >
+            {isPersonalSpace ? null : (
+              <button
+                type="button"
+                onClick={() =>
+                  void navigate({
+                    search: (current) => ({
+                      ...current,
+                      tab: 'balance',
+                    }),
+                    replace: true,
+                    state: flowState,
+                  })
+                }
+                className={[
+                  'inline-flex h-10 items-center justify-center rounded-[16px] text-sm font-semibold transition-colors',
+                  activeTab === 'balance'
+                    ? 'bg-white text-[#132238] shadow-[0_4px_14px_rgba(15,23,42,0.08)]'
+                    : 'text-[#64748b]',
+                ].join(' ')}
+              >
+                {t.reports.balance}
+              </button>
+            )}
             <button
               type="button"
               onClick={() =>

@@ -432,16 +432,14 @@ function RouteComponent() {
                 trailing={isInstallable ? t.common.install : t.common.manual}
               />
             ) : null}
-            {isStatsUser && (
-              <ProfileActionRow
-                icon={
-                  <HugeiconsIcon icon={LanguageCircleIcon} className="size-5" />
-                }
-                title={t.language}
-                subtitle={languageLabels[currentLocale]}
-                onClick={() => setShowLanguageDrawer(true)}
-              />
-            )}
+            <ProfileActionRow
+              icon={
+                <HugeiconsIcon icon={LanguageCircleIcon} className="size-5" />
+              }
+              title={t.language}
+              subtitle={languageLabels[currentLocale]}
+              onClick={() => setShowLanguageDrawer(true)}
+            />
             <ProfileActionRow
               icon={<HugeiconsIcon icon={ShieldIcon} className="size-5" />}
               title={t.security}

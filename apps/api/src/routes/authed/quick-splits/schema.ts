@@ -65,6 +65,20 @@ export const createQuickSplitExpenseSchema = z
     exactShares: z
       .record(z.string().min(1), z.number().nonnegative())
       .optional(),
+    metadata: z
+      .object({
+        category: z.string().trim().max(80).optional(),
+        items: z
+          .array(
+            z.object({
+              name: z.string().trim().min(1).max(120),
+              amount: z.number().positive(),
+            }),
+          )
+          .max(50)
+          .optional(),
+      })
+      .optional(),
   })
   .superRefine((data, ctx) => {
     if (data.splitMethod === 'percentage' && !data.percentageShares) {
@@ -177,6 +191,7 @@ export type QuickSplitExpenseDetailResult = {
   currency: string;
   splitMethod: 'equal' | 'percentage' | 'exact';
   createdAt: string;
+  metadata: CreateQuickSplitExpenseInput['metadata'] | null;
   paidBy: {
     id: string;
     userId: string | null;

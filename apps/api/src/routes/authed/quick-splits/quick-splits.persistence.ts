@@ -138,6 +138,7 @@ export const quickSplitsPersistence = {
         amount: true,
         currency: true,
         splitMethod: true,
+        metadata: true,
         createdAt: true,
         paidByParticipant: {
           select: {
@@ -310,6 +311,7 @@ export const quickSplitsPersistence = {
       currency: string;
       splitMethod: 'equal' | 'percentage' | 'exact';
       shares: Record<string, number>;
+      metadata?: object;
       createdAt: Date;
     },
   ) => {
@@ -322,6 +324,7 @@ export const quickSplitsPersistence = {
         amount: input.amount,
         currency: input.currency,
         splitMethod: input.splitMethod,
+        ...(input.metadata ? { metadata: input.metadata } : {}),
         createdAt: input.createdAt,
         updatedAt: input.createdAt,
       },
@@ -333,6 +336,7 @@ export const quickSplitsPersistence = {
         currency: true,
         paidByParticipantId: true,
         splitMethod: true,
+        metadata: true,
         createdAt: true,
       },
     });
@@ -406,6 +410,7 @@ export const quickSplitsPersistence = {
       currency: string;
       splitMethod: 'equal' | 'percentage' | 'exact';
       shares: Record<string, number>;
+      metadata?: object;
       updatedAt: Date;
     },
   ) => {
@@ -419,6 +424,7 @@ export const quickSplitsPersistence = {
         amount: input.amount,
         currency: input.currency,
         splitMethod: input.splitMethod,
+        ...(input.metadata ? { metadata: input.metadata } : {}),
         updatedAt: input.updatedAt,
       },
       select: {
@@ -429,6 +435,7 @@ export const quickSplitsPersistence = {
         currency: true,
         paidByParticipantId: true,
         splitMethod: true,
+        metadata: true,
         createdAt: true,
       },
     });
@@ -452,6 +459,7 @@ export const quickSplitsPersistence = {
         currency: true,
         paidByParticipantId: true,
         splitMethod: true,
+        metadata: true,
         createdAt: true,
         quickSplit: {
           select: {

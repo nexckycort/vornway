@@ -11,6 +11,10 @@ export type QuickSplitExpenseDetail = {
   currency: string;
   splitMethod: 'equal' | 'percentage' | 'exact';
   createdAt: string;
+  metadata?: {
+    category?: string;
+    items?: Array<{ name: string; amount: number }>;
+  } | null;
   paidBy: {
     id: string;
     userId: string | null;

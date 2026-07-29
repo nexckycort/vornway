@@ -19,6 +19,10 @@ export type UpsertQuickSplitExpenseValues = {
   splitMethod: 'equal' | 'percentage' | 'exact';
   percentageShares?: Record<string, number>;
   exactShares?: Record<string, number>;
+  metadata?: {
+    category?: string;
+    items?: Array<{ name: string; amount: number }>;
+  };
 };
 
 const createQuickSplitEndpoint = quickSplitsClient.index.$post;
@@ -43,6 +47,7 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
           ? { percentageShares: values.percentageShares }
           : {}),
         ...(values.exactShares ? { exactShares: values.exactShares } : {}),
+        ...(values.metadata ? { metadata: values.metadata } : {}),
       },
     });
 
@@ -131,6 +136,7 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
             ),
           }
         : {}),
+      ...(values.metadata ? { metadata: values.metadata } : {}),
     },
   });
 

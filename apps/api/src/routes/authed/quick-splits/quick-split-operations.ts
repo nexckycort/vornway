@@ -522,6 +522,8 @@ export const quickSplitOperations = {
       currency: expense.currency,
       splitMethod,
       createdAt: expense.createdAt.toISOString(),
+      metadata:
+        (expense.metadata as QuickSplitExpenseDetailResult['metadata']) ?? null,
       paidBy: {
         id: expense.paidByParticipant.id,
         userId: expense.paidByParticipant.userId,
@@ -714,6 +716,7 @@ export const quickSplitOperations = {
       splitMethod,
       percentageShares,
       exactShares,
+      metadata,
     } = input;
 
     let quickSplit: Awaited<
@@ -821,6 +824,7 @@ export const quickSplitOperations = {
           currency: normalizedCurrency,
           splitMethod,
           shares,
+          metadata,
           createdAt: now,
         });
 
@@ -858,6 +862,7 @@ export const quickSplitOperations = {
       splitMethod,
       percentageShares,
       exactShares,
+      metadata,
     } = input;
 
     let existingExpense: Awaited<
@@ -950,6 +955,7 @@ export const quickSplitOperations = {
           currency: normalizedCurrency,
           splitMethod,
           shares,
+          metadata,
           updatedAt: now,
         });
 

@@ -2,6 +2,7 @@ import {
   Add01Icon,
   CheckIcon,
   ChevronDownIcon,
+  Delete02Icon,
   Edit03Icon,
   SearchIcon,
 } from '@hugeicons/core-free-icons';
@@ -125,6 +126,10 @@ function RouteComponent() {
   const [showSplitDrawer, setShowSplitDrawer] = useState(false);
   const [amountInput, setAmountInput] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
+  const [sharedExpenseItems, setSharedExpenseItems] = useState<
+    Array<{ name: string; amount: string }>
+  >([]);
   const [friendInput, setFriendInput] = useState('');
   const [debouncedFriendInput, setDebouncedFriendInput] = useState('');
   const [selectedFriends, setSelectedFriends] = useState<SelectedFriend[]>([]);
@@ -184,6 +189,13 @@ function RouteComponent() {
     setDescription(expenseQuery.data.description);
     setAmountInput(formatAmountInput(String(expenseQuery.data.amount)));
     setCurrency(readCurrencyCode(expenseQuery.data.currency) ?? 'COP');
+    setCategory(expenseQuery.data.metadata?.category ?? '');
+    setSharedExpenseItems(
+      (expenseQuery.data.metadata?.items ?? []).map((item) => ({
+        name: item.name,
+        amount: formatAmountInput(String(item.amount)),
+      })),
+    );
     setPaidByParticipantId(expenseQuery.data.paidBy.id);
     setSelectedFriends(
       expenseQuery.data.participants
@@ -450,6 +462,19 @@ function RouteComponent() {
               ),
             }
           : {}),
+        metadata: {
+          ...(category.trim() ? { category: category.trim() } : {}),
+          ...(splitMethod !== 'equal' && sharedExpenseItems.length > 0
+            ? {
+                items: sharedExpenseItems
+                  .map((item) => ({
+                    name: item.name.trim(),
+                    amount: parseAmountInput(item.amount),
+                  }))
+                  .filter((item) => item.name && item.amount > 0),
+              }
+            : {}),
+        },
       });
 
       toast.success(isEditMode ? t.updateSuccess : t.createSuccess);
@@ -613,6 +638,16 @@ function RouteComponent() {
               </div>
             </>
           ) : null}
+
+          <div className="border-t border-[#f1f5f9] px-4 py-4">
+            <input
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+              placeholder={m['groups.expense.category']()}
+              className="h-11 w-full rounded-full border border-[#ebebeb] bg-[#fafafa] px-4 text-sm outline-none focus:border-primary"
+              maxLength={80}
+            />
+          </div>
         </section>
 
         {!isEditMode ? (
@@ -751,6 +786,99 @@ function RouteComponent() {
                     <HugeiconsIcon icon={ChevronDownIcon} className="size-4" />
                   </button>
                 </div>
+
+                {splitMethod !== 'equal' ? (
+                  <div className="rounded-2xl border border-gray-200 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSharedExpenseItems((current) => [
+                            ...current,
+                            { name: '', amount: '' },
+                          ])
+                        }
+                        className="flex size-6 shrink-0 items-center justify-center rounded bg-rose-500"
+                        aria-label={m['groups.expense.addSharedExpenseAria']()}
+                      >
+                        <HugeiconsIcon
+                          icon={Add01Icon}
+                          className="size-4 text-white"
+                        />
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {m['groups.expense.sharedExpenseTitle']()}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {m['groups.expense.sharedExpenseDescription']()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {sharedExpenseItems.map((item, index) => (
+                        <div
+                          key={`${index}-${item.name}`}
+                          className="grid grid-cols-[minmax(0,1fr)_7rem_2.5rem] items-center gap-2"
+                        >
+                          <input
+                            value={item.name}
+                            onChange={(event) =>
+                              setSharedExpenseItems((current) =>
+                                current.map((entry, itemIndex) =>
+                                  itemIndex === index
+                                    ? { ...entry, name: event.target.value }
+                                    : entry,
+                                ),
+                              )
+                            }
+                            placeholder={m[
+                              'expenseLineItems.itemPlaceholder'
+                            ]()}
+                            className="h-11 rounded-full border border-gray-200 px-4 text-sm outline-none"
+                          />
+                          <input
+                            value={item.amount}
+                            onChange={(event) =>
+                              setSharedExpenseItems((current) =>
+                                current.map((entry, itemIndex) =>
+                                  itemIndex === index
+                                    ? {
+                                        ...entry,
+                                        amount: formatAmountInput(
+                                          event.target.value,
+                                        ),
+                                      }
+                                    : entry,
+                                ),
+                              )
+                            }
+                            inputMode="numeric"
+                            placeholder="0"
+                            className="h-11 rounded-full border border-gray-200 px-4 text-right text-sm outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSharedExpenseItems((current) =>
+                                current.filter(
+                                  (_, itemIndex) => itemIndex !== index,
+                                ),
+                              )
+                            }
+                            className="flex size-10 items-center justify-center rounded-full border border-gray-200 text-gray-500"
+                            aria-label={m['common.delete']()}
+                          >
+                            <HugeiconsIcon
+                              icon={Delete02Icon}
+                              className="size-4"
+                            />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="mt-4 flex w-full items-center gap-3">
                   <div className="flex size-6 items-center justify-center rounded bg-rose-500">

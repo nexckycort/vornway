@@ -58,6 +58,12 @@ Most of the current codebase was written with the assistance of AI.
 
 The original version of Vornway had been in development for a longer period, but I decided to discard it and rebuild the project from scratch. The current rewrite was bootstrapped in approximately **five days** to validate the architecture and accelerate development.
 
+The total time dedicated to this project is tracked across its current and former names:
+
+[![WakaTime](https://wakatime.com/badge/user/028c7e3a-aa95-48d2-a991-97f3d117a6ef/project/15ae72fd-4f68-408e-bf68-657b0ac73806.svg)](https://wakatime.com/badge/user/028c7e3a-aa95-48d2-a991-97f3d117a6ef/project/15ae72fd-4f68-408e-bf68-657b0ac73806) + [![WakaTime](https://wakatime.com/badge/user/028c7e3a-aa95-48d2-a991-97f3d117a6ef/project/121d87b4-01d0-4676-9e35-809051520178.svg)](https://wakatime.com/badge/user/028c7e3a-aa95-48d2-a991-97f3d117a6ef/project/121d87b4-01d0-4676-9e35-809051520178)
+
+The second tracker corresponds to the former **Splitwayapp** name, whose tracked time is no longer increasing but remains part of the project's total.
+
 As a result, parts of the codebase prioritize shipping features over long-term maintainability. There is technical debt and some low-quality or duplicated code that will be progressively rewritten as the project evolves.
 
 The long-term goal is to replace AI-generated scaffolding with cleaner, more maintainable implementations while keeping the project fully open source. Contributions, suggestions, and discussions are always welcome.

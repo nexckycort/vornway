@@ -209,15 +209,21 @@ export function createGroupReportsOperations() {
       );
       const currentUserSpentByCurrency = new Map<string, number>();
 
-      for (const row of currentMemberShares) {
-        const currency = row.currency;
-        currentUserSpentByCurrency.set(
-          currency,
-          normalizeAmount(
-            (currentUserSpentByCurrency.get(currency) ?? 0) +
-              Number(row.total ?? 0),
-          ),
-        );
+      if (group.type === 'personal') {
+        for (const [currency, total] of currencyTotals) {
+          currentUserSpentByCurrency.set(currency, total);
+        }
+      } else {
+        for (const row of currentMemberShares) {
+          const currency = row.currency;
+          currentUserSpentByCurrency.set(
+            currency,
+            normalizeAmount(
+              (currentUserSpentByCurrency.get(currency) ?? 0) +
+                Number(row.total ?? 0),
+            ),
+          );
+        }
       }
 
       const currencyCategories = new Map<

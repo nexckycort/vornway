@@ -4,6 +4,7 @@ import {
   PiggyBankIcon,
   UserGroupIcon,
   UserIcon,
+  Wallet02Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import {
@@ -14,19 +15,21 @@ import {
 } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { getBottomAppBarMessages } from '#/components/bottom-app-bar.messages';
+import { useAuth } from '#/contexts/auth/use-auth';
 import { cn } from '#/lib/utils';
 export type BottomAppBarIconName =
   | 'compass'
   | 'home'
   | 'piggy-bank'
   | 'user'
-  | 'users';
+  | 'users'
+  | 'wallet';
 
 type BottomAppBarItem = {
   id: string;
   label: string;
   icon: BottomAppBarIconName;
-  to: '/' | '/expenses/friends' | '/groups' | '/goals' | '/profile';
+  to: '/' | '/expenses/friends' | '/groups' | '/goals' | '/debts' | '/profile';
 };
 
 type BottomNavState = {
@@ -38,11 +41,13 @@ const navIcons: Record<BottomAppBarIconName, IconSvgElement> = {
   home: HomeIcon,
   users: UserGroupIcon,
   'piggy-bank': PiggyBankIcon,
+  wallet: Wallet02Icon,
   user: UserIcon,
 };
 
 export function BottomAppBar() {
   const t = getBottomAppBarMessages();
+  const auth = useAuth();
   const navigate = useNavigate();
   const router = useRouter();
   const location = useLocation();
@@ -56,7 +61,7 @@ export function BottomAppBar() {
   const lastScrollTop = useRef(0);
   const scrollFrame = useRef<number | null>(null);
   const ignoreNextScroll = useRef(false);
-  const items: BottomAppBarItem[] = [
+  const allItems: BottomAppBarItem[] = [
     { id: 'home', label: t.home, icon: 'home', to: '/' },
     {
       id: 'friends',
@@ -66,8 +71,17 @@ export function BottomAppBar() {
     },
     { id: 'groups', label: t.groups, icon: 'compass', to: '/groups' },
     { id: 'goals', label: t.goals, icon: 'piggy-bank', to: '/goals' },
+    { id: 'debts', label: t.debts, icon: 'wallet', to: '/debts' },
     { id: 'profile', label: t.profile, icon: 'user', to: '/profile' },
   ];
+  const isAdmin =
+    auth.user?.email?.trim().toLowerCase() === 'junior110120@gmail.com';
+  const items = isAdmin
+    ? allItems
+    : allItems.filter((item) => item.id !== 'debts');
+  const activeIndex = items.findIndex((item) =>
+    item.to === '/' ? pathname === '/' : pathname.startsWith(item.to),
+  );
 
   const navigateToTab = async (to: BottomAppBarItem['to']) => {
     if (to === '/') {
@@ -138,13 +152,10 @@ export function BottomAppBar() {
   }, []);
 
   useEffect(() => {
+    if (activeIndex < 0) return;
     setIsMinimized(false);
     ignoreNextScroll.current = true;
-  }, [pathname]);
-
-  const activeIndex = items.findIndex((item) =>
-    item.to === '/' ? pathname === '/' : pathname.startsWith(item.to),
-  );
+  }, [activeIndex]);
 
   return (
     <nav
@@ -165,8 +176,9 @@ export function BottomAppBar() {
       >
         <span
           aria-hidden="true"
-          className="absolute inset-y-0 left-0 w-1/5 rounded-2xl border border-white/45 bg-[linear-gradient(145deg,rgba(255,255,255,0.6),rgba(255,255,255,0.22))] shadow-[0_5px_14px_rgba(15,23,42,0.1),inset_0_1px_rgba(255,255,255,0.72)] backdrop-blur-xl transition-transform duration-300 ease-out"
+          className="absolute inset-y-0 left-0 rounded-2xl border border-white/45 bg-[linear-gradient(145deg,rgba(255,255,255,0.6),rgba(255,255,255,0.22))] shadow-[0_5px_14px_rgba(15,23,42,0.1),inset_0_1px_rgba(255,255,255,0.72)] backdrop-blur-xl transition-[transform,width] duration-300 ease-out"
           style={{
+            width: `${100 / items.length}%`,
             transform: `translateX(${Math.max(activeIndex, 0) * 100}%)`,
           }}
         />

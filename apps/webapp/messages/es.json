@@ -128,6 +128,7 @@
     "groups": "Espacios",
     "goals": "Metas",
     "profile": "Perfil",
+    "debts": "Deudas",
     "ariaLabel": "Navegación principal"
   },
   "login": {
@@ -252,6 +253,35 @@
     "validationAmount": "Ingresa un monto válido.",
     "validationFriends": "Agrega al menos un amigo.",
     "validationSplit": "Selecciona al menos dos personas para dividir el gasto."
+  },
+  "debts": {
+    "title": "Deudas",
+    "create": "Nueva deuda",
+    "newTitle": "Registrar deuda",
+    "personPlaceholder": "Nombre de la persona",
+    "amountPlaceholder": "Monto",
+    "interestPlaceholder": "Porcentaje de interés (opcional)",
+    "lent": "Presté dinero",
+    "borrowed": "Me prestaron dinero",
+    "save": "Guardar deuda",
+    "descriptionPlaceholder": "Nota (opcional)",
+    "edit": "Editar deuda",
+    "delete": "Eliminar deuda",
+    "deleteConfirm": "¿Seguro que deseas eliminar esta deuda? También se eliminará su historial de abonos.",
+    "detailTitle": "Detalle de deuda",
+    "expectedTotal": "Total esperado",
+    "paidAmount": "Pagado",
+    "remainingAmount": "Pendiente",
+    "payments": "Abonos",
+    "noPayments": "Aún no hay abonos",
+    "registerPayment": "Registrar abono",
+    "paymentAmountPlaceholder": "Monto del abono",
+    "paymentNotePlaceholder": "Nota (opcional)",
+    "savePayment": "Guardar abono",
+    "active": "Activa",
+    "paid": "Pagada",
+    "overdue": "Vencida",
+    "noDueDate": "Sin fecha límite"
   },
   "friendsExpenses": {
     "title": "Amigos",

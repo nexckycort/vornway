@@ -4,6 +4,7 @@ import { adminMiddleware } from '#/shared/middlewares/admin.middleware';
 import { authMiddleware } from '#/shared/middlewares/auth.middleware';
 import adminRoutes from './admin/routes';
 import converterRoutes from './converter/routes';
+import { debtsRoutes } from './debts/routes';
 import feedbackRoutes from './feedback/routes';
 import goalsRoutes from './goals/routes';
 import groupsRoutes from './groups/routes';
@@ -19,6 +20,8 @@ const app = new Hono()
   .basePath('/api')
   .use(authMiddleware)
   .route('/converter', converterRoutes)
+  .use('/debts', adminMiddleware)
+  .route('/debts', debtsRoutes)
   .route('/feedback', feedbackRoutes)
   .route('/invites', invitesRoutes)
   .route('/goals', goalsRoutes)

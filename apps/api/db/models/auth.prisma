@@ -18,6 +18,8 @@ model User {
   pushSubscriptions               PushSubscription[]
   notifications                   Notification[]
   feedbackEntries                 UserFeedback[]
+  debtsOwned                      Debt[]                         @relation("DebtOwner")
+  debtsAsCounterparty             Debt[]                         @relation("DebtCounterparty")
 
   @@unique([email])
   @@unique([username])

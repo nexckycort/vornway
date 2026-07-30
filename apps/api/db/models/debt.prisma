@@ -1,0 +1,38 @@
+model Debt {
+  id                String    @id @default(cuid())
+  ownerId           String
+  counterpartyId    String?
+  counterpartyName  String
+  direction         String
+  principalAmount   Float
+  interestType      String    @default("none")
+  interestValue     Float?
+  expectedTotal     Float
+  currency          String
+  dueDate           DateTime?
+  description       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  owner             User      @relation("DebtOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  counterparty      User?     @relation("DebtCounterparty", fields: [counterpartyId], references: [id], onDelete: SetNull)
+  payments          DebtPayment[]
+
+  @@index([ownerId, createdAt(sort: Desc)])
+  @@index([ownerId, dueDate])
+  @@map("debt")
+}
+
+model DebtPayment {
+  id          String   @id @default(cuid())
+  debtId      String
+  amount      Float
+  paidAt      DateTime @default(now())
+  note        String?
+  createdAt   DateTime @default(now())
+
+  debt        Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+
+  @@index([debtId, paidAt(sort: Desc)])
+  @@map("debt_payment")
+}

@@ -6,6 +6,7 @@ export function getBottomAppBarMessages() {
     friends: m['bottomBar.friends'](),
     groups: m['bottomBar.groups'](),
     goals: m['bottomBar.goals'](),
+    debts: m['bottomBar.debts'](),
     profile: m['bottomBar.profile'](),
     ariaLabel: m['bottomBar.ariaLabel'](),
   };

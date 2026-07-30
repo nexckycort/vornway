@@ -7,6 +7,8 @@ export const MAIN_VIEW_PATHS = new Set([
   '/goals/',
   '/profile',
   '/profile/',
+  '/debts',
+  '/debts/',
 ]);
 
 type BrowserBackNavigationOptions = {

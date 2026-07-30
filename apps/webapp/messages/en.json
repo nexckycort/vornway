@@ -128,6 +128,7 @@
     "groups": "Spaces",
     "goals": "Goals",
     "profile": "Profile",
+    "debts": "Debts",
     "ariaLabel": "Primary navigation"
   },
   "login": {
@@ -252,6 +253,35 @@
     "validationAmount": "Enter a valid amount.",
     "validationFriends": "Add at least one friend.",
     "validationSplit": "Select at least two people to split the expense."
+  },
+  "debts": {
+    "title": "Debts",
+    "create": "New debt",
+    "newTitle": "Register debt",
+    "personPlaceholder": "Person name",
+    "amountPlaceholder": "Amount",
+    "interestPlaceholder": "Interest percentage (optional)",
+    "lent": "I lent money",
+    "borrowed": "I borrowed money",
+    "save": "Save debt",
+    "descriptionPlaceholder": "Note (optional)",
+    "edit": "Edit debt",
+    "delete": "Delete debt",
+    "deleteConfirm": "Are you sure you want to delete this debt? Its payment history will also be deleted.",
+    "detailTitle": "Debt details",
+    "expectedTotal": "Expected total",
+    "paidAmount": "Paid",
+    "remainingAmount": "Remaining",
+    "payments": "Payments",
+    "noPayments": "No payments yet",
+    "registerPayment": "Register payment",
+    "paymentAmountPlaceholder": "Payment amount",
+    "paymentNotePlaceholder": "Note (optional)",
+    "savePayment": "Save payment",
+    "active": "Active",
+    "paid": "Paid",
+    "overdue": "Overdue",
+    "noDueDate": "No due date"
   },
   "friendsExpenses": {
     "title": "Friends",

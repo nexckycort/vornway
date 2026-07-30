@@ -17,6 +17,7 @@ import { Route as PublicLoginIndexRouteImport } from './routes/_public/login/ind
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
 import { Route as AuthedGroupsIndexRouteImport } from './routes/_authed/groups/index'
 import { Route as AuthedGoalsIndexRouteImport } from './routes/_authed/goals/index'
+import { Route as AuthedDebtsIndexRouteImport } from './routes/_authed/debts/index'
 import { Route as AuthedhomeIndexRouteImport } from './routes/_authed/(home)/index'
 import { Route as AuthedGroupsNewRouteImport } from './routes/_authed/groups/new'
 import { Route as AuthedExpensesQuickSplitRouteImport } from './routes/_authed/expenses/quick-split'
@@ -29,6 +30,8 @@ import { Route as AuthedGroupsNewIndexRouteImport } from './routes/_authed/group
 import { Route as AuthedGroupsIdIndexRouteImport } from './routes/_authed/groups/$id/index'
 import { Route as AuthedGoalsNewIndexRouteImport } from './routes/_authed/goals/new/index'
 import { Route as AuthedGoalsIdIndexRouteImport } from './routes/_authed/goals/$id/index'
+import { Route as AuthedDebtsNewIndexRouteImport } from './routes/_authed/debts/new/index'
+import { Route as AuthedDebtsIdIndexRouteImport } from './routes/_authed/debts/$id/index'
 import { Route as AuthedGroupsNewParticipantsRouteImport } from './routes/_authed/groups/new/participants'
 import { Route as AuthedGroupsIdSettleRouteImport } from './routes/_authed/groups/$id/settle'
 import { Route as AuthedGroupsIdParticipantsRouteImport } from './routes/_authed/groups/$id/participants'
@@ -79,6 +82,11 @@ const AuthedGroupsIndexRoute = AuthedGroupsIndexRouteImport.update({
 const AuthedGoalsIndexRoute = AuthedGoalsIndexRouteImport.update({
   id: '/goals/',
   path: '/goals/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedDebtsIndexRoute = AuthedDebtsIndexRouteImport.update({
+  id: '/debts/',
+  path: '/debts/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedhomeIndexRoute = AuthedhomeIndexRouteImport.update({
@@ -141,6 +149,16 @@ const AuthedGoalsNewIndexRoute = AuthedGoalsNewIndexRouteImport.update({
 const AuthedGoalsIdIndexRoute = AuthedGoalsIdIndexRouteImport.update({
   id: '/goals/$id/',
   path: '/goals/$id/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedDebtsNewIndexRoute = AuthedDebtsNewIndexRouteImport.update({
+  id: '/debts/new/',
+  path: '/debts/new/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedDebtsIdIndexRoute = AuthedDebtsIdIndexRouteImport.update({
+  id: '/debts/$id/',
+  path: '/debts/$id/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedGroupsNewParticipantsRoute =
@@ -228,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/expenses/new': typeof AuthedExpensesNewRoute
   '/expenses/quick-split': typeof AuthedExpensesQuickSplitRoute
   '/groups/new': typeof AuthedGroupsNewRouteWithChildren
+  '/debts/': typeof AuthedDebtsIndexRoute
   '/goals/': typeof AuthedGoalsIndexRoute
   '/groups/': typeof AuthedGroupsIndexRoute
   '/profile/': typeof AuthedProfileIndexRoute
@@ -235,6 +254,8 @@ export interface FileRoutesByFullPath {
   '/groups/$id/participants': typeof AuthedGroupsIdParticipantsRoute
   '/groups/$id/settle': typeof AuthedGroupsIdSettleRoute
   '/groups/new/participants': typeof AuthedGroupsNewParticipantsRoute
+  '/debts/$id/': typeof AuthedDebtsIdIndexRoute
+  '/debts/new/': typeof AuthedDebtsNewIndexRoute
   '/goals/$id/': typeof AuthedGoalsIdIndexRoute
   '/goals/new/': typeof AuthedGoalsNewIndexRoute
   '/groups/$id/': typeof AuthedGroupsIdIndexRoute
@@ -260,6 +281,7 @@ export interface FileRoutesByTo {
   '/expenses/friends': typeof AuthedExpensesFriendsRouteWithChildren
   '/expenses/new': typeof AuthedExpensesNewRoute
   '/expenses/quick-split': typeof AuthedExpensesQuickSplitRoute
+  '/debts': typeof AuthedDebtsIndexRoute
   '/goals': typeof AuthedGoalsIndexRoute
   '/groups': typeof AuthedGroupsIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
@@ -267,6 +289,8 @@ export interface FileRoutesByTo {
   '/groups/$id/participants': typeof AuthedGroupsIdParticipantsRoute
   '/groups/$id/settle': typeof AuthedGroupsIdSettleRoute
   '/groups/new/participants': typeof AuthedGroupsNewParticipantsRoute
+  '/debts/$id': typeof AuthedDebtsIdIndexRoute
+  '/debts/new': typeof AuthedDebtsNewIndexRoute
   '/goals/$id': typeof AuthedGoalsIdIndexRoute
   '/goals/new': typeof AuthedGoalsNewIndexRoute
   '/groups/$id': typeof AuthedGroupsIdIndexRoute
@@ -296,6 +320,7 @@ export interface FileRoutesById {
   '/_authed/expenses/quick-split': typeof AuthedExpensesQuickSplitRoute
   '/_authed/groups/new': typeof AuthedGroupsNewRouteWithChildren
   '/_authed/(home)/': typeof AuthedhomeIndexRoute
+  '/_authed/debts/': typeof AuthedDebtsIndexRoute
   '/_authed/goals/': typeof AuthedGoalsIndexRoute
   '/_authed/groups/': typeof AuthedGroupsIndexRoute
   '/_authed/profile/': typeof AuthedProfileIndexRoute
@@ -303,6 +328,8 @@ export interface FileRoutesById {
   '/_authed/groups/$id/participants': typeof AuthedGroupsIdParticipantsRoute
   '/_authed/groups/$id/settle': typeof AuthedGroupsIdSettleRoute
   '/_authed/groups/new/participants': typeof AuthedGroupsNewParticipantsRoute
+  '/_authed/debts/$id/': typeof AuthedDebtsIdIndexRoute
+  '/_authed/debts/new/': typeof AuthedDebtsNewIndexRoute
   '/_authed/goals/$id/': typeof AuthedGoalsIdIndexRoute
   '/_authed/goals/new/': typeof AuthedGoalsNewIndexRoute
   '/_authed/groups/$id/': typeof AuthedGroupsIdIndexRoute
@@ -331,6 +358,7 @@ export interface FileRouteTypes {
     | '/expenses/new'
     | '/expenses/quick-split'
     | '/groups/new'
+    | '/debts/'
     | '/goals/'
     | '/groups/'
     | '/profile/'
@@ -338,6 +366,8 @@ export interface FileRouteTypes {
     | '/groups/$id/participants'
     | '/groups/$id/settle'
     | '/groups/new/participants'
+    | '/debts/$id/'
+    | '/debts/new/'
     | '/goals/$id/'
     | '/goals/new/'
     | '/groups/$id/'
@@ -363,6 +393,7 @@ export interface FileRouteTypes {
     | '/expenses/friends'
     | '/expenses/new'
     | '/expenses/quick-split'
+    | '/debts'
     | '/goals'
     | '/groups'
     | '/profile'
@@ -370,6 +401,8 @@ export interface FileRouteTypes {
     | '/groups/$id/participants'
     | '/groups/$id/settle'
     | '/groups/new/participants'
+    | '/debts/$id'
+    | '/debts/new'
     | '/goals/$id'
     | '/goals/new'
     | '/groups/$id'
@@ -398,6 +431,7 @@ export interface FileRouteTypes {
     | '/_authed/expenses/quick-split'
     | '/_authed/groups/new'
     | '/_authed/(home)/'
+    | '/_authed/debts/'
     | '/_authed/goals/'
     | '/_authed/groups/'
     | '/_authed/profile/'
@@ -405,6 +439,8 @@ export interface FileRouteTypes {
     | '/_authed/groups/$id/participants'
     | '/_authed/groups/$id/settle'
     | '/_authed/groups/new/participants'
+    | '/_authed/debts/$id/'
+    | '/_authed/debts/new/'
     | '/_authed/goals/$id/'
     | '/_authed/goals/new/'
     | '/_authed/groups/$id/'
@@ -485,6 +521,13 @@ declare module '@tanstack/react-router' {
       path: '/goals'
       fullPath: '/goals/'
       preLoaderRoute: typeof AuthedGoalsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/debts/': {
+      id: '/_authed/debts/'
+      path: '/debts'
+      fullPath: '/debts/'
+      preLoaderRoute: typeof AuthedDebtsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/(home)/': {
@@ -569,6 +612,20 @@ declare module '@tanstack/react-router' {
       path: '/goals/$id'
       fullPath: '/goals/$id/'
       preLoaderRoute: typeof AuthedGoalsIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/debts/new/': {
+      id: '/_authed/debts/new/'
+      path: '/debts/new'
+      fullPath: '/debts/new/'
+      preLoaderRoute: typeof AuthedDebtsNewIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/debts/$id/': {
+      id: '/_authed/debts/$id/'
+      path: '/debts/$id'
+      fullPath: '/debts/$id/'
+      preLoaderRoute: typeof AuthedDebtsIdIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/groups/new/participants': {
@@ -701,11 +758,14 @@ interface AuthedRouteChildren {
   AuthedExpensesQuickSplitRoute: typeof AuthedExpensesQuickSplitRoute
   AuthedGroupsNewRoute: typeof AuthedGroupsNewRouteWithChildren
   AuthedhomeIndexRoute: typeof AuthedhomeIndexRoute
+  AuthedDebtsIndexRoute: typeof AuthedDebtsIndexRoute
   AuthedGoalsIndexRoute: typeof AuthedGoalsIndexRoute
   AuthedGroupsIndexRoute: typeof AuthedGroupsIndexRoute
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
   AuthedGroupsIdParticipantsRoute: typeof AuthedGroupsIdParticipantsRoute
   AuthedGroupsIdSettleRoute: typeof AuthedGroupsIdSettleRoute
+  AuthedDebtsIdIndexRoute: typeof AuthedDebtsIdIndexRoute
+  AuthedDebtsNewIndexRoute: typeof AuthedDebtsNewIndexRoute
   AuthedGoalsIdIndexRoute: typeof AuthedGoalsIdIndexRoute
   AuthedGoalsNewIndexRoute: typeof AuthedGoalsNewIndexRoute
   AuthedGroupsIdIndexRoute: typeof AuthedGroupsIdIndexRoute
@@ -731,11 +791,14 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedExpensesQuickSplitRoute: AuthedExpensesQuickSplitRoute,
   AuthedGroupsNewRoute: AuthedGroupsNewRouteWithChildren,
   AuthedhomeIndexRoute: AuthedhomeIndexRoute,
+  AuthedDebtsIndexRoute: AuthedDebtsIndexRoute,
   AuthedGoalsIndexRoute: AuthedGoalsIndexRoute,
   AuthedGroupsIndexRoute: AuthedGroupsIndexRoute,
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
   AuthedGroupsIdParticipantsRoute: AuthedGroupsIdParticipantsRoute,
   AuthedGroupsIdSettleRoute: AuthedGroupsIdSettleRoute,
+  AuthedDebtsIdIndexRoute: AuthedDebtsIdIndexRoute,
+  AuthedDebtsNewIndexRoute: AuthedDebtsNewIndexRoute,
   AuthedGoalsIdIndexRoute: AuthedGoalsIdIndexRoute,
   AuthedGoalsNewIndexRoute: AuthedGoalsNewIndexRoute,
   AuthedGroupsIdIndexRoute: AuthedGroupsIdIndexRoute,

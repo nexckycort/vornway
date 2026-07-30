@@ -14,6 +14,7 @@ export const Route = createFileRoute('/_authed/debts/$id/')({
   component: RouteComponent,
 });
 const detailEndpoint = debtsClient[':id'].$get;
+const updateEndpoint = debtsClient[':id'].$patch;
 const paymentEndpoint = debtsClient[':id'].payments.$post;
 const deletePaymentEndpoint = debtsClient[':id'].payments[':paymentId'].$delete;
 const deleteDebtEndpoint = debtsClient[':id'].$delete;
@@ -38,12 +39,15 @@ type Detail = {
   }>;
   viewerRole: 'owner' | 'counterparty';
 };
+type UpdateInput = InferRequestType<typeof updateEndpoint>['json'];
 type PaymentInput = InferRequestType<typeof paymentEndpoint>['json'];
 
 function RouteComponent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { id } = Route.useParams();
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentNote, setPaymentNote] = useState('');
   const detailQuery = useQuery({
@@ -68,6 +72,21 @@ function RouteComponent() {
       ]);
       setPaymentAmount('');
       setPaymentNote('');
+    },
+  });
+  const updateMutation = useMutation({
+    mutationFn: async (input: UpdateInput) => {
+      const response = await updateEndpoint({ param: { id }, json: input });
+      if (!response.ok) throw new Error('debt_update_failed');
+      return response.json();
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['debt', id] }),
+        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
+      setIsEditingName(false);
     },
   });
   const deletePaymentMutation = useMutation({
@@ -101,6 +120,14 @@ function RouteComponent() {
     },
   });
   const detail = detailQuery.data;
+  const submitName = () => {
+    const nextName = nameInput.trim();
+    if (!detail || nextName.length === 0 || nextName === detail.name) {
+      setIsEditingName(false);
+      return;
+    }
+    void updateMutation.mutate({ name: nextName });
+  };
   const submitPayment = () => {
     const amount = Number(paymentAmount.replace(/[^\d.]/g, ''));
     if (!detail || !Number.isFinite(amount) || amount <= 0) return;
@@ -121,16 +148,52 @@ function RouteComponent() {
       {detail ? (
         <div className="mx-auto flex w-full max-w-lg flex-col gap-5 pb-5">
           <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold">{detail.name}</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                {detail.counterpartyName}
-              </p>
+            <div className="min-w-0 flex-1">
+              {isEditingName ? (
+                <div className="flex flex-col gap-2">
+                  <input
+                    value={nameInput}
+                    onChange={(event) => setNameInput(event.target.value)}
+                    placeholder={m['debts.namePlaceholder']()}
+                    className="h-12 w-full rounded-2xl border px-4 text-base outline-none focus:border-primary"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      disabled={updateMutation.isPending}
+                      onClick={submitName}
+                      className="h-10 flex-1 rounded-full"
+                    >
+                      {m['debts.save']()}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={updateMutation.isPending}
+                      onClick={() => setIsEditingName(false)}
+                      className="h-10 flex-1 rounded-full"
+                    >
+                      {m['common.cancel']()}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-semibold">{detail.name}</h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {detail.counterpartyName}
+                  </p>
+                </>
+              )}
             </div>
             {detail.viewerRole === 'owner' ? (
               <div className="flex gap-2">
                 <button
                   type="button"
+                  onClick={() => {
+                    setNameInput(detail.name);
+                    setIsEditingName(true);
+                  }}
                   aria-label={m['debts.edit']()}
                   className="rounded-full border p-2"
                 >

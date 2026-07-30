@@ -7,7 +7,7 @@ type HomeSectionProps = {
   title: string;
   className?: string;
   children: ReactNode;
-  viewAllTo?: '/groups' | '/goals' | '/expenses/friends';
+  viewAllTo?: '/groups' | '/goals' | '/expenses/friends' | '/debts';
 };
 
 export function HomeSection({

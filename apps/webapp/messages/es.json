@@ -155,6 +155,7 @@
     "recentGroups": "Espacios recientes",
     "recentExpenses": "Gastos con amigos",
     "savingGoals": "Metas de ahorro",
+    "recentDebts": "Deudas recientes",
     "createGoal": "Crear meta",
     "currencyConverter": "Convertidor de moneda",
     "createNewGroup": "Crear espacio",
@@ -168,6 +169,10 @@
     "noExpenses": "Sin gastos",
     "otherBalances": "y {count} otros saldos",
     "createdAt": "Creado {date}",
+    "updatedAt": "Actualizado {date}",
+    "debtActive": "Activa",
+    "debtPaid": "Pagada",
+    "debtOverdue": "Vencida",
     "loadError": "No se pudo cargar el home"
   },
   "quickSplit": {
@@ -258,6 +263,7 @@
     "title": "Deudas",
     "create": "Nueva deuda",
     "newTitle": "Registrar deuda",
+    "namePlaceholder": "Nombre de la deuda",
     "personPlaceholder": "Nombre de la persona",
     "amountPlaceholder": "Monto",
     "interestPlaceholder": "Porcentaje de interés (opcional)",

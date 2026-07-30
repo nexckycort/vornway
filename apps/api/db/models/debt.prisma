@@ -1,6 +1,7 @@
 model Debt {
   id                String    @id @default(cuid())
   ownerId           String
+  name              String
   counterpartyId    String?
   counterpartyName  String
   direction         String

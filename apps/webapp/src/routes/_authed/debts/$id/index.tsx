@@ -19,6 +19,7 @@ const deletePaymentEndpoint = debtsClient[':id'].payments[':paymentId'].$delete;
 const deleteDebtEndpoint = debtsClient[':id'].$delete;
 type Detail = {
   id: string;
+  name: string;
   counterpartyName: string;
   counterpartyId?: string | null;
   direction: 'lent' | 'borrowed';
@@ -63,6 +64,7 @@ function RouteComponent() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['debt', id] }),
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
       setPaymentAmount('');
       setPaymentNote('');
@@ -77,8 +79,11 @@ function RouteComponent() {
       return response.json();
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['debt', id] });
-      await queryClient.invalidateQueries({ queryKey: ['debts'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['debt', id] }),
+        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
     },
   });
   const deleteDebtMutation = useMutation({
@@ -88,7 +93,10 @@ function RouteComponent() {
       return response.json();
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['debts'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
       await navigate({ to: '/debts', replace: true });
     },
   });
@@ -114,9 +122,7 @@ function RouteComponent() {
         <div className="mx-auto flex w-full max-w-lg flex-col gap-5 pb-5">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-2xl font-semibold">
-                {m['debts.detailTitle']()}
-              </h2>
+              <h2 className="text-2xl font-semibold">{detail.name}</h2>
               <p className="mt-1 text-sm text-gray-500">
                 {detail.counterpartyName}
               </p>

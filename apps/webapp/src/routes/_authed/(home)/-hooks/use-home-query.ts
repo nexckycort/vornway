@@ -62,6 +62,16 @@ export type SavingGoal = {
   tone: 'pink' | 'yellow';
 };
 
+export type RecentDebt = {
+  id: string;
+  name: string;
+  counterpartyName: string;
+  directionLabel: string;
+  remaining: string;
+  statusLabel: string;
+  updatedAtLabel: string;
+};
+
 export type HomeRecentGroup = Pick<Trip, 'id' | 'name'>;
 
 export type HomeQueryData = {
@@ -70,6 +80,7 @@ export type HomeQueryData = {
   recentGroups: HomeRecentGroup[];
   trips: Trip[];
   savingGoals: SavingGoal[];
+  recentDebts: RecentDebt[];
 };
 
 const homeEndpoint = homeClient.index.$get;
@@ -185,6 +196,21 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
     tone: index % 2 === 0 ? 'pink' : 'yellow',
   }));
 
+  const recentDebts: RecentDebt[] = (apiData.recentDebts ?? []).map((debt) => ({
+    id: debt.id,
+    name: debt.name,
+    counterpartyName: debt.counterpartyName,
+    directionLabel: debt.direction === 'lent' ? t.theyOwe : t.youOwe,
+    remaining: formatCurrency(debt.currency, debt.remainingAmount),
+    statusLabel:
+      debt.status === 'paid'
+        ? t.debtPaid
+        : debt.status === 'overdue'
+          ? t.debtOverdue
+          : t.debtActive,
+    updatedAtLabel: t.updatedAt(formatShortDate(debt.updatedAt)),
+  }));
+
   return {
     welcomeText: t.welcome,
     actions: homeActions,
@@ -194,6 +220,7 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
     })),
     trips,
     savingGoals,
+    recentDebts,
   };
 }
 
@@ -203,6 +230,7 @@ const emptyHomeData: HomeQueryData = {
   recentGroups: [],
   trips: [],
   savingGoals: [],
+  recentDebts: [],
 };
 
 export function useHomeQuery() {

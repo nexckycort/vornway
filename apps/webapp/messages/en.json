@@ -155,6 +155,7 @@
     "recentGroups": "Recent spaces",
     "recentExpenses": "Expenses with friends",
     "savingGoals": "Savings goals",
+    "recentDebts": "Recent debts",
     "createGoal": "Create goal",
     "currencyConverter": "Currency converter",
     "createNewGroup": "Create space",
@@ -168,6 +169,10 @@
     "noExpenses": "No expenses",
     "otherBalances": "and {count} other balances",
     "createdAt": "Created {date}",
+    "updatedAt": "Updated {date}",
+    "debtActive": "Active",
+    "debtPaid": "Paid",
+    "debtOverdue": "Overdue",
     "loadError": "Could not load home"
   },
   "quickSplit": {
@@ -258,6 +263,7 @@
     "title": "Debts",
     "create": "New debt",
     "newTitle": "Register debt",
+    "namePlaceholder": "Debt name",
     "personPlaceholder": "Person name",
     "amountPlaceholder": "Amount",
     "interestPlaceholder": "Interest percentage (optional)",

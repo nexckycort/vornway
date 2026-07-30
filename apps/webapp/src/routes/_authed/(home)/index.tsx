@@ -8,6 +8,7 @@ import { HomeAction } from '#/routes/_authed/(home)/-components/home-action';
 import { homeIcons } from '#/routes/_authed/(home)/-components/home-icons';
 import { HomeSection } from '#/routes/_authed/(home)/-components/home-section';
 import { HomeSkeleton } from '#/routes/_authed/(home)/-components/home-skeleton';
+import { RecentDebtCard } from '#/routes/_authed/(home)/-components/recent-debt-card';
 import { RecentExpenseCard } from '#/routes/_authed/(home)/-components/recent-expense-card';
 import { SavingGoalCard } from '#/routes/_authed/(home)/-components/saving-goal-card';
 import { TripCard } from '#/routes/_authed/(home)/-components/trip-card';
@@ -213,6 +214,20 @@ function RouteComponent() {
                       </div>
                     )}
                   </HomeSection>
+
+                  {data.recentDebts.length > 0 ? (
+                    <HomeSection
+                      title={t.recentDebts}
+                      className="mt-8"
+                      viewAllTo="/debts"
+                    >
+                      <div className="flex flex-col gap-4">
+                        {data.recentDebts.map((debt) => (
+                          <RecentDebtCard key={debt.id} debt={debt} />
+                        ))}
+                      </div>
+                    </HomeSection>
+                  ) : null}
                 </>
               )}
             </div>

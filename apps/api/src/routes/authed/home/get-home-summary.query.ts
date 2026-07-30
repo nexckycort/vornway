@@ -1,7 +1,11 @@
 import { db } from '#/infrastructure/database/connection';
 import { getVersionedGroupImageUrl } from '#/infrastructure/storage/group-images';
 import { resolveUserImageUrl } from '#/infrastructure/storage/user-images';
-import type { HomeParticipantBalance, HomeSummary } from './types';
+import type {
+  HomeDebtSummary,
+  HomeParticipantBalance,
+  HomeSummary,
+} from './types';
 
 function normalizeAmount(value: number): number {
   return Number(value.toFixed(2));
@@ -244,6 +248,57 @@ function summarizeGoal(goal: {
   };
 }
 
+function summarizeDebt(
+  debt: {
+    id: string;
+    name: string;
+    ownerId: string;
+    counterpartyName: string;
+    direction: string;
+    currency: string;
+    expectedTotal: number;
+    dueDate: Date | null;
+    updatedAt: Date;
+    payments: Array<{ amount: number }>;
+  },
+  userId: string,
+): HomeDebtSummary {
+  const paidAmount = normalizeAmount(
+    debt.payments.reduce((total, payment) => total + payment.amount, 0),
+  );
+  const remainingAmount = normalizeAmount(
+    Math.max(debt.expectedTotal - paidAmount, 0),
+  );
+  const status =
+    remainingAmount <= 0
+      ? 'paid'
+      : debt.dueDate && debt.dueDate < new Date()
+        ? 'overdue'
+        : 'active';
+
+  const ownerDirection: HomeDebtSummary['direction'] =
+    debt.direction === 'borrowed' ? 'borrowed' : 'lent';
+  const direction: HomeDebtSummary['direction'] =
+    debt.ownerId === userId
+      ? ownerDirection
+      : ownerDirection === 'lent'
+        ? 'borrowed'
+        : 'lent';
+
+  return {
+    id: debt.id,
+    name: debt.name,
+    counterpartyName: debt.counterpartyName,
+    direction,
+    currency: debt.currency,
+    expectedTotal: debt.expectedTotal,
+    paidAmount,
+    remainingAmount,
+    status,
+    updatedAt: debt.updatedAt,
+  };
+}
+
 export type HomeSummaryQuery = {
   getSummary: (userId: string) => Promise<HomeSummary>;
 };
@@ -385,9 +440,34 @@ export function createHomeSummaryQuery(): HomeSummaryQuery {
 
       const goalsWithProgress = goals.map(summarizeGoal);
 
+      const recentDebts = await db.debt.findMany({
+        where: {
+          OR: [{ ownerId: userId }, { counterpartyId: userId }],
+        },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        take: 2,
+        select: {
+          id: true,
+          name: true,
+          ownerId: true,
+          counterpartyName: true,
+          direction: true,
+          currency: true,
+          expectedTotal: true,
+          dueDate: true,
+          updatedAt: true,
+          payments: {
+            select: {
+              amount: true,
+            },
+          },
+        },
+      });
+
       return {
         groups: groupsWithBalances,
         goals: goalsWithProgress,
+        recentDebts: recentDebts.map((debt) => summarizeDebt(debt, userId)),
       };
     },
   };

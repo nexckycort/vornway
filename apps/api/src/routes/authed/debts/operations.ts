@@ -49,7 +49,15 @@ export const debtOperations = {
         ...visibleTo(userId),
         ...(input.search
           ? {
-              counterpartyName: { contains: input.search, mode: 'insensitive' },
+              OR: [
+                { name: { contains: input.search, mode: 'insensitive' } },
+                {
+                  counterpartyName: {
+                    contains: input.search,
+                    mode: 'insensitive',
+                  },
+                },
+              ],
             }
           : {}),
       },
@@ -87,6 +95,7 @@ export const debtOperations = {
     const debt = await db.debt.create({
       data: {
         ownerId: userId,
+        name: input.name,
         counterpartyName: input.counterpartyName,
         counterpartyId: input.counterpartyId,
         direction: input.direction,
@@ -157,14 +166,20 @@ export const debtOperations = {
       debt.payments.reduce((sum, payment) => sum + payment.amount, 0);
     if (input.amount > remaining + 0.01)
       throw new Error('Payment exceeds remaining balance');
-    await db.debtPayment.create({
-      data: {
-        debtId: id,
-        amount: input.amount,
-        paidAt: input.paidAt,
-        note: input.note,
-      },
-    });
+    await db.$transaction([
+      db.debtPayment.create({
+        data: {
+          debtId: id,
+          amount: input.amount,
+          paidAt: input.paidAt,
+          note: input.note,
+        },
+      }),
+      db.debt.update({
+        where: { id },
+        data: { updatedAt: new Date() },
+      }),
+    ]);
     return debtOperations.get(userId, id);
   },
   async deletePayment(userId: string, debtId: string, paymentId: string) {
@@ -172,7 +187,13 @@ export const debtOperations = {
       where: { id: paymentId, debt: { id: debtId, ownerId: userId } },
     });
     if (!payment) return null;
-    await db.debtPayment.delete({ where: { id: paymentId } });
+    await db.$transaction([
+      db.debtPayment.delete({ where: { id: paymentId } }),
+      db.debt.update({
+        where: { id: debtId },
+        data: { updatedAt: new Date() },
+      }),
+    ]);
     return debtOperations.get(userId, debtId);
   },
 };

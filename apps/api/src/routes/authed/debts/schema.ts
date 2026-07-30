@@ -5,6 +5,7 @@ const direction = z.enum(['lent', 'borrowed']);
 const interestType = z.enum(['none', 'percentage', 'fixed']);
 
 export const createDebtSchema = z.object({
+  name: z.string().trim().min(1).max(120),
   counterpartyName: z.string().trim().min(1).max(120),
   counterpartyId: z.string().min(1).optional(),
   direction,

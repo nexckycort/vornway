@@ -44,6 +44,18 @@ export type HomeApiResponse = {
       name: string;
     };
   }>;
+  recentDebts: Array<{
+    id: string;
+    name: string;
+    counterpartyName: string;
+    direction: 'lent' | 'borrowed';
+    currency: string;
+    expectedTotal: number;
+    paidAmount: number;
+    remainingAmount: number;
+    status: 'active' | 'paid' | 'overdue';
+    updatedAt: string;
+  }>;
 };
 
 type CachedHomeSummary = {

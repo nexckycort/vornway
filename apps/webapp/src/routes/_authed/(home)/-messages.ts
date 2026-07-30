@@ -13,6 +13,7 @@ export function getHomeMessages() {
     recentGroups: m['home.recentGroups'](),
     recentExpenses: m['home.recentExpenses'](),
     savingGoals: m['home.savingGoals'](),
+    recentDebts: m['home.recentDebts'](),
     createGoal: m['home.createGoal'](),
     currencyConverter: m['home.currencyConverter'](),
     createNewGroup: m['home.createNewGroup'](),
@@ -26,6 +27,10 @@ export function getHomeMessages() {
     noExpenses: m['home.noExpenses'](),
     otherBalances: (count: number) => m['home.otherBalances']({ count }),
     createdAt: (date: string) => m['home.createdAt']({ date }),
+    updatedAt: (date: string) => m['home.updatedAt']({ date }),
+    debtActive: m['home.debtActive'](),
+    debtPaid: m['home.debtPaid'](),
+    debtOverdue: m['home.debtOverdue'](),
     loadError: m['home.loadError'](),
   };
 }

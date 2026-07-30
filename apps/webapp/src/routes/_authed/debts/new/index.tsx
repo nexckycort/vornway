@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { debtsClient } from '#/api/debts';
@@ -17,6 +17,8 @@ type CreateDebt = InferRequestType<typeof createEndpoint>['json'];
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [debtName, setDebtName] = useState('');
   const [name, setName] = useState('');
   const [counterpartyId, setCounterpartyId] = useState<string>();
   const [amount, setAmount] = useState('');
@@ -31,18 +33,26 @@ function RouteComponent() {
       if (!response.ok) throw new Error('debt_create_failed');
       return response.json();
     },
-    onSuccess: () => void navigate({ to: '/debts', replace: true }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
+      await navigate({ to: '/debts', replace: true });
+    },
   });
 
   const submit = () => {
     const principalAmount = Number(amount.replace(/[^\d.]/g, ''));
     if (
+      !debtName.trim() ||
       !name.trim() ||
       !Number.isFinite(principalAmount) ||
       principalAmount <= 0
     )
       return;
     void createMutation.mutate({
+      name: debtName.trim(),
       counterpartyName: name.trim(),
       ...(counterpartyId ? { counterpartyId } : {}),
       direction,
@@ -76,9 +86,15 @@ function RouteComponent() {
             {m['debts.newTitle']()}
           </p>
           <p className="mt-1 text-sm text-gray-500">
-            {m['debts.personPlaceholder']()}
+            {m['debts.namePlaceholder']()}
           </p>
         </div>
+        <input
+          value={debtName}
+          onChange={(event) => setDebtName(event.target.value)}
+          placeholder={m['debts.namePlaceholder']()}
+          className="h-14 w-full rounded-2xl border border-gray-200 bg-white px-4 text-base outline-none focus:border-primary"
+        />
         <div className="relative">
           <input
             value={name}

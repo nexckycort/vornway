@@ -52,6 +52,7 @@ function RouteComponent() {
   const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
   const [selectedDebtId, setSelectedDebtId] = useState<string | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [debtName, setDebtName] = useState('');
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [direction, setDirection] = useState<'lent' | 'borrowed'>('lent');
@@ -97,7 +98,10 @@ function RouteComponent() {
       return response.json();
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['debts'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
       closeCreateForm();
     },
   });
@@ -111,6 +115,7 @@ function RouteComponent() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
         queryClient.invalidateQueries({ queryKey: ['debt', selectedDebtId] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
       setPaymentAmount('');
       setPaymentNote('');
@@ -135,12 +140,14 @@ function RouteComponent() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
         queryClient.invalidateQueries({ queryKey: ['debt', selectedDebtId] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
     },
   });
 
   function closeCreateForm() {
     setShowForm(false);
+    setDebtName('');
     setName('');
     setAmount('');
     setInterest('');
@@ -152,6 +159,7 @@ function RouteComponent() {
   function submit() {
     const principalAmount = Number(amount.replace(/[^\d.]/g, ''));
     if (
+      !debtName.trim() ||
       !name.trim() ||
       !Number.isFinite(principalAmount) ||
       principalAmount <= 0
@@ -160,6 +168,7 @@ function RouteComponent() {
     void createMutation.mutate({
       id: editingDebtId,
       input: {
+        name: debtName.trim(),
         counterpartyName: name.trim(),
         ...(counterpartyId ? { counterpartyId } : {}),
         direction,
@@ -214,10 +223,9 @@ function RouteComponent() {
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-base font-semibold">
-                  {debt.counterpartyName}
-                </p>
+                <p className="text-base font-semibold">{debt.name}</p>
                 <p className="mt-1 text-xs text-gray-500">
+                  {debt.counterpartyName} ·{' '}
                   {debt.direction === 'lent'
                     ? m['debts.lent']()
                     : m['debts.borrowed']()}
@@ -253,6 +261,12 @@ function RouteComponent() {
               {editingDebtId ? m['debts.edit']() : m['debts.newTitle']()}
             </h2>
             <div className="mt-4 space-y-3">
+              <input
+                value={debtName}
+                onChange={(e) => setDebtName(e.target.value)}
+                placeholder={m['debts.namePlaceholder']()}
+                className="h-12 w-full rounded-2xl border px-4"
+              />
               <input
                 value={name}
                 onChange={(e) => {
@@ -352,9 +366,7 @@ function RouteComponent() {
             </button>
             <div className="mt-3 flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-semibold">
-                  {m['debts.detailTitle']()}
-                </h2>
+                <h2 className="text-xl font-semibold">{detail.name}</h2>
                 <p className="text-sm text-gray-500">
                   {detail.counterpartyName}
                 </p>
@@ -365,6 +377,7 @@ function RouteComponent() {
                     type="button"
                     onClick={() => {
                       setEditingDebtId(detail.id);
+                      setDebtName(detail.name);
                       setName(detail.counterpartyName);
                       setAmount(String(detail.principalAmount));
                       setDirection(detail.direction as 'lent' | 'borrowed');

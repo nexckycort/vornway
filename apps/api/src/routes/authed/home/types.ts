@@ -45,7 +45,21 @@ export type HomeGoalSummary = {
   };
 };
 
+export type HomeDebtSummary = {
+  id: string;
+  name: string;
+  counterpartyName: string;
+  direction: 'lent' | 'borrowed';
+  currency: string;
+  expectedTotal: number;
+  paidAmount: number;
+  remainingAmount: number;
+  status: 'active' | 'paid' | 'overdue';
+  updatedAt: Date;
+};
+
 export type HomeSummary = {
   groups: HomeGroupSummary[];
   goals: HomeGoalSummary[];
+  recentDebts: HomeDebtSummary[];
 };

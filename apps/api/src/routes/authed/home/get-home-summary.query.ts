@@ -86,9 +86,21 @@ function summarizeGroup(
 
   const creditsByCounterparty = new Map<string, number>();
   const debtsByCounterparty = new Map<string, number>();
+  const isPersonalGroup = group.type === 'personal';
 
   for (const expense of group.Expense) {
-    if (expense.participants.length === 0) continue;
+    if (expense.participants.length === 0) {
+      if (isPersonalGroup) {
+        const key = `personal:${expense.currency}`;
+        creditsByCounterparty.set(
+          key,
+          normalizeAmount(
+            (creditsByCounterparty.get(key) ?? 0) + expense.amount,
+          ),
+        );
+      }
+      continue;
+    }
 
     const payerEntries =
       expense.payers.length > 0
@@ -153,6 +165,14 @@ function summarizeGroup(
 
   for (const key of currencyKeys) {
     const [memberId, currency] = key.split(':');
+    if (memberId === 'personal' && isPersonalGroup) {
+      totalsByCurrency[currency] = normalizeAmount(
+        (totalsByCurrency[currency] ?? 0) +
+          (creditsByCounterparty.get(key) ?? 0),
+      );
+      continue;
+    }
+
     const member = group.GroupMember.find((item) => item.id === memberId);
     if (!member) continue;
 

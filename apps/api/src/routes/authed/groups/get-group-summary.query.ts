@@ -93,7 +93,9 @@ export function createGroupSummaryOperations() {
 
       const myMembership =
         group.GroupMember.find((member) => member.userId === userId) ?? null;
-      const totals = calculateTotalsByCurrency(group.Expense);
+      const totals = calculateTotalsByCurrency(group.Expense, {
+        includeParticipantlessExpenses: group.type === 'personal',
+      });
       const categoryExpenseRows = await db.expense.groupBy({
         where: {
           ...buildActiveExpenseWhere(groupId),

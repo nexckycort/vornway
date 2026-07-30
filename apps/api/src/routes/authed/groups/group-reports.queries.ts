@@ -50,6 +50,7 @@ function reportExpenseSql(input: {
   range: 'all' | 'custom';
   startDate?: string;
   endDate?: string;
+  includeParticipantlessExpenses?: boolean;
 }) {
   return Prisma.sql`
     e."groupId" = ${input.groupId}
@@ -62,11 +63,17 @@ function reportExpenseSql(input: {
         and e.notes not like '%[SETTLEMENT:%'
       )
     )
-    and exists (
-      select 1
-      from expense_participant ep_exists
-      where ep_exists."expenseId" = e.id
-    )
+    ${
+      input.includeParticipantlessExpenses
+        ? Prisma.empty
+        : Prisma.sql`
+            and exists (
+              select 1
+              from expense_participant ep_exists
+              where ep_exists."expenseId" = e.id
+            )
+          `
+    }
     ${reportDateSql(input)}
   `;
 }
@@ -89,6 +96,7 @@ export function createGroupReportsOperations() {
         },
         select: {
           id: true,
+          type: true,
         },
       });
 
@@ -113,9 +121,13 @@ export function createGroupReportsOperations() {
           startDate,
           endDate,
         }),
-        participants: {
-          some: {},
-        },
+        ...(group.type === 'personal'
+          ? {}
+          : {
+              participants: {
+                some: {},
+              },
+            }),
         AND: [
           {
             OR: [
@@ -157,7 +169,7 @@ export function createGroupReportsOperations() {
                 from expense_participant ep
                 join expense e on e.id = ep."expenseId"
                 where ep."memberId" = ${currentMember.id}
-                  and ${reportExpenseSql({ groupId: group.id, range, startDate, endDate })}
+                  and ${reportExpenseSql({ groupId: group.id, range, startDate, endDate, includeParticipantlessExpenses: group.type === 'personal' })}
                 group by ep."memberId", e.currency
               `
             : Promise.resolve([]),
@@ -312,6 +324,7 @@ export function createGroupReportsOperations() {
         },
         select: {
           id: true,
+          type: true,
         },
       });
 
@@ -332,9 +345,13 @@ export function createGroupReportsOperations() {
             endDate,
           }),
           currency,
-          participants: {
-            some: {},
-          },
+          ...(group.type === 'personal'
+            ? {}
+            : {
+                participants: {
+                  some: {},
+                },
+              }),
           ...(categoryId
             ? { categoryId }
             : uncategorized

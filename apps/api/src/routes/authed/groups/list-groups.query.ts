@@ -116,7 +116,9 @@ function mapGroupListRow(
         currentMember,
       ]
     : row.GroupMember;
-  const totals = calculateTotalsByCurrency(row.Expense);
+  const totals = calculateTotalsByCurrency(row.Expense, {
+    includeParticipantlessExpenses: row.type === 'personal',
+  });
 
   const creditsByCounterparty = new Map<string, number>();
   const debtsByCounterparty = new Map<string, number>();

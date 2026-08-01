@@ -24,6 +24,7 @@ const defaultIncomeCategories = [
 ] as const;
 
 const money = (value: number) => Number(value.toFixed(2));
+const colombiaUtcOffsetHours = 5;
 
 function toFinanceTransactionType(type: 'income' | 'expense' | 'both') {
   return type === 'income' ? 'INCOME' : type === 'expense' ? 'EXPENSE' : 'BOTH';
@@ -31,16 +32,19 @@ function toFinanceTransactionType(type: 'income' | 'expense' | 'both') {
 
 function monthRange(month?: string) {
   const now = new Date();
+  const colombiaNow = new Date(
+    now.getTime() - colombiaUtcOffsetHours * 60 * 60 * 1000,
+  );
   const source =
     month && /^\d{4}-\d{2}$/.test(month)
       ? month
-      : `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+      : `${colombiaNow.getUTCFullYear()}-${String(colombiaNow.getUTCMonth() + 1).padStart(2, '0')}`;
   const [yearValue, monthValue] = source.split('-').map(Number);
-  const start = new Date(
-    Date.UTC(yearValue ?? now.getUTCFullYear(), (monthValue ?? 1) - 1, 1),
-  );
+  const year = yearValue ?? colombiaNow.getUTCFullYear();
+  const monthIndex = (monthValue ?? 1) - 1;
+  const start = new Date(Date.UTC(year, monthIndex, 1, colombiaUtcOffsetHours));
   const end = new Date(
-    Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1),
+    Date.UTC(year, monthIndex + 1, 1, colombiaUtcOffsetHours),
   );
   return { key: source, start, end };
 }

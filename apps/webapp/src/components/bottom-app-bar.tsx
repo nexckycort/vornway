@@ -29,7 +29,14 @@ type BottomAppBarItem = {
   id: string;
   label: string;
   icon: BottomAppBarIconName;
-  to: '/' | '/expenses/friends' | '/groups' | '/goals' | '/debts' | '/profile';
+  to:
+    | '/'
+    | '/expenses/friends'
+    | '/groups'
+    | '/finances'
+    | '/goals'
+    | '/debts'
+    | '/profile';
 };
 
 type BottomNavState = {
@@ -44,6 +51,11 @@ const navIcons: Record<BottomAppBarIconName, IconSvgElement> = {
   wallet: Wallet02Icon,
   user: UserIcon,
 };
+
+const adminEmails = new Set([
+  'junior110120@gmail.com',
+  'viianysvanessa@gmail.com',
+]);
 
 export function BottomAppBar() {
   const t = getBottomAppBarMessages();
@@ -70,15 +82,15 @@ export function BottomAppBar() {
       to: '/expenses/friends',
     },
     { id: 'groups', label: t.groups, icon: 'compass', to: '/groups' },
+    { id: 'finances', label: t.finances, icon: 'wallet', to: '/finances' },
     { id: 'goals', label: t.goals, icon: 'piggy-bank', to: '/goals' },
     { id: 'debts', label: t.debts, icon: 'wallet', to: '/debts' },
     { id: 'profile', label: t.profile, icon: 'user', to: '/profile' },
   ];
-  const isAdmin =
-    auth.user?.email?.trim().toLowerCase() === 'junior110120@gmail.com';
+  const isAdmin = adminEmails.has(auth.user?.email?.trim().toLowerCase() ?? '');
   const items = isAdmin
     ? allItems
-    : allItems.filter((item) => item.id !== 'debts');
+    : allItems.filter((item) => item.id !== 'debts' && item.id !== 'finances');
   const activeIndex = items.findIndex((item) =>
     item.to === '/' ? pathname === '/' : pathname.startsWith(item.to),
   );

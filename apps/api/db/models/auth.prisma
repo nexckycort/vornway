@@ -20,6 +20,10 @@ model User {
   feedbackEntries                 UserFeedback[]
   debtsOwned                      Debt[]                         @relation("DebtOwner")
   debtsAsCounterparty             Debt[]                         @relation("DebtCounterparty")
+  financeAccounts                 FinanceAccount[]
+  financeCategories               FinanceCategory[]
+  financeTransactions             FinanceTransaction[]
+  financeBudgets                  FinanceBudget[]
 
   @@unique([email])
   @@unique([username])

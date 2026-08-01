@@ -1,0 +1,94 @@
+enum FinanceAccountType {
+  CASH
+  BANK
+  CREDIT_CARD
+  WALLET
+  OTHER
+}
+
+enum FinanceTransactionType {
+  INCOME
+  EXPENSE
+  BOTH
+}
+
+model FinanceAccount {
+  id           String              @id @default(cuid())
+  ownerId      String
+  name         String
+  accountType  FinanceAccountType  @default(CASH)
+  currency     String
+  openingBalance Float             @default(0)
+  archivedAt   DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  owner        User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  transactions FinanceTransaction[]
+
+  @@index([ownerId, archivedAt])
+  @@map("finance_account")
+}
+
+model FinanceCategory {
+  id           String                   @id @default(cuid())
+  ownerId      String
+  name         String
+  transactionType FinanceTransactionType
+  icon         String?
+  color        String?
+  isDefault    Boolean                  @default(false)
+  archivedAt   DateTime?
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+
+  owner        User                      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  transactions FinanceTransaction[]
+  budgets      FinanceBudget[]
+
+  @@unique([ownerId, transactionType, name])
+  @@index([ownerId, transactionType, archivedAt])
+  @@map("finance_category")
+}
+
+model FinanceTransaction {
+  id          String                  @id @default(cuid())
+  ownerId     String
+  accountId   String?
+  categoryId  String?
+  type        FinanceTransactionType
+  amount      Float
+  currency    String
+  description String
+  occurredAt  DateTime
+  notes       String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  owner       User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  account     FinanceAccount?          @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  category    FinanceCategory?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId, occurredAt(sort: Desc)])
+  @@index([ownerId, type, occurredAt(sort: Desc)])
+  @@index([categoryId, occurredAt(sort: Desc)])
+  @@map("finance_transaction")
+}
+
+model FinanceBudget {
+  id          String          @id @default(cuid())
+  ownerId     String
+  categoryId  String
+  month       DateTime
+  amount      Float
+  currency    String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  owner       User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  category    FinanceCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, categoryId, month, currency])
+  @@index([ownerId, month])
+  @@map("finance_budget")
+}

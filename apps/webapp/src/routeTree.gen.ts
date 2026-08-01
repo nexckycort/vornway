@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifications'
+import { Route as AuthedFinancesRouteImport } from './routes/_authed/finances'
 import { Route as AuthedConverterRouteImport } from './routes/_authed/converter'
 import { Route as PublicLoginIndexRouteImport } from './routes/_public/login/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
@@ -57,6 +58,11 @@ const AuthedRoute = AuthedRouteImport.update({
 const AuthedNotificationsRoute = AuthedNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedFinancesRoute = AuthedFinancesRouteImport.update({
+  id: '/finances',
+  path: '/finances',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedConverterRoute = AuthedConverterRouteImport.update({
@@ -241,6 +247,7 @@ const AuthedGroupsIdMemberMemberIdIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthedhomeIndexRoute
   '/converter': typeof AuthedConverterRoute
+  '/finances': typeof AuthedFinancesRoute
   '/notifications': typeof AuthedNotificationsRoute
   '/expenses/friends': typeof AuthedExpensesFriendsRouteWithChildren
   '/expenses/new': typeof AuthedExpensesNewRoute
@@ -277,6 +284,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof AuthedhomeIndexRoute
   '/converter': typeof AuthedConverterRoute
+  '/finances': typeof AuthedFinancesRoute
   '/notifications': typeof AuthedNotificationsRoute
   '/expenses/friends': typeof AuthedExpensesFriendsRouteWithChildren
   '/expenses/new': typeof AuthedExpensesNewRoute
@@ -314,6 +322,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_authed/converter': typeof AuthedConverterRoute
+  '/_authed/finances': typeof AuthedFinancesRoute
   '/_authed/notifications': typeof AuthedNotificationsRoute
   '/_authed/expenses/friends': typeof AuthedExpensesFriendsRouteWithChildren
   '/_authed/expenses/new': typeof AuthedExpensesNewRoute
@@ -353,6 +362,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/converter'
+    | '/finances'
     | '/notifications'
     | '/expenses/friends'
     | '/expenses/new'
@@ -389,6 +399,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/converter'
+    | '/finances'
     | '/notifications'
     | '/expenses/friends'
     | '/expenses/new'
@@ -425,6 +436,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/_public'
     | '/_authed/converter'
+    | '/_authed/finances'
     | '/_authed/notifications'
     | '/_authed/expenses/friends'
     | '/_authed/expenses/new'
@@ -486,6 +498,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof AuthedNotificationsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finances': {
+      id: '/_authed/finances'
+      path: '/finances'
+      fullPath: '/finances'
+      preLoaderRoute: typeof AuthedFinancesRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/converter': {
@@ -752,6 +771,7 @@ const AuthedGroupsNewRouteWithChildren = AuthedGroupsNewRoute._addFileChildren(
 
 interface AuthedRouteChildren {
   AuthedConverterRoute: typeof AuthedConverterRoute
+  AuthedFinancesRoute: typeof AuthedFinancesRoute
   AuthedNotificationsRoute: typeof AuthedNotificationsRoute
   AuthedExpensesFriendsRoute: typeof AuthedExpensesFriendsRouteWithChildren
   AuthedExpensesNewRoute: typeof AuthedExpensesNewRoute
@@ -785,6 +805,7 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedConverterRoute: AuthedConverterRoute,
+  AuthedFinancesRoute: AuthedFinancesRoute,
   AuthedNotificationsRoute: AuthedNotificationsRoute,
   AuthedExpensesFriendsRoute: AuthedExpensesFriendsRouteWithChildren,
   AuthedExpensesNewRoute: AuthedExpensesNewRoute,

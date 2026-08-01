@@ -3,6 +3,8 @@ export const MAIN_VIEW_PATHS = new Set([
   '/expenses/friends',
   '/groups',
   '/groups/',
+  '/finances',
+  '/finances/',
   '/goals',
   '/goals/',
   '/profile',

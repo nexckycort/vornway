@@ -6,6 +6,7 @@ import adminRoutes from './admin/routes';
 import converterRoutes from './converter/routes';
 import { debtsRoutes } from './debts/routes';
 import feedbackRoutes from './feedback/routes';
+import { financesRoutes } from './finances/routes';
 import goalsRoutes from './goals/routes';
 import groupsRoutes from './groups/routes';
 import homeRoutes from './home/routes';
@@ -20,8 +21,6 @@ const app = new Hono()
   .basePath('/api')
   .use(authMiddleware)
   .route('/converter', converterRoutes)
-  .use('/debts', adminMiddleware)
-  .route('/debts', debtsRoutes)
   .route('/feedback', feedbackRoutes)
   .route('/invites', invitesRoutes)
   .route('/goals', goalsRoutes)
@@ -32,6 +31,8 @@ const app = new Hono()
   .route('/quick-splits', quickSplitsRoutes)
   .route('/users', usersRoutes)
   .route('/groups', groupsRoutes)
+  .route('/finances', financesRoutes)
+  .route('/debts', debtsRoutes)
   .use(adminMiddleware)
   .route('/admin', adminRoutes);
 

@@ -23,7 +23,7 @@
     "indentStyle": "space"
   },
   "linter": {
-    "enabled": true,
+    "enabled": true
   },
   "javascript": {
     "formatter": {

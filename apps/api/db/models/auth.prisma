@@ -23,6 +23,7 @@ model User {
   financeAccounts                 FinanceAccount[]
   financeCategories               FinanceCategory[]
   financeTransactions             FinanceTransaction[]
+  financeTags                     FinanceTag[]
   financeBudgets                  FinanceBudget[]
 
   @@unique([email])

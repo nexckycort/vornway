@@ -195,6 +195,7 @@
     "expensePlaceholder": "Arriendo, comida, salida",
     "amountPlaceholder": "Monto",
     "noCategory": "Sin categoría",
+    "tagsPlaceholder": "#casa #salida #domicilio",
     "saveTransaction": "Guardar movimiento",
     "transactionSaved": "Movimiento guardado",
     "saveFailed": "No se pudo guardar el movimiento",
@@ -230,6 +231,8 @@
     "viewDebts": "Ver deudas",
     "topCategories": "Categorías principales",
     "emptyCategories": "Aún no hay gastos por categoría este mes.",
+    "topTags": "Tags principales",
+    "emptyTags": "Aún no hay gastos con tags este mes.",
     "recentTransactions": "Movimientos recientes",
     "emptyTransactions": "Aún no hay movimientos personales este mes.",
     "loadError": "No se pudieron cargar las finanzas"

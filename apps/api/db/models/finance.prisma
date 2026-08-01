@@ -68,11 +68,39 @@ model FinanceTransaction {
   owner       User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   account     FinanceAccount?          @relation(fields: [accountId], references: [id], onDelete: SetNull)
   category    FinanceCategory?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags        FinanceTransactionTag[]
 
   @@index([ownerId, occurredAt(sort: Desc)])
   @@index([ownerId, type, occurredAt(sort: Desc)])
   @@index([categoryId, occurredAt(sort: Desc)])
   @@map("finance_transaction")
+}
+
+model FinanceTag {
+  id           String                  @id @default(cuid())
+  ownerId      String
+  name         String
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  owner        User                    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  transactions FinanceTransactionTag[]
+
+  @@unique([ownerId, name])
+  @@index([ownerId, name])
+  @@map("finance_tag")
+}
+
+model FinanceTransactionTag {
+  transactionId String
+  tagId         String
+
+  transaction   FinanceTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  tag           FinanceTag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([transactionId, tagId])
+  @@index([tagId])
+  @@map("finance_transaction_tag")
 }
 
 model FinanceBudget {

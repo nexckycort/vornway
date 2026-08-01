@@ -29,6 +29,7 @@ export const createFinanceTransactionSchema = z.object({
   categoryId: z.string().min(1).optional(),
   accountId: z.string().min(1).optional(),
   notes: z.string().trim().max(500).optional(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
 });
 
 export const financeTransactionParamsSchema = z.object({
@@ -38,6 +39,7 @@ export const financeTransactionParamsSchema = z.object({
 export const updateFinanceTransactionSchema = z.object({
   description: z.string().trim().min(1).max(160).optional(),
   categoryId: z.string().min(1).nullable().optional(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
 });
 
 export const createFinanceCategorySchema = z.object({

@@ -25,6 +25,7 @@ const defaultIncomeCategories = [
 
 const money = (value: number) => Number(value.toFixed(2));
 const fallbackTimeZone = 'UTC';
+const tagPattern = /^[a-z0-9][a-z0-9-]{0,39}$/;
 
 function toFinanceTransactionType(type: 'income' | 'expense' | 'both') {
   return type === 'income' ? 'INCOME' : type === 'expense' ? 'EXPENSE' : 'BOTH';
@@ -120,6 +121,42 @@ function addCurrencyTotal(
   amount: number,
 ) {
   totals[currency] = money((totals[currency] ?? 0) + amount);
+}
+
+function normalizeTags(tags: string[] | undefined) {
+  if (!tags) return [];
+
+  const normalized = tags
+    .map((tag) =>
+      tag
+        .trim()
+        .toLowerCase()
+        .replace(/^#+/, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, ''),
+    )
+    .filter((tag) => tagPattern.test(tag));
+
+  return Array.from(new Set(normalized)).slice(0, 10);
+}
+
+function tagCreates(ownerId: string, tags: string[]) {
+  return tags.map((name) => ({
+    tag: {
+      connectOrCreate: {
+        where: {
+          ownerId_name: {
+            ownerId,
+            name,
+          },
+        },
+        create: {
+          ownerId,
+          name,
+        },
+      },
+    },
+  }));
 }
 
 async function ensureDefaults(userId: string, currency: string) {
@@ -305,6 +342,7 @@ export const financeOperations = {
       transactions,
       categories,
       accounts,
+      tags,
       budgets,
       groupExpenseTotals,
       debtTotals,
@@ -315,7 +353,11 @@ export const financeOperations = {
           ownerId: userId,
           occurredAt: { gte: range.start, lt: range.end },
         },
-        include: { category: true, account: true },
+        include: {
+          category: true,
+          account: true,
+          tags: { include: { tag: true } },
+        },
         orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
       }),
       db.financeCategory.findMany({
@@ -325,6 +367,10 @@ export const financeOperations = {
       db.financeAccount.findMany({
         where: { ownerId: userId, archivedAt: null },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      }),
+      db.financeTag.findMany({
+        where: { ownerId: userId },
+        orderBy: [{ name: 'asc' }],
       }),
       db.financeBudget.findMany({
         where: { ownerId: userId, month: range.budgetMonth },
@@ -342,6 +388,15 @@ export const financeOperations = {
       {
         categoryId: string | null;
         categoryName: string;
+        currency: string;
+        amount: number;
+      }
+    >();
+    const tagExpenseTotals = new Map<
+      string,
+      {
+        tagId: string;
+        tagName: string;
         currency: string;
         amount: number;
       }
@@ -370,6 +425,17 @@ export const financeOperations = {
         currency: transaction.currency,
         amount: money((current?.amount ?? 0) + transaction.amount),
       });
+
+      for (const transactionTag of transaction.tags) {
+        const tagKey = `${transactionTag.tagId}:${transaction.currency}`;
+        const currentTagTotal = tagExpenseTotals.get(tagKey);
+        tagExpenseTotals.set(tagKey, {
+          tagId: transactionTag.tagId,
+          tagName: transactionTag.tag.name,
+          currency: transaction.currency,
+          amount: money((currentTagTotal?.amount ?? 0) + transaction.amount),
+        });
+      }
     }
 
     const totalExpenseByCurrency = { ...personalExpenseByCurrency };
@@ -411,6 +477,7 @@ export const financeOperations = {
       },
       categories,
       accounts,
+      tags,
       budgets: budgets.map((budget) => ({
         ...budget,
         month: budget.month.toISOString(),
@@ -418,8 +485,12 @@ export const financeOperations = {
       categoryExpenseTotals: Array.from(categoryExpenseTotals.values()).sort(
         (a, b) => b.amount - a.amount,
       ),
+      tagExpenseTotals: Array.from(tagExpenseTotals.values()).sort(
+        (a, b) => b.amount - a.amount,
+      ),
       recentTransactions: transactions.slice(0, 12).map((transaction) => ({
         ...transaction,
+        tags: transaction.tags.map((transactionTag) => transactionTag.tag),
         occurredAt: transaction.occurredAt.toISOString(),
         createdAt: transaction.createdAt.toISOString(),
         updatedAt: transaction.updatedAt.toISOString(),
@@ -433,6 +504,7 @@ export const financeOperations = {
   ) {
     await ensureDefaults(userId, input.currency);
     const type = input.type === 'income' ? 'INCOME' : 'EXPENSE';
+    const tags = normalizeTags(input.tags);
 
     if (input.categoryId) {
       const category = await db.financeCategory.findFirst({
@@ -465,8 +537,15 @@ export const financeOperations = {
         description: input.description,
         occurredAt: input.occurredAt ?? new Date(),
         notes: input.notes,
+        ...(tags.length > 0
+          ? { tags: { create: tagCreates(userId, tags) } }
+          : {}),
       },
-      include: { category: true, account: true },
+      include: {
+        category: true,
+        account: true,
+        tags: { include: { tag: true } },
+      },
     });
   },
 
@@ -480,6 +559,8 @@ export const financeOperations = {
       select: { id: true, type: true },
     });
     if (!transaction) return null;
+    const tags =
+      input.tags === undefined ? undefined : normalizeTags(input.tags);
 
     if (input.categoryId) {
       const category = await db.financeCategory.findFirst({
@@ -496,15 +577,30 @@ export const financeOperations = {
       if (!category) throw new Error('Invalid finance category');
     }
 
-    return db.financeTransaction.update({
-      where: { id: transactionId },
-      data: {
-        ...(input.description ? { description: input.description.trim() } : {}),
-        ...(input.categoryId !== undefined
-          ? { categoryId: input.categoryId }
-          : {}),
-      },
-      include: { category: true, account: true },
+    return db.$transaction(async (tx) => {
+      if (tags) {
+        await tx.financeTransactionTag.deleteMany({
+          where: { transactionId },
+        });
+      }
+
+      return tx.financeTransaction.update({
+        where: { id: transactionId },
+        data: {
+          ...(input.description
+            ? { description: input.description.trim() }
+            : {}),
+          ...(input.categoryId !== undefined
+            ? { categoryId: input.categoryId }
+            : {}),
+          ...(tags ? { tags: { create: tagCreates(userId, tags) } } : {}),
+        },
+        include: {
+          category: true,
+          account: true,
+          tags: { include: { tag: true } },
+        },
+      });
     });
   },
 

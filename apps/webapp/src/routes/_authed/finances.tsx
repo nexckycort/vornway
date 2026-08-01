@@ -42,6 +42,7 @@ type FinanceCategoryUpdateInput = InferRequestType<
 type FinanceBudgetInput = InferRequestType<typeof upsertBudgetEndpoint>['json'];
 type FinanceCategory = FinanceSummary['categories'][number];
 type FinanceTransaction = FinanceSummary['recentTransactions'][number];
+type FinanceTag = FinanceSummary['tags'][number];
 type FinanceCategoryKind = 'income' | 'expense' | 'both';
 
 const currency = 'COP';
@@ -67,6 +68,32 @@ function getCurrencyValue(values: Record<string, number>, selected: string) {
 
 function moneyLabel(amount: number) {
   return formatCurrency(currency, amount, { maximumFractionDigits: 0 });
+}
+
+function parseTagsInput(value: string) {
+  const tags = value
+    .split(/[\s,]+/)
+    .map((tag) =>
+      tag
+        .trim()
+        .toLowerCase()
+        .replace(/^#+/, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, ''),
+    )
+    .filter(Boolean);
+
+  return Array.from(new Set(tags)).slice(0, 10);
+}
+
+function tagsToInput(tags: FinanceTransaction['tags']) {
+  return tags.map((tag) => `#${tag.name}`).join(' ');
+}
+
+function appendTagToInput(value: string, tagName: string) {
+  const tags = parseTagsInput(value);
+  if (!tags.includes(tagName)) tags.push(tagName);
+  return tags.map((tag) => `#${tag}`).join(' ');
 }
 
 function toCategoryKind(
@@ -128,6 +155,7 @@ function RouteComponent() {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryType, setNewCategoryType] =
     useState<FinanceCategoryKind>('both');
@@ -138,6 +166,8 @@ function RouteComponent() {
   const [editingTransactionId, setEditingTransactionId] = useState('');
   const [editingTransactionName, setEditingTransactionName] = useState('');
   const [editingTransactionCategoryId, setEditingTransactionCategoryId] =
+    useState('');
+  const [editingTransactionTagsInput, setEditingTransactionTagsInput] =
     useState('');
   const [budgetCategoryId, setBudgetCategoryId] = useState('');
   const [budgetAmount, setBudgetAmount] = useState('');
@@ -154,6 +184,7 @@ function RouteComponent() {
   });
 
   const categories = summaryQuery.data?.categories ?? [];
+  const tags = summaryQuery.data?.tags ?? [];
   const transactionCategories = useMemo(
     () =>
       categories.filter((category) =>
@@ -179,6 +210,7 @@ function RouteComponent() {
       setDescription('');
       setAmount('');
       setCategoryId('');
+      setTagsInput('');
       toast.success(m['finances.transactionSaved']());
     },
     onError: (error) => {
@@ -213,6 +245,7 @@ function RouteComponent() {
       setEditingTransactionId('');
       setEditingTransactionName('');
       setEditingTransactionCategoryId('');
+      setEditingTransactionTagsInput('');
       toast.success(m['finances.transactionUpdated']());
     },
     onError: (error) => {
@@ -351,6 +384,7 @@ function RouteComponent() {
       description: description.trim(),
       amount: parsedAmount,
       currency,
+      tags: parseTagsInput(tagsInput),
       ...(categoryId ? { categoryId } : {}),
     });
   }
@@ -418,6 +452,7 @@ function RouteComponent() {
     setEditingTransactionId(transaction.id);
     setEditingTransactionName(transaction.description);
     setEditingTransactionCategoryId(transaction.categoryId ?? '');
+    setEditingTransactionTagsInput(tagsToInput(transaction.tags));
   }
 
   function submitTransactionUpdate(transaction: FinanceTransaction) {
@@ -432,6 +467,7 @@ function RouteComponent() {
       input: {
         description: name,
         categoryId: editingTransactionCategoryId || null,
+        tags: parseTagsInput(editingTransactionTagsInput),
       },
     });
   }
@@ -597,6 +633,30 @@ function RouteComponent() {
                     </option>
                   ))}
                 </select>
+                <input
+                  value={tagsInput}
+                  onChange={(event) => setTagsInput(event.target.value)}
+                  placeholder={m['finances.tagsPlaceholder']()}
+                  className="h-12 rounded-2xl border border-[#e2e8f0] px-4 text-sm outline-none md:col-span-2"
+                />
+                {tags.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 md:col-span-2">
+                    {tags.slice(0, 10).map((tag: FinanceTag) => (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() =>
+                          setTagsInput((current) =>
+                            appendTagToInput(current, tag.name),
+                          )
+                        }
+                        className="rounded-full bg-[#ecfeff] px-3 py-1.5 text-xs font-medium text-[#0e7490]"
+                      >
+                        #{tag.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
 
               <Button
@@ -912,6 +972,52 @@ function RouteComponent() {
             </section>
 
             <section className="mt-5 rounded-[26px] border border-[#e2e8f0] bg-white p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-2xl bg-[#ecfeff] text-[#0e7490]">
+                  <HugeiconsIcon icon={TargetIcon} className="size-5" />
+                </div>
+                <h2 className="text-base font-semibold">
+                  {m['finances.topTags']()}
+                </h2>
+              </div>
+              <div className="mt-4 space-y-3">
+                {summary.tagExpenseTotals.length === 0 ? (
+                  <p className="text-sm text-[#64748b]">
+                    {m['finances.emptyTags']()}
+                  </p>
+                ) : (
+                  summary.tagExpenseTotals.slice(0, 8).map((item) => (
+                    <div key={`${item.tagId}:${item.currency}`}>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="truncate font-medium">
+                          #{item.tagName}
+                        </span>
+                        <span className="text-[#64748b]">
+                          {formatCurrency(item.currency, item.amount, {
+                            maximumFractionDigits: 0,
+                          })}
+                        </span>
+                      </div>
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#e2e8f0]">
+                        <div
+                          className="h-full rounded-full bg-[#0e7490]"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              totalExpense > 0
+                                ? (item.amount / totalExpense) * 100
+                                : 0,
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+
+            <section className="mt-5 rounded-[26px] border border-[#e2e8f0] bg-white p-4">
               <h2 className="text-base font-semibold">
                 {m['finances.recentTransactions']()}
               </h2>
@@ -936,6 +1042,18 @@ function RouteComponent() {
                               m['finances.noCategory']()}{' '}
                             · {formatShortDate(transaction.occurredAt)}
                           </p>
+                          {transaction.tags.length > 0 ? (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {transaction.tags.map((tag) => (
+                                <span
+                                  key={tag.id}
+                                  className="rounded-full bg-white px-2 py-1 text-[11px] font-medium text-[#0e7490]"
+                                >
+                                  #{tag.name}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                           <button
@@ -995,6 +1113,32 @@ function RouteComponent() {
                                 </option>
                               ))}
                           </select>
+                          <input
+                            value={editingTransactionTagsInput}
+                            onChange={(event) =>
+                              setEditingTransactionTagsInput(event.target.value)
+                            }
+                            placeholder={m['finances.tagsPlaceholder']()}
+                            className="h-11 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none"
+                          />
+                          {tags.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {tags.slice(0, 10).map((tag: FinanceTag) => (
+                                <button
+                                  key={tag.id}
+                                  type="button"
+                                  onClick={() =>
+                                    setEditingTransactionTagsInput((current) =>
+                                      appendTagToInput(current, tag.name),
+                                    )
+                                  }
+                                  className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-[#0e7490]"
+                                >
+                                  #{tag.name}
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
                           <div className="grid grid-cols-2 gap-2">
                             <Button
                               type="button"

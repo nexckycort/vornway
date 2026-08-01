@@ -27,11 +27,21 @@ Install the workspace dependencies:
 bun install
 ```
 
-Before starting the project for the first time, configure and start the
-Portless HTTPS proxy. This is a one-time machine setup:
+Before starting the project, configure the Portless HTTPS proxy and synchronize
+its hosts:
 
 ```bash
+bun run portless:setup
+```
+
+This stops the proxy first in case it is already running, starts it with the
+`dev.vornway.com` HTTPS domain, and runs `portless hosts sync`. If you prefer to
+run the commands manually, use:
+
+```bash
+portless proxy stop
 portless proxy start --https --tld dev.vornway.com
+portless hosts sync
 ```
 
 Start all development services from the repository root:

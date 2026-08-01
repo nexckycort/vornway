@@ -41,12 +41,12 @@
     "recharts": "3.8.0",
     "shadcn": "^4.6.0",
     "sonner": "^2.0.7",
-    "tailwindcss": "catalog:",
-    "tw-animate-css": "catalog:",
+    "tailwindcss": "catalog:ui",
+    "tw-animate-css": "catalog:ui",
     "vaul": "^1.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "catalog:",
+    "@biomejs/biome": "catalog:tooling",
     "@inlang/cli": "^3.0.0",
     "@inlang/paraglide-js": "^2.18.1",
     "@rsbuild/core": "^2.1.1",
@@ -56,7 +56,6 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "portless": "catalog:",
-    "typescript": "catalog:",
-    "wrangler": "catalog:"
+    "typescript": "catalog:types"
   }
 }

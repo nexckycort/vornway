@@ -1,4 +1,6 @@
 [install]
 minimumReleaseAge = 259200 # seconds
+# These packages will bypass the 3-day minimum age requirement
+minimumReleaseAgeExcludes = ["hono", "portless"]
 
 linker = "isolated"

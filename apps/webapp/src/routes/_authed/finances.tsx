@@ -46,6 +46,10 @@ type FinanceCategoryKind = 'income' | 'expense' | 'both';
 
 const currency = 'COP';
 
+function getBrowserTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+}
+
 function currentMonthKey() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -116,6 +120,7 @@ function StatTile({
 
 function RouteComponent() {
   const queryClient = useQueryClient();
+  const timeZone = getBrowserTimeZone();
   const [month, setMonth] = useState(currentMonthKey);
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>(
     'expense',
@@ -138,10 +143,10 @@ function RouteComponent() {
   const [budgetAmount, setBudgetAmount] = useState('');
 
   const summaryQuery = useQuery({
-    queryKey: ['finances-summary', month, currency],
+    queryKey: ['finances-summary', month, currency, timeZone],
     queryFn: async () => {
       const response = await summaryEndpoint({
-        query: { month, currency },
+        query: { month, currency, timeZone },
       });
       if (!response.ok) throw new Error(m['finances.loadError']());
       return response.json();

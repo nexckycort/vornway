@@ -13,6 +13,7 @@ const monthSchema = z
 export const financesSummaryQuerySchema = z.object({
   month: monthSchema,
   currency: currencySchema.default('COP'),
+  timeZone: z.string().trim().min(1).max(80).optional(),
 });
 
 export const financeTransactionListQuerySchema = z.object({

@@ -24,29 +24,94 @@ const defaultIncomeCategories = [
 ] as const;
 
 const money = (value: number) => Number(value.toFixed(2));
-const colombiaUtcOffsetHours = 5;
+const fallbackTimeZone = 'UTC';
 
 function toFinanceTransactionType(type: 'income' | 'expense' | 'both') {
   return type === 'income' ? 'INCOME' : type === 'expense' ? 'EXPENSE' : 'BOTH';
 }
 
-function monthRange(month?: string) {
-  const now = new Date();
-  const colombiaNow = new Date(
-    now.getTime() - colombiaUtcOffsetHours * 60 * 60 * 1000,
+function getValidTimeZone(timeZone?: string) {
+  if (!timeZone) return fallbackTimeZone;
+
+  try {
+    Intl.DateTimeFormat('en-US', { timeZone }).format(new Date());
+    return timeZone;
+  } catch {
+    return fallbackTimeZone;
+  }
+}
+
+function getTimeZoneDateParts(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    calendar: 'iso8601',
+    numberingSystem: 'latn',
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, Number(part.value)]),
   );
+
+  return {
+    year: values.year ?? date.getUTCFullYear(),
+    month: values.month ?? date.getUTCMonth() + 1,
+    day: values.day ?? date.getUTCDate(),
+    hour: values.hour ?? 0,
+    minute: values.minute ?? 0,
+    second: values.second ?? 0,
+  };
+}
+
+function zonedMonthBoundaryToUtc(
+  timeZone: string,
+  year: number,
+  monthIndex: number,
+) {
+  const targetWallTime = Date.UTC(year, monthIndex, 1, 0, 0, 0);
+  let utcTimestamp = targetWallTime;
+
+  for (let index = 0; index < 4; index += 1) {
+    const parts = getTimeZoneDateParts(new Date(utcTimestamp), timeZone);
+    const actualWallTime = Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
+    );
+    const delta = targetWallTime - actualWallTime;
+    if (delta === 0) break;
+    utcTimestamp += delta;
+  }
+
+  return new Date(utcTimestamp);
+}
+
+function monthRange(month?: string, timeZone?: string) {
+  const now = new Date();
+  const validTimeZone = getValidTimeZone(timeZone);
+  const nowParts = getTimeZoneDateParts(now, validTimeZone);
   const source =
     month && /^\d{4}-\d{2}$/.test(month)
       ? month
-      : `${colombiaNow.getUTCFullYear()}-${String(colombiaNow.getUTCMonth() + 1).padStart(2, '0')}`;
+      : `${nowParts.year}-${String(nowParts.month).padStart(2, '0')}`;
   const [yearValue, monthValue] = source.split('-').map(Number);
-  const year = yearValue ?? colombiaNow.getUTCFullYear();
+  const year = yearValue ?? nowParts.year;
   const monthIndex = (monthValue ?? 1) - 1;
-  const start = new Date(Date.UTC(year, monthIndex, 1, colombiaUtcOffsetHours));
-  const end = new Date(
-    Date.UTC(year, monthIndex + 1, 1, colombiaUtcOffsetHours),
-  );
-  return { key: source, start, end };
+  const start = zonedMonthBoundaryToUtc(validTimeZone, year, monthIndex);
+  const end = zonedMonthBoundaryToUtc(validTimeZone, year, monthIndex + 1);
+  const budgetMonth = new Date(Date.UTC(year, monthIndex, 1));
+  return { key: source, start, end, budgetMonth };
 }
 
 function addCurrencyTotal(
@@ -234,7 +299,7 @@ async function getGoalTotals(userId: string) {
 export const financeOperations = {
   async summary(userId: string, input: FinancesSummaryQueryInput) {
     await ensureDefaults(userId, input.currency);
-    const range = monthRange(input.month);
+    const range = monthRange(input.month, input.timeZone);
 
     const [
       transactions,
@@ -262,7 +327,7 @@ export const financeOperations = {
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       }),
       db.financeBudget.findMany({
-        where: { ownerId: userId, month: range.start },
+        where: { ownerId: userId, month: range.budgetMonth },
         include: { category: true },
       }),
       getGroupExpenseTotals(userId, range.start, range.end),
@@ -538,20 +603,20 @@ export const financeOperations = {
     });
     if (!category) throw new Error('Invalid finance category');
 
-    const { start } = monthRange(input.month);
+    const { budgetMonth } = monthRange(input.month);
     return db.financeBudget.upsert({
       where: {
         ownerId_categoryId_month_currency: {
           ownerId: userId,
           categoryId: input.categoryId,
-          month: start,
+          month: budgetMonth,
           currency: input.currency,
         },
       },
       create: {
         ownerId: userId,
         categoryId: input.categoryId,
-        month: start,
+        month: budgetMonth,
         amount: money(input.amount),
         currency: input.currency,
       },

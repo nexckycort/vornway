@@ -3,7 +3,6 @@
  * https://developers.cloudflare.com/workers/wrangler/configuration/
  */
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "vornway-landing",
   "compatibility_date": "2026-01-20",
   "pages_build_output_dir": "./dist"

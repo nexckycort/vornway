@@ -1638,27 +1638,52 @@ function RouteComponent() {
             totalExpense={totalExpense}
             onOpenReports={() => goTo('reports')}
           />
-          <section className="rounded-[30px] border border-black/5 bg-white p-5">
-            <div className="flex items-center gap-3">
-              <div className="flex size-11 items-center justify-center rounded-2xl bg-[#f0f2ee]">
-                <HugeiconsIcon icon={UserGroupIcon} className="size-5" />
+          <div className="grid gap-5">
+            <section className="rounded-[30px] border border-black/5 bg-white p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <HugeiconsIcon icon={TargetIcon} className="size-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    {m['finances.goalsProgress']()}
+                  </h2>
+                  <p className="mt-1 text-sm text-black/45">
+                    {moneyLabel(goalSaved)} / {moneyLabel(goalTarget)}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-lg font-semibold">
-                  {m['finances.goalsProgress']()}
-                </h2>
-                <p className="mt-1 text-sm text-black/45">
-                  {moneyLabel(goalSaved)} / {moneyLabel(goalTarget)}
-                </p>
+              <Link
+                to="/goals"
+                className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
+              >
+                {m['finances.viewGoals']()}
+              </Link>
+            </section>
+
+            <section className="rounded-[30px] border border-black/5 bg-white p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <HugeiconsIcon icon={UserGroupIcon} className="size-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    {m['finances.netDebts']()}
+                  </h2>
+                  <p className="mt-1 text-sm text-black/45">
+                    {m['finances.owedToYou']()}: {moneyLabel(owedToYou)} ·{' '}
+                    {m['finances.youOwe']()}: {moneyLabel(owedByYou)}
+                  </p>
+                </div>
               </div>
-            </div>
-            <Link
-              to="/goals"
-              className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-full bg-[#101113] px-4 text-sm font-medium text-white"
-            >
-              {m['finances.viewGoals']()}
-            </Link>
-          </section>
+              <Link
+                to="/debts"
+                className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
+              >
+                {m['finances.viewDebts']()}
+              </Link>
+            </section>
+          </div>
         </div>
 
         <div className="mt-5">

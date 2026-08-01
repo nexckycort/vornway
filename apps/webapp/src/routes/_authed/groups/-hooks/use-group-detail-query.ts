@@ -114,6 +114,15 @@ type GroupReportsTotalsSuccess = {
       fill: string;
     }>
   >;
+  tagsByCurrency: Record<
+    string,
+    Array<{
+      key: string;
+      name: string;
+      amount: number;
+      fill: string;
+    }>
+  >;
 };
 
 type GroupReportsBalancesSuccess = {
@@ -176,6 +185,7 @@ function mapExpenseDetailToExpenseItem(
     participantCount: expense.participants?.length ?? 0,
     currentUserBalance: null,
     attachmentUrl: expense.attachmentUrl ?? null,
+    tags: expense.tags ?? [],
   };
 }
 

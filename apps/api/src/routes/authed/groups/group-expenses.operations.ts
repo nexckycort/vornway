@@ -262,6 +262,35 @@ function readSharedSplit(metadata: unknown): GroupExpenseSharedSplit | null {
   return sanitizeSharedSplit(sharedSplit as GroupExpenseSharedSplit);
 }
 
+const tagPattern = /^[a-z0-9][a-z0-9-]{0,39}$/;
+
+function normalizeExpenseTags(tags: string[] | undefined) {
+  if (!tags) return [];
+
+  const normalized = tags
+    .map((tag) =>
+      tag
+        .trim()
+        .toLowerCase()
+        .replace(/^#+/, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, ''),
+    )
+    .filter((tag) => tagPattern.test(tag));
+
+  return Array.from(new Set(normalized)).slice(0, 10);
+}
+
+function readExpenseTags(metadata: unknown) {
+  if (!metadata || typeof metadata !== 'object') return [];
+  const tags = (metadata as { tags?: unknown }).tags;
+  if (!Array.isArray(tags)) return [];
+
+  return normalizeExpenseTags(
+    tags.filter((tag): tag is string => typeof tag === 'string'),
+  );
+}
+
 export function createGroupExpensesHealth() {
   return {
     listGroupExpenses: async ({
@@ -323,6 +352,7 @@ export function createGroupExpensesHealth() {
             attachment: true,
             currency: true,
             date: true,
+            metadata: true,
             notes: true,
             status: true,
             deletedAt: true,
@@ -436,6 +466,7 @@ export function createGroupExpensesHealth() {
               category: row.category,
               participantCount: row._count.participants,
               currentUserBalance,
+              tags: readExpenseTags(row.metadata),
             };
           })(),
         })),
@@ -546,6 +577,7 @@ export function createGroupExpensesHealth() {
             attachment: true,
             currency: true,
             date: true,
+            metadata: true,
             notes: true,
             status: true,
             deletedAt: true,
@@ -720,6 +752,7 @@ export function createGroupExpensesHealth() {
               category: row.category,
               participantCount: row._count.participants,
               currentUserBalance,
+              tags: readExpenseTags(row.metadata),
             };
           })(),
         })),
@@ -854,6 +887,7 @@ export function createGroupExpensesHealth() {
         ),
         sharedSplit: readSharedSplit(expense.metadata),
         advancedDetails: readAdvancedDetails(expense.metadata),
+        tags: readExpenseTags(expense.metadata),
       };
     },
     createExpense: async ({
@@ -872,12 +906,13 @@ export function createGroupExpensesHealth() {
       exactShares,
       lineItems,
       sharedSplit,
+      tags,
       attachmentImage,
       advancedDetails,
     }: CreateGroupExpenseInput): Promise<{ id: string }> => {
       const membership = await db.groupMember.findFirst({
         where: buildActiveGroupMemberWhere(userId, groupId),
-        select: { id: true, name: true },
+        select: { id: true, name: true, group: { select: { type: true } } },
       });
 
       if (!membership) {
@@ -966,6 +1001,8 @@ export function createGroupExpensesHealth() {
       const normalizedAdvancedDetails =
         sanitizeAdvancedDetails(advancedDetails);
       const normalizedSharedSplit = sanitizeSharedSplit(sharedSplit);
+      const normalizedTags =
+        membership.group.type === 'personal' ? normalizeExpenseTags(tags) : [];
 
       const expense = await db.$transaction(async (tx) => {
         const created = await tx.expense.create({
@@ -982,6 +1019,7 @@ export function createGroupExpensesHealth() {
               splitValues: exactShares ?? null,
               sharedSplit: normalizedSharedSplit,
               advancedDetails: normalizedAdvancedDetails,
+              tags: normalizedTags,
             },
             payers: {
               create: normalizedPayerIds.map((memberId) => ({
@@ -1191,12 +1229,13 @@ export function createGroupExpensesHealth() {
       exactShares,
       lineItems,
       sharedSplit,
+      tags,
       attachmentImage,
       advancedDetails,
     }: UpdateGroupExpenseInput): Promise<{ id: string }> => {
       const membership = await db.groupMember.findFirst({
         where: buildActiveGroupMemberWhere(userId, groupId),
-        select: { id: true, name: true },
+        select: { id: true, name: true, group: { select: { type: true } } },
       });
 
       if (!membership) {
@@ -1266,6 +1305,8 @@ export function createGroupExpensesHealth() {
       const normalizedAdvancedDetails =
         sanitizeAdvancedDetails(advancedDetails);
       const normalizedSharedSplit = sanitizeSharedSplit(sharedSplit);
+      const normalizedTags =
+        membership.group.type === 'personal' ? normalizeExpenseTags(tags) : [];
 
       const expense = await db.$transaction(async (tx) => {
         const existingExpense = await tx.expense.findFirst({
@@ -1321,6 +1362,7 @@ export function createGroupExpensesHealth() {
               splitValues: exactShares ?? null,
               sharedSplit: normalizedSharedSplit,
               advancedDetails: normalizedAdvancedDetails,
+              tags: normalizedTags,
             },
             payers: {
               deleteMany: {},

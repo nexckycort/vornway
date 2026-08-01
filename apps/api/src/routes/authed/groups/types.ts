@@ -37,6 +37,7 @@ export type CreateGroupExpenseInput = {
   exactShares?: Record<string, number>;
   lineItems?: GroupExpenseLineItem[];
   sharedSplit?: GroupExpenseSharedSplit | null;
+  tags?: string[];
   attachmentImage?: {
     dataUrl: string;
     fileName?: string;
@@ -467,6 +468,7 @@ export type GroupExpenseListItem = {
   participantCount: number;
   currentUserBalance: number | null;
   attachmentUrl: string | null;
+  tags: string[];
 };
 
 export type GroupReportsTotalsInput = {
@@ -508,6 +510,15 @@ export type GroupReportsTotalsResult = {
       id: string | null;
       name: string;
       icon: string | null;
+      amount: number;
+      fill: string;
+    }>
+  >;
+  tagsByCurrency: Record<
+    string,
+    Array<{
+      key: string;
+      name: string;
       amount: number;
       fill: string;
     }>
@@ -590,6 +601,7 @@ export type GroupExpenseDetailResult = {
   participants: GroupExpenseParticipant[];
   lineItems: GroupExpenseLineItem[];
   sharedSplit: GroupExpenseSharedSplit | null;
+  tags: string[];
   advancedDetails: GroupExpenseAdvancedDetails | null;
   attachmentUrl: string | null;
 };

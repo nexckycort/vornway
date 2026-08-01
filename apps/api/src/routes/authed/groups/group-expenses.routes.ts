@@ -115,6 +115,7 @@ export const groupExpensesRoutes = new Hono<AppContext>()
           exactShares: data.exactShares,
           lineItems: data.lineItems,
           sharedSplit: data.sharedSplit,
+          tags: data.tags,
           attachmentImage: data.attachmentImage,
           advancedDetails: data.advancedDetails,
         });
@@ -150,6 +151,7 @@ export const groupExpensesRoutes = new Hono<AppContext>()
           exactShares: data.exactShares,
           lineItems: data.lineItems,
           sharedSplit: data.sharedSplit,
+          tags: data.tags,
           attachmentImage: data.attachmentImage,
           advancedDetails: data.advancedDetails,
         });

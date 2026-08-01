@@ -169,6 +169,8 @@ function RouteComponent() {
   }, [group]);
   const categoryBreakdown =
     reportsTotalsQuery.data?.categoriesByCurrency[selectedCurrency] ?? [];
+  const tagBreakdown =
+    reportsTotalsQuery.data?.tagsByCurrency[selectedCurrency] ?? [];
   const sortedShareMembers = useMemo(
     () =>
       Array.from(reportsSharesQuery.data?.memberShares ?? [])
@@ -330,6 +332,7 @@ function RouteComponent() {
             reportsTotalsLoading={reportsTotalsQuery.isLoading}
             chartConfig={chartConfig}
             categoryBreakdown={categoryBreakdown}
+            tagBreakdown={tagBreakdown}
             categoryTotal={categoryTotal}
             currentUserSpent={currentUserSpent}
             sortedShareMembers={sortedShareMembers}

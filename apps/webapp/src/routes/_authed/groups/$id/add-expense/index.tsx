@@ -347,6 +347,26 @@ function formatEditableNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
+function parseTagsInput(value: string) {
+  const tags = value
+    .split(/[\s,]+/)
+    .map((tag) =>
+      tag
+        .trim()
+        .toLowerCase()
+        .replace(/^#+/, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, ''),
+    )
+    .filter(Boolean);
+
+  return Array.from(new Set(tags)).slice(0, 10);
+}
+
+function tagsToInput(tags: string[] | undefined) {
+  return (tags ?? []).map((tag) => `#${tag}`).join(' ');
+}
+
 function createSharedExpenseItem(
   partial?: Partial<Pick<SharedExpenseItem, 'name' | 'amount'>>,
 ): SharedExpenseItem {
@@ -403,6 +423,7 @@ function RouteComponent() {
   const [paidByIds, setPaidByIds] = useState<string[]>([]);
   const [payerValues, setPayerValues] = useState<Record<string, string>>({});
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [tagsInput, setTagsInput] = useState('');
   const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
   const [showCurrencyDrawer, setShowCurrencyDrawer] = useState(false);
@@ -602,6 +623,7 @@ function RouteComponent() {
       );
       setCurrency(expense.currency);
       setCategoryId(expense.category?.id ?? null);
+      setTagsInput(tagsToInput(expense.tags));
       setPaidByIds(
         expense.paidByMembers.length > 0
           ? expense.paidByMembers.map((payer) => payer.memberId)
@@ -1097,6 +1119,7 @@ function RouteComponent() {
         amount: normalizedAmount,
         currency,
         ...(categoryId ? { categoryId } : {}),
+        ...(isPersonalSpace ? { tags: parseTagsInput(tagsInput) } : {}),
         paidByIds,
         participantIds: isPersonalSpace ? [] : participantIds,
         splitMethod: payloadSplitMethod,
@@ -1314,6 +1337,20 @@ function RouteComponent() {
             className="size-4 text-gray-400"
           />
         </button>
+
+        {isPersonalSpace ? (
+          <label className="flex flex-col gap-2 rounded-xl border border-gray-200 px-4 py-3.5">
+            <span className="text-xs text-gray-500">
+              {groupMessages.expense.tags}
+            </span>
+            <input
+              value={tagsInput}
+              onChange={(event) => setTagsInput(event.target.value)}
+              placeholder={groupMessages.expense.tagsPlaceholder}
+              className="w-full bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-400"
+            />
+          </label>
+        ) : null}
 
         {advancedDetailsEnabled ? (
           <button

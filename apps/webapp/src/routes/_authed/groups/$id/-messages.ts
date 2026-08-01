@@ -148,6 +148,7 @@ export function getGroupDetailMessages() {
       selectRangeDescription: m['groups.reports.selectRangeDescription'](),
       applyRange: m['groups.reports.applyRange'](),
       withoutCategory: m['groups.reports.withoutCategory'](),
+      tags: m['groups.reports.tags'](),
       balanceInCurrency: (currency: string) =>
         m['groups.reports.balanceInCurrency']({ currency }),
       peopleCount: (count: number) =>
@@ -361,6 +362,8 @@ export function getGroupDetailMessages() {
       amount: m['groups.expense.amount'](),
       descriptionPlaceholder: m['groups.expense.descriptionPlaceholder'](),
       category: m['groups.expense.category'](),
+      tags: m['groups.expense.tags'](),
+      tagsPlaceholder: m['groups.expense.tagsPlaceholder'](),
       placeDetails: m['groups.expense.placeDetails'](),
       paidBy: m['groups.expense.paidBy'](),
       splitWith: m['groups.expense.splitWith'](),

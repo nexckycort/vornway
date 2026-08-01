@@ -6,7 +6,12 @@ import { tanstackRouter } from '@tanstack/router-plugin/rspack';
 
 // Docs: https://rsbuild.rs/config/
 export default defineConfig({
-  plugins: [pluginReact(), pluginTailwindcss()],
+  plugins: [
+    pluginReact({
+      reactCompiler: true,
+    }),
+    pluginTailwindcss(),
+  ],
   output: {
     manifest: {
       filename: 'asset-manifest.json',
@@ -18,31 +23,12 @@ export default defineConfig({
   ...(import.meta.env.DEV && {
     server: {
       open: {
-        target: 'https://app.vornway.localhost',
+        target: 'https://app.dev.vornway.com',
       },
     },
   }),
   tools: {
     rspack: {
-      module: {
-        rules: [
-          {
-            test: /\.(?:js|jsx|ts|tsx)$/,
-            use: {
-              loader: 'builtin:swc-loader',
-              options: {
-                detectSyntax: 'auto',
-                jsc: {
-                  transform: {
-                    react: { runtime: 'automatic' },
-                    reactCompiler: true,
-                  },
-                },
-              },
-            },
-          },
-        ],
-      },
       plugins: [
         tanstackRouter({
           target: 'react',

@@ -28,6 +28,7 @@ export type ExpenseItem = {
   participantCount: number;
   currentUserBalance: number | null;
   attachmentUrl: string | null;
+  tags?: string[];
   lineItems?: Array<{
     memberId: string;
     description: string;

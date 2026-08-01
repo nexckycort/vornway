@@ -29,6 +29,31 @@ type ReportShareRow = ReportMoneyRow & {
   categoryKey: string;
 };
 
+const tagPattern = /^[a-z0-9][a-z0-9-]{0,39}$/;
+
+function normalizeExpenseTags(tags: unknown) {
+  if (!Array.isArray(tags)) return [];
+
+  const normalized = tags
+    .filter((tag): tag is string => typeof tag === 'string')
+    .map((tag) =>
+      tag
+        .trim()
+        .toLowerCase()
+        .replace(/^#+/, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, ''),
+    )
+    .filter((tag) => tagPattern.test(tag));
+
+  return Array.from(new Set(normalized)).slice(0, 10);
+}
+
+function readExpenseTags(metadata: unknown) {
+  if (!metadata || typeof metadata !== 'object') return [];
+  return normalizeExpenseTags((metadata as { tags?: unknown }).tags);
+}
+
 function reportDateSql(input: {
   range: 'all' | 'custom';
   startDate?: string;
@@ -144,7 +169,7 @@ export function createGroupReportsOperations() {
         ],
       };
 
-      const [expenseTotals, categoryTotals, currentMemberShares] =
+      const [expenseTotals, categoryTotals, currentMemberShares, tagExpenses] =
         await Promise.all([
           db.expense.groupBy({
             where: reportExpenseWhere,
@@ -172,6 +197,16 @@ export function createGroupReportsOperations() {
                   and ${reportExpenseSql({ groupId: group.id, range, startDate, endDate, includeParticipantlessExpenses: group.type === 'personal' })}
                 group by ep."memberId", e.currency
               `
+            : Promise.resolve([]),
+          group.type === 'personal'
+            ? db.expense.findMany({
+                where: reportExpenseWhere,
+                select: {
+                  amount: true,
+                  currency: true,
+                  metadata: true,
+                },
+              })
             : Promise.resolve([]),
         ]);
 
@@ -239,6 +274,16 @@ export function createGroupReportsOperations() {
           }
         >
       >();
+      const currencyTags = new Map<
+        string,
+        Map<
+          string,
+          {
+            name: string;
+            amount: number;
+          }
+        >
+      >();
 
       for (const row of categoryTotals) {
         const category = row.categoryId
@@ -266,6 +311,20 @@ export function createGroupReportsOperations() {
           amount: normalizeAmount(row._sum.amount ?? 0),
         });
         currencyCategories.set(row.currency, categoryMap);
+      }
+
+      for (const expense of tagExpenses) {
+        for (const tag of readExpenseTags(expense.metadata)) {
+          const tagMap = currencyTags.get(expense.currency) ?? new Map();
+          const current = tagMap.get(tag);
+          tagMap.set(tag, {
+            name: tag,
+            amount: normalizeAmount(
+              (current?.amount ?? 0) + (expense.amount ?? 0),
+            ),
+          });
+          currencyTags.set(expense.currency, tagMap);
+        }
       }
 
       const palette = [
@@ -304,6 +363,19 @@ export function createGroupReportsOperations() {
                   category.color ??
                   palette[index % palette.length] ??
                   '#94a3b8',
+              }))
+              .sort((left, right) => right.amount - left.amount),
+          ]),
+        ),
+        tagsByCurrency: Object.fromEntries(
+          Array.from(currencyTags.entries()).map(([currencyKey, map]) => [
+            currencyKey,
+            Array.from(map.values())
+              .map((tag, index) => ({
+                key: tag.name,
+                name: tag.name,
+                amount: tag.amount,
+                fill: palette[index % palette.length] ?? '#94a3b8',
               }))
               .sort((left, right) => right.amount - left.amount),
           ]),

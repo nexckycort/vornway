@@ -57,6 +57,13 @@ type CategoryBreakdownEntry = {
   fill: string;
 };
 
+type TagBreakdownEntry = {
+  key: string;
+  name: string;
+  amount: number;
+  fill: string;
+};
+
 type ShareMember = {
   memberId: string;
   name: string;
@@ -80,6 +87,7 @@ type GroupReportTotalsTabProps = {
   reportsTotalsLoading: boolean;
   chartConfig: Record<string, { label: string; color: string }>;
   categoryBreakdown: CategoryBreakdownEntry[];
+  tagBreakdown: TagBreakdownEntry[];
   categoryTotal: number;
   currentUserSpent: number;
   sortedShareMembers: ShareMember[];
@@ -103,6 +111,7 @@ export function GroupReportTotalsTab({
   reportsTotalsLoading,
   chartConfig,
   categoryBreakdown,
+  tagBreakdown,
   categoryTotal,
   currentUserSpent,
   sortedShareMembers,
@@ -458,6 +467,31 @@ export function GroupReportTotalsTab({
             </button>
           ))}
         </div>
+
+        {group.type === 'personal' && tagBreakdown.length > 0 ? (
+          <div className="mt-4 border-t border-[#eef2f7] pt-4">
+            <p className="mb-3 text-sm font-semibold text-[#132238]">
+              {t.reports.tags}
+            </p>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {tagBreakdown.map((tag) => (
+                <div
+                  key={tag.key}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#e2e8f0] bg-white px-3 py-2 text-xs font-medium text-[#334155]"
+                >
+                  <span
+                    className="size-2.5 rounded-full"
+                    style={{ backgroundColor: tag.fill }}
+                  />
+                  #{tag.name}
+                  <span className="text-[#64748b]">
+                    {formatMoney(selectedCurrency, tag.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <section className="mt-4 rounded-[28px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">

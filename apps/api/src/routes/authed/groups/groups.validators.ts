@@ -116,6 +116,8 @@ const expenseLineItemsSchema = z
   )
   .max(100);
 
+const expenseTagsSchema = z.array(z.string().trim().min(1).max(40)).max(10);
+
 export const createGroupExpenseSchema = z
   .object({
     id: z.string().trim().min(1).max(120).optional(),
@@ -139,6 +141,7 @@ export const createGroupExpenseSchema = z
     exactShares: z.record(z.string(), z.number().nonnegative()).optional(),
     lineItems: expenseLineItemsSchema.optional(),
     sharedSplit: expenseSharedSplitSchema.optional(),
+    tags: expenseTagsSchema.optional(),
     attachmentImage: expenseAttachmentImageSchema.optional(),
     advancedDetails: z
       .object({

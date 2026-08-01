@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu';
-import { formatCurrency, formatShortDate } from '#/lib/i18n';
+import { formatCurrency, formatShortDate, getIntlLocale } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 
 type FinanceView =
@@ -106,6 +106,16 @@ function getBrowserTimeZone() {
 function currentMonthKey() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function formatMonthLabel(month: string) {
+  const [yearValue, monthValue] = month.split('-').map(Number);
+  const year = yearValue ?? new Date().getFullYear();
+  const monthIndex = (monthValue ?? 1) - 1;
+  return new Intl.DateTimeFormat(getIntlLocale(), {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(year, monthIndex, 1, 12));
 }
 
 function todayKey() {
@@ -209,7 +219,9 @@ function ScreenShell({
             <span aria-hidden="true">‹</span>
           </button>
           <div className="min-w-0 text-center">
-            <p className="text-xs font-medium text-black/45">{month}</p>
+            <p className="text-xs font-medium text-black/45">
+              {formatMonthLabel(month)}
+            </p>
             <h1 className="truncate text-lg font-semibold">{title}</h1>
           </div>
           <div className="size-11" />
@@ -235,8 +247,8 @@ function BalanceCard({
 }) {
   return (
     <section className="rounded-[32px] bg-[#101113] p-6 text-white">
-      <div className="flex items-start justify-between gap-5">
-        <div>
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <p className="text-sm text-white/55">
             {m['finances.monthBalance']()}
           </p>
@@ -244,13 +256,13 @@ function BalanceCard({
             {moneyLabel(balance)}
           </p>
         </div>
-        <label className="grid gap-1 text-xs font-medium text-white/55">
-          {m['finances.month']()}
+        <label className="grid min-w-0 gap-1 text-xs font-medium text-white/55 sm:w-40">
+          <span className="truncate">{formatMonthLabel(month)}</span>
           <input
             type="month"
             value={month}
             onChange={(event) => onMonthChange(event.target.value)}
-            className="h-10 rounded-full border border-white/10 bg-white/10 px-3 text-sm text-white outline-none"
+            className="h-10 w-full min-w-0 rounded-full border border-white/10 bg-white/10 px-3 text-sm text-white outline-none"
           />
         </label>
       </div>
@@ -274,7 +286,7 @@ function BalanceCard({
 
 function BalanceMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="min-w-0">
       <p className="text-xs text-white/45">{label}</p>
       <p className="mt-1 truncate text-sm font-semibold">{value}</p>
     </div>
@@ -294,7 +306,7 @@ function ActionCard({
     <button
       type="button"
       onClick={onClick}
-      className="group min-h-28 rounded-[28px] border border-black/5 bg-white p-4 text-left transition active:scale-[0.99]"
+      className="group min-h-28 min-w-0 rounded-[28px] border border-black/5 bg-white p-4 text-left transition active:scale-[0.99]"
     >
       <div className="flex size-11 items-center justify-center rounded-2xl bg-[#f0f2ee] text-[#101113]">
         <HugeiconsIcon icon={icon} className="size-5" />
@@ -306,8 +318,8 @@ function ActionCard({
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[26px] border border-black/5 bg-white p-4">
-      <p className="text-sm text-black/45">{label}</p>
+    <div className="min-w-0 overflow-hidden rounded-[26px] border border-black/5 bg-white p-4">
+      <p className="truncate text-sm text-black/45">{label}</p>
       <p className="mt-2 truncate text-xl font-semibold">{value}</p>
     </div>
   );
@@ -1618,13 +1630,21 @@ function RouteComponent() {
             label={m['finances.groupExpenses']()}
             value={moneyLabel(groupExpense)}
           />
-          <button type="button" onClick={() => void navigate({ to: '/debts' })}>
+          <button
+            type="button"
+            onClick={() => void navigate({ to: '/debts' })}
+            className="min-w-0 text-left"
+          >
             <SummaryCard
               label={m['finances.owedToYou']()}
               value={moneyLabel(owedToYou)}
             />
           </button>
-          <button type="button" onClick={() => void navigate({ to: '/debts' })}>
+          <button
+            type="button"
+            onClick={() => void navigate({ to: '/debts' })}
+            className="min-w-0 text-left"
+          >
             <SummaryCard
               label={m['finances.youOwe']()}
               value={moneyLabel(owedByYou)}
@@ -1644,11 +1664,11 @@ function RouteComponent() {
                 <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                   <HugeiconsIcon icon={TargetIcon} className="size-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-lg font-semibold">
                     {m['finances.goalsProgress']()}
                   </h2>
-                  <p className="mt-1 text-sm text-black/45">
+                  <p className="mt-1 truncate text-sm text-black/45">
                     {moneyLabel(goalSaved)} / {moneyLabel(goalTarget)}
                   </p>
                 </div>
@@ -1666,15 +1686,21 @@ function RouteComponent() {
                 <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                   <HugeiconsIcon icon={UserGroupIcon} className="size-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-lg font-semibold">
                     {m['finances.netDebts']()}
                   </h2>
-                  <p className="mt-1 text-sm text-black/45">
-                    {m['finances.owedToYou']()}: {moneyLabel(owedToYou)} ·{' '}
-                    {m['finances.youOwe']()}: {moneyLabel(owedByYou)}
-                  </p>
                 </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <SummaryCard
+                  label={m['finances.owedToYou']()}
+                  value={moneyLabel(owedToYou)}
+                />
+                <SummaryCard
+                  label={m['finances.youOwe']()}
+                  value={moneyLabel(owedByYou)}
+                />
               </div>
               <Link
                 to="/debts"

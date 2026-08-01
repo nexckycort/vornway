@@ -11,6 +11,7 @@
     "clean": "rm -rf node_modules && rm -rf dist",
     "check": "biome check --write",
     "dev": "portless app rsbuild",
+    "deploy": "wrangler pages deploy --branch=main",
     "typecheck": "tsc --noEmit",
     "preview": "rsbuild preview",
     "machine-translate": "inlang machine translate --project project.inlang"
@@ -55,6 +56,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "portless": "catalog:",
-    "typescript": "catalog:types"
+    "typescript": "catalog:types",
+    "wrangler": "catalog:"
   }
 }

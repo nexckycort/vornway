@@ -9,6 +9,7 @@
     "check": "biome check --write",
     "preview": "bunx --bun astro preview",
     "astro": "bunx --bun astro",
+    "deploy": "bunx --bun astro build && bunx --bun wrangler pages deploy",
     "typecheck": "bunx --bun astro check"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
     "@biomejs/biome": "catalog:tooling",
     "@tailwindcss/vite": "^4.1.18",
     "@types/bun": "catalog:types",
-    "typescript": "catalog:types"
+    "typescript": "catalog:types",
+    "wrangler": "catalog:"
   }
 }

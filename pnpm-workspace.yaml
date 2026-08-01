@@ -22,6 +22,7 @@ catalog:
   portless: ^0.15.5
   hono: ^4.12.33
   zod: ^4.3.6
+  wrangler: ^4.115.0
 
 catalogs:
   auth:

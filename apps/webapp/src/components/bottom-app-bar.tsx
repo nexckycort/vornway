@@ -1,7 +1,6 @@
 import {
   CompassIcon,
   HomeIcon,
-  PiggyBankIcon,
   UserGroupIcon,
   UserIcon,
   Wallet02Icon,
@@ -20,7 +19,6 @@ import { cn } from '#/lib/utils';
 export type BottomAppBarIconName =
   | 'compass'
   | 'home'
-  | 'piggy-bank'
   | 'user'
   | 'users'
   | 'wallet';
@@ -29,14 +27,7 @@ type BottomAppBarItem = {
   id: string;
   label: string;
   icon: BottomAppBarIconName;
-  to:
-    | '/'
-    | '/expenses/friends'
-    | '/groups'
-    | '/finances'
-    | '/goals'
-    | '/debts'
-    | '/profile';
+  to: '/' | '/expenses/friends' | '/groups' | '/finances' | '/profile';
 };
 
 type BottomNavState = {
@@ -47,7 +38,6 @@ const navIcons: Record<BottomAppBarIconName, IconSvgElement> = {
   compass: CompassIcon,
   home: HomeIcon,
   users: UserGroupIcon,
-  'piggy-bank': PiggyBankIcon,
   wallet: Wallet02Icon,
   user: UserIcon,
 };
@@ -83,14 +73,12 @@ export function BottomAppBar() {
     },
     { id: 'groups', label: t.groups, icon: 'compass', to: '/groups' },
     { id: 'finances', label: t.finances, icon: 'wallet', to: '/finances' },
-    { id: 'goals', label: t.goals, icon: 'piggy-bank', to: '/goals' },
-    { id: 'debts', label: t.debts, icon: 'wallet', to: '/debts' },
     { id: 'profile', label: t.profile, icon: 'user', to: '/profile' },
   ];
   const isAdmin = adminEmails.has(auth.user?.email?.trim().toLowerCase() ?? '');
   const items = isAdmin
     ? allItems
-    : allItems.filter((item) => item.id !== 'debts' && item.id !== 'finances');
+    : allItems.filter((item) => item.id !== 'finances');
   const activeIndex = items.findIndex((item) =>
     item.to === '/' ? pathname === '/' : pathname.startsWith(item.to),
   );

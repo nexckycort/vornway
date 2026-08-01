@@ -9,7 +9,9 @@ import {
   financeCategoryParamsSchema,
   financesSummaryQuerySchema,
   financeTransactionListQuerySchema,
+  financeTransactionParamsSchema,
   updateFinanceCategorySchema,
+  updateFinanceTransactionSchema,
   upsertFinanceBudgetSchema,
 } from './schema';
 
@@ -42,6 +44,22 @@ export const financesRoutes = new Hono<AppContext>()
         ),
         201,
       ),
+  )
+  .patch(
+    '/transactions/:id',
+    zValidator('param', financeTransactionParamsSchema),
+    zValidator('json', updateFinanceTransactionSchema),
+    async (c) => {
+      const result = await financeOperations.updateTransaction(
+        c.get('user').id,
+        c.req.valid('param').id,
+        c.req.valid('json'),
+      );
+
+      return result
+        ? c.json(result)
+        : c.json({ error: 'Finance transaction not found' }, 404);
+    },
   )
   .post(
     '/categories',

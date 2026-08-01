@@ -4,6 +4,7 @@ import type {
   CreateFinanceTransactionInput,
   FinancesSummaryQueryInput,
   UpdateFinanceCategoryInput,
+  UpdateFinanceTransactionInput,
   UpsertFinanceBudgetInput,
 } from './schema';
 
@@ -395,6 +396,44 @@ export const financeOperations = {
         description: input.description,
         occurredAt: input.occurredAt ?? new Date(),
         notes: input.notes,
+      },
+      include: { category: true, account: true },
+    });
+  },
+
+  async updateTransaction(
+    userId: string,
+    transactionId: string,
+    input: UpdateFinanceTransactionInput,
+  ) {
+    const transaction = await db.financeTransaction.findFirst({
+      where: { id: transactionId, ownerId: userId },
+      select: { id: true, type: true },
+    });
+    if (!transaction) return null;
+
+    if (input.categoryId) {
+      const category = await db.financeCategory.findFirst({
+        where: {
+          id: input.categoryId,
+          ownerId: userId,
+          OR: [
+            { transactionType: transaction.type },
+            { transactionType: 'BOTH' },
+          ],
+        },
+        select: { id: true },
+      });
+      if (!category) throw new Error('Invalid finance category');
+    }
+
+    return db.financeTransaction.update({
+      where: { id: transactionId },
+      data: {
+        ...(input.description ? { description: input.description.trim() } : {}),
+        ...(input.categoryId !== undefined
+          ? { categoryId: input.categoryId }
+          : {}),
       },
       include: { category: true, account: true },
     });

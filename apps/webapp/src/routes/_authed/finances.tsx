@@ -7,7 +7,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { financesClient } from '#/api/finances';
@@ -22,12 +22,16 @@ export const Route = createFileRoute('/_authed/finances')({
 
 const summaryEndpoint = financesClient.summary.$get;
 const createTransactionEndpoint = financesClient.transactions.$post;
+const updateTransactionEndpoint = financesClient.transactions[':id'].$patch;
 const createCategoryEndpoint = financesClient.categories.$post;
 const updateCategoryEndpoint = financesClient.categories[':id'].$patch;
 const upsertBudgetEndpoint = financesClient.budgets.$post;
 type FinanceSummary = InferResponseType<typeof summaryEndpoint>;
 type FinanceTransactionInput = InferRequestType<
   typeof createTransactionEndpoint
+>['json'];
+type FinanceTransactionUpdateInput = InferRequestType<
+  typeof updateTransactionEndpoint
 >['json'];
 type FinanceCategoryInput = InferRequestType<
   typeof createCategoryEndpoint
@@ -37,6 +41,7 @@ type FinanceCategoryUpdateInput = InferRequestType<
 >['json'];
 type FinanceBudgetInput = InferRequestType<typeof upsertBudgetEndpoint>['json'];
 type FinanceCategory = FinanceSummary['categories'][number];
+type FinanceTransaction = FinanceSummary['recentTransactions'][number];
 type FinanceCategoryKind = 'income' | 'expense' | 'both';
 
 const currency = 'COP';
@@ -72,6 +77,17 @@ function getCategoryKindLabel(kind: FinanceCategoryKind) {
   if (kind === 'income') return m['finances.income']();
   if (kind === 'expense') return m['finances.expense']();
   return m['finances.both']();
+}
+
+function isCategoryAllowedForTransaction(
+  category: FinanceCategory,
+  transaction: FinanceTransaction,
+) {
+  return (
+    category.transactionType === 'BOTH' ||
+    (transaction.type === 'INCOME' && category.transactionType === 'INCOME') ||
+    (transaction.type === 'EXPENSE' && category.transactionType === 'EXPENSE')
+  );
 }
 
 function StatTile({
@@ -114,6 +130,10 @@ function RouteComponent() {
   const [editingCategoryName, setEditingCategoryName] = useState('');
   const [editingCategoryType, setEditingCategoryType] =
     useState<FinanceCategoryKind>('both');
+  const [editingTransactionId, setEditingTransactionId] = useState('');
+  const [editingTransactionName, setEditingTransactionName] = useState('');
+  const [editingTransactionCategoryId, setEditingTransactionCategoryId] =
+    useState('');
   const [budgetCategoryId, setBudgetCategoryId] = useState('');
   const [budgetAmount, setBudgetAmount] = useState('');
 
@@ -159,6 +179,42 @@ function RouteComponent() {
     onError: (error) => {
       toast.error(
         error instanceof Error ? error.message : m['finances.saveFailed'](),
+      );
+    },
+  });
+
+  const updateTransactionMutation = useMutation({
+    mutationFn: async ({
+      id,
+      input,
+    }: {
+      id: string;
+      input: FinanceTransactionUpdateInput;
+    }) => {
+      const response = await updateTransactionEndpoint({
+        param: { id },
+        json: input,
+      });
+      if (!response.ok) {
+        throw new Error(m['finances.transactionUpdateFailed']());
+      }
+      return response.json();
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
+      setEditingTransactionId('');
+      setEditingTransactionName('');
+      setEditingTransactionCategoryId('');
+      toast.success(m['finances.transactionUpdated']());
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : m['finances.transactionUpdateFailed'](),
       );
     },
   });
@@ -349,6 +405,28 @@ function RouteComponent() {
       input: {
         name,
         type: editingCategoryType,
+      },
+    });
+  }
+
+  function selectTransactionToEdit(transaction: FinanceTransaction) {
+    setEditingTransactionId(transaction.id);
+    setEditingTransactionName(transaction.description);
+    setEditingTransactionCategoryId(transaction.categoryId ?? '');
+  }
+
+  function submitTransactionUpdate(transaction: FinanceTransaction) {
+    const name = editingTransactionName.trim();
+    if (!name) {
+      toast.error(m['finances.validation']());
+      return;
+    }
+
+    updateTransactionMutation.mutate({
+      id: transaction.id,
+      input: {
+        description: name,
+        categoryId: editingTransactionCategoryId || null,
       },
     });
   }
@@ -765,6 +843,20 @@ function RouteComponent() {
                     tone="debt"
                   />
                 </div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <Link
+                    to="/goals"
+                    className="inline-flex h-11 items-center justify-center rounded-full border border-[#e2e8f0] bg-[#f8fafc] px-4 text-sm font-medium text-[#334155]"
+                  >
+                    {m['finances.viewGoals']()}
+                  </Link>
+                  <Link
+                    to="/debts"
+                    className="inline-flex h-11 items-center justify-center rounded-full border border-[#e2e8f0] bg-[#f8fafc] px-4 text-sm font-medium text-[#334155]"
+                  >
+                    {m['finances.viewDebts']()}
+                  </Link>
+                </div>
               </div>
             </section>
 
@@ -827,32 +919,101 @@ function RouteComponent() {
                   summary.recentTransactions.map((transaction) => (
                     <div
                       key={transaction.id}
-                      className="flex items-center justify-between gap-3 rounded-2xl bg-[#f8fafc] px-4 py-3"
+                      className="rounded-2xl bg-[#f8fafc] px-4 py-3"
                     >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">
-                          {transaction.description}
-                        </p>
-                        <p className="text-xs text-[#64748b]">
-                          {transaction.category?.name ??
-                            m['finances.noCategory']()}{' '}
-                          · {formatShortDate(transaction.occurredAt)}
-                        </p>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold">
+                            {transaction.description}
+                          </p>
+                          <p className="text-xs text-[#64748b]">
+                            {transaction.category?.name ??
+                              m['finances.noCategory']()}{' '}
+                            · {formatShortDate(transaction.occurredAt)}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => selectTransactionToEdit(transaction)}
+                            className="h-8 rounded-full border border-[#e2e8f0] bg-white px-3 text-xs font-medium text-[#475569]"
+                          >
+                            {m['finances.editMovement']()}
+                          </button>
+                          <span
+                            className={`text-sm font-semibold ${
+                              transaction.type === 'INCOME'
+                                ? 'text-[#047857]'
+                                : 'text-[#b45309]'
+                            }`}
+                          >
+                            {transaction.type === 'INCOME' ? '+' : '-'}
+                            {formatCurrency(
+                              transaction.currency,
+                              transaction.amount,
+                              { maximumFractionDigits: 0 },
+                            )}
+                          </span>
+                        </div>
                       </div>
-                      <span
-                        className={`shrink-0 text-sm font-semibold ${
-                          transaction.type === 'INCOME'
-                            ? 'text-[#047857]'
-                            : 'text-[#b45309]'
-                        }`}
-                      >
-                        {transaction.type === 'INCOME' ? '+' : '-'}
-                        {formatCurrency(
-                          transaction.currency,
-                          transaction.amount,
-                          { maximumFractionDigits: 0 },
-                        )}
-                      </span>
+                      {editingTransactionId === transaction.id ? (
+                        <div className="mt-3 grid gap-3 border-t border-[#e2e8f0] pt-3">
+                          <input
+                            value={editingTransactionName}
+                            onChange={(event) =>
+                              setEditingTransactionName(event.target.value)
+                            }
+                            className="h-11 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none"
+                          />
+                          <select
+                            value={editingTransactionCategoryId}
+                            onChange={(event) =>
+                              setEditingTransactionCategoryId(
+                                event.target.value,
+                              )
+                            }
+                            className="h-11 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none"
+                          >
+                            <option value="">
+                              {m['finances.noCategory']()}
+                            </option>
+                            {categories
+                              .filter((category) =>
+                                isCategoryAllowedForTransaction(
+                                  category,
+                                  transaction,
+                                ),
+                              )
+                              .map((category: FinanceCategory) => (
+                                <option key={category.id} value={category.id}>
+                                  {category.name}
+                                </option>
+                              ))}
+                          </select>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setEditingTransactionId('')}
+                              className="h-11 rounded-full"
+                            >
+                              {m['common.cancel']()}
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={() =>
+                                submitTransactionUpdate(transaction)
+                              }
+                              disabled={updateTransactionMutation.isPending}
+                              className="h-11 rounded-full"
+                            >
+                              {updateTransactionMutation.isPending
+                                ? m['common.saving']()
+                                : m['finances.saveMovementChanges']()}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   ))
                 )}

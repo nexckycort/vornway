@@ -30,6 +30,15 @@ export const createFinanceTransactionSchema = z.object({
   notes: z.string().trim().max(500).optional(),
 });
 
+export const financeTransactionParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
+export const updateFinanceTransactionSchema = z.object({
+  description: z.string().trim().min(1).max(160).optional(),
+  categoryId: z.string().min(1).nullable().optional(),
+});
+
 export const createFinanceCategorySchema = z.object({
   name: z.string().trim().min(1).max(80),
   type: z.enum(['income', 'expense', 'both']),
@@ -56,6 +65,9 @@ export type FinancesSummaryQueryInput = z.infer<
 >;
 export type CreateFinanceTransactionInput = z.infer<
   typeof createFinanceTransactionSchema
+>;
+export type UpdateFinanceTransactionInput = z.infer<
+  typeof updateFinanceTransactionSchema
 >;
 export type CreateFinanceCategoryInput = z.infer<
   typeof createFinanceCategorySchema

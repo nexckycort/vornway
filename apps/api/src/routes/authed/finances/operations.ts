@@ -604,6 +604,17 @@ export const financeOperations = {
     });
   },
 
+  async deleteTransaction(userId: string, transactionId: string) {
+    const transaction = await db.financeTransaction.findFirst({
+      where: { id: transactionId, ownerId: userId },
+      select: { id: true },
+    });
+    if (!transaction) return null;
+
+    await db.financeTransaction.delete({ where: { id: transactionId } });
+    return transaction;
+  },
+
   async createCategory(userId: string, input: CreateFinanceCategoryInput) {
     await ensureDefaults(userId, 'COP');
     const transactionType = toFinanceTransactionType(input.type);
@@ -684,6 +695,19 @@ export const financeOperations = {
         ...(input.icon !== undefined ? { icon: input.icon } : {}),
         ...(input.color !== undefined ? { color: input.color } : {}),
       },
+    });
+  },
+
+  async deleteCategory(userId: string, categoryId: string) {
+    const category = await db.financeCategory.findFirst({
+      where: { id: categoryId, ownerId: userId, archivedAt: null },
+      select: { id: true },
+    });
+    if (!category) return null;
+
+    return db.financeCategory.update({
+      where: { id: categoryId },
+      data: { archivedAt: new Date() },
     });
   },
 

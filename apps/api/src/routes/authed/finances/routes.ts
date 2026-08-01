@@ -61,6 +61,20 @@ export const financesRoutes = new Hono<AppContext>()
         : c.json({ error: 'Finance transaction not found' }, 404);
     },
   )
+  .delete(
+    '/transactions/:id',
+    zValidator('param', financeTransactionParamsSchema),
+    async (c) => {
+      const result = await financeOperations.deleteTransaction(
+        c.get('user').id,
+        c.req.valid('param').id,
+      );
+
+      return result
+        ? c.json({ ok: true })
+        : c.json({ error: 'Finance transaction not found' }, 404);
+    },
+  )
   .post(
     '/categories',
     zValidator('json', createFinanceCategorySchema),
@@ -86,6 +100,20 @@ export const financesRoutes = new Hono<AppContext>()
 
       return result
         ? c.json(result)
+        : c.json({ error: 'Finance category not found' }, 404);
+    },
+  )
+  .delete(
+    '/categories/:id',
+    zValidator('param', financeCategoryParamsSchema),
+    async (c) => {
+      const result = await financeOperations.deleteCategory(
+        c.get('user').id,
+        c.req.valid('param').id,
+      );
+
+      return result
+        ? c.json({ ok: true })
         : c.json({ error: 'Finance category not found' }, 404);
     },
   )

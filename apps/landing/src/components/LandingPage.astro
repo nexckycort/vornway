@@ -125,15 +125,6 @@ const githubRepoUrl = "https://github.com/nexckycort/vornway";
 
       <div class="nav-actions">
         <a class="button button-dark" href="#features">Ver funcionalidades</a>
-        <a
-          class="button button-github button-icon"
-          href={githubRepoUrl}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Ver repositorio de Vornway en GitHub"
-        >
-          <span class="icon icon-github" aria-hidden="true"></span>
-        </a>
         <a class="button button-primary" href="https://app.vornway.com"
           >Abrir aplicación</a
         >
@@ -147,6 +138,28 @@ const githubRepoUrl = "https://github.com/nexckycort/vornway";
           Crea grupos, registra gastos compartidos y mantén el control de quién
           pagó, quién debe y cuánto falta por saldar, todo en un solo lugar.
         </p>
+      </div>
+
+      <div class="hero-links" data-reveal data-reveal-delay="140">
+        <a
+          class="button button-github"
+          href={githubRepoUrl}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Ver repositorio de Vornway en GitHub"
+        >
+          <span class="icon icon-github" aria-hidden="true"></span>
+          Github
+        </a>
+        <a
+          class="button button-github"
+          href="https://www.figma.com/community/file/1665872762326392160/vornway-ui-app"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span class="icon icon-figma" aria-hidden="true"></span>
+          Figma
+        </a>
       </div>
 
       <div class="tags" aria-label="Funciones principales" data-reveal data-reveal-delay="180">
@@ -671,6 +684,7 @@ const githubRepoUrl = "https://github.com/nexckycort/vornway";
   }
 
   .button-github {
+    gap: 0.5rem;
     border: 1px solid rgba(255, 255, 255, 0.18);
     background: rgba(255, 255, 255, 0.08);
   }
@@ -692,6 +706,11 @@ const githubRepoUrl = "https://github.com/nexckycort/vornway";
     mask: url("/icons/github.svg") center / contain no-repeat;
   }
 
+  .icon-figma {
+    -webkit-mask: url("/icons/figma.svg") center / contain no-repeat;
+    mask: url("/icons/figma.svg") center / contain no-repeat;
+  }
+
   .button-primary {
     min-height: 2.75rem;
     background: var(--pink);
@@ -702,6 +721,12 @@ const githubRepoUrl = "https://github.com/nexckycort/vornway";
     justify-items: center;
     gap: 1.8rem;
     text-align: center;
+  }
+
+  .hero-links {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
   }
 
   .hero-copy {

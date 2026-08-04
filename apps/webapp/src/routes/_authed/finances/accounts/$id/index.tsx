@@ -1,13 +1,38 @@
 import { ArrowLeftIcon, Wallet02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { financesClient } from '#/api/finances';
 import type { InferResponseType } from '#/api/types';
 import { Button } from '#/components/ui/button';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
 import { formatCurrency, formatShortDate } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
+import {
+  accountTypeOptions,
+  currency,
+  currentMonthKey,
+  type FinanceAccountInput,
+  type FinanceAccountUpdateInput,
+  getAccountStatusLabel,
+  getAccountTypeLabel,
+  parseMoney,
+  toInputDate,
+  updateAccountEndpoint,
+} from '../../-components/finance-model';
 
 export const Route = createFileRoute('/_authed/finances/accounts/$id/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -35,32 +60,6 @@ function getMonthKey(value: string) {
   if (Number.isNaN(date.getTime())) return currentMonthKey();
 
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function currentMonthKey() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function getAccountTypeLabel(type: string) {
-  const normalized = type.toLowerCase();
-  if (normalized === 'bank') return m['finances.accountTypeBank']();
-  if (normalized === 'savings') return m['finances.accountTypeSavings']();
-  if (normalized === 'term_deposit') {
-    return m['finances.accountTypeTermDeposit']();
-  }
-  if (normalized === 'cash') return m['finances.accountTypeCash']();
-  if (normalized === 'wallet') return m['finances.accountTypeWallet']();
-  if (normalized === 'credit_card') {
-    return m['finances.accountTypeCreditCard']();
-  }
-  return m['finances.accountTypeOther']();
-}
-
-function getAccountStatusLabel(status: string) {
-  if (status === 'CLOSED') return m['finances.accountStatusClosed']();
-  if (status === 'MATURED') return m['finances.accountStatusMatured']();
-  return m['finances.accountStatusActive']();
 }
 
 function SummaryTile({ label, value }: { label: string; value: string }) {
@@ -120,9 +119,24 @@ function MovementRow({
 }
 
 function RouteComponent() {
+  const queryClient = useQueryClient();
   const { id } = Route.useParams();
   const { month } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
+  const [accountName, setAccountName] = useState('');
+  const [accountType, setAccountType] =
+    useState<FinanceAccountInput['type']>('bank');
+  const [accountInstitution, setAccountInstitution] = useState('');
+  const [accountCurrency, setAccountCurrency] = useState(currency);
+  const [accountCurrentBalance, setAccountCurrentBalance] = useState('');
+  const [accountAvailableBalance, setAccountAvailableBalance] = useState('');
+  const [accountLockedBalance, setAccountLockedBalance] = useState('');
+  const [accountCreditLimit, setAccountCreditLimit] = useState('');
+  const [accountOpenedAt, setAccountOpenedAt] = useState('');
+  const [accountMaturesAt, setAccountMaturesAt] = useState('');
+  const [accountInterestRate, setAccountInterestRate] = useState('');
+  const [accountNotes, setAccountNotes] = useState('');
 
   const accountQuery = useQuery({
     queryKey: ['finances-account', id],
@@ -154,6 +168,119 @@ function RouteComponent() {
   );
   const account = accountQuery.data;
   const isCreditCard = account?.accountType === 'CREDIT_CARD';
+
+  const updateAccountMutation = useMutation({
+    mutationFn: async (input: FinanceAccountUpdateInput) => {
+      const response = await updateAccountEndpoint({
+        param: { id },
+        json: input,
+      });
+      if (!response.ok) throw new Error(m['finances.accountSaveFailed']());
+      return response.json();
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-account', id] }),
+        queryClient.invalidateQueries({
+          queryKey: ['finances-account-movements', id],
+        }),
+      ]);
+      resetAccountForm();
+      setIsEditDrawerOpen(false);
+      toast.success(m['finances.accountSaved']());
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : m['finances.accountSaveFailed'](),
+      );
+    },
+  });
+
+  function resetAccountForm() {
+    setAccountName('');
+    setAccountType('bank');
+    setAccountInstitution('');
+    setAccountCurrency(currency);
+    setAccountCurrentBalance('');
+    setAccountAvailableBalance('');
+    setAccountLockedBalance('');
+    setAccountCreditLimit('');
+    setAccountOpenedAt('');
+    setAccountMaturesAt('');
+    setAccountInterestRate('');
+    setAccountNotes('');
+  }
+
+  function prepareAccountEdit(selectedAccount: NonNullable<typeof account>) {
+    setAccountName(selectedAccount.name);
+    setAccountType(
+      selectedAccount.accountType.toLowerCase() as FinanceAccountInput['type'],
+    );
+    setAccountInstitution(selectedAccount.institution ?? '');
+    setAccountCurrency(selectedAccount.currency);
+    setAccountCurrentBalance(String(selectedAccount.currentBalance));
+    setAccountAvailableBalance(String(selectedAccount.availableBalance));
+    setAccountLockedBalance(String(selectedAccount.lockedBalance));
+    setAccountCreditLimit(
+      selectedAccount.creditLimit === null
+        ? ''
+        : String(selectedAccount.creditLimit),
+    );
+    setAccountOpenedAt(toInputDate(selectedAccount.openedAt));
+    setAccountMaturesAt(toInputDate(selectedAccount.maturesAt));
+    setAccountInterestRate(
+      selectedAccount.interestRate === null
+        ? ''
+        : String(selectedAccount.interestRate),
+    );
+    setAccountNotes(selectedAccount.notes ?? '');
+    setIsEditDrawerOpen(true);
+  }
+
+  function submitAccountUpdate() {
+    const name = accountName.trim();
+    const currentBalance = parseMoney(accountCurrentBalance);
+    const isCreditCardInput = accountType === 'credit_card';
+    const creditLimit = parseMoney(accountCreditLimit);
+
+    if (!name || !accountCurrency.trim()) {
+      toast.error(m['finances.accountValidation']());
+      return;
+    }
+
+    updateAccountMutation.mutate({
+      name,
+      type: accountType,
+      institution: accountInstitution.trim() || undefined,
+      currency: accountCurrency.trim().toUpperCase(),
+      currentBalance,
+      availableBalance: accountAvailableBalance
+        ? parseMoney(accountAvailableBalance)
+        : isCreditCardInput
+          ? Math.max(creditLimit - currentBalance, 0)
+          : currentBalance,
+      lockedBalance: isCreditCardInput
+        ? 0
+        : accountLockedBalance
+          ? parseMoney(accountLockedBalance)
+          : 0,
+      ...(isCreditCardInput && creditLimit > 0 ? { creditLimit } : {}),
+      openedAt: accountOpenedAt
+        ? new Date(`${accountOpenedAt}T12:00:00`)
+        : undefined,
+      maturesAt: accountMaturesAt
+        ? new Date(`${accountMaturesAt}T12:00:00`)
+        : undefined,
+      interestRate: accountInterestRate
+        ? Number(accountInterestRate.replace(',', '.'))
+        : undefined,
+      notes: accountNotes.trim() || undefined,
+    });
+  }
 
   return (
     <main className="min-h-screen bg-[#f3f3f3] text-[#1e1e1e]">
@@ -213,6 +340,14 @@ function RouteComponent() {
                   {getAccountStatusLabel(account.status)}
                 </span>
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => prepareAccountEdit(account)}
+                className="mt-5 h-11 rounded-full"
+              >
+                {m['finances.editAccount']()}
+              </Button>
 
               <div className="mt-7 grid gap-3 sm:grid-cols-2">
                 <SummaryTile
@@ -309,6 +444,146 @@ function RouteComponent() {
           </>
         )}
       </div>
+
+      <Drawer
+        open={isEditDrawerOpen}
+        onOpenChange={(open) => {
+          setIsEditDrawerOpen(open);
+          if (!open) resetAccountForm();
+        }}
+      >
+        <DrawerContent className="overflow-hidden bg-[#f7f7f4]">
+          <DrawerHeader>
+            <DrawerTitle>{m['finances.editAccount']()}</DrawerTitle>
+          </DrawerHeader>
+
+          <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto px-5 pb-4">
+            <input
+              value={accountName}
+              onChange={(event) => setAccountName(event.target.value)}
+              placeholder={m['finances.accountNamePlaceholder']()}
+              className="h-13 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+            />
+            <select
+              value={accountType}
+              onChange={(event) =>
+                setAccountType(
+                  event.target.value as FinanceAccountInput['type'],
+                )
+              }
+              className="h-13 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+            >
+              {accountTypeOptions.map((type) => (
+                <option key={type} value={type}>
+                  {getAccountTypeLabel(type)}
+                </option>
+              ))}
+            </select>
+            <input
+              value={accountInstitution}
+              onChange={(event) => setAccountInstitution(event.target.value)}
+              placeholder={m['finances.accountInstitutionPlaceholder']()}
+              className="h-13 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+            />
+            <div className="grid min-w-0 gap-3 sm:grid-cols-[0.7fr_1fr]">
+              <input
+                value={accountCurrency}
+                onChange={(event) => setAccountCurrency(event.target.value)}
+                placeholder={m['finances.accountCurrencyPlaceholder']()}
+                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm uppercase outline-none"
+              />
+              <input
+                inputMode="decimal"
+                value={accountCurrentBalance}
+                onChange={(event) =>
+                  setAccountCurrentBalance(event.target.value)
+                }
+                placeholder={
+                  accountType === 'credit_card'
+                    ? m['finances.accountCurrentDebt']()
+                    : m['finances.accountCurrentBalance']()
+                }
+                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+              />
+            </div>
+            {accountType === 'credit_card' ? (
+              <input
+                inputMode="decimal"
+                value={accountCreditLimit}
+                onChange={(event) => setAccountCreditLimit(event.target.value)}
+                placeholder={m['finances.accountCreditLimit']()}
+                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+              />
+            ) : null}
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+              <input
+                inputMode="decimal"
+                value={accountAvailableBalance}
+                onChange={(event) =>
+                  setAccountAvailableBalance(event.target.value)
+                }
+                placeholder={
+                  accountType === 'credit_card'
+                    ? m['finances.accountAvailableCredit']()
+                    : m['finances.accountAvailableBalance']()
+                }
+                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+              />
+              {accountType === 'credit_card' ? null : (
+                <input
+                  inputMode="decimal"
+                  value={accountLockedBalance}
+                  onChange={(event) =>
+                    setAccountLockedBalance(event.target.value)
+                  }
+                  placeholder={m['finances.accountLockedBalance']()}
+                  className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+                />
+              )}
+            </div>
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+              <input
+                type="date"
+                value={accountOpenedAt}
+                onChange={(event) => setAccountOpenedAt(event.target.value)}
+                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+              />
+              <input
+                type="date"
+                value={accountMaturesAt}
+                onChange={(event) => setAccountMaturesAt(event.target.value)}
+                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+              />
+            </div>
+            <input
+              inputMode="decimal"
+              value={accountInterestRate}
+              onChange={(event) => setAccountInterestRate(event.target.value)}
+              placeholder={m['finances.accountInterestRate']()}
+              className="h-13 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+            />
+            <textarea
+              value={accountNotes}
+              onChange={(event) => setAccountNotes(event.target.value)}
+              placeholder={m['finances.accountNotesPlaceholder']()}
+              className="min-h-24 rounded-[20px] border border-black/5 bg-white px-4 py-3 text-sm outline-none"
+            />
+          </div>
+
+          <DrawerFooter className="shrink-0 border-t border-black/5 bg-[#f7f7f4]/95 backdrop-blur">
+            <Button
+              type="button"
+              onClick={submitAccountUpdate}
+              disabled={updateAccountMutation.isPending}
+              className="h-12 rounded-full"
+            >
+              {updateAccountMutation.isPending
+                ? m['common.saving']()
+                : m['finances.saveAccount']()}
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </main>
   );
 }

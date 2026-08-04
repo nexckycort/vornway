@@ -1,16 +1,22 @@
 import {
   useInfiniteQuery,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '#/components/ui/button';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
 import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
-import { ScreenShell, SummaryCard } from '../-components/finance-layout';
+import { ScreenShell } from '../-components/finance-layout';
 import {
   accountsEndpoint,
   accountTypeOptions,
@@ -24,11 +30,7 @@ import {
   type FinanceAccountUpdateInput,
   getAccountStatusLabel,
   getAccountTypeLabel,
-  getBrowserTimeZone,
-  getCurrencyValue,
-  moneyLabel,
   parseMoney,
-  summaryEndpoint,
   toInputDate,
   updateAccountEndpoint,
 } from '../-components/finance-model';
@@ -47,8 +49,9 @@ function RouteComponent() {
   const queryClient = useQueryClient();
   const navigate = useNavigate({ from: Route.fullPath });
   const { month } = Route.useSearch();
-  const timeZone = getBrowserTimeZone();
+  const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState('');
+  const [editingAccountStatus, setEditingAccountStatus] = useState('');
   const [accountName, setAccountName] = useState('');
   const [accountType, setAccountType] =
     useState<FinanceAccountInput['type']>('bank');
@@ -63,16 +66,6 @@ function RouteComponent() {
   const [accountInterestRate, setAccountInterestRate] = useState('');
   const [accountNotes, setAccountNotes] = useState('');
 
-  const summaryQuery = useQuery({
-    queryKey: ['finances-summary', month, currency, timeZone],
-    queryFn: async () => {
-      const response = await summaryEndpoint({
-        query: { month, currency, timeZone },
-      });
-      if (!response.ok) throw new Error(m['finances.loadError']());
-      return response.json();
-    },
-  });
   const accountsQuery = useInfiniteQuery({
     queryKey: ['finances-accounts'],
     initialPageParam: undefined as string | undefined,
@@ -89,34 +82,9 @@ function RouteComponent() {
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
   });
 
-  const summary = summaryQuery.data;
   const accounts = useMemo(
     () => accountsQuery.data?.pages.flatMap((page) => page.data) ?? [],
     [accountsQuery.data],
-  );
-  const accountTotal = getCurrencyValue(
-    summary?.totals.accountTotalByCurrency ?? {},
-    currency,
-  );
-  const accountAvailable = getCurrencyValue(
-    summary?.totals.accountAvailableByCurrency ?? {},
-    currency,
-  );
-  const accountLocked = getCurrencyValue(
-    summary?.totals.accountLockedByCurrency ?? {},
-    currency,
-  );
-  const accountCreditLimitTotal = getCurrencyValue(
-    summary?.totals.accountCreditLimitByCurrency ?? {},
-    currency,
-  );
-  const accountCreditUsed = getCurrencyValue(
-    summary?.totals.accountCreditUsedByCurrency ?? {},
-    currency,
-  );
-  const accountCreditAvailable = getCurrencyValue(
-    summary?.totals.accountCreditAvailableByCurrency ?? {},
-    currency,
   );
 
   const accountMutation = useMutation({
@@ -133,6 +101,7 @@ function RouteComponent() {
     onSuccess: async () => {
       await invalidateAccountQueries();
       resetAccountForm();
+      setIsAccountDrawerOpen(false);
       toast.success(m['finances.accountSaved']());
     },
     onError: (error) => {
@@ -152,6 +121,7 @@ function RouteComponent() {
     onSuccess: async () => {
       await invalidateAccountQueries();
       resetAccountForm();
+      setIsAccountDrawerOpen(false);
       toast.success(m['finances.accountClosed']());
     },
     onError: (error) => {
@@ -171,6 +141,7 @@ function RouteComponent() {
     onSuccess: async () => {
       await invalidateAccountQueries();
       resetAccountForm();
+      setIsAccountDrawerOpen(false);
       toast.success(m['finances.accountDeleted']());
     },
     onError: (error) => {
@@ -195,6 +166,7 @@ function RouteComponent() {
 
   function resetAccountForm() {
     setEditingAccountId('');
+    setEditingAccountStatus('');
     setAccountName('');
     setAccountType('bank');
     setAccountInstitution('');
@@ -211,6 +183,7 @@ function RouteComponent() {
 
   function selectAccountToEdit(account: FinanceAccount) {
     setEditingAccountId(account.id);
+    setEditingAccountStatus(account.status);
     setAccountName(account.name);
     setAccountType(
       account.accountType.toLowerCase() as FinanceAccountInput['type'],
@@ -229,6 +202,7 @@ function RouteComponent() {
       account.interestRate === null ? '' : String(account.interestRate),
     );
     setAccountNotes(account.notes ?? '');
+    setIsAccountDrawerOpen(true);
   }
 
   function submitAccount() {
@@ -287,178 +261,20 @@ function RouteComponent() {
         })
       }
     >
-      <div className="grid min-w-0 gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <section className="min-w-0 rounded-[30px] bg-white p-5">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold">
-              {editingAccountId
-                ? m['finances.editAccount']()
-                : m['finances.createAccount']()}
-            </h2>
-            {editingAccountId ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={resetAccountForm}
-                className="rounded-full"
-              >
-                {m['common.cancel']()}
-              </Button>
-            ) : null}
-          </div>
-          <div className="mt-5 grid gap-3">
-            <input
-              value={accountName}
-              onChange={(event) => setAccountName(event.target.value)}
-              placeholder={m['finances.accountNamePlaceholder']()}
-              className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-            />
-            <select
-              value={accountType}
-              onChange={(event) =>
-                setAccountType(
-                  event.target.value as FinanceAccountInput['type'],
-                )
-              }
-              className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-            >
-              {accountTypeOptions.map((type) => (
-                <option key={type} value={type}>
-                  {getAccountTypeLabel(type)}
-                </option>
-              ))}
-            </select>
-            <input
-              value={accountInstitution}
-              onChange={(event) => setAccountInstitution(event.target.value)}
-              placeholder={m['finances.accountInstitutionPlaceholder']()}
-              className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-            />
-            <div className="grid min-w-0 gap-3 sm:grid-cols-[0.7fr_1fr]">
-              <input
-                value={accountCurrency}
-                onChange={(event) => setAccountCurrency(event.target.value)}
-                placeholder={m['finances.accountCurrencyPlaceholder']()}
-                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm uppercase outline-none"
-              />
-              <input
-                inputMode="decimal"
-                value={accountCurrentBalance}
-                onChange={(event) =>
-                  setAccountCurrentBalance(event.target.value)
-                }
-                placeholder={
-                  accountType === 'credit_card'
-                    ? m['finances.accountCurrentDebt']()
-                    : m['finances.accountCurrentBalance']()
-                }
-                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-              />
-            </div>
-            {accountType === 'credit_card' ? (
-              <input
-                inputMode="decimal"
-                value={accountCreditLimit}
-                onChange={(event) => setAccountCreditLimit(event.target.value)}
-                placeholder={m['finances.accountCreditLimit']()}
-                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-              />
-            ) : null}
-            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-              <input
-                inputMode="decimal"
-                value={accountAvailableBalance}
-                onChange={(event) =>
-                  setAccountAvailableBalance(event.target.value)
-                }
-                placeholder={
-                  accountType === 'credit_card'
-                    ? m['finances.accountAvailableCredit']()
-                    : m['finances.accountAvailableBalance']()
-                }
-                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-              />
-              {accountType === 'credit_card' ? null : (
-                <input
-                  inputMode="decimal"
-                  value={accountLockedBalance}
-                  onChange={(event) =>
-                    setAccountLockedBalance(event.target.value)
-                  }
-                  placeholder={m['finances.accountLockedBalance']()}
-                  className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-                />
-              )}
-            </div>
-            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-              <input
-                type="date"
-                value={accountOpenedAt}
-                onChange={(event) => setAccountOpenedAt(event.target.value)}
-                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-              />
-              <input
-                type="date"
-                value={accountMaturesAt}
-                onChange={(event) => setAccountMaturesAt(event.target.value)}
-                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-              />
-            </div>
-            <input
-              inputMode="decimal"
-              value={accountInterestRate}
-              onChange={(event) => setAccountInterestRate(event.target.value)}
-              placeholder={m['finances.accountInterestRate']()}
-              className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-            />
-            <textarea
-              value={accountNotes}
-              onChange={(event) => setAccountNotes(event.target.value)}
-              placeholder={m['finances.accountNotesPlaceholder']()}
-              className="min-h-24 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 py-3 text-sm outline-none"
-            />
-            <Button
-              type="button"
-              onClick={submitAccount}
-              disabled={accountMutation.isPending}
-              className="h-12 rounded-full"
-            >
-              {accountMutation.isPending
-                ? m['common.saving']()
-                : m['finances.saveAccount']()}
-            </Button>
-          </div>
-        </section>
+      <div className="grid min-w-0 gap-4">
+        <Button
+          type="button"
+          onClick={() => {
+            resetAccountForm();
+            setIsAccountDrawerOpen(true);
+          }}
+          className="h-13 rounded-full"
+        >
+          {m['finances.createAccount']()}
+        </Button>
 
         <section className="grid min-w-0 gap-3">
-          <div className="grid min-w-0 gap-2 sm:grid-cols-3">
-            <SummaryCard
-              label={m['finances.accountTotal']()}
-              value={moneyLabel(accountTotal)}
-            />
-            <SummaryCard
-              label={m['finances.accountAvailable']()}
-              value={moneyLabel(accountAvailable)}
-            />
-            <SummaryCard
-              label={m['finances.accountLocked']()}
-              value={moneyLabel(accountLocked)}
-            />
-            <SummaryCard
-              label={m['finances.accountCreditLimit']()}
-              value={moneyLabel(accountCreditLimitTotal)}
-            />
-            <SummaryCard
-              label={m['finances.accountUsedCredit']()}
-              value={moneyLabel(accountCreditUsed)}
-            />
-            <SummaryCard
-              label={m['finances.accountAvailableCredit']()}
-              value={moneyLabel(accountCreditAvailable)}
-            />
-          </div>
-          {summaryQuery.isPending || accountsQuery.isPending ? (
+          {accountsQuery.isPending ? (
             <div className="rounded-[30px] bg-white p-5 text-sm text-black/45">
               {m['common.loading']()}
             </div>
@@ -561,37 +377,6 @@ function RouteComponent() {
                     {m['finances.editAccount']()}
                   </Button>
                 </div>
-                {editingAccountId === account.id &&
-                account.status !== 'CLOSED' ? (
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        if (confirm(m['finances.closeAccountConfirm']())) {
-                          closeAccountMutation.mutate(account.id);
-                        }
-                      }}
-                      disabled={closeAccountMutation.isPending}
-                      className="h-10 rounded-full"
-                    >
-                      {m['finances.closeAccount']()}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={() => {
-                        if (confirm(m['finances.deleteAccountConfirm']())) {
-                          deleteAccountMutation.mutate(account.id);
-                        }
-                      }}
-                      disabled={deleteAccountMutation.isPending}
-                      className="h-10 rounded-full"
-                    >
-                      {m['finances.deleteAccount']()}
-                    </Button>
-                  </div>
-                ) : null}
               </article>
             ))
           )}
@@ -609,6 +394,186 @@ function RouteComponent() {
             </Button>
           ) : null}
         </section>
+
+        <Drawer
+          open={isAccountDrawerOpen}
+          onOpenChange={(open) => {
+            setIsAccountDrawerOpen(open);
+            if (!open) resetAccountForm();
+          }}
+        >
+          <DrawerContent className="overflow-hidden bg-[#f7f7f4]">
+            <DrawerHeader>
+              <DrawerTitle>
+                {editingAccountId
+                  ? m['finances.editAccount']()
+                  : m['finances.createAccount']()}
+              </DrawerTitle>
+            </DrawerHeader>
+
+            <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto px-5 pb-4">
+              <input
+                value={accountName}
+                onChange={(event) => setAccountName(event.target.value)}
+                placeholder={m['finances.accountNamePlaceholder']()}
+                className="h-13 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+              />
+              <select
+                value={accountType}
+                onChange={(event) =>
+                  setAccountType(
+                    event.target.value as FinanceAccountInput['type'],
+                  )
+                }
+                className="h-13 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+              >
+                {accountTypeOptions.map((type) => (
+                  <option key={type} value={type}>
+                    {getAccountTypeLabel(type)}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={accountInstitution}
+                onChange={(event) => setAccountInstitution(event.target.value)}
+                placeholder={m['finances.accountInstitutionPlaceholder']()}
+                className="h-13 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+              />
+              <div className="grid min-w-0 gap-3 sm:grid-cols-[0.7fr_1fr]">
+                <input
+                  value={accountCurrency}
+                  onChange={(event) => setAccountCurrency(event.target.value)}
+                  placeholder={m['finances.accountCurrencyPlaceholder']()}
+                  className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm uppercase outline-none"
+                />
+                <input
+                  inputMode="decimal"
+                  value={accountCurrentBalance}
+                  onChange={(event) =>
+                    setAccountCurrentBalance(event.target.value)
+                  }
+                  placeholder={
+                    accountType === 'credit_card'
+                      ? m['finances.accountCurrentDebt']()
+                      : m['finances.accountCurrentBalance']()
+                  }
+                  className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+                />
+              </div>
+              {accountType === 'credit_card' ? (
+                <input
+                  inputMode="decimal"
+                  value={accountCreditLimit}
+                  onChange={(event) =>
+                    setAccountCreditLimit(event.target.value)
+                  }
+                  placeholder={m['finances.accountCreditLimit']()}
+                  className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+                />
+              ) : null}
+              <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                <input
+                  inputMode="decimal"
+                  value={accountAvailableBalance}
+                  onChange={(event) =>
+                    setAccountAvailableBalance(event.target.value)
+                  }
+                  placeholder={
+                    accountType === 'credit_card'
+                      ? m['finances.accountAvailableCredit']()
+                      : m['finances.accountAvailableBalance']()
+                  }
+                  className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+                />
+                {accountType === 'credit_card' ? null : (
+                  <input
+                    inputMode="decimal"
+                    value={accountLockedBalance}
+                    onChange={(event) =>
+                      setAccountLockedBalance(event.target.value)
+                    }
+                    placeholder={m['finances.accountLockedBalance']()}
+                    className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+                  />
+                )}
+              </div>
+              <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                <input
+                  type="date"
+                  value={accountOpenedAt}
+                  onChange={(event) => setAccountOpenedAt(event.target.value)}
+                  className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+                />
+                <input
+                  type="date"
+                  value={accountMaturesAt}
+                  onChange={(event) => setAccountMaturesAt(event.target.value)}
+                  className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+                />
+              </div>
+              <input
+                inputMode="decimal"
+                value={accountInterestRate}
+                onChange={(event) => setAccountInterestRate(event.target.value)}
+                placeholder={m['finances.accountInterestRate']()}
+                className="h-13 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
+              />
+              <textarea
+                value={accountNotes}
+                onChange={(event) => setAccountNotes(event.target.value)}
+                placeholder={m['finances.accountNotesPlaceholder']()}
+                className="min-h-24 rounded-[20px] border border-black/5 bg-white px-4 py-3 text-sm outline-none"
+              />
+            </div>
+
+            <DrawerFooter className="shrink-0 border-t border-black/5 bg-[#f7f7f4]/95 backdrop-blur">
+              <Button
+                type="button"
+                onClick={submitAccount}
+                disabled={accountMutation.isPending}
+                className="h-12 rounded-full"
+              >
+                {accountMutation.isPending
+                  ? m['common.saving']()
+                  : editingAccountId
+                    ? m['finances.saveAccount']()
+                    : m['finances.createAccount']()}
+              </Button>
+              {editingAccountId ? (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {editingAccountStatus !== 'CLOSED' ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (confirm(m['finances.closeAccountConfirm']())) {
+                          closeAccountMutation.mutate(editingAccountId);
+                        }
+                      }}
+                      disabled={closeAccountMutation.isPending}
+                      className="h-10 rounded-full"
+                    >
+                      {m['finances.closeAccount']()}
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => {
+                      if (confirm(m['finances.deleteAccountConfirm']())) {
+                        deleteAccountMutation.mutate(editingAccountId);
+                      }
+                    }}
+                    disabled={deleteAccountMutation.isPending}
+                    className="h-10 rounded-full"
+                  >
+                    {m['finances.deleteAccount']()}
+                  </Button>
+                </div>
+              ) : null}
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
       </div>
     </ScreenShell>
   );

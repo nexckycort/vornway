@@ -20,6 +20,28 @@ import {
   isCategoryAllowedForTransaction,
 } from './finance-model';
 
+type TransactionAccount = {
+  name: string;
+  institution?: string | null;
+  currency: string;
+};
+
+function getTransactionAccountLabel(
+  transaction: EditableFinanceTransaction,
+  transactionAccounts: FinanceSummaryAccount[],
+) {
+  const transactionWithAccount = transaction as EditableFinanceTransaction & {
+    account?: TransactionAccount | null;
+  };
+  const account =
+    transactionWithAccount.account ??
+    transactionAccounts.find((item) => item.id === transaction.accountId);
+
+  if (!account) return m['finances.noAccount']();
+
+  return `${account.name} · ${account.institution ?? account.currency}`;
+}
+
 export function CreateTransactionView({
   month,
   transactionType,
@@ -378,6 +400,13 @@ export function TransactionDetailView({
               <SummaryCard
                 label={m['finances.date']()}
                 value={formatShortDate(transaction.occurredAt)}
+              />
+              <SummaryCard
+                label={m['finances.account']()}
+                value={getTransactionAccountLabel(
+                  transaction,
+                  transactionAccounts,
+                )}
               />
               <div className="rounded-[26px] border border-black/5 bg-white p-4">
                 <p className="text-sm text-black/45">{m['finances.tags']()}</p>

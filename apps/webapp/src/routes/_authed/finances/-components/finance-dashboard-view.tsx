@@ -98,7 +98,11 @@ export function FinanceDashboardView({
           >
             {m['finances.debts']()}
           </FinanceTab>
-          <FinanceTab onClick={() => onGoTo('accounts')}>
+          <FinanceTab
+            onClick={() =>
+              void navigate({ to: '/finances/accounts', search: { month } })
+            }
+          >
             {m['finances.accounts']()}
           </FinanceTab>
           <FinanceTab onClick={() => onGoTo('categories')}>
@@ -149,7 +153,9 @@ export function FinanceDashboardView({
           </h2>
           <button
             type="button"
-            onClick={() => onGoTo('accounts')}
+            onClick={() =>
+              void navigate({ to: '/finances/accounts', search: { month } })
+            }
             className="mt-2 grid w-full min-w-0 gap-2 rounded-[24px] border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)] sm:grid-cols-3"
           >
             <div className="min-w-0">

@@ -10,6 +10,12 @@ import { formatCurrency, formatShortDate } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 
 export const Route = createFileRoute('/_authed/finances/accounts/$id/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    month:
+      typeof search.month === 'string' && /^\d{4}-\d{2}$/.test(search.month)
+        ? search.month
+        : currentMonthKey(),
+  }),
   component: RouteComponent,
 });
 
@@ -115,6 +121,7 @@ function MovementRow({
 
 function RouteComponent() {
   const { id } = Route.useParams();
+  const { month } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
   const accountQuery = useQuery({
@@ -156,13 +163,8 @@ function RouteComponent() {
             type="button"
             onClick={() =>
               void navigate({
-                to: '/finances',
-                search: {
-                  view: 'accounts',
-                  month: currentMonthKey(),
-                  transactionId: undefined,
-                  accountId: undefined,
-                },
+                to: '/finances/accounts',
+                search: { month },
               })
             }
             className="flex size-10 shrink-0 items-center justify-center rounded-full border border-black/10 bg-white"

@@ -31,6 +31,7 @@ import { Route as AuthedGroupsNewIndexRouteImport } from './routes/_authed/group
 import { Route as AuthedGroupsIdIndexRouteImport } from './routes/_authed/groups/$id/index'
 import { Route as AuthedGoalsNewIndexRouteImport } from './routes/_authed/goals/new/index'
 import { Route as AuthedGoalsIdIndexRouteImport } from './routes/_authed/goals/$id/index'
+import { Route as AuthedFinancesAccountsIndexRouteImport } from './routes/_authed/finances/accounts/index'
 import { Route as AuthedDebtsNewIndexRouteImport } from './routes/_authed/debts/new/index'
 import { Route as AuthedDebtsIdIndexRouteImport } from './routes/_authed/debts/$id/index'
 import { Route as AuthedGroupsNewParticipantsRouteImport } from './routes/_authed/groups/new/participants'
@@ -158,6 +159,12 @@ const AuthedGoalsIdIndexRoute = AuthedGoalsIdIndexRouteImport.update({
   path: '/goals/$id/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedFinancesAccountsIndexRoute =
+  AuthedFinancesAccountsIndexRouteImport.update({
+    id: '/finances/accounts/',
+    path: '/finances/accounts/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedDebtsNewIndexRoute = AuthedDebtsNewIndexRouteImport.update({
   id: '/debts/new/',
   path: '/debts/new/',
@@ -270,6 +277,7 @@ export interface FileRoutesByFullPath {
   '/groups/new/participants': typeof AuthedGroupsNewParticipantsRoute
   '/debts/$id/': typeof AuthedDebtsIdIndexRoute
   '/debts/new/': typeof AuthedDebtsNewIndexRoute
+  '/finances/accounts/': typeof AuthedFinancesAccountsIndexRoute
   '/goals/$id/': typeof AuthedGoalsIdIndexRoute
   '/goals/new/': typeof AuthedGoalsNewIndexRoute
   '/groups/$id/': typeof AuthedGroupsIdIndexRoute
@@ -307,6 +315,7 @@ export interface FileRoutesByTo {
   '/groups/new/participants': typeof AuthedGroupsNewParticipantsRoute
   '/debts/$id': typeof AuthedDebtsIdIndexRoute
   '/debts/new': typeof AuthedDebtsNewIndexRoute
+  '/finances/accounts': typeof AuthedFinancesAccountsIndexRoute
   '/goals/$id': typeof AuthedGoalsIdIndexRoute
   '/goals/new': typeof AuthedGoalsNewIndexRoute
   '/groups/$id': typeof AuthedGroupsIdIndexRoute
@@ -348,6 +357,7 @@ export interface FileRoutesById {
   '/_authed/groups/new/participants': typeof AuthedGroupsNewParticipantsRoute
   '/_authed/debts/$id/': typeof AuthedDebtsIdIndexRoute
   '/_authed/debts/new/': typeof AuthedDebtsNewIndexRoute
+  '/_authed/finances/accounts/': typeof AuthedFinancesAccountsIndexRoute
   '/_authed/goals/$id/': typeof AuthedGoalsIdIndexRoute
   '/_authed/goals/new/': typeof AuthedGoalsNewIndexRoute
   '/_authed/groups/$id/': typeof AuthedGroupsIdIndexRoute
@@ -388,6 +398,7 @@ export interface FileRouteTypes {
     | '/groups/new/participants'
     | '/debts/$id/'
     | '/debts/new/'
+    | '/finances/accounts/'
     | '/goals/$id/'
     | '/goals/new/'
     | '/groups/$id/'
@@ -425,6 +436,7 @@ export interface FileRouteTypes {
     | '/groups/new/participants'
     | '/debts/$id'
     | '/debts/new'
+    | '/finances/accounts'
     | '/goals/$id'
     | '/goals/new'
     | '/groups/$id'
@@ -465,6 +477,7 @@ export interface FileRouteTypes {
     | '/_authed/groups/new/participants'
     | '/_authed/debts/$id/'
     | '/_authed/debts/new/'
+    | '/_authed/finances/accounts/'
     | '/_authed/goals/$id/'
     | '/_authed/goals/new/'
     | '/_authed/groups/$id/'
@@ -646,6 +659,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedGoalsIdIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/finances/accounts/': {
+      id: '/_authed/finances/accounts/'
+      path: '/finances/accounts'
+      fullPath: '/finances/accounts/'
+      preLoaderRoute: typeof AuthedFinancesAccountsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/debts/new/': {
       id: '/_authed/debts/new/'
       path: '/debts/new'
@@ -806,6 +826,7 @@ interface AuthedRouteChildren {
   AuthedGroupsIdSettleRoute: typeof AuthedGroupsIdSettleRoute
   AuthedDebtsIdIndexRoute: typeof AuthedDebtsIdIndexRoute
   AuthedDebtsNewIndexRoute: typeof AuthedDebtsNewIndexRoute
+  AuthedFinancesAccountsIndexRoute: typeof AuthedFinancesAccountsIndexRoute
   AuthedGoalsIdIndexRoute: typeof AuthedGoalsIdIndexRoute
   AuthedGoalsNewIndexRoute: typeof AuthedGoalsNewIndexRoute
   AuthedGroupsIdIndexRoute: typeof AuthedGroupsIdIndexRoute
@@ -841,6 +862,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedGroupsIdSettleRoute: AuthedGroupsIdSettleRoute,
   AuthedDebtsIdIndexRoute: AuthedDebtsIdIndexRoute,
   AuthedDebtsNewIndexRoute: AuthedDebtsNewIndexRoute,
+  AuthedFinancesAccountsIndexRoute: AuthedFinancesAccountsIndexRoute,
   AuthedGoalsIdIndexRoute: AuthedGoalsIdIndexRoute,
   AuthedGoalsNewIndexRoute: AuthedGoalsNewIndexRoute,
   AuthedGroupsIdIndexRoute: AuthedGroupsIdIndexRoute,

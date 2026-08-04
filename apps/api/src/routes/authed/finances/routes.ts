@@ -159,6 +159,20 @@ export const financesRoutes = new Hono<AppContext>()
         201,
       ),
   )
+  .get(
+    '/transactions/:id',
+    zValidator('param', financeTransactionParamsSchema),
+    async (c) => {
+      const result = await financeOperations.getTransaction(
+        c.get('user').id,
+        c.req.valid('param').id,
+      );
+
+      return result
+        ? c.json(result)
+        : c.json({ error: 'Finance transaction not found' }, 404);
+    },
+  )
   .patch(
     '/transactions/:id',
     zValidator('param', financeTransactionParamsSchema),

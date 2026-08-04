@@ -27,16 +27,12 @@ import {
   currency,
   currentMonthKey,
   deleteCategoryEndpoint,
-  deleteTransactionEndpoint,
-  type EditableFinanceTransaction,
   type FinanceBudgetInput,
   type FinanceCategory,
   type FinanceCategoryInput,
   type FinanceCategoryKind,
   type FinanceCategoryUpdateInput,
-  type FinanceMovementTransaction,
   type FinanceTransactionInput,
-  type FinanceTransactionUpdateInput,
   type FinanceView,
   getBrowserTimeZone,
   getCategoryKindLabel,
@@ -47,18 +43,12 @@ import {
   parseMoney,
   parseTagsInput,
   summaryEndpoint,
-  tagsToInput,
   toCategoryKind,
   todayKey,
-  toInputDate,
   updateCategoryEndpoint,
-  updateTransactionEndpoint,
   upsertBudgetEndpoint,
 } from './-components/finance-model';
-import {
-  CreateTransactionView,
-  TransactionDetailView,
-} from './-components/finance-transaction-views';
+import { CreateTransactionView } from './-components/finance-transaction-views';
 
 export const Route = createFileRoute('/_authed/finances/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -121,15 +111,6 @@ function FinancesDashboard() {
   const [editingCategoryIcon, setEditingCategoryIcon] = useState(
     categoryIcons[0],
   );
-  const [editingTransactionName, setEditingTransactionName] = useState('');
-  const [editingTransactionAmount, setEditingTransactionAmount] = useState('');
-  const [editingTransactionDate, setEditingTransactionDate] = useState('');
-  const [editingTransactionCategoryId, setEditingTransactionCategoryId] =
-    useState('');
-  const [editingTransactionAccountId, setEditingTransactionAccountId] =
-    useState('');
-  const [editingTransactionTagsInput, setEditingTransactionTagsInput] =
-    useState('');
   const [budgetCategoryId, setBudgetCategoryId] = useState('');
   const [budgetAmount, setBudgetAmount] = useState('');
 
@@ -172,12 +153,6 @@ function FinancesDashboard() {
     summary?.accounts.filter(
       (account) => account.status !== 'CLOSED' && account.currency === currency,
     ) ?? [];
-  const movementTransaction = movements.find(
-    (item) => item.source === 'transaction' && item.id === transactionId,
-  ) as FinanceMovementTransaction | undefined;
-  const transaction =
-    summary?.recentTransactions.find((item) => item.id === transactionId) ??
-    movementTransaction;
   const hasNextMovementsPageRef = useRef(movementsQuery.hasNextPage);
   const isFetchingMovementsRef = useRef(movementsQuery.isFetching);
   const fetchNextMovementsPageRef = useRef(movementsQuery.fetchNextPage);
@@ -243,56 +218,6 @@ function FinancesDashboard() {
     onError: (error) => {
       toast.error(
         error instanceof Error ? error.message : m['finances.saveFailed'](),
-      );
-    },
-  });
-
-  const updateTransactionMutation = useMutation({
-    mutationFn: async ({
-      id,
-      input,
-    }: {
-      id: string;
-      input: FinanceTransactionUpdateInput;
-    }) => {
-      const response = await updateTransactionEndpoint({
-        param: { id },
-        json: input,
-      });
-      if (!response.ok) {
-        throw new Error(m['finances.transactionUpdateFailed']());
-      }
-      return response.json();
-    },
-    onSuccess: async () => {
-      await invalidateFinanceQueries();
-      toast.success(m['finances.transactionUpdated']());
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : m['finances.transactionUpdateFailed'](),
-      );
-    },
-  });
-
-  const deleteTransactionMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const response = await deleteTransactionEndpoint({ param: { id } });
-      if (!response.ok) throw new Error(m['finances.deleteMovementFailed']());
-      return response.json();
-    },
-    onSuccess: async () => {
-      await invalidateFinanceQueries();
-      toast.success(m['finances.movementDeleted']());
-      goTo('dashboard');
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : m['finances.deleteMovementFailed'](),
       );
     },
   });
@@ -423,19 +348,6 @@ function FinancesDashboard() {
     });
   }
 
-  function goBackFromTransaction() {
-    if (accountId) {
-      void navigate({
-        to: '/finances/accounts/$id',
-        params: { id: accountId },
-        search: { month },
-      });
-      return;
-    }
-
-    goTo('dashboard');
-  }
-
   function setMonth(nextMonth: string) {
     void navigate({
       search: {
@@ -520,54 +432,6 @@ function FinancesDashboard() {
         icon: editingCategoryIcon,
       },
     });
-  }
-
-  function prepareTransactionEdit(nextTransaction: EditableFinanceTransaction) {
-    setEditingTransactionName(nextTransaction.description);
-    setEditingTransactionAmount(String(nextTransaction.amount));
-    setEditingTransactionDate(toInputDate(nextTransaction.occurredAt));
-    setEditingTransactionCategoryId(nextTransaction.categoryId ?? '');
-    setEditingTransactionAccountId(nextTransaction.accountId ?? '');
-    setEditingTransactionTagsInput(tagsToInput(nextTransaction.tags));
-  }
-
-  function submitTransactionUpdate(
-    nextTransaction: EditableFinanceTransaction,
-  ) {
-    const name = editingTransactionName.trim();
-    const parsedAmount = parseMoney(editingTransactionAmount);
-    if (!name || parsedAmount <= 0 || !editingTransactionDate) {
-      toast.error(m['finances.validation']());
-      return;
-    }
-
-    updateTransactionMutation.mutate({
-      id: nextTransaction.id,
-      input: {
-        description: name,
-        amount: parsedAmount,
-        occurredAt: new Date(`${editingTransactionDate}T12:00:00`),
-        categoryId: editingTransactionCategoryId || null,
-        accountId: editingTransactionAccountId || null,
-        tags: parseTagsInput(editingTransactionTagsInput),
-      },
-    });
-  }
-
-  async function shareTransaction(nextTransaction: EditableFinanceTransaction) {
-    const text = `${nextTransaction.description}: ${formatCurrency(
-      nextTransaction.currency,
-      nextTransaction.amount,
-      { maximumFractionDigits: 0 },
-    )}`;
-
-    if (navigator.share) {
-      await navigator.share({ text });
-      return;
-    }
-
-    await navigator.clipboard.writeText(text);
-    toast.success(m['finances.movementShared']());
   }
 
   if (summaryQuery.isLoading) {
@@ -1094,37 +958,6 @@ function FinancesDashboard() {
           </section>
         </div>
       </ScreenShell>
-    );
-  }
-
-  if (view === 'transaction') {
-    return (
-      <TransactionDetailView
-        month={month}
-        transaction={transaction}
-        categories={categories}
-        transactionAccounts={transactionAccounts}
-        editingTransactionName={editingTransactionName}
-        editingTransactionAmount={editingTransactionAmount}
-        editingTransactionDate={editingTransactionDate}
-        editingTransactionCategoryId={editingTransactionCategoryId}
-        editingTransactionAccountId={editingTransactionAccountId}
-        editingTransactionTagsInput={editingTransactionTagsInput}
-        isUpdating={updateTransactionMutation.isPending}
-        onBack={goBackFromTransaction}
-        onShare={(nextTransaction) => {
-          void shareTransaction(nextTransaction);
-        }}
-        onDelete={deleteTransactionMutation.mutate}
-        onPrepareEdit={prepareTransactionEdit}
-        onEditingNameChange={setEditingTransactionName}
-        onEditingAmountChange={setEditingTransactionAmount}
-        onEditingDateChange={setEditingTransactionDate}
-        onEditingCategoryChange={setEditingTransactionCategoryId}
-        onEditingAccountChange={setEditingTransactionAccountId}
-        onEditingTagsInputChange={setEditingTransactionTagsInput}
-        onSubmitUpdate={submitTransactionUpdate}
-      />
     );
   }
 

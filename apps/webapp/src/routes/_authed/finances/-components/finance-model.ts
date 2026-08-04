@@ -9,8 +9,7 @@ export type FinanceView =
   | 'accounts'
   | 'categories'
   | 'budgets'
-  | 'reports'
-  | 'transaction';
+  | 'reports';
 
 export const summaryEndpoint = financesClient.summary.$get;
 export const movementsEndpoint = financesClient.movements.$get;
@@ -20,6 +19,7 @@ export const updateAccountEndpoint = financesClient.accounts[':id'].$patch;
 export const deleteAccountEndpoint = financesClient.accounts[':id'].$delete;
 export const closeAccountEndpoint = financesClient.accounts[':id'].close.$post;
 export const createTransactionEndpoint = financesClient.transactions.$post;
+export const getTransactionEndpoint = financesClient.transactions[':id'].$get;
 export const updateTransactionEndpoint =
   financesClient.transactions[':id'].$patch;
 export const deleteTransactionEndpoint =
@@ -41,6 +41,13 @@ export type FinanceAccountUpdateInput = InferRequestType<
 export type FinanceTransactionInput = InferRequestType<
   typeof createTransactionEndpoint
 >['json'];
+export type FinanceTransactionDetailResponse = InferResponseType<
+  typeof getTransactionEndpoint
+>;
+export type FinanceTransactionDetail = Extract<
+  FinanceTransactionDetailResponse,
+  { id: string }
+>;
 export type FinanceTransactionUpdateInput = InferRequestType<
   typeof updateTransactionEndpoint
 >['json'];
@@ -70,7 +77,8 @@ export type FinanceTag = FinanceSummary['tags'][number];
 export type FinanceCategoryKind = 'income' | 'expense' | 'both';
 export type EditableFinanceTransaction =
   | FinanceTransaction
-  | FinanceMovementTransaction;
+  | FinanceMovementTransaction
+  | FinanceTransactionDetail;
 
 export const currency = 'COP';
 export const financeViews = new Set<FinanceView>([
@@ -80,7 +88,6 @@ export const financeViews = new Set<FinanceView>([
   'categories',
   'budgets',
   'reports',
-  'transaction',
 ]);
 export const categoryColors = [
   '#111827',

@@ -191,7 +191,11 @@ export function FinanceDashboardView({
           isLoading={isMovementsLoading}
           isFetchingNextPage={isFetchingNextMovementsPage}
           onOpenTransaction={(nextTransaction: FinanceMovementTransaction) =>
-            onGoTo('transaction', nextTransaction.id)
+            void navigate({
+              to: '/finances/movements/$id',
+              params: { id: nextTransaction.id },
+              search: { month, accountId: undefined },
+            })
           }
           onOpenGroupExpense={(movement: FinanceGroupExpenseMovement) =>
             void navigate({

@@ -1340,6 +1340,27 @@ export const financeOperations = {
     });
   },
 
+  async getTransaction(userId: string, transactionId: string) {
+    const transaction = await db.financeTransaction.findFirst({
+      where: { id: transactionId, ownerId: userId },
+      include: {
+        category: true,
+        account: true,
+        tags: { include: { tag: true } },
+      },
+    });
+    if (!transaction) return null;
+
+    return {
+      ...transaction,
+      amount: Number(transaction.amount),
+      tags: transaction.tags.map((transactionTag) => transactionTag.tag),
+      occurredAt: transaction.occurredAt.toISOString(),
+      createdAt: transaction.createdAt.toISOString(),
+      updatedAt: transaction.updatedAt.toISOString(),
+    };
+  },
+
   async updateTransaction(
     userId: string,
     transactionId: string,

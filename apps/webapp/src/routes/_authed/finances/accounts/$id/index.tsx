@@ -281,11 +281,10 @@ function RouteComponent() {
                     movement={movement}
                     onPress={() =>
                       void navigate({
-                        to: '/finances',
+                        to: '/finances/movements/$id',
+                        params: { id: movement.id },
                         search: {
-                          view: 'transaction',
                           month: getMonthKey(movement.occurredAt),
-                          transactionId: movement.id,
                           accountId: id,
                         },
                       })

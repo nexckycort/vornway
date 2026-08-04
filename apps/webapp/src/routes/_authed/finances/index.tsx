@@ -22,6 +22,7 @@ import {
   categoryColors,
   categoryIcons,
   categorySpend,
+  compareFinanceMovements,
   createCategoryEndpoint,
   createTransactionEndpoint,
   currency,
@@ -144,7 +145,10 @@ function FinancesDashboard() {
   });
   const summary = summaryQuery.data;
   const movements = useMemo(
-    () => movementsQuery.data?.pages.flatMap((page) => page.data) ?? [],
+    () =>
+      (movementsQuery.data?.pages.flatMap((page) => page.data) ?? [])
+        .slice()
+        .sort(compareFinanceMovements),
     [movementsQuery.data],
   );
   const categories = summary?.categories ?? [];

@@ -219,6 +219,18 @@ export function appendTagToInput(value: string, tagName: string) {
   return tags.map((tag) => `#${tag}`).join(' ');
 }
 
+export function compareFinanceMovements(
+  left: FinanceMovement,
+  right: FinanceMovement,
+) {
+  const dateDelta =
+    new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime();
+  if (dateDelta !== 0) return dateDelta;
+  return `${right.source}:${right.id}`.localeCompare(
+    `${left.source}:${left.id}`,
+  );
+}
+
 export function toCategoryKind(
   transactionType: FinanceCategory['transactionType'],
 ): FinanceCategoryKind {

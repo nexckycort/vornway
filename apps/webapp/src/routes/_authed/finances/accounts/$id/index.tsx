@@ -64,9 +64,24 @@ function getMonthKey(value: string) {
 
 function SummaryTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-[24px] border border-black/5 bg-white p-4">
-      <p className="truncate text-sm text-black/45">{label}</p>
-      <p className="mt-2 truncate text-lg font-semibold">{value}</p>
+    <div className="min-w-0 rounded-[26px] border border-black/[0.04] bg-white p-4 shadow-[0_1px_2px_rgba(20,20,20,0.04)]">
+      <p className="truncate text-xs font-medium uppercase text-black/35">
+        {label}
+      </p>
+      <p className="mt-2 truncate text-lg font-semibold tracking-normal text-[#191919]">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex min-w-0 items-center justify-between gap-3 border-black/5 border-b py-3 last:border-b-0">
+      <p className="shrink-0 text-sm text-black/45">{label}</p>
+      <p className="min-w-0 truncate text-right text-sm font-medium text-[#191919]">
+        {value}
+      </p>
     </div>
   );
 }
@@ -82,33 +97,41 @@ function MovementRow({
     <button
       type="button"
       onClick={onPress}
-      className="flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+      className="flex w-full min-w-0 items-center gap-3 rounded-[26px] border border-black/[0.04] bg-white p-3 text-left shadow-[0_1px_2px_rgba(20,20,20,0.04)] transition active:scale-[0.99]"
     >
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e9e9e9] text-[#1e1e1e]">
+      <div
+        className={`flex size-11 shrink-0 items-center justify-center rounded-full ${
+          movement.type === 'INCOME'
+            ? 'bg-[#dff5e8] text-[#047857]'
+            : 'bg-[#fde8ec] text-[#be185d]'
+        }`}
+      >
         <HugeiconsIcon icon={Wallet02Icon} className="size-5" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
           {movement.description}
         </p>
-        <p className="truncate text-xs leading-4 text-[#626262]">
-          {movement.category?.name ?? m['finances.noCategory']()}
-        </p>
-        <p className="mt-1 truncate text-xs leading-4 text-[#626262]">
-          {formatShortDate(movement.occurredAt)}
-        </p>
+        <div className="mt-1 flex min-w-0 items-center gap-2">
+          <span className="min-w-0 truncate rounded-full bg-[#f4f4f2] px-2 py-0.5 text-xs font-medium text-black/50">
+            {movement.category?.name ?? m['finances.noCategory']()}
+          </span>
+          <span className="shrink-0 text-xs text-black/35">
+            {formatShortDate(movement.occurredAt)}
+          </span>
+        </div>
       </div>
       <div className="min-w-0 shrink-0 text-right">
-        <p className="text-base font-medium leading-6 text-[#1e1e1e]">
+        <p
+          className={`text-base font-semibold leading-6 ${
+            movement.type === 'INCOME' ? 'text-[#047857]' : 'text-[#be185d]'
+          }`}
+        >
           {formatCurrency(movement.currency, movement.amount, {
             maximumFractionDigits: 0,
           })}
         </p>
-        <p
-          className={`max-w-24 truncate text-xs leading-4 ${
-            movement.type === 'INCOME' ? 'text-[#047857]' : 'text-[#b91c1c]'
-          }`}
-        >
+        <p className="max-w-24 truncate text-xs leading-4 text-black/35">
           {movement.type === 'INCOME'
             ? m['finances.income']()
             : m['finances.expense']()}
@@ -168,6 +191,14 @@ function RouteComponent() {
   );
   const account = accountQuery.data;
   const isCreditCard = account?.accountType === 'CREDIT_CARD';
+  const creditLimit = account?.creditLimit ?? 0;
+  const creditUsage =
+    isCreditCard && creditLimit > 0
+      ? Math.min(
+          Math.max(((account?.usedCredit ?? 0) / creditLimit) * 100, 0),
+          100,
+        )
+      : 0;
 
   const updateAccountMutation = useMutation({
     mutationFn: async (input: FinanceAccountUpdateInput) => {
@@ -283,9 +314,9 @@ function RouteComponent() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f3f3f3] text-[#1e1e1e]">
-      <div className="mx-auto min-h-screen w-full max-w-[412px] overflow-x-hidden px-4 pb-28 pt-6">
-        <header className="flex items-center gap-3">
+    <main className="min-h-screen bg-[#f7f7f4] text-[#1e1e1e]">
+      <div className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden px-5 pb-28 pt-5">
+        <header className="sticky top-0 z-10 -mx-5 flex items-center gap-3 bg-[#f7f7f4]/90 px-5 py-3 backdrop-blur">
           <button
             type="button"
             onClick={() =>
@@ -299,114 +330,156 @@ function RouteComponent() {
           >
             <HugeiconsIcon icon={ArrowLeftIcon} className="size-5" />
           </button>
-          <h1 className="min-w-0 truncate text-2xl font-semibold leading-8">
-            {account?.name ?? m['finances.accountDetail']()}
-          </h1>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-medium uppercase text-black/35">
+              {m['finances.accountDetail']()}
+            </p>
+            <h1 className="truncate text-xl font-semibold leading-7">
+              {account?.name ?? m['finances.accountDetail']()}
+            </h1>
+          </div>
         </header>
 
         {accountQuery.isPending ? (
-          <div className="mt-6 rounded-[30px] bg-white p-5 text-sm text-black/45">
+          <div className="mt-5 rounded-[30px] bg-white p-5 text-sm text-black/45">
             {m['common.loading']()}
           </div>
         ) : !account ? (
-          <div className="mt-6 rounded-[30px] bg-white p-5 text-sm text-black/45">
+          <div className="mt-5 rounded-[30px] bg-white p-5 text-sm text-black/45">
             {m['finances.accountNotFound']()}
           </div>
         ) : (
           <>
-            <section className="mt-6 rounded-[34px] bg-white p-6">
+            <section className="mt-4 overflow-hidden rounded-[34px] bg-[#171717] p-6 text-white shadow-[0_24px_55px_-36px_rgba(0,0,0,0.65)]">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="truncate text-sm text-black/45">
+                  <p className="truncate text-sm text-white/55">
                     {account.institution ||
                       getAccountTypeLabel(account.accountType)}
                   </p>
-                  <p className="mt-3 truncate text-4xl font-semibold leading-none">
-                    {formatCurrency(
-                      account.currency,
-                      isCreditCard
-                        ? account.availableBalance
-                        : account.currentBalance,
-                      { maximumFractionDigits: 0 },
-                    )}
-                  </p>
-                  <p className="mt-2 text-sm text-black/45">
-                    {isCreditCard
-                      ? m['finances.accountAvailableCredit']()
-                      : m['finances.accountCurrentBalance']()}
+                  <p className="mt-2 truncate text-xs font-medium uppercase text-white/35">
+                    {getAccountTypeLabel(account.accountType)}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
+                <span className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80">
                   {getAccountStatusLabel(account.status)}
                 </span>
               </div>
+
+              <div className="mt-8">
+                <p className="truncate text-[42px] font-semibold leading-none tracking-normal">
+                  {formatCurrency(
+                    account.currency,
+                    isCreditCard
+                      ? account.availableBalance
+                      : account.currentBalance,
+                    { maximumFractionDigits: 0 },
+                  )}
+                </p>
+                <p className="mt-2 text-sm text-white/50">
+                  {isCreditCard
+                    ? m['finances.accountAvailableCredit']()
+                    : m['finances.accountCurrentBalance']()}
+                </p>
+              </div>
+
+              {isCreditCard ? (
+                <div className="mt-7">
+                  <div className="flex items-center justify-between gap-3 text-xs text-white/45">
+                    <span>{m['finances.accountUsedCredit']()}</span>
+                    <span className="truncate">
+                      {formatCurrency(account.currency, account.usedCredit, {
+                        maximumFractionDigits: 0,
+                      })}
+                    </span>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${creditUsage}%` }}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => prepareAccountEdit(account)}
-                className="mt-5 h-11 rounded-full"
+                className="mt-7 h-11 rounded-full border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white"
               >
                 {m['finances.editAccount']()}
               </Button>
-
-              <div className="mt-7 grid gap-3 sm:grid-cols-2">
-                <SummaryTile
-                  label={
-                    isCreditCard
-                      ? m['finances.accountUsedCredit']()
-                      : m['finances.accountAvailable']()
-                  }
-                  value={formatCurrency(
-                    account.currency,
-                    isCreditCard
-                      ? account.usedCredit
-                      : account.availableBalance,
-                    { maximumFractionDigits: 0 },
-                  )}
-                />
-                <SummaryTile
-                  label={
-                    isCreditCard
-                      ? m['finances.accountCreditLimit']()
-                      : m['finances.accountLocked']()
-                  }
-                  value={formatCurrency(
-                    account.currency,
-                    isCreditCard
-                      ? (account.creditLimit ?? 0)
-                      : account.lockedBalance,
-                    { maximumFractionDigits: 0 },
-                  )}
-                />
-                <SummaryTile
-                  label={m['finances.accountType']()}
-                  value={getAccountTypeLabel(account.accountType)}
-                />
-                <SummaryTile
-                  label={m['finances.date']()}
-                  value={formatShortDate(account.createdAt)}
-                />
-              </div>
-
-              {account.notes ? (
-                <p className="mt-5 rounded-[24px] bg-[#f7f7f4] p-4 text-sm text-black/60">
-                  {account.notes}
-                </p>
-              ) : null}
             </section>
 
-            <section className="mt-5">
-              <h2 className="text-sm font-semibold text-[#1e1e1e]">
-                {m['finances.accountMovements']()}
-              </h2>
-              <div className="mt-3 grid gap-4">
+            <section className="mt-4 grid gap-3 sm:grid-cols-2">
+              <SummaryTile
+                label={
+                  isCreditCard
+                    ? m['finances.accountUsedCredit']()
+                    : m['finances.accountAvailable']()
+                }
+                value={formatCurrency(
+                  account.currency,
+                  isCreditCard ? account.usedCredit : account.availableBalance,
+                  { maximumFractionDigits: 0 },
+                )}
+              />
+              <SummaryTile
+                label={
+                  isCreditCard
+                    ? m['finances.accountCreditLimit']()
+                    : m['finances.accountLocked']()
+                }
+                value={formatCurrency(
+                  account.currency,
+                  isCreditCard ? creditLimit : account.lockedBalance,
+                  { maximumFractionDigits: 0 },
+                )}
+              />
+            </section>
+
+            <section className="mt-4 rounded-[28px] bg-white px-5 py-2 shadow-[0_1px_2px_rgba(20,20,20,0.04)]">
+              <DetailRow
+                label={m['finances.accountType']()}
+                value={getAccountTypeLabel(account.accountType)}
+              />
+              <DetailRow
+                label={m['finances.date']()}
+                value={formatShortDate(account.createdAt)}
+              />
+              <DetailRow
+                label={m['finances.accountCurrentBalance']()}
+                value={formatCurrency(
+                  account.currency,
+                  account.currentBalance,
+                  {
+                    maximumFractionDigits: 0,
+                  },
+                )}
+              />
+            </section>
+
+            {account.notes ? (
+              <section className="mt-4 rounded-[28px] bg-white p-5 text-sm leading-6 text-black/60 shadow-[0_1px_2px_rgba(20,20,20,0.04)]">
+                {account.notes}
+              </section>
+            ) : null}
+
+            <section className="mt-7">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold text-[#1e1e1e]">
+                  {m['finances.accountMovements']()}
+                </h2>
+              </div>
+              <div className="mt-3 grid gap-3">
                 {movementsQuery.isPending ? (
-                  <div className="rounded-2xl bg-white p-4 text-sm text-[#626262]">
+                  <div className="rounded-[26px] bg-white p-4 text-sm text-[#626262]">
                     {m['common.loading']()}
                   </div>
                 ) : null}
                 {!movementsQuery.isPending && movements.length === 0 ? (
-                  <div className="rounded-2xl bg-white p-4 text-sm text-[#626262]">
+                  <div className="rounded-[26px] bg-white p-4 text-sm text-[#626262]">
                     {m['finances.emptyTransactions']()}
                   </div>
                 ) : null}

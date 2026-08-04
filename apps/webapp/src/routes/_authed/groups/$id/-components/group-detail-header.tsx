@@ -73,7 +73,7 @@ export function GroupDetailHeader({
   const hasMultipleCurrencies = balanceCurrencies.length > 1;
 
   return (
-    <header className="relative px-4 pb-4 pt-5 text-white">
+    <header className="relative bg-[#100b0c] px-4 pb-4 pt-5 text-white">
       {isRefreshing ? (
         <div className="absolute inset-x-0 top-0 h-0.5 overflow-hidden bg-white/20">
           <span className="block h-full w-1/3 animate-[sync-progress_1.1s_ease-in-out_infinite] bg-primary" />
@@ -100,7 +100,7 @@ export function GroupDetailHeader({
                 referrerPolicy="no-referrer"
               />
             ) : null}
-            <h1 className="truncate text-xl font-semibold leading-7">
+            <h1 className="truncate text-xl font-semibold leading-7 text-white">
               {groupName}
             </h1>
           </div>
@@ -196,7 +196,7 @@ export function GroupDetailHeader({
         </div>
 
         {hasMultipleCurrencies ? (
-          <p className="mt-1 mb-2 flex items-center gap-2 px-1 text-[10px] font-light text-white/85">
+          <p className="mb-2 mt-1 flex items-center gap-2 px-1 text-[10px] font-light text-white/85">
             <span>{t.header.multiCurrencyHint}</span>
             <HugeiconsIcon
               icon={InformationCircleIcon}
@@ -216,7 +216,7 @@ export function GroupDetailHeader({
           state={flowState}
           className="flex min-w-0 flex-col items-center gap-1"
         >
-          <span className="flex h-9 w-full items-center justify-center rounded-xl bg-[#ff4d6a] text-white shadow-[0_8px_18px_rgba(255,77,106,0.35)]">
+          <span className="flex h-9 w-full items-center justify-center rounded-xl bg-primary text-white shadow-[0_8px_18px_rgba(222,3,77,0.2)]">
             <HugeiconsIcon icon={Add01Icon} className="size-5" />
           </span>
           <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
@@ -232,7 +232,7 @@ export function GroupDetailHeader({
             state={flowState}
             className="flex min-w-0 flex-col items-center gap-1"
           >
-            <span className="flex h-9 w-full items-center justify-center rounded-xl bg-white/10 text-white">
+            <span className="flex h-9 w-full items-center justify-center rounded-xl bg-[#2c2226] text-white">
               <HugeiconsIcon icon={ArrowUpRightIcon} className="size-5" />
             </span>
             <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
@@ -246,7 +246,7 @@ export function GroupDetailHeader({
           onClick={onOpenReports}
           className="flex min-w-0 flex-col items-center gap-1"
         >
-          <span className="flex h-9 w-full items-center justify-center rounded-xl bg-white/10 text-white">
+          <span className="flex h-9 w-full items-center justify-center rounded-xl bg-[#2c2226] text-white">
             <HugeiconsIcon icon={BarChartIcon} className="size-5" />
           </span>
           <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">
@@ -259,7 +259,7 @@ export function GroupDetailHeader({
           onClick={onOpenSettings}
           className="flex min-w-0 flex-col items-center gap-1"
         >
-          <span className="flex h-9 w-full items-center justify-center rounded-xl bg-white/10 text-white">
+          <span className="flex h-9 w-full items-center justify-center rounded-xl bg-[#2c2226] text-white">
             <HugeiconsIcon icon={MoreHorizontalIcon} className="size-5" />
           </span>
           <span className="max-w-full truncate text-center text-[11px] font-medium text-white/85">

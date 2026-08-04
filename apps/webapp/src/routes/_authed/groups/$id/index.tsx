@@ -187,6 +187,7 @@ function RouteComponent() {
     groupQuery.data?.members,
     pinnedExpensesQuery.data,
     pendingExpenses,
+    t.detail.fallbackCategory,
   ]);
   const inviteLink =
     groupQuery.data?.inviteCode && typeof window !== 'undefined'
@@ -395,8 +396,8 @@ function RouteComponent() {
   };
 
   return (
-    <main className="min-h-screen bg-[#111111] text-foreground">
-      <div className="flex min-h-screen w-full flex-col bg-[#111111]">
+    <main className="min-h-screen bg-[#cfe9eb] text-foreground">
+      <div className="flex min-h-screen w-full flex-col bg-[#100b0c]">
         <GroupDetailHeader
           groupId={id}
           groupName={group.name}
@@ -427,8 +428,8 @@ function RouteComponent() {
           isPersonalSpace={group.type === 'personal'}
         />
 
-        <div className="flex-1 rounded-t-[32px] bg-[#fafafa] px-4 pb-8 pt-3 shadow-[0_-16px_40px_rgba(0,0,0,0.12)]">
-          <div className="-mx-4 mb-6 border-b border-[#e5e7eb] px-4 pb-5">
+        <div className="relative flex-1 rounded-t-[32px] bg-[#f3f3f3] px-4 pb-8 pt-5 shadow-[0_-16px_40px_rgba(0,0,0,0.16)] before:absolute before:left-1/2 before:top-3 before:h-1 before:w-24 before:-translate-x-1/2 before:rounded-full before:bg-[#d0d0d0]">
+          <div className="mb-5 pt-2">
             <GroupParticipantsStrip
               groupId={id}
               members={group.members}

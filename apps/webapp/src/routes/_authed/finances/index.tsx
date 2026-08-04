@@ -6,7 +6,6 @@ import {
 } from '@tanstack/react-query';
 import {
   createFileRoute,
-  Link,
   Outlet,
   useNavigate,
   useRouterState,
@@ -14,7 +13,6 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '#/components/ui/button';
-import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 import { FinanceDashboardView } from './-components/finance-dashboard-view';
 import { ScreenShell, SummaryCard } from './-components/finance-layout';
@@ -49,6 +47,7 @@ import {
   updateCategoryEndpoint,
   upsertBudgetEndpoint,
 } from './-components/finance-model';
+import { FinanceReportsView } from './-components/finance-reports-view';
 import { CreateTransactionView } from './-components/finance-transaction-views';
 
 export const Route = createFileRoute('/_authed/finances/')({
@@ -833,135 +832,22 @@ function FinancesDashboard() {
 
   if (view === 'reports') {
     return (
-      <ScreenShell
-        title={m['finances.reports']()}
+      <FinanceReportsView
         month={month}
+        summary={summary}
+        income={income}
+        totalExpense={totalExpense}
+        personalExpense={personalExpense}
+        groupExpense={groupExpense}
+        balance={balance}
+        owedByYou={owedByYou}
+        owedToYou={owedToYou}
+        goalSaved={goalSaved}
+        goalTarget={goalTarget}
+        accountAvailable={accountAvailable}
+        accountLocked={accountLocked}
         onBack={() => goTo('dashboard')}
-      >
-        <div className="grid gap-5 md:grid-cols-2">
-          <section className="rounded-[30px] bg-white p-5">
-            <h2 className="text-lg font-semibold">
-              {m['finances.comparison']()}
-            </h2>
-            <div className="mt-5 grid gap-3">
-              <SummaryCard
-                label={m['finances.income']()}
-                value={moneyLabel(income)}
-              />
-              <SummaryCard
-                label={m['finances.expenses']()}
-                value={moneyLabel(totalExpense)}
-              />
-              <SummaryCard
-                label={m['finances.balance']()}
-                value={moneyLabel(balance)}
-              />
-            </div>
-          </section>
-
-          <section className="rounded-[30px] bg-white p-5">
-            <h2 className="text-lg font-semibold">
-              {m['finances.integrated']()}
-            </h2>
-            <div className="mt-5 grid gap-3">
-              <Link
-                to="/debts"
-                search={{ from: 'finances' }}
-                className="rounded-[24px] bg-[#f7f7f4] p-4 text-sm font-semibold"
-              >
-                {m['finances.netDebts']()}: {moneyLabel(owedToYou - owedByYou)}
-              </Link>
-              <Link
-                to="/goals"
-                className="rounded-[24px] bg-[#f7f7f4] p-4 text-sm font-semibold"
-              >
-                {m['finances.goalsProgress']()}: {moneyLabel(goalSaved)} /{' '}
-                {moneyLabel(goalTarget)}
-              </Link>
-            </div>
-          </section>
-
-          <section className="rounded-[30px] bg-white p-5">
-            <h2 className="text-lg font-semibold">
-              {m['finances.topCategories']()}
-            </h2>
-            <div className="mt-5 space-y-4">
-              {summary.categoryExpenseTotals.length === 0 ? (
-                <p className="text-sm text-black/45">
-                  {m['finances.emptyCategories']()}
-                </p>
-              ) : (
-                summary.categoryExpenseTotals.slice(0, 8).map((item) => (
-                  <div key={`${item.categoryId ?? 'none'}:${item.currency}`}>
-                    <div className="flex justify-between gap-3 text-sm">
-                      <span className="truncate font-medium">
-                        {item.categoryName}
-                      </span>
-                      <span className="text-black/45">
-                        {formatCurrency(item.currency, item.amount, {
-                          maximumFractionDigits: 0,
-                        })}
-                      </span>
-                    </div>
-                    <div className="mt-2 h-1.5 rounded-full bg-black/5">
-                      <div
-                        className="h-full rounded-full bg-[#101113]"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            totalExpense > 0
-                              ? (item.amount / totalExpense) * 100
-                              : 0,
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
-
-          <section className="rounded-[30px] bg-white p-5">
-            <h2 className="text-lg font-semibold">{m['finances.topTags']()}</h2>
-            <div className="mt-5 space-y-4">
-              {summary.tagExpenseTotals.length === 0 ? (
-                <p className="text-sm text-black/45">
-                  {m['finances.emptyTags']()}
-                </p>
-              ) : (
-                summary.tagExpenseTotals.slice(0, 8).map((item) => (
-                  <div key={`${item.tagId}:${item.currency}`}>
-                    <div className="flex justify-between gap-3 text-sm">
-                      <span className="truncate font-medium">
-                        #{item.tagName}
-                      </span>
-                      <span className="text-black/45">
-                        {formatCurrency(item.currency, item.amount, {
-                          maximumFractionDigits: 0,
-                        })}
-                      </span>
-                    </div>
-                    <div className="mt-2 h-1.5 rounded-full bg-black/5">
-                      <div
-                        className="h-full rounded-full bg-[#0f766e]"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            totalExpense > 0
-                              ? (item.amount / totalExpense) * 100
-                              : 0,
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
-        </div>
-      </ScreenShell>
+      />
     );
   }
 

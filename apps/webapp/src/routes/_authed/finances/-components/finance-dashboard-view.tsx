@@ -120,6 +120,9 @@ export function FinanceDashboardView({
           >
             {m['finances.budgets']()}
           </FinanceTab>
+          <FinanceTab onClick={() => onGoTo('reports')}>
+            {m['finances.reports']()}
+          </FinanceTab>
         </nav>
 
         <div className="mt-7">

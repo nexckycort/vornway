@@ -267,6 +267,15 @@ function normalizeTags(tags: string[] | undefined) {
   return Array.from(new Set(normalized)).slice(0, 10);
 }
 
+function readExpenseTags(metadata: unknown) {
+  if (!metadata || typeof metadata !== 'object') return [];
+  const tags = (metadata as { tags?: unknown }).tags;
+  if (!Array.isArray(tags)) return [];
+  return normalizeTags(
+    tags.filter((tag): tag is string => typeof tag === 'string'),
+  );
+}
+
 function encodeMovementCursor(movement: FinanceMovement) {
   return [
     new Date(movement.occurredAt).getTime(),
@@ -474,6 +483,7 @@ async function getGroupExpenseTotals(userId: string, start: Date, end: Date) {
           currency: true,
           date: true,
           description: true,
+          metadata: true,
           category: {
             select: { id: true, name: true, icon: true, color: true },
           },
@@ -502,6 +512,7 @@ async function getGroupExpenseTotals(userId: string, start: Date, end: Date) {
       icon: string | null;
       color: string | null;
     } | null;
+    tags: string[];
   }> = [];
   let count = 0;
 
@@ -540,6 +551,7 @@ async function getGroupExpenseTotals(userId: string, start: Date, end: Date) {
         currency: expense.currency,
         occurredAt: expense.date.toISOString(),
         category: expense.category,
+        tags: readExpenseTags(expense.metadata),
       });
       count += 1;
     }
@@ -1307,10 +1319,10 @@ export const financeOperations = {
       });
 
       for (const transactionTag of transaction.tags) {
-        const tagKey = `${transactionTag.tagId}:${transaction.currency}`;
+        const tagKey = `${transactionTag.tag.name}:${transaction.currency}`;
         const currentTagTotal = tagExpenseTotals.get(tagKey);
         tagExpenseTotals.set(tagKey, {
-          tagId: transactionTag.tagId,
+          tagId: transactionTag.tag.name,
           tagName: transactionTag.tag.name,
           currency: transaction.currency,
           amount: money((currentTagTotal?.amount ?? 0) + transaction.amount),
@@ -1327,6 +1339,28 @@ export const financeOperations = {
         payment.debt.currency,
         payment.amount,
       );
+    }
+
+    for (const movement of groupExpenseTotals.movements) {
+      const categoryKey = `${movement.category?.id ?? 'none'}:${movement.currency}`;
+      const currentCategoryTotal = categoryExpenseTotals.get(categoryKey);
+      categoryExpenseTotals.set(categoryKey, {
+        categoryId: movement.category?.id ?? null,
+        categoryName: movement.category?.name ?? 'Sin categoria',
+        currency: movement.currency,
+        amount: money((currentCategoryTotal?.amount ?? 0) + movement.userShare),
+      });
+
+      for (const tag of movement.tags) {
+        const tagKey = `${tag}:${movement.currency}`;
+        const currentTagTotal = tagExpenseTotals.get(tagKey);
+        tagExpenseTotals.set(tagKey, {
+          tagId: tag,
+          tagName: tag,
+          currency: movement.currency,
+          amount: money((currentTagTotal?.amount ?? 0) + movement.userShare),
+        });
+      }
     }
 
     const totalExpenseByCurrency = { ...personalExpenseByCurrency };

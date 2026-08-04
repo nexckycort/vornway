@@ -27,6 +27,46 @@ export const financeMovementListQuerySchema = financesSummaryQuerySchema.extend(
   },
 );
 
+export const financeAccountListQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().max(50).default(20),
+  cursor: z.string().trim().min(1).optional(),
+});
+
+export const financeAccountParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
+const financeAccountTypeSchema = z.enum([
+  'cash',
+  'bank',
+  'savings',
+  'credit_card',
+  'term_deposit',
+  'wallet',
+  'other',
+]);
+
+export const createFinanceAccountSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  type: financeAccountTypeSchema,
+  institution: z.string().trim().max(100).optional(),
+  currency: currencySchema.default('COP'),
+  currentBalance: z.number(),
+  availableBalance: z.number().optional(),
+  lockedBalance: z.number().nonnegative().optional(),
+  creditLimit: z.number().positive().optional(),
+  openedAt: z.coerce.date().optional(),
+  maturesAt: z.coerce.date().optional(),
+  interestRate: z.number().nonnegative().max(100).optional(),
+  notes: z.string().trim().max(500).optional(),
+});
+
+export const updateFinanceAccountSchema = createFinanceAccountSchema
+  .partial()
+  .extend({
+    status: z.enum(['active', 'closed', 'matured']).optional(),
+  });
+
 export const createFinanceTransactionSchema = z.object({
   type: z.enum(['income', 'expense']),
   amount: z.number().positive(),
@@ -46,6 +86,7 @@ export const financeTransactionParamsSchema = z.object({
 export const updateFinanceTransactionSchema = z.object({
   description: z.string().trim().min(1).max(160).optional(),
   categoryId: z.string().min(1).nullable().optional(),
+  accountId: z.string().min(1).nullable().optional(),
   tags: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
 });
 
@@ -75,6 +116,15 @@ export type FinancesSummaryQueryInput = z.infer<
 >;
 export type FinanceMovementListQueryInput = z.infer<
   typeof financeMovementListQuerySchema
+>;
+export type FinanceAccountListQueryInput = z.infer<
+  typeof financeAccountListQuerySchema
+>;
+export type CreateFinanceAccountInput = z.infer<
+  typeof createFinanceAccountSchema
+>;
+export type UpdateFinanceAccountInput = z.infer<
+  typeof updateFinanceAccountSchema
 >;
 export type CreateFinanceTransactionInput = z.infer<
   typeof createFinanceTransactionSchema

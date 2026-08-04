@@ -4,13 +4,17 @@ import { Hono } from 'hono';
 import type { AppContext } from '#/shared/types/app';
 import { financeOperations } from './operations';
 import {
+  createFinanceAccountSchema,
   createFinanceCategorySchema,
   createFinanceTransactionSchema,
+  financeAccountListQuerySchema,
+  financeAccountParamsSchema,
   financeCategoryParamsSchema,
   financeMovementListQuerySchema,
   financesSummaryQuerySchema,
   financeTransactionListQuerySchema,
   financeTransactionParamsSchema,
+  updateFinanceAccountSchema,
   updateFinanceCategorySchema,
   updateFinanceTransactionSchema,
   upsertFinanceBudgetSchema,
@@ -44,6 +48,73 @@ export const financesRoutes = new Hono<AppContext>()
           c.req.valid('query'),
         ),
       ),
+  )
+  .get(
+    '/accounts',
+    zValidator('query', financeAccountListQuerySchema),
+    async (c) =>
+      c.json(
+        await financeOperations.listAccounts(
+          c.get('user').id,
+          c.req.valid('query'),
+        ),
+      ),
+  )
+  .post(
+    '/accounts',
+    zValidator('json', createFinanceAccountSchema),
+    async (c) =>
+      c.json(
+        await financeOperations.createAccount(
+          c.get('user').id,
+          c.req.valid('json'),
+        ),
+        201,
+      ),
+  )
+  .patch(
+    '/accounts/:id',
+    zValidator('param', financeAccountParamsSchema),
+    zValidator('json', updateFinanceAccountSchema),
+    async (c) => {
+      const result = await financeOperations.updateAccount(
+        c.get('user').id,
+        c.req.valid('param').id,
+        c.req.valid('json'),
+      );
+
+      return result
+        ? c.json(result)
+        : c.json({ error: 'Finance account not found' }, 404);
+    },
+  )
+  .post(
+    '/accounts/:id/close',
+    zValidator('param', financeAccountParamsSchema),
+    async (c) => {
+      const result = await financeOperations.closeAccount(
+        c.get('user').id,
+        c.req.valid('param').id,
+      );
+
+      return result
+        ? c.json(result)
+        : c.json({ error: 'Finance account not found' }, 404);
+    },
+  )
+  .delete(
+    '/accounts/:id',
+    zValidator('param', financeAccountParamsSchema),
+    async (c) => {
+      const result = await financeOperations.deleteAccount(
+        c.get('user').id,
+        c.req.valid('param').id,
+      );
+
+      return result
+        ? c.json({ ok: true })
+        : c.json({ error: 'Finance account not found' }, 404);
+    },
   )
   .post(
     '/transactions',

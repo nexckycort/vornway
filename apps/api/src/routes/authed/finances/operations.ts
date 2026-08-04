@@ -1,9 +1,12 @@
-import { db } from '#/infrastructure/database/connection';
+import { db, type Tx } from '#/infrastructure/database/connection';
 import type {
+  CreateFinanceAccountInput,
   CreateFinanceCategoryInput,
   CreateFinanceTransactionInput,
+  FinanceAccountListQueryInput,
   FinanceMovementListQueryInput,
   FinancesSummaryQueryInput,
+  UpdateFinanceAccountInput,
   UpdateFinanceCategoryInput,
   UpdateFinanceTransactionInput,
   UpsertFinanceBudgetInput,
@@ -44,6 +47,7 @@ type FinanceMovement =
       currency: string;
       occurredAt: string;
       type: 'INCOME' | 'EXPENSE';
+      accountId: string | null;
       categoryId: string | null;
       category: {
         id: string;
@@ -75,6 +79,32 @@ type FinanceMovement =
 
 function toFinanceTransactionType(type: 'income' | 'expense' | 'both') {
   return type === 'income' ? 'INCOME' : type === 'expense' ? 'EXPENSE' : 'BOTH';
+}
+
+function toFinanceAccountType(type: CreateFinanceAccountInput['type']) {
+  const accountTypes = {
+    cash: 'CASH',
+    bank: 'BANK',
+    savings: 'SAVINGS',
+    credit_card: 'CREDIT_CARD',
+    term_deposit: 'TERM_DEPOSIT',
+    wallet: 'WALLET',
+    other: 'OTHER',
+  } as const;
+
+  return accountTypes[type];
+}
+
+function toFinanceAccountStatus(
+  status: NonNullable<UpdateFinanceAccountInput['status']>,
+) {
+  const statuses = {
+    active: 'ACTIVE',
+    closed: 'CLOSED',
+    matured: 'MATURED',
+  } as const;
+
+  return statuses[status];
 }
 
 function getValidTimeZone(timeZone?: string) {
@@ -258,6 +288,65 @@ function tagCreates(ownerId: string, tags: string[]) {
   }));
 }
 
+function getCreditAvailable(creditLimit: number | null, usedCredit: number) {
+  if (creditLimit === null) return 0;
+  return money(Math.max(creditLimit - usedCredit, 0));
+}
+
+async function applyAccountTransactionEffect(
+  tx: Tx,
+  input: {
+    accountId: string | null | undefined;
+    type: 'INCOME' | 'EXPENSE' | 'BOTH';
+    amount: number;
+  },
+  direction: 1 | -1,
+) {
+  if (!input.accountId) return;
+  if (input.type !== 'INCOME' && input.type !== 'EXPENSE') return;
+
+  const account = await tx.financeAccount.findUnique({
+    where: { id: input.accountId },
+    select: {
+      accountType: true,
+      currentBalance: true,
+      availableBalance: true,
+      usedCredit: true,
+      creditLimit: true,
+    },
+  });
+  if (!account) return;
+
+  if (account.accountType === 'CREDIT_CARD') {
+    const debtDelta =
+      direction * (input.type === 'EXPENSE' ? input.amount : -input.amount);
+    const usedCredit = money(Math.max(account.usedCredit + debtDelta, 0));
+    const currentBalance = money(
+      Math.max(account.currentBalance + debtDelta, 0),
+    );
+    const availableBalance =
+      account.creditLimit === null
+        ? money(Math.max(account.availableBalance - debtDelta, 0))
+        : getCreditAvailable(account.creditLimit, usedCredit);
+
+    await tx.financeAccount.update({
+      where: { id: input.accountId },
+      data: { usedCredit, currentBalance, availableBalance },
+    });
+    return;
+  }
+
+  const balanceDelta =
+    direction * (input.type === 'INCOME' ? input.amount : -input.amount);
+  await tx.financeAccount.update({
+    where: { id: input.accountId },
+    data: {
+      currentBalance: money(account.currentBalance + balanceDelta),
+      availableBalance: money(account.availableBalance + balanceDelta),
+    },
+  });
+}
+
 async function ensureDefaults(userId: string, currency: string) {
   const [accountCount, categoryCount] = await Promise.all([
     db.financeAccount.count({ where: { ownerId: userId } }),
@@ -271,6 +360,9 @@ async function ensureDefaults(userId: string, currency: string) {
         name: 'Efectivo',
         accountType: 'CASH',
         currency,
+        currentBalance: 0,
+        availableBalance: 0,
+        lockedBalance: 0,
       },
     });
   }
@@ -484,7 +576,262 @@ async function getGoalTotals(userId: string) {
   return { target, saved };
 }
 
+function getAccountTotals(
+  accounts: Array<{
+    accountType: string;
+    currency: string;
+    currentBalance: number;
+    availableBalance: number;
+    lockedBalance: number;
+    creditLimit: number | null;
+    usedCredit: number;
+    status: string;
+    archivedAt: Date | null;
+  }>,
+) {
+  const totalByCurrency: Record<string, number> = {};
+  const availableByCurrency: Record<string, number> = {};
+  const lockedByCurrency: Record<string, number> = {};
+  const creditLimitByCurrency: Record<string, number> = {};
+  const creditUsedByCurrency: Record<string, number> = {};
+  const creditAvailableByCurrency: Record<string, number> = {};
+
+  for (const account of accounts) {
+    if (account.archivedAt || account.status === 'CLOSED') continue;
+    if (account.accountType === 'CREDIT_CARD') {
+      addCurrencyTotal(
+        creditLimitByCurrency,
+        account.currency,
+        account.creditLimit ?? 0,
+      );
+      addCurrencyTotal(
+        creditUsedByCurrency,
+        account.currency,
+        account.usedCredit,
+      );
+      addCurrencyTotal(
+        creditAvailableByCurrency,
+        account.currency,
+        account.availableBalance,
+      );
+      continue;
+    }
+
+    addCurrencyTotal(totalByCurrency, account.currency, account.currentBalance);
+    addCurrencyTotal(
+      availableByCurrency,
+      account.currency,
+      account.availableBalance,
+    );
+    addCurrencyTotal(lockedByCurrency, account.currency, account.lockedBalance);
+  }
+
+  return {
+    totalByCurrency,
+    availableByCurrency,
+    lockedByCurrency,
+    creditLimitByCurrency,
+    creditUsedByCurrency,
+    creditAvailableByCurrency,
+  };
+}
+
 export const financeOperations = {
+  async listAccounts(userId: string, input: FinanceAccountListQueryInput) {
+    const limit = Math.min(input.limit, 50);
+    const where = { ownerId: userId, archivedAt: null };
+
+    const [total, rows] = await Promise.all([
+      db.financeAccount.count({ where }),
+      db.financeAccount.findMany({
+        where,
+        ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+        take: limit + 1,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      }),
+    ]);
+
+    const hasNextPage = rows.length > limit;
+    const data = hasNextPage ? rows.slice(0, limit) : rows;
+
+    return {
+      data: data.map((account) => ({
+        ...account,
+        openedAt: account.openedAt?.toISOString() ?? null,
+        maturesAt: account.maturesAt?.toISOString() ?? null,
+        closedAt: account.closedAt?.toISOString() ?? null,
+        archivedAt: account.archivedAt?.toISOString() ?? null,
+        createdAt: account.createdAt.toISOString(),
+        updatedAt: account.updatedAt.toISOString(),
+      })),
+      pagination: {
+        limit,
+        total,
+        nextCursor: hasNextPage ? (data.at(-1)?.id ?? null) : null,
+      },
+    };
+  },
+
+  async createAccount(userId: string, input: CreateFinanceAccountInput) {
+    const accountType = toFinanceAccountType(input.type);
+    const currentBalance = money(input.currentBalance);
+    const creditLimit =
+      input.creditLimit !== undefined ? money(input.creditLimit) : null;
+    if (accountType === 'CREDIT_CARD' && creditLimit === null) {
+      throw new Error('Credit card limit is required');
+    }
+    const usedCredit =
+      accountType === 'CREDIT_CARD' ? money(Math.max(currentBalance, 0)) : 0;
+    const availableBalance =
+      accountType === 'CREDIT_CARD'
+        ? money(
+            input.availableBalance ??
+              getCreditAvailable(creditLimit, usedCredit),
+          )
+        : money(input.availableBalance ?? currentBalance);
+    const lockedBalance = money(input.lockedBalance ?? 0);
+
+    return db.financeAccount.create({
+      data: {
+        ownerId: userId,
+        name: input.name.trim(),
+        accountType,
+        institution: input.institution?.trim() || null,
+        currency: input.currency,
+        openingBalance: currentBalance,
+        currentBalance,
+        availableBalance,
+        lockedBalance,
+        creditLimit,
+        usedCredit,
+        openedAt: input.openedAt ?? null,
+        maturesAt: input.maturesAt ?? null,
+        interestRate: input.interestRate ?? null,
+        notes: input.notes?.trim() || null,
+      },
+    });
+  },
+
+  async updateAccount(
+    userId: string,
+    accountId: string,
+    input: UpdateFinanceAccountInput,
+  ) {
+    const account = await db.financeAccount.findFirst({
+      where: { id: accountId, ownerId: userId, archivedAt: null },
+      select: {
+        id: true,
+        accountType: true,
+        currentBalance: true,
+        availableBalance: true,
+        usedCredit: true,
+        creditLimit: true,
+      },
+    });
+    if (!account) return null;
+    const nextAccountType = input.type
+      ? toFinanceAccountType(input.type)
+      : account.accountType;
+    const nextCurrentBalance =
+      input.currentBalance !== undefined
+        ? money(input.currentBalance)
+        : account.currentBalance;
+    const nextCreditLimit =
+      input.creditLimit !== undefined
+        ? money(input.creditLimit)
+        : account.creditLimit;
+    if (nextAccountType === 'CREDIT_CARD' && nextCreditLimit === null) {
+      throw new Error('Credit card limit is required');
+    }
+    const nextUsedCredit =
+      nextAccountType === 'CREDIT_CARD'
+        ? money(Math.max(nextCurrentBalance, 0))
+        : 0;
+    const nextAvailableBalance =
+      input.availableBalance !== undefined
+        ? money(input.availableBalance)
+        : nextAccountType === 'CREDIT_CARD' &&
+            (input.currentBalance !== undefined ||
+              input.creditLimit !== undefined ||
+              input.type !== undefined)
+          ? getCreditAvailable(nextCreditLimit, nextUsedCredit)
+          : undefined;
+
+    return db.financeAccount.update({
+      where: { id: accountId },
+      data: {
+        ...(input.name ? { name: input.name.trim() } : {}),
+        ...(input.type
+          ? { accountType: toFinanceAccountType(input.type) }
+          : {}),
+        ...(input.institution !== undefined
+          ? { institution: input.institution.trim() || null }
+          : {}),
+        ...(input.currency ? { currency: input.currency } : {}),
+        ...(input.currentBalance !== undefined
+          ? { currentBalance: nextCurrentBalance }
+          : {}),
+        ...(nextAvailableBalance !== undefined
+          ? { availableBalance: nextAvailableBalance }
+          : {}),
+        ...(input.lockedBalance !== undefined
+          ? { lockedBalance: money(input.lockedBalance) }
+          : {}),
+        ...(input.type !== undefined ||
+        input.creditLimit !== undefined ||
+        nextAccountType === 'CREDIT_CARD'
+          ? {
+              creditLimit:
+                nextAccountType === 'CREDIT_CARD' ? nextCreditLimit : null,
+              usedCredit: nextUsedCredit,
+            }
+          : {}),
+        ...(input.openedAt !== undefined ? { openedAt: input.openedAt } : {}),
+        ...(input.maturesAt !== undefined
+          ? { maturesAt: input.maturesAt }
+          : {}),
+        ...(input.interestRate !== undefined
+          ? { interestRate: input.interestRate }
+          : {}),
+        ...(input.notes !== undefined
+          ? { notes: input.notes.trim() || null }
+          : {}),
+        ...(input.status
+          ? {
+              status: toFinanceAccountStatus(input.status),
+              closedAt: input.status === 'closed' ? new Date() : null,
+            }
+          : {}),
+      },
+    });
+  },
+
+  async closeAccount(userId: string, accountId: string) {
+    const account = await db.financeAccount.findFirst({
+      where: { id: accountId, ownerId: userId, archivedAt: null },
+      select: { id: true },
+    });
+    if (!account) return null;
+
+    return db.financeAccount.update({
+      where: { id: accountId },
+      data: { status: 'CLOSED', closedAt: new Date() },
+    });
+  },
+
+  async deleteAccount(userId: string, accountId: string) {
+    const account = await db.financeAccount.findFirst({
+      where: { id: accountId, ownerId: userId, archivedAt: null },
+      select: { id: true },
+    });
+    if (!account) return null;
+
+    return db.financeAccount.update({
+      where: { id: accountId },
+      data: { archivedAt: new Date() },
+    });
+  },
+
   async listMovements(userId: string, input: FinanceMovementListQueryInput) {
     await ensureDefaults(userId, input.currency);
     const range = monthRange(input.month, input.timeZone);
@@ -597,6 +944,7 @@ export const financeOperations = {
         currency: transaction.currency,
         occurredAt: transaction.occurredAt.toISOString(),
         type: transaction.type === 'INCOME' ? 'INCOME' : 'EXPENSE',
+        accountId: transaction.accountId,
         categoryId: transaction.categoryId,
         category: transaction.category,
         tags: transaction.tags.map((transactionTag) => transactionTag.tag),
@@ -779,6 +1127,7 @@ export const financeOperations = {
     }
 
     const balanceByCurrency: Record<string, number> = {};
+    const accountTotals = getAccountTotals(accounts);
     const currencies = new Set([
       ...Object.keys(incomeByCurrency),
       ...Object.keys(totalExpenseByCurrency),
@@ -803,6 +1152,13 @@ export const financeOperations = {
         owedToYouByCurrency: debtTotals.owedToYou,
         goalTargetByCurrency: goalTotals.target,
         goalSavedByCurrency: goalTotals.saved,
+        accountTotalByCurrency: accountTotals.totalByCurrency,
+        accountAvailableByCurrency: accountTotals.availableByCurrency,
+        accountLockedByCurrency: accountTotals.lockedByCurrency,
+        accountCreditLimitByCurrency: accountTotals.creditLimitByCurrency,
+        accountCreditUsedByCurrency: accountTotals.creditUsedByCurrency,
+        accountCreditAvailableByCurrency:
+          accountTotals.creditAvailableByCurrency,
       },
       counts: {
         transactions: transactions.length,
@@ -854,32 +1210,41 @@ export const financeOperations = {
 
     if (input.accountId) {
       const account = await db.financeAccount.findFirst({
-        where: { id: input.accountId, ownerId: userId },
+        where: {
+          id: input.accountId,
+          ownerId: userId,
+          archivedAt: null,
+          status: { not: 'CLOSED' },
+        },
         select: { id: true },
       });
       if (!account) throw new Error('Invalid finance account');
     }
 
-    return db.financeTransaction.create({
-      data: {
-        ownerId: userId,
-        accountId: input.accountId,
-        categoryId: input.categoryId,
-        type,
-        amount: money(input.amount),
-        currency: input.currency,
-        description: input.description,
-        occurredAt: input.occurredAt ?? new Date(),
-        notes: input.notes,
-        ...(tags.length > 0
-          ? { tags: { create: tagCreates(userId, tags) } }
-          : {}),
-      },
-      include: {
-        category: true,
-        account: true,
-        tags: { include: { tag: true } },
-      },
+    return db.$transaction(async (tx) => {
+      const transaction = await tx.financeTransaction.create({
+        data: {
+          ownerId: userId,
+          accountId: input.accountId,
+          categoryId: input.categoryId,
+          type,
+          amount: money(input.amount),
+          currency: input.currency,
+          description: input.description,
+          occurredAt: input.occurredAt ?? new Date(),
+          notes: input.notes,
+          ...(tags.length > 0
+            ? { tags: { create: tagCreates(userId, tags) } }
+            : {}),
+        },
+        include: {
+          category: true,
+          account: true,
+          tags: { include: { tag: true } },
+        },
+      });
+      await applyAccountTransactionEffect(tx, transaction, 1);
+      return transaction;
     });
   },
 
@@ -890,7 +1255,7 @@ export const financeOperations = {
   ) {
     const transaction = await db.financeTransaction.findFirst({
       where: { id: transactionId, ownerId: userId },
-      select: { id: true, type: true },
+      select: { id: true, accountId: true, type: true, amount: true },
     });
     if (!transaction) return null;
     const tags =
@@ -911,6 +1276,19 @@ export const financeOperations = {
       if (!category) throw new Error('Invalid finance category');
     }
 
+    if (input.accountId) {
+      const account = await db.financeAccount.findFirst({
+        where: {
+          id: input.accountId,
+          ownerId: userId,
+          archivedAt: null,
+          status: { not: 'CLOSED' },
+        },
+        select: { id: true },
+      });
+      if (!account) throw new Error('Invalid finance account');
+    }
+
     return db.$transaction(async (tx) => {
       if (tags) {
         await tx.financeTransactionTag.deleteMany({
@@ -918,7 +1296,9 @@ export const financeOperations = {
         });
       }
 
-      return tx.financeTransaction.update({
+      await applyAccountTransactionEffect(tx, transaction, -1);
+
+      const updatedTransaction = await tx.financeTransaction.update({
         where: { id: transactionId },
         data: {
           ...(input.description
@@ -926,6 +1306,9 @@ export const financeOperations = {
             : {}),
           ...(input.categoryId !== undefined
             ? { categoryId: input.categoryId }
+            : {}),
+          ...(input.accountId !== undefined
+            ? { accountId: input.accountId }
             : {}),
           ...(tags ? { tags: { create: tagCreates(userId, tags) } } : {}),
         },
@@ -935,17 +1318,22 @@ export const financeOperations = {
           tags: { include: { tag: true } },
         },
       });
+      await applyAccountTransactionEffect(tx, updatedTransaction, 1);
+      return updatedTransaction;
     });
   },
 
   async deleteTransaction(userId: string, transactionId: string) {
     const transaction = await db.financeTransaction.findFirst({
       where: { id: transactionId, ownerId: userId },
-      select: { id: true },
+      select: { id: true, accountId: true, type: true, amount: true },
     });
     if (!transaction) return null;
 
-    await db.financeTransaction.delete({ where: { id: transactionId } });
+    await db.$transaction(async (tx) => {
+      await tx.financeTransaction.delete({ where: { id: transactionId } });
+      await applyAccountTransactionEffect(tx, transaction, -1);
+    });
     return transaction;
   },
 

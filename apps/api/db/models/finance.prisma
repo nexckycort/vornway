@@ -1,9 +1,17 @@
 enum FinanceAccountType {
   CASH
   BANK
+  SAVINGS
   CREDIT_CARD
+  TERM_DEPOSIT
   WALLET
   OTHER
+}
+
+enum FinanceAccountStatus {
+  ACTIVE
+  CLOSED
+  MATURED
 }
 
 enum FinanceTransactionType {
@@ -17,8 +25,20 @@ model FinanceAccount {
   ownerId      String
   name         String
   accountType  FinanceAccountType  @default(CASH)
+  institution  String?
   currency     String
   openingBalance Float             @default(0)
+  currentBalance Float             @default(0)
+  availableBalance Float           @default(0)
+  lockedBalance Float              @default(0)
+  creditLimit Float?
+  usedCredit   Float               @default(0)
+  interestRate Float?
+  openedAt     DateTime?
+  maturesAt    DateTime?
+  status       FinanceAccountStatus @default(ACTIVE)
+  notes        String?
+  closedAt     DateTime?
   archivedAt   DateTime?
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
@@ -27,6 +47,7 @@ model FinanceAccount {
   transactions FinanceTransaction[]
 
   @@index([ownerId, archivedAt])
+  @@index([ownerId, status, archivedAt])
   @@map("finance_account")
 }
 

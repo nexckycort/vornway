@@ -1,5 +1,6 @@
 import { MoreVerticalIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
+import { useState } from 'react';
 import { Button } from '#/components/ui/button';
 import {
   DropdownMenu,
@@ -225,6 +226,8 @@ export function TransactionDetailView({
   onEditingTagsInputChange: (value: string) => void;
   onSubmitUpdate: (transaction: EditableFinanceTransaction) => void;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+
   if (!transaction) {
     return (
       <ScreenShell
@@ -243,16 +246,28 @@ export function TransactionDetailView({
     <ScreenShell title={m['finances.movement']()} month={month} onBack={onBack}>
       <section className="rounded-[34px] bg-white p-6">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-black/45">
-              {transaction.category?.name ?? m['finances.noCategory']()}
+          <div className="min-w-0">
+            <p className="truncate text-sm text-black/45">
+              {isEditing
+                ? m['finances.editMovement']()
+                : (transaction.category?.name ?? m['finances.noCategory']())}
             </p>
-            <p className="mt-3 text-4xl font-semibold leading-none">
-              {transaction.type === 'INCOME' ? '+' : '-'}
-              {formatCurrency(transaction.currency, transaction.amount, {
-                maximumFractionDigits: 0,
-              })}
-            </p>
+            {isEditing ? (
+              <input
+                inputMode="decimal"
+                value={editingTransactionAmount}
+                onChange={(event) => onEditingAmountChange(event.target.value)}
+                placeholder={m['finances.amountPlaceholder']()}
+                className="mt-3 h-16 w-full min-w-0 rounded-[24px] border border-black/5 bg-[#f7f7f4] px-4 text-3xl font-semibold leading-none outline-none"
+              />
+            ) : (
+              <p className="mt-3 truncate text-4xl font-semibold leading-none">
+                {transaction.type === 'INCOME' ? '+' : '-'}
+                {formatCurrency(transaction.currency, transaction.amount, {
+                  maximumFractionDigits: 0,
+                })}
+              </p>
+            )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex size-11 items-center justify-center rounded-full border border-black/10 bg-white outline-none">
@@ -276,120 +291,126 @@ export function TransactionDetailView({
           </DropdownMenu>
         </div>
 
-        <div className="mt-7 grid gap-4 text-sm">
-          <SummaryCard
-            label={m['finances.description']()}
-            value={transaction.description}
-          />
-          <SummaryCard
-            label={m['finances.date']()}
-            value={formatShortDate(transaction.occurredAt)}
-          />
-          <div className="rounded-[26px] border border-black/5 bg-white p-4">
-            <p className="text-sm text-black/45">{m['finances.tags']()}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {transaction.tags.length === 0 ? (
-                <span className="text-sm text-black/45">
-                  {m['finances.emptyTags']()}
-                </span>
-              ) : (
-                transaction.tags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className="rounded-full bg-[#f7f7f4] px-3 py-1.5 text-xs font-medium"
-                  >
-                    #{tag.name}
-                  </span>
-                ))
-              )}
+        {isEditing ? (
+          <div className="mt-6 grid gap-3">
+            <input
+              value={editingTransactionName}
+              onChange={(event) => onEditingNameChange(event.target.value)}
+              placeholder={m['finances.expensePlaceholder']()}
+              className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
+            />
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+              <select
+                value={editingTransactionCategoryId}
+                onChange={(event) =>
+                  onEditingCategoryChange(event.target.value)
+                }
+                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
+              >
+                <option value="">{m['finances.noCategory']()}</option>
+                {categories
+                  .filter((category) =>
+                    isCategoryAllowedForTransaction(category, transaction),
+                  )
+                  .map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+              </select>
+              <input
+                type="date"
+                value={editingTransactionDate}
+                onChange={(event) => onEditingDateChange(event.target.value)}
+                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
+                aria-label={m['finances.date']()}
+              />
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mt-5 rounded-[30px] bg-white p-5">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold">
-            {m['finances.editMovement']()}
-          </h2>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onPrepareEdit(transaction)}
-            className="rounded-full"
-          >
-            {m['finances.loadData']()}
-          </Button>
-        </div>
-        <div className="mt-5 grid gap-3">
-          <input
-            value={editingTransactionName}
-            onChange={(event) => onEditingNameChange(event.target.value)}
-            placeholder={m['finances.expensePlaceholder']()}
-            className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-          />
-          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-            <input
-              inputMode="decimal"
-              value={editingTransactionAmount}
-              onChange={(event) => onEditingAmountChange(event.target.value)}
-              placeholder={m['finances.amountPlaceholder']()}
-              className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-            />
-            <input
-              type="date"
-              value={editingTransactionDate}
-              onChange={(event) => onEditingDateChange(event.target.value)}
-              className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-              aria-label={m['finances.date']()}
-            />
-          </div>
-          <select
-            value={editingTransactionCategoryId}
-            onChange={(event) => onEditingCategoryChange(event.target.value)}
-            className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-          >
-            <option value="">{m['finances.noCategory']()}</option>
-            {categories
-              .filter((category) =>
-                isCategoryAllowedForTransaction(category, transaction),
-              )
-              .map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
+            <select
+              value={editingTransactionAccountId}
+              onChange={(event) => onEditingAccountChange(event.target.value)}
+              className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
+            >
+              <option value="">{m['finances.noAccount']()}</option>
+              {transactionAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name} · {account.institution ?? account.currency}
                 </option>
               ))}
-          </select>
-          <select
-            value={editingTransactionAccountId}
-            onChange={(event) => onEditingAccountChange(event.target.value)}
-            className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-          >
-            <option value="">{m['finances.noAccount']()}</option>
-            {transactionAccounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name} · {account.institution ?? account.currency}
-              </option>
-            ))}
-          </select>
-          <input
-            value={editingTransactionTagsInput}
-            onChange={(event) => onEditingTagsInputChange(event.target.value)}
-            placeholder={m['finances.tagsPlaceholder']()}
-            className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-          />
-          <Button
-            type="button"
-            onClick={() => onSubmitUpdate(transaction)}
-            disabled={isUpdating}
-            className="h-12 rounded-full"
-          >
-            {isUpdating
-              ? m['common.saving']()
-              : m['finances.saveMovementChanges']()}
-          </Button>
-        </div>
+            </select>
+            <input
+              value={editingTransactionTagsInput}
+              onChange={(event) => onEditingTagsInputChange(event.target.value)}
+              placeholder={m['finances.tagsPlaceholder']()}
+              className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
+            />
+            <div className="mt-2 grid grid-cols-[auto_1fr] gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  onPrepareEdit(transaction);
+                  setIsEditing(false);
+                }}
+                className="h-12 rounded-full px-5"
+              >
+                {m['common.cancel']()}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => onSubmitUpdate(transaction)}
+                disabled={isUpdating}
+                className="h-12 rounded-full"
+              >
+                {isUpdating
+                  ? m['common.saving']()
+                  : m['finances.saveMovementChanges']()}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="mt-7 grid gap-4 text-sm">
+              <SummaryCard
+                label={m['finances.description']()}
+                value={transaction.description}
+              />
+              <SummaryCard
+                label={m['finances.date']()}
+                value={formatShortDate(transaction.occurredAt)}
+              />
+              <div className="rounded-[26px] border border-black/5 bg-white p-4">
+                <p className="text-sm text-black/45">{m['finances.tags']()}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {transaction.tags.length === 0 ? (
+                    <span className="text-sm text-black/45">
+                      {m['finances.emptyTags']()}
+                    </span>
+                  ) : (
+                    transaction.tags.map((tag) => (
+                      <span
+                        key={tag.id}
+                        className="rounded-full bg-[#f7f7f4] px-3 py-1.5 text-xs font-medium"
+                      >
+                        #{tag.name}
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+            <Button
+              type="button"
+              onClick={() => {
+                onPrepareEdit(transaction);
+                setIsEditing(true);
+              }}
+              className="mt-6 h-12 w-full rounded-full"
+            >
+              {m['finances.editMovement']()}
+            </Button>
+          </>
+        )}
       </section>
     </ScreenShell>
   );

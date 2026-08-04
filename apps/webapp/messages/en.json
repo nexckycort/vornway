@@ -254,6 +254,10 @@
     "pendingToPay": "Pending to pay",
     "history": "History",
     "today": "Today",
+    "personalMovement": "Personal movement",
+    "personalSpaceExpense": "Personal expense",
+    "sharedGroupExpense": "Shared group expense",
+    "yourShare": "Your share",
     "movementDeleted": "Movement deleted",
     "movementShared": "Movement copied",
     "movementNotFound": "We could not find this movement in the selected month.",
@@ -267,7 +271,7 @@
     "topTags": "Top tags",
     "emptyTags": "No tagged expenses for this month yet.",
     "recentTransactions": "Recent movements",
-    "emptyTransactions": "No personal movements for this month yet.",
+    "emptyTransactions": "No movements for this month yet.",
     "loadError": "Could not load finances"
   },
   "quickSplit": {

@@ -254,6 +254,10 @@
     "pendingToPay": "Pendiente por pagar",
     "history": "Historial",
     "today": "Hoy",
+    "personalMovement": "Movimiento personal",
+    "personalSpaceExpense": "Gasto personal",
+    "sharedGroupExpense": "Gasto de grupo compartido",
+    "yourShare": "Tu parte",
     "movementDeleted": "Movimiento eliminado",
     "movementShared": "Movimiento copiado",
     "movementNotFound": "No encontramos este movimiento en el mes seleccionado.",
@@ -267,7 +271,7 @@
     "topTags": "Tags principales",
     "emptyTags": "Aún no hay gastos con tags este mes.",
     "recentTransactions": "Movimientos recientes",
-    "emptyTransactions": "Aún no hay movimientos personales este mes.",
+    "emptyTransactions": "Aún no hay movimientos este mes.",
     "loadError": "No se pudieron cargar las finanzas"
   },
   "quickSplit": {

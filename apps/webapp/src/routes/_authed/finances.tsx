@@ -17,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu';
+import { getGroupFlowEntryState } from '#/lib/group-flow-navigation';
 import { formatCurrency, formatShortDate, getIntlLocale } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 
@@ -68,8 +69,17 @@ type FinanceCategoryUpdateInput = InferRequestType<
 type FinanceBudgetInput = InferRequestType<typeof upsertBudgetEndpoint>['json'];
 type FinanceCategory = FinanceSummary['categories'][number];
 type FinanceTransaction = FinanceSummary['recentTransactions'][number];
+type FinanceGroupExpenseMovement =
+  FinanceSummary['recentGroupExpenseMovements'][number];
 type FinanceTag = FinanceSummary['tags'][number];
 type FinanceCategoryKind = 'income' | 'expense' | 'both';
+type FinanceHistoryItem =
+  | { source: 'transaction'; transaction: FinanceTransaction; sortDate: string }
+  | {
+      source: 'group-expense';
+      movement: FinanceGroupExpenseMovement;
+      sortDate: string;
+    };
 
 const currency = 'COP';
 const financeViews = new Set<FinanceView>([
@@ -340,12 +350,44 @@ function FigmaSummaryTile({
 
 function FigmaHistory({
   transactions,
-  onOpen,
+  groupExpenseMovements,
+  onOpenTransaction,
+  onOpenGroupExpense,
 }: {
   transactions: FinanceTransaction[];
-  onOpen: (transaction: FinanceTransaction) => void;
+  groupExpenseMovements: FinanceGroupExpenseMovement[];
+  onOpenTransaction: (transaction: FinanceTransaction) => void;
+  onOpenGroupExpense: (movement: FinanceGroupExpenseMovement) => void;
 }) {
-  const recentTransactions = transactions.slice(0, 5);
+  const recentItems = [
+    ...transactions.map(
+      (transaction): FinanceHistoryItem => ({
+        source: 'transaction',
+        transaction,
+        sortDate: transaction.occurredAt,
+      }),
+    ),
+    ...groupExpenseMovements.map(
+      (movement): FinanceHistoryItem => ({
+        source: 'group-expense',
+        movement,
+        sortDate: movement.occurredAt,
+      }),
+    ),
+  ]
+    .sort((left, right) => {
+      const dateDelta =
+        new Date(right.sortDate).getTime() - new Date(left.sortDate).getTime();
+      if (dateDelta !== 0) return dateDelta;
+      const leftId =
+        left.source === 'transaction' ? left.transaction.id : left.movement.id;
+      const rightId =
+        right.source === 'transaction'
+          ? right.transaction.id
+          : right.movement.id;
+      return rightId.localeCompare(leftId);
+    })
+    .slice(0, 5);
 
   return (
     <section className="mt-4">
@@ -356,49 +398,117 @@ function FigmaHistory({
         {m['finances.today']()}
       </p>
       <div className="mt-3 grid gap-4">
-        {recentTransactions.length === 0 ? (
+        {recentItems.length === 0 ? (
           <div className="rounded-2xl bg-white p-4 text-sm text-[#626262] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
             {m['finances.emptyTransactions']()}
           </div>
         ) : (
-          recentTransactions.map((transaction) => (
-            <button
-              key={transaction.id}
-              type="button"
-              onClick={() => onOpen(transaction)}
-              className="flex w-full min-w-0 items-center gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-            >
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e9e9e9] text-[#1e1e1e]">
-                <HugeiconsIcon icon={Wallet02Icon} className="size-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
-                  {transaction.description}
-                </p>
-                <p className="truncate text-xs leading-4 text-[#626262]">
-                  {transaction.category?.name ?? m['finances.noCategory']()}
-                </p>
-              </div>
-              <div className="min-w-0 shrink-0 text-right">
-                <p className="text-base font-medium leading-6 text-[#1e1e1e]">
-                  {formatCurrency(transaction.currency, transaction.amount, {
-                    maximumFractionDigits: 0,
-                  })}
-                </p>
-                <p
-                  className={`max-w-24 truncate text-xs leading-4 ${
-                    transaction.type === 'INCOME'
-                      ? 'text-[#047857]'
-                      : 'text-[#b91c1c]'
-                  }`}
+          recentItems.map((item) => {
+            if (item.source === 'transaction') {
+              const { transaction } = item;
+
+              return (
+                <button
+                  key={`transaction:${transaction.id}`}
+                  type="button"
+                  onClick={() => onOpenTransaction(transaction)}
+                  className="flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
                 >
-                  {transaction.type === 'INCOME'
-                    ? m['finances.income']()
-                    : m['finances.expense']()}
-                </p>
-              </div>
-            </button>
-          ))
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e9e9e9] text-[#1e1e1e]">
+                    <HugeiconsIcon icon={Wallet02Icon} className="size-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
+                      {transaction.description}
+                    </p>
+                    <p className="truncate text-xs leading-4 text-[#626262]">
+                      {transaction.category?.name ?? m['finances.noCategory']()}
+                    </p>
+                    <span className="mt-2 inline-flex max-w-full rounded-full bg-[#f4f4f2] px-2.5 py-1 text-[11px] font-medium leading-none text-[#626262]">
+                      {m['finances.personalMovement']()}
+                    </span>
+                  </div>
+                  <div className="min-w-0 shrink-0 text-right">
+                    <p className="text-base font-medium leading-6 text-[#1e1e1e]">
+                      {formatCurrency(
+                        transaction.currency,
+                        transaction.amount,
+                        {
+                          maximumFractionDigits: 0,
+                        },
+                      )}
+                    </p>
+                    <p
+                      className={`max-w-24 truncate text-xs leading-4 ${
+                        transaction.type === 'INCOME'
+                          ? 'text-[#047857]'
+                          : 'text-[#b91c1c]'
+                      }`}
+                    >
+                      {transaction.type === 'INCOME'
+                        ? m['finances.income']()
+                        : m['finances.expense']()}
+                    </p>
+                  </div>
+                </button>
+              );
+            }
+
+            const { movement } = item;
+            const balance = movement.currentUserBalance;
+            const hasBalance =
+              typeof balance === 'number' && Math.abs(balance) >= 0.01;
+            const amountLabel =
+              hasBalance && balance > 0
+                ? m['finances.owedToYou']()
+                : hasBalance && balance < 0
+                  ? m['finances.youOwe']()
+                  : m['finances.yourShare']();
+            const amountValue =
+              hasBalance && balance ? Math.abs(balance) : movement.userShare;
+
+            return (
+              <button
+                key={`group-expense:${movement.id}`}
+                type="button"
+                onClick={() => onOpenGroupExpense(movement)}
+                className="flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+              >
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]">
+                  <HugeiconsIcon icon={UserGroupIcon} className="size-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
+                    {movement.description}
+                  </p>
+                  <p className="truncate text-xs leading-4 text-[#626262]">
+                    {movement.category?.name ?? movement.groupName}
+                  </p>
+                  <span className="mt-2 inline-flex max-w-full rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium leading-none text-primary">
+                    {movement.groupType === 'personal'
+                      ? m['finances.personalSpaceExpense']()
+                      : m['finances.sharedGroupExpense']()}
+                  </span>
+                </div>
+                <div className="min-w-0 shrink-0 text-right">
+                  <p className="text-base font-medium leading-6 text-[#1e1e1e]">
+                    {formatCurrency(movement.currency, amountValue, {
+                      maximumFractionDigits: 0,
+                    })}
+                  </p>
+                  <p
+                    className={`max-w-24 truncate text-xs leading-4 ${
+                      hasBalance && balance > 0
+                        ? 'text-[#047857]'
+                        : 'text-[#b91c1c]'
+                    }`}
+                  >
+                    {amountLabel}
+                  </p>
+                </div>
+              </button>
+            );
+          })
         )}
       </div>
     </section>
@@ -1603,7 +1713,19 @@ function RouteComponent() {
 
         <FigmaHistory
           transactions={summary.recentTransactions}
-          onOpen={(nextTransaction) => goTo('transaction', nextTransaction.id)}
+          groupExpenseMovements={summary.recentGroupExpenseMovements}
+          onOpenTransaction={(nextTransaction) =>
+            goTo('transaction', nextTransaction.id)
+          }
+          onOpenGroupExpense={(movement) =>
+            void navigate({
+              to: '/groups/$id/expense/$expenseId',
+              params: { id: movement.groupId, expenseId: movement.id },
+              state: getGroupFlowEntryState(
+                `/finances?view=dashboard&month=${month}`,
+              ),
+            })
+          }
         />
       </div>
     </main>

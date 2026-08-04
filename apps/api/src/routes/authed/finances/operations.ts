@@ -205,6 +205,7 @@ async function getGroupExpenseTotals(userId: string, start: Date, end: Date) {
     },
     select: {
       id: true,
+      name: true,
       type: true,
       GroupMember: { where: { userId }, select: { id: true } },
       Expense: {
@@ -224,8 +225,15 @@ async function getGroupExpenseTotals(userId: string, start: Date, end: Date) {
           ],
         },
         select: {
+          id: true,
           amount: true,
           currency: true,
+          date: true,
+          description: true,
+          category: {
+            select: { id: true, name: true, icon: true, color: true },
+          },
+          payers: { select: { memberId: true, amount: true } },
           participants: { select: { memberId: true, share: true } },
         },
       },
@@ -233,6 +241,24 @@ async function getGroupExpenseTotals(userId: string, start: Date, end: Date) {
   });
 
   const totals: Record<string, number> = {};
+  const movements: Array<{
+    id: string;
+    groupId: string;
+    groupName: string;
+    groupType: string;
+    description: string;
+    amount: number;
+    userShare: number;
+    currentUserBalance: number | null;
+    currency: string;
+    occurredAt: string;
+    category: {
+      id: string;
+      name: string;
+      icon: string | null;
+      color: string | null;
+    } | null;
+  }> = [];
   let count = 0;
 
   for (const group of groups) {
@@ -243,6 +269,9 @@ async function getGroupExpenseTotals(userId: string, start: Date, end: Date) {
       const currentShare = expense.participants.find(
         (participant) => participant.memberId === currentMemberId,
       )?.share;
+      const currentPaid =
+        expense.payers.find((payer) => payer.memberId === currentMemberId)
+          ?.amount ?? 0;
       const amount =
         typeof currentShare === 'number'
           ? currentShare
@@ -252,11 +281,34 @@ async function getGroupExpenseTotals(userId: string, start: Date, end: Date) {
 
       if (amount <= 0) continue;
       addCurrencyTotal(totals, expense.currency, amount);
+      movements.push({
+        id: expense.id,
+        groupId: group.id,
+        groupName: group.name,
+        groupType: group.type,
+        description: expense.description,
+        amount: expense.amount,
+        userShare: money(amount),
+        currentUserBalance:
+          group.type === 'personal' && expense.participants.length === 0
+            ? null
+            : money(currentPaid - amount),
+        currency: expense.currency,
+        occurredAt: expense.date.toISOString(),
+        category: expense.category,
+      });
       count += 1;
     }
   }
 
-  return { totals, count };
+  movements.sort((left, right) => {
+    const dateDelta =
+      new Date(right.occurredAt).getTime() -
+      new Date(left.occurredAt).getTime();
+    return dateDelta === 0 ? right.id.localeCompare(left.id) : dateDelta;
+  });
+
+  return { totals, count, movements };
 }
 
 async function getDebtTotals(userId: string) {
@@ -495,6 +547,7 @@ export const financeOperations = {
         createdAt: transaction.createdAt.toISOString(),
         updatedAt: transaction.updatedAt.toISOString(),
       })),
+      recentGroupExpenseMovements: groupExpenseTotals.movements.slice(0, 12),
     };
   },
 

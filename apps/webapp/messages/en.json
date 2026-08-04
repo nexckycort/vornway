@@ -438,6 +438,7 @@
     "paymentAmountPlaceholder": "Payment amount",
     "paymentNotePlaceholder": "Note (optional)",
     "savePayment": "Save payment",
+    "editPaymentAccount": "Edit payment account",
     "active": "Active",
     "paid": "Paid",
     "overdue": "Overdue",

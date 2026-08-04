@@ -23,6 +23,9 @@ export const createPaymentSchema = z.object({
   paidAt: z.coerce.date().optional(),
   note: z.string().trim().max(400).optional(),
 });
+export const updatePaymentSchema = createPaymentSchema.partial().extend({
+  accountId: z.string().min(1).nullable().optional(),
+});
 export const paymentIdSchema = z.object({
   id: z.string().min(1),
   paymentId: z.string().min(1),
@@ -34,3 +37,4 @@ export const debtListSchema = z.object({
 export type CreateDebtInput = z.infer<typeof createDebtSchema>;
 export type UpdateDebtInput = z.infer<typeof updateDebtSchema>;
 export type CreatePaymentInput = z.infer<typeof createPaymentSchema>;
+export type UpdatePaymentInput = z.infer<typeof updatePaymentSchema>;

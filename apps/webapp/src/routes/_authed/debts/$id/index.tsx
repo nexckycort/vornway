@@ -20,6 +20,7 @@ export const Route = createFileRoute('/_authed/debts/$id/')({
 const detailEndpoint = debtsClient[':id'].$get;
 const updateEndpoint = debtsClient[':id'].$patch;
 const paymentEndpoint = debtsClient[':id'].payments.$post;
+const updatePaymentEndpoint = debtsClient[':id'].payments[':paymentId'].$patch;
 const deletePaymentEndpoint = debtsClient[':id'].payments[':paymentId'].$delete;
 const deleteDebtEndpoint = debtsClient[':id'].$delete;
 const financesSummaryEndpoint = financesClient.summary.$get;
@@ -53,6 +54,9 @@ type Detail = {
 };
 type UpdateInput = InferRequestType<typeof updateEndpoint>['json'];
 type PaymentInput = InferRequestType<typeof paymentEndpoint>['json'];
+type UpdatePaymentInput = InferRequestType<
+  typeof updatePaymentEndpoint
+>['json'];
 
 function RouteComponent() {
   const navigate = useNavigate();
@@ -64,6 +68,8 @@ function RouteComponent() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentNote, setPaymentNote] = useState('');
   const [paymentAccountId, setPaymentAccountId] = useState('');
+  const [editingPaymentId, setEditingPaymentId] = useState('');
+  const [editingPaymentAccountId, setEditingPaymentAccountId] = useState('');
   const detailQuery = useQuery({
     queryKey: ['debt', id],
     queryFn: async () => {
@@ -142,6 +148,35 @@ function RouteComponent() {
       ]);
     },
   });
+  const updatePaymentMutation = useMutation({
+    mutationFn: async ({
+      paymentId,
+      input,
+    }: {
+      paymentId: string;
+      input: UpdatePaymentInput;
+    }) => {
+      const response = await updatePaymentEndpoint({
+        param: { id, paymentId },
+        json: input,
+      });
+      if (!response.ok) throw new Error('debt_payment_update_failed');
+      return response.json();
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['debt', id] }),
+        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
+      setEditingPaymentId('');
+      setEditingPaymentAccountId('');
+    },
+  });
   const deleteDebtMutation = useMutation({
     mutationFn: async () => {
       const response = await deleteDebtEndpoint({ param: { id } });
@@ -180,6 +215,14 @@ function RouteComponent() {
         account.status !== 'CLOSED' &&
         account.currency === (detail?.currency ?? 'COP'),
     ) ?? [];
+
+  function submitPaymentAccountUpdate() {
+    if (!editingPaymentId) return;
+    void updatePaymentMutation.mutate({
+      paymentId: editingPaymentId,
+      input: { accountId: editingPaymentAccountId || null },
+    });
+  }
 
   return (
     <MobilePageLayout
@@ -352,35 +395,101 @@ function RouteComponent() {
             <h3 className="font-semibold">{m['debts.payments']()}</h3>
             {detail.payments.length ? (
               <div className="mt-3 space-y-2">
-                {detail.payments.map((payment) => (
-                  <div
-                    key={payment.id}
-                    className="flex items-center justify-between rounded-2xl border p-3"
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {formatCurrency(detail.currency, payment.amount)}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(payment.paidAt).toLocaleDateString()}
-                        {payment.note ? ` · ${payment.note}` : ''}
-                        {payment.account ? ` · ${payment.account.name}` : ''}
-                      </p>
+                {detail.payments.map((payment) => {
+                  const isEditingPayment = editingPaymentId === payment.id;
+                  return (
+                    <div key={payment.id} className="rounded-2xl border p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium">
+                            {formatCurrency(detail.currency, payment.amount)}
+                          </p>
+                          <p className="truncate text-xs text-gray-500">
+                            {new Date(payment.paidAt).toLocaleDateString()}
+                            {payment.note ? ` · ${payment.note}` : ''}
+                            {payment.account
+                              ? ` · ${payment.account.name}`
+                              : ''}
+                          </p>
+                        </div>
+                        {detail.viewerRole === 'owner' ? (
+                          <div className="flex shrink-0 items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingPaymentId(payment.id);
+                                setEditingPaymentAccountId(
+                                  payment.accountId ?? '',
+                                );
+                              }}
+                              aria-label={m['debts.editPaymentAccount']()}
+                            >
+                              <HugeiconsIcon
+                                icon={Edit02Icon}
+                                className="size-4 text-gray-500"
+                              />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                deletePaymentMutation.mutate(payment.id)
+                              }
+                              aria-label={m['common.delete']()}
+                            >
+                              <HugeiconsIcon
+                                icon={Delete02Icon}
+                                className="size-4 text-gray-500"
+                              />
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                      {isEditingPayment ? (
+                        <div className="mt-3 grid gap-2">
+                          <select
+                            value={editingPaymentAccountId}
+                            onChange={(event) =>
+                              setEditingPaymentAccountId(event.target.value)
+                            }
+                            className="h-11 w-full rounded-2xl border px-3 text-sm"
+                          >
+                            <option value="">
+                              {m['finances.noAccount']()}
+                            </option>
+                            {paymentAccounts.map((account) => (
+                              <option key={account.id} value={account.id}>
+                                {account.name} ·{' '}
+                                {account.institution ?? account.currency}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              type="button"
+                              disabled={updatePaymentMutation.isPending}
+                              onClick={submitPaymentAccountUpdate}
+                              className="h-10 rounded-full"
+                            >
+                              {m['common.saveChanges']()}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              disabled={updatePaymentMutation.isPending}
+                              onClick={() => {
+                                setEditingPaymentId('');
+                                setEditingPaymentAccountId('');
+                              }}
+                              className="h-10 rounded-full"
+                            >
+                              {m['common.cancel']()}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
-                    {detail.viewerRole === 'owner' ? (
-                      <button
-                        type="button"
-                        onClick={() => deletePaymentMutation.mutate(payment.id)}
-                        aria-label={m['common.delete']()}
-                      >
-                        <HugeiconsIcon
-                          icon={Delete02Icon}
-                          className="size-4 text-gray-500"
-                        />
-                      </button>
-                    ) : null}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="mt-2 text-sm text-gray-500">

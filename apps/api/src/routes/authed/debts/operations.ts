@@ -5,6 +5,7 @@ import type {
   CreateDebtInput,
   CreatePaymentInput,
   UpdateDebtInput,
+  UpdatePaymentInput,
 } from './schema';
 
 const money = (value: number) => Number(value.toFixed(2));
@@ -237,6 +238,82 @@ export const debtOperations = {
       );
     });
     return debtOperations.get(userId, id);
+  },
+  async updatePayment(
+    userId: string,
+    debtId: string,
+    paymentId: string,
+    input: UpdatePaymentInput,
+  ) {
+    const payment = await db.debtPayment.findFirst({
+      where: { id: paymentId, debt: { id: debtId, ownerId: userId } },
+      include: { debt: { include: { payments: true } } },
+    });
+    if (!payment) return null;
+
+    const nextAmount = input.amount ?? payment.amount;
+    if (input.amount !== undefined) {
+      const paidWithoutPayment = payment.debt.payments
+        .filter((item) => item.id !== payment.id)
+        .reduce((sum, item) => sum + item.amount, 0);
+      const remainingWithoutPayment =
+        payment.debt.expectedTotal - paidWithoutPayment;
+      if (nextAmount > remainingWithoutPayment + 0.01) {
+        throw new Error('Payment exceeds remaining balance');
+      }
+    }
+
+    if (input.accountId) {
+      const account = await db.financeAccount.findFirst({
+        where: {
+          id: input.accountId,
+          ownerId: userId,
+          currency: payment.debt.currency,
+          archivedAt: null,
+          status: { not: 'CLOSED' },
+        },
+        select: { id: true },
+      });
+      if (!account) throw new Error('Invalid finance account');
+    }
+
+    await db.$transaction(async (tx) => {
+      await applyAccountTransactionEffect(
+        tx,
+        {
+          accountId: payment.accountId,
+          type: debtPaymentTransactionType(payment.debt.direction),
+          amount: payment.amount,
+        },
+        -1,
+      );
+      await tx.debtPayment.update({
+        where: { id: paymentId },
+        data: {
+          ...(input.amount !== undefined ? { amount: input.amount } : {}),
+          ...(input.accountId !== undefined
+            ? { accountId: input.accountId }
+            : {}),
+          ...(input.paidAt !== undefined ? { paidAt: input.paidAt } : {}),
+          ...(input.note !== undefined ? { note: input.note } : {}),
+        },
+      });
+      await applyAccountTransactionEffect(
+        tx,
+        {
+          accountId:
+            input.accountId !== undefined ? input.accountId : payment.accountId,
+          type: debtPaymentTransactionType(payment.debt.direction),
+          amount: nextAmount,
+        },
+        1,
+      );
+      await tx.debt.update({
+        where: { id: debtId },
+        data: { updatedAt: new Date() },
+      });
+    });
+    return debtOperations.get(userId, debtId);
   },
   async deletePayment(userId: string, debtId: string, paymentId: string) {
     const payment = await db.debtPayment.findFirst({

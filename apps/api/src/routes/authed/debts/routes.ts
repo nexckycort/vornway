@@ -9,6 +9,7 @@ import {
   debtListSchema,
   paymentIdSchema,
   updateDebtSchema,
+  updatePaymentSchema,
 } from './schema';
 
 export const debtsRoutes = new Hono<AppContext>()
@@ -63,6 +64,23 @@ export const debtsRoutes = new Hono<AppContext>()
       return result
         ? c.json(result, 201)
         : c.json({ error: 'Debt not found' }, 404);
+    },
+  )
+  .patch(
+    '/:id/payments/:paymentId',
+    zValidator('param', paymentIdSchema),
+    zValidator('json', updatePaymentSchema),
+    async (c) => {
+      const params = c.req.valid('param');
+      const result = await debtOperations.updatePayment(
+        c.get('user').id,
+        params.id,
+        params.paymentId,
+        c.req.valid('json'),
+      );
+      return result
+        ? c.json(result)
+        : c.json({ error: 'Payment not found' }, 404);
     },
   )
   .delete(

@@ -438,6 +438,7 @@
     "paymentAmountPlaceholder": "Monto del abono",
     "paymentNotePlaceholder": "Nota (opcional)",
     "savePayment": "Guardar abono",
+    "editPaymentAccount": "Editar cuenta del abono",
     "active": "Activa",
     "paid": "Pagada",
     "overdue": "Vencida",

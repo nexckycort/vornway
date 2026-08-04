@@ -17,6 +17,9 @@ import { m } from '#/paraglide/messages.js';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
 
 export const Route = createFileRoute('/_authed/debts/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    from: search.from === 'finances' ? ('finances' as const) : undefined,
+  }),
   component: RouteComponent,
 });
 
@@ -47,6 +50,7 @@ type CreatePayment = InferRequestType<typeof paymentEndpoint>['json'];
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const { from } = Route.useSearch();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
@@ -194,16 +198,22 @@ function RouteComponent() {
     });
   }
   const detail = detailQuery.data as unknown as DebtDetail | undefined;
+  const backTo = from === 'finances' ? '/finances' : '/';
 
   return (
     <MobilePageLayout
       title={m['debts.title']()}
-      onBack={() => navigate({ to: '/' })}
+      onBack={() => navigate({ to: backTo })}
     >
       <div className="flex flex-1 flex-col gap-4 pb-28">
         <Button
           type="button"
-          onClick={() => navigate({ to: '/debts/new' })}
+          onClick={() =>
+            navigate({
+              to: '/debts/new',
+              search: { from },
+            })
+          }
           className="h-12 rounded-full"
         >
           <HugeiconsIcon icon={Add01Icon} className="mr-2 size-4" />
@@ -217,7 +227,11 @@ function RouteComponent() {
             key={debt.id}
             type="button"
             onClick={() =>
-              navigate({ to: '/debts/$id', params: { id: debt.id } })
+              navigate({
+                to: '/debts/$id',
+                params: { id: debt.id },
+                search: { from },
+              })
             }
             className="rounded-[24px] border border-gray-200 bg-white p-4 text-left shadow-sm"
           >

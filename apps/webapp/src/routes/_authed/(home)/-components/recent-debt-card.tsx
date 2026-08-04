@@ -12,6 +12,7 @@ export function RecentDebtCard({ debt }: RecentDebtCardProps) {
     <Link
       to="/debts/$id"
       params={{ id: debt.id }}
+      search={{ from: undefined }}
       preload="intent"
       className="block rounded-[24px] border border-[#f4f4f4] bg-white px-5 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.04)] transition-transform active:translate-y-px"
     >

@@ -9,6 +9,9 @@ import { m } from '#/paraglide/messages.js';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
 
 export const Route = createFileRoute('/_authed/debts/new/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    from: search.from === 'finances' ? ('finances' as const) : undefined,
+  }),
   component: RouteComponent,
 });
 
@@ -17,6 +20,7 @@ type CreateDebt = InferRequestType<typeof createEndpoint>['json'];
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const { from } = Route.useSearch();
   const queryClient = useQueryClient();
   const [debtName, setDebtName] = useState('');
   const [name, setName] = useState('');
@@ -38,7 +42,7 @@ function RouteComponent() {
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
-      await navigate({ to: '/debts', replace: true });
+      await navigate({ to: '/debts', search: { from }, replace: true });
     },
   });
 
@@ -68,7 +72,7 @@ function RouteComponent() {
   return (
     <MobilePageLayout
       title={m['debts.newTitle']()}
-      onBack={() => navigate({ to: '/debts' })}
+      onBack={() => navigate({ to: '/debts', search: { from } })}
       footer={
         <Button
           type="button"

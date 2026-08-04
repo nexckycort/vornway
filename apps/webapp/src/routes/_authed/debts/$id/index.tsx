@@ -11,6 +11,9 @@ import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 
 export const Route = createFileRoute('/_authed/debts/$id/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    from: search.from === 'finances' ? ('finances' as const) : undefined,
+  }),
   component: RouteComponent,
 });
 const detailEndpoint = debtsClient[':id'].$get;
@@ -46,6 +49,7 @@ function RouteComponent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { id } = Route.useParams();
+  const { from } = Route.useSearch();
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -116,7 +120,7 @@ function RouteComponent() {
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
-      await navigate({ to: '/debts', replace: true });
+      await navigate({ to: '/debts', search: { from }, replace: true });
     },
   });
   const detail = detailQuery.data;
@@ -140,7 +144,7 @@ function RouteComponent() {
   return (
     <MobilePageLayout
       title={m['debts.detailTitle']()}
-      onBack={() => navigate({ to: '/debts' })}
+      onBack={() => navigate({ to: '/debts', search: { from } })}
     >
       {detailQuery.isLoading ? (
         <p className="text-sm text-gray-500">{m['common.loading']()}</p>

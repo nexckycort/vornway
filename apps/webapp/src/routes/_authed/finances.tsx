@@ -1,8 +1,5 @@
 import {
-  Add01Icon,
   MoreVerticalIcon,
-  PiggyBankIcon,
-  TargetIcon,
   UserGroupIcon,
   Wallet02Icon,
 } from '@hugeicons/core-free-icons';
@@ -232,90 +229,6 @@ function ScreenShell({
   );
 }
 
-function BalanceCard({
-  month,
-  income,
-  totalExpense,
-  balance,
-  onMonthChange,
-}: {
-  month: string;
-  income: number;
-  totalExpense: number;
-  balance: number;
-  onMonthChange: (month: string) => void;
-}) {
-  return (
-    <section className="rounded-[32px] bg-[#101113] p-6 text-white">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-sm text-white/55">
-            {m['finances.monthBalance']()}
-          </p>
-          <p className="mt-3 text-4xl font-semibold leading-none tracking-normal">
-            {moneyLabel(balance)}
-          </p>
-        </div>
-        <label className="grid min-w-0 gap-1 text-xs font-medium text-white/55 sm:w-40">
-          <span className="truncate">{formatMonthLabel(month)}</span>
-          <input
-            type="month"
-            value={month}
-            onChange={(event) => onMonthChange(event.target.value)}
-            className="h-10 w-full min-w-0 rounded-full border border-white/10 bg-white/10 px-3 text-sm text-white outline-none"
-          />
-        </label>
-      </div>
-      <div className="mt-7 grid grid-cols-3 gap-3">
-        <BalanceMetric
-          label={m['finances.income']()}
-          value={moneyLabel(income)}
-        />
-        <BalanceMetric
-          label={m['finances.expenses']()}
-          value={moneyLabel(totalExpense)}
-        />
-        <BalanceMetric
-          label={m['finances.balance']()}
-          value={moneyLabel(balance)}
-        />
-      </div>
-    </section>
-  );
-}
-
-function BalanceMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="text-xs text-white/45">{label}</p>
-      <p className="mt-1 truncate text-sm font-semibold">{value}</p>
-    </div>
-  );
-}
-
-function ActionCard({
-  title,
-  icon,
-  onClick,
-}: {
-  title: string;
-  icon: typeof Add01Icon;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group min-h-28 min-w-0 rounded-[28px] border border-black/5 bg-white p-4 text-left transition active:scale-[0.99]"
-    >
-      <div className="flex size-11 items-center justify-center rounded-2xl bg-[#f0f2ee] text-[#101113]">
-        <HugeiconsIcon icon={icon} className="size-5" />
-      </div>
-      <p className="mt-4 text-base font-semibold leading-tight">{title}</p>
-    </button>
-  );
-}
-
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 overflow-hidden rounded-[26px] border border-black/5 bg-white p-4">
@@ -325,89 +238,107 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function CategoryBars({
-  summary,
-  totalExpense,
-  onOpenReports,
+function FinanceTab({
+  active,
+  children,
+  onClick,
 }: {
-  summary: FinanceSummary;
-  totalExpense: number;
-  onOpenReports: () => void;
+  active?: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
 }) {
-  const topCategories = summary.categoryExpenseTotals.slice(0, 5);
-
   return (
-    <section className="rounded-[30px] border border-black/5 bg-white p-5">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg font-semibold">
-          {m['finances.topCategories']()}
-        </h2>
-        <button
-          type="button"
-          onClick={onOpenReports}
-          className="text-sm font-medium text-black/55"
-        >
-          {m['finances.viewAnalysis']()}
-        </button>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`h-8 shrink-0 rounded-full px-4 text-sm font-medium shadow-[0_1px_1px_rgba(0,0,0,0.05)] ${
+        active
+          ? 'bg-[#0d0809] text-white'
+          : 'border border-[#e9e9e9] bg-white text-[#1e1e1e]'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function FigmaSummaryCard({
+  income,
+  totalExpense,
+  balance,
+  onAdd,
+}: {
+  income: number;
+  totalExpense: number;
+  balance: number;
+  onAdd: () => void;
+}) {
+  return (
+    <section className="rounded-[24px] border border-[#e9e9e9] bg-[#0d0809] p-4 text-white">
+      <div>
+        <p className="text-xs text-white/65">{m['finances.monthBalance']()}</p>
+        <p className="mt-1 truncate text-[36px] font-semibold leading-10 tracking-normal">
+          {moneyLabel(balance)}
+        </p>
       </div>
-      <div className="mt-5 space-y-4">
-        {topCategories.length === 0 ? (
-          <p className="text-sm text-black/45">
-            {m['finances.emptyCategories']()}
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="min-w-0 rounded-lg bg-[#2b2224] px-3 py-2">
+          <p className="text-xs text-white/75">{m['finances.income']()}</p>
+          <p className="mt-1 truncate text-xl font-medium">
+            {moneyLabel(income)}
           </p>
-        ) : (
-          topCategories.map((item) => (
-            <div key={`${item.categoryId ?? 'none'}:${item.currency}`}>
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="truncate font-medium">
-                  {item.categoryName}
-                </span>
-                <span className="text-black/45">
-                  {formatCurrency(item.currency, item.amount, {
-                    maximumFractionDigits: 0,
-                  })}
-                </span>
-              </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/5">
-                <div
-                  className="h-full rounded-full bg-[#101113]"
-                  style={{
-                    width: `${Math.min(
-                      100,
-                      totalExpense > 0 ? (item.amount / totalExpense) * 100 : 0,
-                    )}%`,
-                  }}
-                />
-              </div>
-            </div>
-          ))
-        )}
+        </div>
+        <div className="min-w-0 rounded-lg bg-[#2b2224] px-3 py-2">
+          <p className="text-xs text-white/75">{m['finances.expenses']()}</p>
+          <p className="mt-1 truncate text-xl font-medium">
+            {moneyLabel(totalExpense)}
+          </p>
+        </div>
       </div>
+      <button
+        type="button"
+        onClick={onAdd}
+        className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-4 text-base font-medium text-primary-foreground shadow-[0_8px_10px_rgba(222,3,77,0.1)]"
+      >
+        <span className="text-xl leading-none">+</span>
+        {m['finances.addTransaction']()}
+      </button>
     </section>
   );
 }
 
-function TransactionAvatar({
-  transaction,
+function FigmaSummaryTile({
+  label,
+  value,
+  tone = 'primary',
 }: {
-  transaction: FinanceTransaction;
+  label: string;
+  value: string;
+  tone?: 'primary' | 'blue';
 }) {
-  const label =
-    transaction.category?.name?.slice(0, 1) ??
-    transaction.description.slice(0, 1) ??
-    '?';
-
   return (
-    <div
-      className="flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
-      style={{ backgroundColor: transaction.category?.color ?? '#101113' }}
-    >
-      {label.toUpperCase()}
+    <div className="min-w-0 rounded-2xl bg-white px-3 py-2 shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
+      <div
+        className={`flex size-8 items-center justify-center rounded-full text-xs ${
+          tone === 'blue'
+            ? 'bg-[#eef2ff] text-[#4f46e5]'
+            : 'bg-primary text-primary-foreground'
+        }`}
+      >
+        <HugeiconsIcon
+          icon={tone === 'blue' ? UserGroupIcon : Wallet02Icon}
+          className="size-4"
+        />
+      </div>
+      <p className="mt-4 truncate text-xs text-[#1e1e1e]">{label}</p>
+      <p className="mt-1 truncate text-xl font-medium leading-7 text-[#1e1e1e]">
+        {value}
+      </p>
     </div>
   );
 }
 
-function RecentTransactions({
+function FigmaHistory({
   transactions,
   onOpen,
 }: {
@@ -417,45 +348,55 @@ function RecentTransactions({
   const recentTransactions = transactions.slice(0, 5);
 
   return (
-    <section className="rounded-[30px] border border-black/5 bg-white p-5">
-      <h2 className="text-lg font-semibold">
-        {m['finances.recentTransactions']()}
+    <section className="mt-4">
+      <h2 className="text-sm font-semibold text-[#1e1e1e]">
+        {m['finances.history']()}
       </h2>
-      <div className="mt-4 divide-y divide-black/5">
+      <p className="mt-5 text-xs font-medium text-[#626262]">
+        {m['finances.today']()}
+      </p>
+      <div className="mt-3 grid gap-4">
         {recentTransactions.length === 0 ? (
-          <p className="py-4 text-sm text-black/45">
+          <div className="rounded-2xl bg-white p-4 text-sm text-[#626262] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
             {m['finances.emptyTransactions']()}
-          </p>
+          </div>
         ) : (
           recentTransactions.map((transaction) => (
             <button
               key={transaction.id}
               type="button"
               onClick={() => onOpen(transaction)}
-              className="flex w-full items-center gap-3 py-3 text-left"
+              className="flex w-full min-w-0 items-center gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
             >
-              <TransactionAvatar transaction={transaction} />
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e9e9e9] text-[#1e1e1e]">
+                <HugeiconsIcon icon={Wallet02Icon} className="size-5" />
+              </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">
+                <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
                   {transaction.description}
                 </p>
-                <p className="mt-0.5 truncate text-xs text-black/45">
-                  {transaction.category?.name ?? m['finances.noCategory']()} ·{' '}
-                  {formatShortDate(transaction.occurredAt)}
+                <p className="truncate text-xs leading-4 text-[#626262]">
+                  {transaction.category?.name ?? m['finances.noCategory']()}
                 </p>
               </div>
-              <span
-                className={`shrink-0 text-sm font-semibold ${
-                  transaction.type === 'INCOME'
-                    ? 'text-[#047857]'
-                    : 'text-[#b45309]'
-                }`}
-              >
-                {transaction.type === 'INCOME' ? '+' : '-'}
-                {formatCurrency(transaction.currency, transaction.amount, {
-                  maximumFractionDigits: 0,
-                })}
-              </span>
+              <div className="min-w-0 shrink-0 text-right">
+                <p className="text-base font-medium leading-6 text-[#1e1e1e]">
+                  {formatCurrency(transaction.currency, transaction.amount, {
+                    maximumFractionDigits: 0,
+                  })}
+                </p>
+                <p
+                  className={`max-w-24 truncate text-xs leading-4 ${
+                    transaction.type === 'INCOME'
+                      ? 'text-[#047857]'
+                      : 'text-[#b91c1c]'
+                  }`}
+                >
+                  {transaction.type === 'INCOME'
+                    ? m['finances.income']()
+                    : m['finances.expense']()}
+                </p>
+              </div>
             </button>
           ))
         )}
@@ -1325,6 +1266,7 @@ function RouteComponent() {
             <div className="mt-5 grid gap-3">
               <Link
                 to="/debts"
+                search={{ from: 'finances' }}
                 className="rounded-[24px] bg-[#f7f7f4] p-4 text-sm font-semibold"
               >
                 {m['finances.netDebts']()}: {moneyLabel(owedToYou - owedByYou)}
@@ -1577,149 +1519,92 @@ function RouteComponent() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f4] text-[#101113]">
-      <div className="mx-auto flex min-h-screen w-full max-w-[560px] flex-col px-5 pb-28 pt-7 md:max-w-5xl">
-        <header>
-          <p className="text-sm font-medium text-black/45">
-            {m['finances.eyebrow']()}
-          </p>
-          <h1 className="mt-1 text-4xl font-semibold leading-none">
+    <main className="min-h-screen bg-[#f3f3f3] text-[#1e1e1e]">
+      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col overflow-x-hidden px-4 pb-28 pt-6">
+        <header className="flex items-center justify-between gap-3">
+          <h1 className="truncate text-2xl font-semibold leading-8">
             {m['finances.title']()}
           </h1>
+          <label className="relative h-8 shrink-0 overflow-hidden rounded-full border border-[#e9e9e9] bg-white px-3 shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
+            <span className="flex h-full items-center text-sm font-medium text-[#1e1e1e]">
+              {formatMonthLabel(month)}
+            </span>
+            <input
+              type="month"
+              value={month}
+              onChange={(event) => setMonth(event.target.value)}
+              className="absolute inset-0 opacity-0"
+              aria-label={m['finances.month']()}
+            />
+          </label>
         </header>
 
+        <nav
+          className="-mx-4 mt-8 flex gap-3 overflow-x-auto px-4 pb-1"
+          aria-label={m['finances.title']()}
+        >
+          <FinanceTab active onClick={() => goTo('dashboard')}>
+            {m['finances.movements']()}
+          </FinanceTab>
+          <FinanceTab onClick={() => void navigate({ to: '/goals' })}>
+            {m['finances.goals']()}
+          </FinanceTab>
+          <FinanceTab
+            onClick={() =>
+              void navigate({
+                to: '/debts',
+                search: { from: 'finances' },
+              })
+            }
+          >
+            {m['finances.debts']()}
+          </FinanceTab>
+          <FinanceTab onClick={() => goTo('categories')}>
+            {m['finances.categories']()}
+          </FinanceTab>
+          <FinanceTab onClick={() => goTo('budgets')}>
+            {m['finances.budgets']()}
+          </FinanceTab>
+        </nav>
+
         <div className="mt-7">
-          <BalanceCard
-            month={month}
+          <FigmaSummaryCard
             income={income}
             totalExpense={totalExpense}
             balance={balance}
-            onMonthChange={setMonth}
+            onAdd={() => goTo('new')}
           />
         </div>
 
-        <section className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <ActionCard
-            title={m['finances.addTransaction']()}
-            icon={Add01Icon}
-            onClick={() => goTo('new')}
-          />
-          <ActionCard
-            title={m['finances.categories']()}
-            icon={TargetIcon}
-            onClick={() => goTo('categories')}
-          />
-          <ActionCard
-            title={m['finances.budgets']()}
-            icon={PiggyBankIcon}
-            onClick={() => goTo('budgets')}
-          />
-          <ActionCard
-            title={m['finances.reports']()}
-            icon={Wallet02Icon}
-            onClick={() => goTo('reports')}
-          />
-        </section>
-
-        <section className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <SummaryCard
-            label={m['finances.personalExpenses']()}
-            value={moneyLabel(personalExpense)}
-          />
-          <SummaryCard
-            label={m['finances.groupExpenses']()}
-            value={moneyLabel(groupExpense)}
-          />
-          <button
-            type="button"
-            onClick={() => void navigate({ to: '/debts' })}
-            className="min-w-0 text-left"
-          >
-            <SummaryCard
-              label={m['finances.owedToYou']()}
+        <section className="mt-4">
+          <h2 className="text-sm font-semibold text-[#1e1e1e]">
+            {m['finances.financialSummary']()}
+          </h2>
+          <div className="mt-2 grid grid-cols-2 gap-4 rounded-[24px] border border-[#e9e9e9] bg-[#e9e9e9] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <FigmaSummaryTile
+              label={m['finances.groupExpenses']()}
+              value={moneyLabel(groupExpense)}
+              tone="blue"
+            />
+            <FigmaSummaryTile
+              label={m['finances.personalSpace']()}
+              value={moneyLabel(personalExpense)}
+            />
+            <FigmaSummaryTile
+              label={m['finances.pendingToReceive']()}
               value={moneyLabel(owedToYou)}
             />
-          </button>
-          <button
-            type="button"
-            onClick={() => void navigate({ to: '/debts' })}
-            className="min-w-0 text-left"
-          >
-            <SummaryCard
-              label={m['finances.youOwe']()}
+            <FigmaSummaryTile
+              label={m['finances.pendingToPay']()}
               value={moneyLabel(owedByYou)}
             />
-          </button>
+          </div>
         </section>
 
-        <div className="mt-5 grid gap-5 md:grid-cols-[1fr_0.95fr]">
-          <CategoryBars
-            summary={summary}
-            totalExpense={totalExpense}
-            onOpenReports={() => goTo('reports')}
-          />
-          <div className="grid gap-5">
-            <section className="rounded-[30px] border border-black/5 bg-white p-5">
-              <div className="flex items-center gap-3">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <HugeiconsIcon icon={TargetIcon} className="size-5" />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-lg font-semibold">
-                    {m['finances.goalsProgress']()}
-                  </h2>
-                  <p className="mt-1 truncate text-sm text-black/45">
-                    {moneyLabel(goalSaved)} / {moneyLabel(goalTarget)}
-                  </p>
-                </div>
-              </div>
-              <Link
-                to="/goals"
-                className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
-              >
-                {m['finances.viewGoals']()}
-              </Link>
-            </section>
-
-            <section className="rounded-[30px] border border-black/5 bg-white p-5">
-              <div className="flex items-center gap-3">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <HugeiconsIcon icon={UserGroupIcon} className="size-5" />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-lg font-semibold">
-                    {m['finances.netDebts']()}
-                  </h2>
-                </div>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <SummaryCard
-                  label={m['finances.owedToYou']()}
-                  value={moneyLabel(owedToYou)}
-                />
-                <SummaryCard
-                  label={m['finances.youOwe']()}
-                  value={moneyLabel(owedByYou)}
-                />
-              </div>
-              <Link
-                to="/debts"
-                className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
-              >
-                {m['finances.viewDebts']()}
-              </Link>
-            </section>
-          </div>
-        </div>
-
-        <div className="mt-5">
-          <RecentTransactions
-            transactions={summary.recentTransactions}
-            onOpen={(nextTransaction) =>
-              goTo('transaction', nextTransaction.id)
-            }
-          />
-        </div>
+        <FigmaHistory
+          transactions={summary.recentTransactions}
+          onOpen={(nextTransaction) => goTo('transaction', nextTransaction.id)}
+        />
       </div>
     </main>
   );

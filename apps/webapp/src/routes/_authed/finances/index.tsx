@@ -1,10 +1,4 @@
 import {
-  MoreVerticalIcon,
-  UserGroupIcon,
-  Wallet02Icon,
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react';
-import {
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -17,30 +11,65 @@ import {
   useNavigate,
   useRouterState,
 } from '@tanstack/react-router';
-import type { RefObject } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { financesClient } from '#/api/finances';
-import type { InferRequestType, InferResponseType } from '#/api/types';
 import { Button } from '#/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '#/components/ui/dropdown-menu';
-import { getGroupFlowEntryState } from '#/lib/group-flow-navigation';
-import { formatCurrency, formatShortDate, getIntlLocale } from '#/lib/i18n';
+import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
-
-type FinanceView =
-  | 'dashboard'
-  | 'new'
-  | 'accounts'
-  | 'categories'
-  | 'budgets'
-  | 'reports'
-  | 'transaction';
+import { FinanceDashboardView } from './-components/finance-dashboard-view';
+import { ScreenShell, SummaryCard } from './-components/finance-layout';
+import {
+  accountsEndpoint,
+  accountTypeOptions,
+  categoryColors,
+  categoryIcons,
+  categorySpend,
+  closeAccountEndpoint,
+  createAccountEndpoint,
+  createCategoryEndpoint,
+  createTransactionEndpoint,
+  currency,
+  currentMonthKey,
+  deleteAccountEndpoint,
+  deleteCategoryEndpoint,
+  deleteTransactionEndpoint,
+  type EditableFinanceTransaction,
+  type FinanceAccount,
+  type FinanceAccountInput,
+  type FinanceAccountUpdateInput,
+  type FinanceBudgetInput,
+  type FinanceCategory,
+  type FinanceCategoryInput,
+  type FinanceCategoryKind,
+  type FinanceCategoryUpdateInput,
+  type FinanceMovementTransaction,
+  type FinanceTransactionInput,
+  type FinanceTransactionUpdateInput,
+  type FinanceView,
+  getAccountStatusLabel,
+  getAccountTypeLabel,
+  getBrowserTimeZone,
+  getCategoryKindLabel,
+  getCurrencyValue,
+  isFinanceView,
+  moneyLabel,
+  movementsEndpoint,
+  parseMoney,
+  parseTagsInput,
+  summaryEndpoint,
+  tagsToInput,
+  toCategoryKind,
+  todayKey,
+  toInputDate,
+  updateAccountEndpoint,
+  updateCategoryEndpoint,
+  updateTransactionEndpoint,
+  upsertBudgetEndpoint,
+} from './-components/finance-model';
+import {
+  CreateTransactionView,
+  TransactionDetailView,
+} from './-components/finance-transaction-views';
 
 export const Route = createFileRoute('/_authed/finances/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -58,511 +87,6 @@ export const Route = createFileRoute('/_authed/finances/')({
   }),
   component: RouteComponent,
 });
-
-const summaryEndpoint = financesClient.summary.$get;
-const movementsEndpoint = financesClient.movements.$get;
-const accountsEndpoint = financesClient.accounts.$get;
-const createAccountEndpoint = financesClient.accounts.$post;
-const updateAccountEndpoint = financesClient.accounts[':id'].$patch;
-const deleteAccountEndpoint = financesClient.accounts[':id'].$delete;
-const closeAccountEndpoint = financesClient.accounts[':id'].close.$post;
-const createTransactionEndpoint = financesClient.transactions.$post;
-const updateTransactionEndpoint = financesClient.transactions[':id'].$patch;
-const deleteTransactionEndpoint = financesClient.transactions[':id'].$delete;
-const createCategoryEndpoint = financesClient.categories.$post;
-const updateCategoryEndpoint = financesClient.categories[':id'].$patch;
-const deleteCategoryEndpoint = financesClient.categories[':id'].$delete;
-const upsertBudgetEndpoint = financesClient.budgets.$post;
-
-type FinanceSummary = InferResponseType<typeof summaryEndpoint>;
-type FinanceMovementsPage = InferResponseType<typeof movementsEndpoint>;
-type FinanceAccountsPage = InferResponseType<typeof accountsEndpoint>;
-type FinanceAccountInput = InferRequestType<
-  typeof createAccountEndpoint
->['json'];
-type FinanceAccountUpdateInput = InferRequestType<
-  typeof updateAccountEndpoint
->['json'];
-type FinanceTransactionInput = InferRequestType<
-  typeof createTransactionEndpoint
->['json'];
-type FinanceTransactionUpdateInput = InferRequestType<
-  typeof updateTransactionEndpoint
->['json'];
-type FinanceCategoryInput = InferRequestType<
-  typeof createCategoryEndpoint
->['json'];
-type FinanceCategoryUpdateInput = InferRequestType<
-  typeof updateCategoryEndpoint
->['json'];
-type FinanceBudgetInput = InferRequestType<typeof upsertBudgetEndpoint>['json'];
-type FinanceCategory = FinanceSummary['categories'][number];
-type FinanceAccount = FinanceAccountsPage['data'][number];
-type FinanceTransaction = FinanceSummary['recentTransactions'][number];
-type FinanceMovement = FinanceMovementsPage['data'][number];
-type FinanceMovementTransaction = Extract<
-  FinanceMovement,
-  { source: 'transaction' }
->;
-type FinanceGroupExpenseMovement = Extract<
-  FinanceMovement,
-  { source: 'group-expense' }
->;
-type FinanceTag = FinanceSummary['tags'][number];
-type FinanceCategoryKind = 'income' | 'expense' | 'both';
-type EditableFinanceTransaction =
-  | FinanceTransaction
-  | FinanceMovementTransaction;
-
-const currency = 'COP';
-const financeViews = new Set<FinanceView>([
-  'dashboard',
-  'new',
-  'accounts',
-  'categories',
-  'budgets',
-  'reports',
-  'transaction',
-]);
-const categoryColors = [
-  '#111827',
-  '#2563eb',
-  '#16a34a',
-  '#db2777',
-  '#f59e0b',
-  '#7c3aed',
-  '#dc2626',
-  '#0f766e',
-] as const;
-const categoryIcons = ['tag', 'home', 'utensils', 'sparkles', 'bolt', 'wallet'];
-const accountTypeOptions = [
-  'bank',
-  'savings',
-  'term_deposit',
-  'cash',
-  'wallet',
-  'credit_card',
-  'other',
-] as const;
-
-function isFinanceView(value: unknown): value is FinanceView {
-  return typeof value === 'string' && financeViews.has(value as FinanceView);
-}
-
-function getBrowserTimeZone() {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-}
-
-function currentMonthKey() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function formatMonthLabel(month: string) {
-  const [yearValue, monthValue] = month.split('-').map(Number);
-  const year = yearValue ?? new Date().getFullYear();
-  const monthIndex = (monthValue ?? 1) - 1;
-  return new Intl.DateTimeFormat(getIntlLocale(), {
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date(year, monthIndex, 1, 12));
-}
-
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function parseMoney(value: string) {
-  const normalized = value.replace(/[^\d.,]/g, '').replace(',', '.');
-  const amount = Number(normalized);
-  return Number.isFinite(amount) ? amount : 0;
-}
-
-function toInputDate(value: string | null | undefined) {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toISOString().slice(0, 10);
-}
-
-function getAccountTypeLabel(type: string) {
-  const normalized = type.toLowerCase();
-  if (normalized === 'bank') return m['finances.accountTypeBank']();
-  if (normalized === 'savings') return m['finances.accountTypeSavings']();
-  if (normalized === 'term_deposit') {
-    return m['finances.accountTypeTermDeposit']();
-  }
-  if (normalized === 'cash') return m['finances.accountTypeCash']();
-  if (normalized === 'wallet') return m['finances.accountTypeWallet']();
-  if (normalized === 'credit_card') {
-    return m['finances.accountTypeCreditCard']();
-  }
-  return m['finances.accountTypeOther']();
-}
-
-function getAccountStatusLabel(status: string) {
-  if (status === 'CLOSED') return m['finances.accountStatusClosed']();
-  if (status === 'MATURED') return m['finances.accountStatusMatured']();
-  return m['finances.accountStatusActive']();
-}
-
-function getCurrencyValue(values: Record<string, number>, selected: string) {
-  return values[selected] ?? 0;
-}
-
-function moneyLabel(amount: number) {
-  return formatCurrency(currency, amount, { maximumFractionDigits: 0 });
-}
-
-function parseTagsInput(value: string) {
-  const tags = value
-    .split(/[\s,]+/)
-    .map((tag) =>
-      tag
-        .trim()
-        .toLowerCase()
-        .replace(/^#+/, '')
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, ''),
-    )
-    .filter(Boolean);
-
-  return Array.from(new Set(tags)).slice(0, 10);
-}
-
-function tagsToInput(tags: Array<{ name: string }>) {
-  return tags.map((tag) => `#${tag.name}`).join(' ');
-}
-
-function appendTagToInput(value: string, tagName: string) {
-  const tags = parseTagsInput(value);
-  if (!tags.includes(tagName)) tags.push(tagName);
-  return tags.map((tag) => `#${tag}`).join(' ');
-}
-
-function toCategoryKind(
-  transactionType: FinanceCategory['transactionType'],
-): FinanceCategoryKind {
-  if (transactionType === 'INCOME') return 'income';
-  if (transactionType === 'EXPENSE') return 'expense';
-  return 'both';
-}
-
-function getCategoryKindLabel(kind: FinanceCategoryKind) {
-  if (kind === 'income') return m['finances.income']();
-  if (kind === 'expense') return m['finances.expense']();
-  return m['finances.both']();
-}
-
-function isCategoryAllowedForTransaction(
-  category: FinanceCategory,
-  transaction: EditableFinanceTransaction,
-) {
-  return (
-    category.transactionType === 'BOTH' ||
-    (transaction.type === 'INCOME' && category.transactionType === 'INCOME') ||
-    (transaction.type === 'EXPENSE' && category.transactionType === 'EXPENSE')
-  );
-}
-
-function categorySpend(summary: FinanceSummary, categoryId: string) {
-  return summary.categoryExpenseTotals
-    .filter(
-      (item) => item.categoryId === categoryId && item.currency === currency,
-    )
-    .reduce((total, item) => total + item.amount, 0);
-}
-
-function ScreenShell({
-  title,
-  month,
-  onBack,
-  children,
-}: {
-  title: string;
-  month: string;
-  onBack: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <main className="min-h-screen bg-[#f7f7f4] text-[#101113]">
-      <div className="mx-auto flex min-h-screen w-full max-w-[560px] flex-col px-5 pb-28 pt-6 md:max-w-5xl">
-        <header className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex size-11 items-center justify-center rounded-full border border-black/10 bg-white text-xl"
-            aria-label={m['finances.back']()}
-          >
-            <span aria-hidden="true">‹</span>
-          </button>
-          <div className="min-w-0 text-center">
-            <p className="text-xs font-medium text-black/45">
-              {formatMonthLabel(month)}
-            </p>
-            <h1 className="truncate text-lg font-semibold">{title}</h1>
-          </div>
-          <div className="size-11" />
-        </header>
-        <div className="mt-7">{children}</div>
-      </div>
-    </main>
-  );
-}
-
-function SummaryCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 overflow-hidden rounded-[26px] border border-black/5 bg-white p-4">
-      <p className="truncate text-sm text-black/45">{label}</p>
-      <p className="mt-2 truncate text-xl font-semibold">{value}</p>
-    </div>
-  );
-}
-
-function FinanceTab({
-  active,
-  children,
-  onClick,
-}: {
-  active?: boolean;
-  children: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`h-8 shrink-0 rounded-full px-4 text-sm font-medium shadow-[0_1px_1px_rgba(0,0,0,0.05)] ${
-        active
-          ? 'bg-[#0d0809] text-white'
-          : 'border border-[#e9e9e9] bg-white text-[#1e1e1e]'
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function FigmaSummaryCard({
-  income,
-  totalExpense,
-  balance,
-  onAdd,
-}: {
-  income: number;
-  totalExpense: number;
-  balance: number;
-  onAdd: () => void;
-}) {
-  return (
-    <section className="rounded-[24px] border border-[#e9e9e9] bg-[#0d0809] p-4 text-white">
-      <div>
-        <p className="text-xs text-white/65">{m['finances.monthBalance']()}</p>
-        <p className="mt-1 truncate text-[36px] font-semibold leading-10 tracking-normal">
-          {moneyLabel(balance)}
-        </p>
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="min-w-0 rounded-lg bg-[#2b2224] px-3 py-2">
-          <p className="text-xs text-white/75">{m['finances.income']()}</p>
-          <p className="mt-1 truncate text-xl font-medium">
-            {moneyLabel(income)}
-          </p>
-        </div>
-        <div className="min-w-0 rounded-lg bg-[#2b2224] px-3 py-2">
-          <p className="text-xs text-white/75">{m['finances.expenses']()}</p>
-          <p className="mt-1 truncate text-xl font-medium">
-            {moneyLabel(totalExpense)}
-          </p>
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={onAdd}
-        className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-4 text-base font-medium text-primary-foreground shadow-[0_8px_10px_rgba(222,3,77,0.1)]"
-      >
-        <span className="text-xl leading-none">+</span>
-        {m['finances.addTransaction']()}
-      </button>
-    </section>
-  );
-}
-
-function FigmaSummaryTile({
-  label,
-  value,
-  tone = 'primary',
-}: {
-  label: string;
-  value: string;
-  tone?: 'primary' | 'blue';
-}) {
-  return (
-    <div className="min-w-0 rounded-2xl bg-white px-3 py-2 shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
-      <div
-        className={`flex size-8 items-center justify-center rounded-full text-xs ${
-          tone === 'blue'
-            ? 'bg-[#eef2ff] text-[#4f46e5]'
-            : 'bg-primary text-primary-foreground'
-        }`}
-      >
-        <HugeiconsIcon
-          icon={tone === 'blue' ? UserGroupIcon : Wallet02Icon}
-          className="size-4"
-        />
-      </div>
-      <p className="mt-4 truncate text-xs text-[#1e1e1e]">{label}</p>
-      <p className="mt-1 truncate text-xl font-medium leading-7 text-[#1e1e1e]">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function FigmaHistory({
-  movements,
-  loadMoreRef,
-  isLoading,
-  isFetchingNextPage,
-  onOpenTransaction,
-  onOpenGroupExpense,
-}: {
-  movements: FinanceMovement[];
-  loadMoreRef: RefObject<HTMLDivElement | null>;
-  isLoading: boolean;
-  isFetchingNextPage: boolean;
-  onOpenTransaction: (transaction: FinanceMovementTransaction) => void;
-  onOpenGroupExpense: (movement: FinanceGroupExpenseMovement) => void;
-}) {
-  return (
-    <section className="mt-4">
-      <h2 className="text-sm font-semibold text-[#1e1e1e]">
-        {m['finances.history']()}
-      </h2>
-      <div className="mt-3 grid gap-4">
-        {isLoading ? (
-          <div className="rounded-2xl bg-white p-4 text-sm text-[#626262] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-            {m['common.loading']()}
-          </div>
-        ) : null}
-        {!isLoading && movements.length === 0 ? (
-          <div className="rounded-2xl bg-white p-4 text-sm text-[#626262] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-            {m['finances.emptyTransactions']()}
-          </div>
-        ) : null}
-        {movements.map((movement) => {
-          if (movement.source === 'transaction') {
-            return (
-              <button
-                key={`transaction:${movement.id}`}
-                type="button"
-                onClick={() => onOpenTransaction(movement)}
-                className="flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-              >
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e9e9e9] text-[#1e1e1e]">
-                  <HugeiconsIcon icon={Wallet02Icon} className="size-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
-                    {movement.description}
-                  </p>
-                  <p className="truncate text-xs leading-4 text-[#626262]">
-                    {movement.category?.name ?? m['finances.noCategory']()}
-                  </p>
-                  <p className="mt-1 truncate text-xs leading-4 text-[#626262]">
-                    {formatShortDate(movement.occurredAt)}
-                  </p>
-                  <span className="mt-2 inline-flex max-w-full rounded-full bg-[#f4f4f2] px-2.5 py-1 text-[11px] font-medium leading-none text-[#626262]">
-                    {m['finances.personalMovement']()}
-                  </span>
-                </div>
-                <div className="min-w-0 shrink-0 text-right">
-                  <p className="text-base font-medium leading-6 text-[#1e1e1e]">
-                    {formatCurrency(movement.currency, movement.amount, {
-                      maximumFractionDigits: 0,
-                    })}
-                  </p>
-                  <p
-                    className={`max-w-24 truncate text-xs leading-4 ${
-                      movement.type === 'INCOME'
-                        ? 'text-[#047857]'
-                        : 'text-[#b91c1c]'
-                    }`}
-                  >
-                    {movement.type === 'INCOME'
-                      ? m['finances.income']()
-                      : m['finances.expense']()}
-                  </p>
-                </div>
-              </button>
-            );
-          }
-
-          const balance = movement.currentUserBalance;
-          const hasBalance =
-            typeof balance === 'number' && Math.abs(balance) >= 0.01;
-          const amountLabel =
-            hasBalance && balance > 0
-              ? m['finances.owedToYou']()
-              : hasBalance && balance < 0
-                ? m['finances.youOwe']()
-                : m['finances.yourShare']();
-          const amountValue =
-            hasBalance && balance ? Math.abs(balance) : movement.userShare;
-
-          return (
-            <button
-              key={`group-expense:${movement.id}`}
-              type="button"
-              onClick={() => onOpenGroupExpense(movement)}
-              className="flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-            >
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]">
-                <HugeiconsIcon icon={UserGroupIcon} className="size-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
-                  {movement.description}
-                </p>
-                <p className="truncate text-xs leading-4 text-[#626262]">
-                  {movement.category?.name ?? movement.groupName}
-                </p>
-                <p className="mt-1 truncate text-xs leading-4 text-[#626262]">
-                  {formatShortDate(movement.occurredAt)}
-                </p>
-                <span className="mt-2 inline-flex max-w-full rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium leading-none text-primary">
-                  {movement.groupName}
-                </span>
-              </div>
-              <div className="min-w-0 shrink-0 text-right">
-                <p className="text-base font-medium leading-6 text-[#1e1e1e]">
-                  {formatCurrency(movement.currency, amountValue, {
-                    maximumFractionDigits: 0,
-                  })}
-                </p>
-                <p
-                  className={`max-w-24 truncate text-xs leading-4 ${
-                    hasBalance && balance > 0
-                      ? 'text-[#047857]'
-                      : 'text-[#b91c1c]'
-                  }`}
-                >
-                  {amountLabel}
-                </p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-      <div ref={loadMoreRef} className="h-8" />
-      {isFetchingNextPage ? (
-        <p className="text-center text-sm text-[#626262]">
-          {m['common.loading']()}
-        </p>
-      ) : null}
-    </section>
-  );
-}
 
 function RouteComponent() {
   const pathname = useRouterState({
@@ -1327,121 +851,32 @@ function FinancesDashboard() {
 
   if (view === 'new') {
     return (
-      <ScreenShell
-        title={m['finances.addTransaction']()}
+      <CreateTransactionView
         month={month}
+        transactionType={transactionType}
+        amount={amount}
+        categoryId={categoryId}
+        selectedAccountId={selectedAccountId}
+        description={description}
+        transactionDate={transactionDate}
+        tagsInput={tagsInput}
+        transactionCategories={transactionCategories}
+        transactionAccounts={transactionAccounts}
+        tags={tags}
+        isSaving={createTransactionMutation.isPending}
         onBack={() => goTo('dashboard')}
-      >
-        <div className="grid gap-5">
-          <div className="grid grid-cols-2 gap-2 rounded-full bg-white p-1">
-            {(['expense', 'income'] as const).map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => {
-                  setTransactionType(type);
-                  setCategoryId('');
-                }}
-                className={`h-11 rounded-full text-sm font-medium ${
-                  transactionType === type
-                    ? 'bg-[#101113] text-white'
-                    : 'text-black/50'
-                }`}
-              >
-                {type === 'expense'
-                  ? m['finances.expense']()
-                  : m['finances.income']()}
-              </button>
-            ))}
-          </div>
-
-          <input
-            inputMode="decimal"
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-            placeholder={m['finances.amountPlaceholder']()}
-            className="h-20 rounded-[28px] border border-black/5 bg-white px-5 text-3xl font-semibold outline-none"
-          />
-          <select
-            value={categoryId}
-            onChange={(event) => setCategoryId(event.target.value)}
-            className="h-14 rounded-[22px] border border-black/5 bg-white px-4 text-base outline-none"
-          >
-            <option value="">{m['finances.noCategory']()}</option>
-            {transactionCategories.map((category: FinanceCategory) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={selectedAccountId}
-            onChange={(event) => setSelectedAccountId(event.target.value)}
-            className="h-14 rounded-[22px] border border-black/5 bg-white px-4 text-base outline-none"
-          >
-            <option value="">
-              {transactionType === 'income'
-                ? m['finances.incomeAccountPlaceholder']()
-                : m['finances.expenseAccountPlaceholder']()}
-            </option>
-            {transactionAccounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name} · {account.institution ?? account.currency}
-              </option>
-            ))}
-          </select>
-          <input
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder={
-              transactionType === 'income'
-                ? m['finances.incomePlaceholder']()
-                : m['finances.expensePlaceholder']()
-            }
-            className="h-14 rounded-[22px] border border-black/5 bg-white px-4 text-base outline-none"
-          />
-          <input
-            type="date"
-            value={transactionDate}
-            onChange={(event) => setTransactionDate(event.target.value)}
-            className="h-14 rounded-[22px] border border-black/5 bg-white px-4 text-base outline-none"
-          />
-          <input
-            value={tagsInput}
-            onChange={(event) => setTagsInput(event.target.value)}
-            placeholder={m['finances.tagsPlaceholder']()}
-            className="h-14 rounded-[22px] border border-black/5 bg-white px-4 text-base outline-none"
-          />
-          {tags.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {tags.slice(0, 10).map((tag: FinanceTag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() =>
-                    setTagsInput((current) =>
-                      appendTagToInput(current, tag.name),
-                    )
-                  }
-                  className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-black/55"
-                >
-                  #{tag.name}
-                </button>
-              ))}
-            </div>
-          ) : null}
-          <Button
-            type="button"
-            onClick={submitTransaction}
-            disabled={createTransactionMutation.isPending}
-            className="h-14 rounded-full"
-          >
-            {createTransactionMutation.isPending
-              ? m['common.saving']()
-              : m['finances.saveTransaction']()}
-          </Button>
-        </div>
-      </ScreenShell>
+        onTransactionTypeChange={(type) => {
+          setTransactionType(type);
+          setCategoryId('');
+        }}
+        onAmountChange={setAmount}
+        onCategoryChange={setCategoryId}
+        onAccountChange={setSelectedAccountId}
+        onDescriptionChange={setDescription}
+        onTransactionDateChange={setTransactionDate}
+        onTagsInputChange={setTagsInput}
+        onSubmit={submitTransaction}
+      />
     );
   }
 
@@ -2224,333 +1659,55 @@ function FinancesDashboard() {
   }
 
   if (view === 'transaction') {
-    if (!transaction) {
-      return (
-        <ScreenShell
-          title={m['finances.movement']()}
-          month={month}
-          onBack={goBackFromTransaction}
-        >
-          <div className="rounded-[30px] bg-white p-5 text-sm text-black/45">
-            {m['finances.movementNotFound']()}
-          </div>
-        </ScreenShell>
-      );
-    }
-
     return (
-      <ScreenShell
-        title={m['finances.movement']()}
+      <TransactionDetailView
         month={month}
+        transaction={transaction}
+        categories={categories}
+        transactionAccounts={transactionAccounts}
+        editingTransactionName={editingTransactionName}
+        editingTransactionAmount={editingTransactionAmount}
+        editingTransactionDate={editingTransactionDate}
+        editingTransactionCategoryId={editingTransactionCategoryId}
+        editingTransactionAccountId={editingTransactionAccountId}
+        editingTransactionTagsInput={editingTransactionTagsInput}
+        isUpdating={updateTransactionMutation.isPending}
         onBack={goBackFromTransaction}
-      >
-        <section className="rounded-[34px] bg-white p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-sm text-black/45">
-                {transaction.category?.name ?? m['finances.noCategory']()}
-              </p>
-              <p className="mt-3 text-4xl font-semibold leading-none">
-                {transaction.type === 'INCOME' ? '+' : '-'}
-                {formatCurrency(transaction.currency, transaction.amount, {
-                  maximumFractionDigits: 0,
-                })}
-              </p>
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex size-11 items-center justify-center rounded-full border border-black/10 bg-white outline-none">
-                <HugeiconsIcon icon={MoreVerticalIcon} className="size-5" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => shareTransaction(transaction)}>
-                  {m['finances.share']()}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => {
-                    if (confirm(m['finances.deleteMovementConfirm']())) {
-                      deleteTransactionMutation.mutate(transaction.id);
-                    }
-                  }}
-                >
-                  {m['common.delete']()}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <div className="mt-7 grid gap-4 text-sm">
-            <SummaryCard
-              label={m['finances.description']()}
-              value={transaction.description}
-            />
-            <SummaryCard
-              label={m['finances.date']()}
-              value={formatShortDate(transaction.occurredAt)}
-            />
-            <div className="rounded-[26px] border border-black/5 bg-white p-4">
-              <p className="text-sm text-black/45">{m['finances.tags']()}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {transaction.tags.length === 0 ? (
-                  <span className="text-sm text-black/45">
-                    {m['finances.emptyTags']()}
-                  </span>
-                ) : (
-                  transaction.tags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="rounded-full bg-[#f7f7f4] px-3 py-1.5 text-xs font-medium"
-                    >
-                      #{tag.name}
-                    </span>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-5 rounded-[30px] bg-white p-5">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold">
-              {m['finances.editMovement']()}
-            </h2>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => prepareTransactionEdit(transaction)}
-              className="rounded-full"
-            >
-              {m['finances.loadData']()}
-            </Button>
-          </div>
-          <div className="mt-5 grid gap-3">
-            <input
-              value={editingTransactionName}
-              onChange={(event) =>
-                setEditingTransactionName(event.target.value)
-              }
-              placeholder={m['finances.expensePlaceholder']()}
-              className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-            />
-            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-              <input
-                inputMode="decimal"
-                value={editingTransactionAmount}
-                onChange={(event) =>
-                  setEditingTransactionAmount(event.target.value)
-                }
-                placeholder={m['finances.amountPlaceholder']()}
-                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-              />
-              <input
-                type="date"
-                value={editingTransactionDate}
-                onChange={(event) =>
-                  setEditingTransactionDate(event.target.value)
-                }
-                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-                aria-label={m['finances.date']()}
-              />
-            </div>
-            <select
-              value={editingTransactionCategoryId}
-              onChange={(event) =>
-                setEditingTransactionCategoryId(event.target.value)
-              }
-              className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-            >
-              <option value="">{m['finances.noCategory']()}</option>
-              {categories
-                .filter((category) =>
-                  isCategoryAllowedForTransaction(category, transaction),
-                )
-                .map((category: FinanceCategory) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-            </select>
-            <select
-              value={editingTransactionAccountId}
-              onChange={(event) =>
-                setEditingTransactionAccountId(event.target.value)
-              }
-              className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-            >
-              <option value="">{m['finances.noAccount']()}</option>
-              {transactionAccounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name} · {account.institution ?? account.currency}
-                </option>
-              ))}
-            </select>
-            <input
-              value={editingTransactionTagsInput}
-              onChange={(event) =>
-                setEditingTransactionTagsInput(event.target.value)
-              }
-              placeholder={m['finances.tagsPlaceholder']()}
-              className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
-            />
-            <Button
-              type="button"
-              onClick={() => submitTransactionUpdate(transaction)}
-              disabled={updateTransactionMutation.isPending}
-              className="h-12 rounded-full"
-            >
-              {updateTransactionMutation.isPending
-                ? m['common.saving']()
-                : m['finances.saveMovementChanges']()}
-            </Button>
-          </div>
-        </section>
-      </ScreenShell>
+        onShare={(nextTransaction) => {
+          void shareTransaction(nextTransaction);
+        }}
+        onDelete={deleteTransactionMutation.mutate}
+        onPrepareEdit={prepareTransactionEdit}
+        onEditingNameChange={setEditingTransactionName}
+        onEditingAmountChange={setEditingTransactionAmount}
+        onEditingDateChange={setEditingTransactionDate}
+        onEditingCategoryChange={setEditingTransactionCategoryId}
+        onEditingAccountChange={setEditingTransactionAccountId}
+        onEditingTagsInputChange={setEditingTransactionTagsInput}
+        onSubmitUpdate={submitTransactionUpdate}
+      />
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#f3f3f3] text-[#1e1e1e]">
-      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col overflow-x-hidden px-4 pb-28 pt-6">
-        <header className="flex items-center justify-between gap-3">
-          <h1 className="truncate text-2xl font-semibold leading-8">
-            {m['finances.title']()}
-          </h1>
-          <label className="relative h-8 shrink-0 overflow-hidden rounded-full border border-[#e9e9e9] bg-white px-3 shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
-            <span className="flex h-full items-center text-sm font-medium text-[#1e1e1e]">
-              {formatMonthLabel(month)}
-            </span>
-            <input
-              type="month"
-              value={month}
-              onChange={(event) => setMonth(event.target.value)}
-              className="absolute inset-0 opacity-0"
-              aria-label={m['finances.month']()}
-            />
-          </label>
-        </header>
-
-        <nav
-          className="-mx-4 mt-8 flex gap-3 overflow-x-auto px-4 pb-1"
-          aria-label={m['finances.title']()}
-        >
-          <FinanceTab active onClick={() => goTo('dashboard')}>
-            {m['finances.movements']()}
-          </FinanceTab>
-          <FinanceTab onClick={() => void navigate({ to: '/goals' })}>
-            {m['finances.goals']()}
-          </FinanceTab>
-          <FinanceTab
-            onClick={() =>
-              void navigate({
-                to: '/debts',
-                search: { from: 'finances' },
-              })
-            }
-          >
-            {m['finances.debts']()}
-          </FinanceTab>
-          <FinanceTab onClick={() => goTo('accounts')}>
-            {m['finances.accounts']()}
-          </FinanceTab>
-          <FinanceTab onClick={() => goTo('categories')}>
-            {m['finances.categories']()}
-          </FinanceTab>
-          <FinanceTab onClick={() => goTo('budgets')}>
-            {m['finances.budgets']()}
-          </FinanceTab>
-        </nav>
-
-        <div className="mt-7">
-          <FigmaSummaryCard
-            income={income}
-            totalExpense={totalExpense}
-            balance={balance}
-            onAdd={() => goTo('new')}
-          />
-        </div>
-
-        <section className="mt-4">
-          <h2 className="text-sm font-semibold text-[#1e1e1e]">
-            {m['finances.financialSummary']()}
-          </h2>
-          <div className="mt-2 grid grid-cols-2 gap-4 rounded-[24px] border border-[#e9e9e9] bg-[#e9e9e9] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-            <FigmaSummaryTile
-              label={m['finances.groupExpenses']()}
-              value={moneyLabel(groupExpense)}
-              tone="blue"
-            />
-            <FigmaSummaryTile
-              label={m['finances.personalSpace']()}
-              value={moneyLabel(personalExpense)}
-            />
-            <FigmaSummaryTile
-              label={m['finances.pendingToReceive']()}
-              value={moneyLabel(owedToYou)}
-            />
-            <FigmaSummaryTile
-              label={m['finances.pendingToPay']()}
-              value={moneyLabel(owedByYou)}
-            />
-          </div>
-        </section>
-
-        <section className="mt-4">
-          <h2 className="text-sm font-semibold text-[#1e1e1e]">
-            {m['finances.accounts']()}
-          </h2>
-          <button
-            type="button"
-            onClick={() => goTo('accounts')}
-            className="mt-2 grid w-full min-w-0 gap-2 rounded-[24px] border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)] sm:grid-cols-3"
-          >
-            <div className="min-w-0">
-              <p className="truncate text-xs text-black/45">
-                {m['finances.accountTotal']()}
-              </p>
-              <p className="mt-1 truncate text-sm font-semibold">
-                {moneyLabel(accountTotal)}
-              </p>
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-xs text-black/45">
-                {m['finances.accountAvailable']()}
-              </p>
-              <p className="mt-1 truncate text-sm font-semibold">
-                {moneyLabel(accountAvailable)}
-              </p>
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-xs text-black/45">
-                {m['finances.accountLocked']()}
-              </p>
-              <p className="mt-1 truncate text-sm font-semibold">
-                {moneyLabel(accountLocked)}
-              </p>
-            </div>
-          </button>
-        </section>
-
-        <FigmaHistory
-          movements={movements}
-          loadMoreRef={loadMoreRef}
-          isLoading={movementsQuery.isPending}
-          isFetchingNextPage={movementsQuery.isFetchingNextPage}
-          onOpenTransaction={(nextTransaction) =>
-            goTo('transaction', nextTransaction.id)
-          }
-          onOpenGroupExpense={(movement) =>
-            void navigate({
-              to: '/groups/$id/expense/$expenseId',
-              params: { id: movement.groupId, expenseId: movement.id },
-              state: getGroupFlowEntryState(
-                `/finances?view=dashboard&month=${month}`,
-              ),
-            })
-          }
-        />
-      </div>
-    </main>
+    <FinanceDashboardView
+      month={month}
+      income={income}
+      totalExpense={totalExpense}
+      balance={balance}
+      groupExpense={groupExpense}
+      personalExpense={personalExpense}
+      owedToYou={owedToYou}
+      owedByYou={owedByYou}
+      accountTotal={accountTotal}
+      accountAvailable={accountAvailable}
+      accountLocked={accountLocked}
+      movements={movements}
+      loadMoreRef={loadMoreRef}
+      isMovementsLoading={movementsQuery.isPending}
+      isFetchingNextMovementsPage={movementsQuery.isFetchingNextPage}
+      onSetMonth={setMonth}
+      onGoTo={goTo}
+    />
   );
 }

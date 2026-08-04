@@ -145,7 +145,35 @@ export function formatMonthLabel(month: string) {
 }
 
 export function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalDateKey(new Date());
+}
+
+function toLocalDateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+    2,
+    '0',
+  )}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+export function dateKeyToLocalDate(dateKey: string, timeSource = new Date()) {
+  const [yearValue, monthValue, dayValue] = dateKey.split('-').map(Number);
+  const year = Number.isFinite(yearValue)
+    ? yearValue
+    : timeSource.getFullYear();
+  const month = Number.isFinite(monthValue)
+    ? monthValue - 1
+    : timeSource.getMonth();
+  const day = Number.isFinite(dayValue) ? dayValue : timeSource.getDate();
+
+  return new Date(
+    year,
+    month,
+    day,
+    timeSource.getHours(),
+    timeSource.getMinutes(),
+    timeSource.getSeconds(),
+    timeSource.getMilliseconds(),
+  );
 }
 
 export function parseMoney(value: string) {
@@ -158,7 +186,7 @@ export function toInputDate(value: string | null | undefined) {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toISOString().slice(0, 10);
+  return toLocalDateKey(date);
 }
 
 export function getAccountTypeLabel(type: string) {

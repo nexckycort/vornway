@@ -7,6 +7,7 @@ import { m } from '#/paraglide/messages.js';
 import {
   currency,
   currentMonthKey,
+  dateKeyToLocalDate,
   deleteTransactionEndpoint,
   type EditableFinanceTransaction,
   type FinanceTransactionUpdateInput,
@@ -192,7 +193,10 @@ function RouteComponent() {
       input: {
         description: name,
         amount: parsedAmount,
-        occurredAt: new Date(`${editingTransactionDate}T12:00:00`),
+        occurredAt: dateKeyToLocalDate(
+          editingTransactionDate,
+          new Date(nextTransaction.occurredAt),
+        ),
         categoryId: editingTransactionCategoryId || null,
         accountId: editingTransactionAccountId || null,
         tags: parseTagsInput(editingTransactionTagsInput),

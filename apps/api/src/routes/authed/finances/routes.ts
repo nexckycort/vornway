@@ -7,6 +7,7 @@ import {
   createFinanceCategorySchema,
   createFinanceTransactionSchema,
   financeCategoryParamsSchema,
+  financeMovementListQuerySchema,
   financesSummaryQuerySchema,
   financeTransactionListQuerySchema,
   financeTransactionParamsSchema,
@@ -32,6 +33,17 @@ export const financesRoutes = new Hono<AppContext>()
         summary.recentTransactions.slice(0, c.req.valid('query').limit),
       );
     },
+  )
+  .get(
+    '/movements',
+    zValidator('query', financeMovementListQuerySchema),
+    async (c) =>
+      c.json(
+        await financeOperations.listMovements(
+          c.get('user').id,
+          c.req.valid('query'),
+        ),
+      ),
   )
   .post(
     '/transactions',

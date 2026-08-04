@@ -2,6 +2,7 @@ import { db } from '#/infrastructure/database/connection';
 import type {
   CreateFinanceCategoryInput,
   CreateFinanceTransactionInput,
+  FinanceMovementListQueryInput,
   FinancesSummaryQueryInput,
   UpdateFinanceCategoryInput,
   UpdateFinanceTransactionInput,
@@ -26,6 +27,51 @@ const defaultIncomeCategories = [
 const money = (value: number) => Number(value.toFixed(2));
 const fallbackTimeZone = 'UTC';
 const tagPattern = /^[a-z0-9][a-z0-9-]{0,39}$/;
+const movementCursorSeparator = '|';
+
+type MovementCursor = {
+  occurredAt: Date;
+  source: 'transaction' | 'group-expense';
+  id: string;
+};
+
+type FinanceMovement =
+  | {
+      source: 'transaction';
+      id: string;
+      description: string;
+      amount: number;
+      currency: string;
+      occurredAt: string;
+      type: 'INCOME' | 'EXPENSE';
+      categoryId: string | null;
+      category: {
+        id: string;
+        name: string;
+        icon: string | null;
+        color: string | null;
+      } | null;
+      tags: Array<{ id: string; name: string }>;
+    }
+  | {
+      source: 'group-expense';
+      id: string;
+      groupId: string;
+      groupName: string;
+      groupType: string;
+      description: string;
+      amount: number;
+      userShare: number;
+      currentUserBalance: number | null;
+      currency: string;
+      occurredAt: string;
+      category: {
+        id: string;
+        name: string;
+        icon: string | null;
+        color: string | null;
+      } | null;
+    };
 
 function toFinanceTransactionType(type: 'income' | 'expense' | 'both') {
   return type === 'income' ? 'INCOME' : type === 'expense' ? 'EXPENSE' : 'BOTH';
@@ -138,6 +184,59 @@ function normalizeTags(tags: string[] | undefined) {
     .filter((tag) => tagPattern.test(tag));
 
   return Array.from(new Set(normalized)).slice(0, 10);
+}
+
+function encodeMovementCursor(movement: FinanceMovement) {
+  return [
+    new Date(movement.occurredAt).getTime(),
+    movement.source,
+    movement.id,
+  ].join(movementCursorSeparator);
+}
+
+function decodeMovementCursor(cursor?: string): MovementCursor | null {
+  if (!cursor) return null;
+
+  const [timestampValue, source, id] = cursor.split(movementCursorSeparator);
+  const timestamp = Number(timestampValue);
+  if (
+    !Number.isFinite(timestamp) ||
+    (source !== 'transaction' && source !== 'group-expense') ||
+    !id
+  ) {
+    return null;
+  }
+
+  return { occurredAt: new Date(timestamp), source, id };
+}
+
+function getMovementSortKey(movement: FinanceMovement | MovementCursor) {
+  return `${movement.source}:${movement.id}`;
+}
+
+function compareMovements(
+  left: FinanceMovement | MovementCursor,
+  right: FinanceMovement | MovementCursor,
+) {
+  const leftTime =
+    left.occurredAt instanceof Date
+      ? left.occurredAt.getTime()
+      : new Date(left.occurredAt).getTime();
+  const rightTime =
+    right.occurredAt instanceof Date
+      ? right.occurredAt.getTime()
+      : new Date(right.occurredAt).getTime();
+  const dateDelta = rightTime - leftTime;
+  if (dateDelta !== 0) return dateDelta;
+  return getMovementSortKey(right).localeCompare(getMovementSortKey(left));
+}
+
+function isMovementAfterCursor(
+  movement: FinanceMovement,
+  cursor: MovementCursor | null,
+) {
+  if (!cursor) return true;
+  return compareMovements(cursor, movement) < 0;
 }
 
 function tagCreates(ownerId: string, tags: string[]) {
@@ -386,6 +485,188 @@ async function getGoalTotals(userId: string) {
 }
 
 export const financeOperations = {
+  async listMovements(userId: string, input: FinanceMovementListQueryInput) {
+    await ensureDefaults(userId, input.currency);
+    const range = monthRange(input.month, input.timeZone);
+    const limit = Math.min(input.limit, 50);
+    const cursor = decodeMovementCursor(input.cursor);
+    const cursorDateFilter = cursor ? { lte: cursor.occurredAt } : undefined;
+    const activeExpenseFilter = {
+      status: 'ACTIVE' as const,
+      deletedAt: null,
+      date: {
+        gte: range.start,
+        lt: range.end,
+        ...(cursorDateFilter ? cursorDateFilter : {}),
+      },
+      OR: [
+        { notes: null },
+        {
+          notes: {
+            not: {
+              contains: '[DELETED]',
+            },
+          },
+        },
+      ],
+      group: {
+        Goal: { none: {} },
+        OR: [{ ownerId: userId }, { GroupMember: { some: { userId } } }],
+      },
+      AND: [
+        {
+          OR: [
+            { participants: { some: { member: { userId } } } },
+            {
+              group: {
+                type: 'personal',
+                GroupMember: { some: { userId } },
+              },
+              participants: { none: {} },
+            },
+          ],
+        },
+      ],
+    };
+
+    const transactionWhere = {
+      ownerId: userId,
+      occurredAt: {
+        gte: range.start,
+        lt: range.end,
+        ...(cursorDateFilter ? cursorDateFilter : {}),
+      },
+    };
+
+    const [transactionTotal, groupExpenseTotal, transactions, expenses] =
+      await Promise.all([
+        db.financeTransaction.count({
+          where: {
+            ownerId: userId,
+            occurredAt: { gte: range.start, lt: range.end },
+          },
+        }),
+        db.expense.count({
+          where: {
+            ...activeExpenseFilter,
+            date: { gte: range.start, lt: range.end },
+          },
+        }),
+        db.financeTransaction.findMany({
+          where: transactionWhere,
+          take: limit + 1,
+          orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+          include: {
+            category: true,
+            tags: { include: { tag: true } },
+          },
+        }),
+        db.expense.findMany({
+          where: activeExpenseFilter,
+          take: limit + 1,
+          orderBy: [{ date: 'desc' }, { id: 'desc' }],
+          select: {
+            id: true,
+            amount: true,
+            currency: true,
+            date: true,
+            description: true,
+            category: {
+              select: { id: true, name: true, icon: true, color: true },
+            },
+            group: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                GroupMember: { where: { userId }, select: { id: true } },
+              },
+            },
+            payers: { select: { memberId: true, amount: true } },
+            participants: { select: { memberId: true, share: true } },
+          },
+        }),
+      ]);
+
+    const transactionMovements: FinanceMovement[] = transactions.map(
+      (transaction) => ({
+        source: 'transaction',
+        id: transaction.id,
+        description: transaction.description,
+        amount: transaction.amount,
+        currency: transaction.currency,
+        occurredAt: transaction.occurredAt.toISOString(),
+        type: transaction.type === 'INCOME' ? 'INCOME' : 'EXPENSE',
+        categoryId: transaction.categoryId,
+        category: transaction.category,
+        tags: transaction.tags.map((transactionTag) => transactionTag.tag),
+      }),
+    );
+
+    const groupExpenseMovements: FinanceMovement[] = expenses.flatMap(
+      (expense) => {
+        const currentMemberId = expense.group.GroupMember[0]?.id;
+        if (!currentMemberId) return [];
+
+        const currentShare = expense.participants.find(
+          (participant) => participant.memberId === currentMemberId,
+        )?.share;
+        const currentPaid =
+          expense.payers.find((payer) => payer.memberId === currentMemberId)
+            ?.amount ?? 0;
+        const userShare =
+          typeof currentShare === 'number'
+            ? currentShare
+            : expense.group.type === 'personal' &&
+                expense.participants.length === 0
+              ? expense.amount
+              : 0;
+
+        if (userShare <= 0) return [];
+
+        return [
+          {
+            source: 'group-expense' as const,
+            id: expense.id,
+            groupId: expense.group.id,
+            groupName: expense.group.name,
+            groupType: expense.group.type,
+            description: expense.description,
+            amount: expense.amount,
+            userShare: money(userShare),
+            currentUserBalance:
+              expense.group.type === 'personal' &&
+              expense.participants.length === 0
+                ? null
+                : money(currentPaid - userShare),
+            currency: expense.currency,
+            occurredAt: expense.date.toISOString(),
+            category: expense.category,
+          },
+        ];
+      },
+    );
+
+    const movements = [...transactionMovements, ...groupExpenseMovements]
+      .filter((movement) => isMovementAfterCursor(movement, cursor))
+      .sort(compareMovements);
+    const data = movements.slice(0, limit);
+    const hasNextPage = movements.length > limit;
+    const lastMovement = data.at(-1);
+
+    return {
+      data,
+      pagination: {
+        limit,
+        total: transactionTotal + groupExpenseTotal,
+        nextCursor:
+          hasNextPage && lastMovement
+            ? encodeMovementCursor(lastMovement)
+            : null,
+      },
+    };
+  },
+
   async summary(userId: string, input: FinancesSummaryQueryInput) {
     await ensureDefaults(userId, input.currency);
     const range = monthRange(input.month, input.timeZone);

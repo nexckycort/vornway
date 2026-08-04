@@ -4,9 +4,15 @@ import {
   Wallet02Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useMemo, useState } from 'react';
+import type { RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { financesClient } from '#/api/finances';
 import type { InferRequestType, InferResponseType } from '#/api/types';
@@ -45,6 +51,7 @@ export const Route = createFileRoute('/_authed/finances')({
 });
 
 const summaryEndpoint = financesClient.summary.$get;
+const movementsEndpoint = financesClient.movements.$get;
 const createTransactionEndpoint = financesClient.transactions.$post;
 const updateTransactionEndpoint = financesClient.transactions[':id'].$patch;
 const deleteTransactionEndpoint = financesClient.transactions[':id'].$delete;
@@ -54,6 +61,7 @@ const deleteCategoryEndpoint = financesClient.categories[':id'].$delete;
 const upsertBudgetEndpoint = financesClient.budgets.$post;
 
 type FinanceSummary = InferResponseType<typeof summaryEndpoint>;
+type FinanceMovementsPage = InferResponseType<typeof movementsEndpoint>;
 type FinanceTransactionInput = InferRequestType<
   typeof createTransactionEndpoint
 >['json'];
@@ -69,17 +77,20 @@ type FinanceCategoryUpdateInput = InferRequestType<
 type FinanceBudgetInput = InferRequestType<typeof upsertBudgetEndpoint>['json'];
 type FinanceCategory = FinanceSummary['categories'][number];
 type FinanceTransaction = FinanceSummary['recentTransactions'][number];
-type FinanceGroupExpenseMovement =
-  FinanceSummary['recentGroupExpenseMovements'][number];
+type FinanceMovement = FinanceMovementsPage['data'][number];
+type FinanceMovementTransaction = Extract<
+  FinanceMovement,
+  { source: 'transaction' }
+>;
+type FinanceGroupExpenseMovement = Extract<
+  FinanceMovement,
+  { source: 'group-expense' }
+>;
 type FinanceTag = FinanceSummary['tags'][number];
 type FinanceCategoryKind = 'income' | 'expense' | 'both';
-type FinanceHistoryItem =
-  | { source: 'transaction'; transaction: FinanceTransaction; sortDate: string }
-  | {
-      source: 'group-expense';
-      movement: FinanceGroupExpenseMovement;
-      sortDate: string;
-    };
+type EditableFinanceTransaction =
+  | FinanceTransaction
+  | FinanceMovementTransaction;
 
 const currency = 'COP';
 const financeViews = new Set<FinanceView>([
@@ -159,7 +170,7 @@ function parseTagsInput(value: string) {
   return Array.from(new Set(tags)).slice(0, 10);
 }
 
-function tagsToInput(tags: FinanceTransaction['tags']) {
+function tagsToInput(tags: Array<{ name: string }>) {
   return tags.map((tag) => `#${tag.name}`).join(' ');
 }
 
@@ -185,7 +196,7 @@ function getCategoryKindLabel(kind: FinanceCategoryKind) {
 
 function isCategoryAllowedForTransaction(
   category: FinanceCategory,
-  transaction: FinanceTransaction,
+  transaction: EditableFinanceTransaction,
 ) {
   return (
     category.transactionType === 'BOTH' ||
@@ -349,168 +360,146 @@ function FigmaSummaryTile({
 }
 
 function FigmaHistory({
-  transactions,
-  groupExpenseMovements,
+  movements,
+  loadMoreRef,
+  isLoading,
+  isFetchingNextPage,
   onOpenTransaction,
   onOpenGroupExpense,
 }: {
-  transactions: FinanceTransaction[];
-  groupExpenseMovements: FinanceGroupExpenseMovement[];
-  onOpenTransaction: (transaction: FinanceTransaction) => void;
+  movements: FinanceMovement[];
+  loadMoreRef: RefObject<HTMLDivElement | null>;
+  isLoading: boolean;
+  isFetchingNextPage: boolean;
+  onOpenTransaction: (transaction: FinanceMovementTransaction) => void;
   onOpenGroupExpense: (movement: FinanceGroupExpenseMovement) => void;
 }) {
-  const recentItems = [
-    ...transactions.map(
-      (transaction): FinanceHistoryItem => ({
-        source: 'transaction',
-        transaction,
-        sortDate: transaction.occurredAt,
-      }),
-    ),
-    ...groupExpenseMovements.map(
-      (movement): FinanceHistoryItem => ({
-        source: 'group-expense',
-        movement,
-        sortDate: movement.occurredAt,
-      }),
-    ),
-  ]
-    .sort((left, right) => {
-      const dateDelta =
-        new Date(right.sortDate).getTime() - new Date(left.sortDate).getTime();
-      if (dateDelta !== 0) return dateDelta;
-      const leftId =
-        left.source === 'transaction' ? left.transaction.id : left.movement.id;
-      const rightId =
-        right.source === 'transaction'
-          ? right.transaction.id
-          : right.movement.id;
-      return rightId.localeCompare(leftId);
-    })
-    .slice(0, 5);
-
   return (
     <section className="mt-4">
       <h2 className="text-sm font-semibold text-[#1e1e1e]">
         {m['finances.history']()}
       </h2>
-      <p className="mt-5 text-xs font-medium text-[#626262]">
-        {m['finances.today']()}
-      </p>
       <div className="mt-3 grid gap-4">
-        {recentItems.length === 0 ? (
+        {isLoading ? (
+          <div className="rounded-2xl bg-white p-4 text-sm text-[#626262] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            {m['common.loading']()}
+          </div>
+        ) : null}
+        {!isLoading && movements.length === 0 ? (
           <div className="rounded-2xl bg-white p-4 text-sm text-[#626262] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
             {m['finances.emptyTransactions']()}
           </div>
-        ) : (
-          recentItems.map((item) => {
-            if (item.source === 'transaction') {
-              const { transaction } = item;
-
-              return (
-                <button
-                  key={`transaction:${transaction.id}`}
-                  type="button"
-                  onClick={() => onOpenTransaction(transaction)}
-                  className="flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-                >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e9e9e9] text-[#1e1e1e]">
-                    <HugeiconsIcon icon={Wallet02Icon} className="size-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
-                      {transaction.description}
-                    </p>
-                    <p className="truncate text-xs leading-4 text-[#626262]">
-                      {transaction.category?.name ?? m['finances.noCategory']()}
-                    </p>
-                    <span className="mt-2 inline-flex max-w-full rounded-full bg-[#f4f4f2] px-2.5 py-1 text-[11px] font-medium leading-none text-[#626262]">
-                      {m['finances.personalMovement']()}
-                    </span>
-                  </div>
-                  <div className="min-w-0 shrink-0 text-right">
-                    <p className="text-base font-medium leading-6 text-[#1e1e1e]">
-                      {formatCurrency(
-                        transaction.currency,
-                        transaction.amount,
-                        {
-                          maximumFractionDigits: 0,
-                        },
-                      )}
-                    </p>
-                    <p
-                      className={`max-w-24 truncate text-xs leading-4 ${
-                        transaction.type === 'INCOME'
-                          ? 'text-[#047857]'
-                          : 'text-[#b91c1c]'
-                      }`}
-                    >
-                      {transaction.type === 'INCOME'
-                        ? m['finances.income']()
-                        : m['finances.expense']()}
-                    </p>
-                  </div>
-                </button>
-              );
-            }
-
-            const { movement } = item;
-            const balance = movement.currentUserBalance;
-            const hasBalance =
-              typeof balance === 'number' && Math.abs(balance) >= 0.01;
-            const amountLabel =
-              hasBalance && balance > 0
-                ? m['finances.owedToYou']()
-                : hasBalance && balance < 0
-                  ? m['finances.youOwe']()
-                  : m['finances.yourShare']();
-            const amountValue =
-              hasBalance && balance ? Math.abs(balance) : movement.userShare;
-
+        ) : null}
+        {movements.map((movement) => {
+          if (movement.source === 'transaction') {
             return (
               <button
-                key={`group-expense:${movement.id}`}
+                key={`transaction:${movement.id}`}
                 type="button"
-                onClick={() => onOpenGroupExpense(movement)}
+                onClick={() => onOpenTransaction(movement)}
                 className="flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
               >
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]">
-                  <HugeiconsIcon icon={UserGroupIcon} className="size-5" />
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e9e9e9] text-[#1e1e1e]">
+                  <HugeiconsIcon icon={Wallet02Icon} className="size-5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
                     {movement.description}
                   </p>
                   <p className="truncate text-xs leading-4 text-[#626262]">
-                    {movement.category?.name ?? movement.groupName}
+                    {movement.category?.name ?? m['finances.noCategory']()}
                   </p>
-                  <span className="mt-2 inline-flex max-w-full rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium leading-none text-primary">
-                    {movement.groupType === 'personal'
-                      ? m['finances.personalSpaceExpense']()
-                      : m['finances.sharedGroupExpense']()}
+                  <p className="mt-1 truncate text-xs leading-4 text-[#626262]">
+                    {formatShortDate(movement.occurredAt)}
+                  </p>
+                  <span className="mt-2 inline-flex max-w-full rounded-full bg-[#f4f4f2] px-2.5 py-1 text-[11px] font-medium leading-none text-[#626262]">
+                    {m['finances.personalMovement']()}
                   </span>
                 </div>
                 <div className="min-w-0 shrink-0 text-right">
                   <p className="text-base font-medium leading-6 text-[#1e1e1e]">
-                    {formatCurrency(movement.currency, amountValue, {
+                    {formatCurrency(movement.currency, movement.amount, {
                       maximumFractionDigits: 0,
                     })}
                   </p>
                   <p
                     className={`max-w-24 truncate text-xs leading-4 ${
-                      hasBalance && balance > 0
+                      movement.type === 'INCOME'
                         ? 'text-[#047857]'
                         : 'text-[#b91c1c]'
                     }`}
                   >
-                    {amountLabel}
+                    {movement.type === 'INCOME'
+                      ? m['finances.income']()
+                      : m['finances.expense']()}
                   </p>
                 </div>
               </button>
             );
-          })
-        )}
+          }
+
+          const balance = movement.currentUserBalance;
+          const hasBalance =
+            typeof balance === 'number' && Math.abs(balance) >= 0.01;
+          const amountLabel =
+            hasBalance && balance > 0
+              ? m['finances.owedToYou']()
+              : hasBalance && balance < 0
+                ? m['finances.youOwe']()
+                : m['finances.yourShare']();
+          const amountValue =
+            hasBalance && balance ? Math.abs(balance) : movement.userShare;
+
+          return (
+            <button
+              key={`group-expense:${movement.id}`}
+              type="button"
+              onClick={() => onOpenGroupExpense(movement)}
+              className="flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+            >
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]">
+                <HugeiconsIcon icon={UserGroupIcon} className="size-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
+                  {movement.description}
+                </p>
+                <p className="truncate text-xs leading-4 text-[#626262]">
+                  {movement.category?.name ?? movement.groupName}
+                </p>
+                <p className="mt-1 truncate text-xs leading-4 text-[#626262]">
+                  {formatShortDate(movement.occurredAt)}
+                </p>
+                <span className="mt-2 inline-flex max-w-full rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium leading-none text-primary">
+                  {movement.groupName}
+                </span>
+              </div>
+              <div className="min-w-0 shrink-0 text-right">
+                <p className="text-base font-medium leading-6 text-[#1e1e1e]">
+                  {formatCurrency(movement.currency, amountValue, {
+                    maximumFractionDigits: 0,
+                  })}
+                </p>
+                <p
+                  className={`max-w-24 truncate text-xs leading-4 ${
+                    hasBalance && balance > 0
+                      ? 'text-[#047857]'
+                      : 'text-[#b91c1c]'
+                  }`}
+                >
+                  {amountLabel}
+                </p>
+              </div>
+            </button>
+          );
+        })}
       </div>
+      <div ref={loadMoreRef} className="h-8" />
+      {isFetchingNextPage ? (
+        <p className="text-center text-sm text-[#626262]">
+          {m['common.loading']()}
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -520,6 +509,7 @@ function RouteComponent() {
   const navigate = useNavigate({ from: Route.fullPath });
   const { view, month, transactionId } = Route.useSearch();
   const timeZone = getBrowserTimeZone();
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>(
     'expense',
@@ -564,13 +554,71 @@ function RouteComponent() {
       return response.json();
     },
   });
+  const movementsQuery = useInfiniteQuery({
+    queryKey: ['finances-movements', month, currency, timeZone],
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      const response = await movementsEndpoint({
+        query: {
+          month,
+          currency,
+          timeZone,
+          limit: '20',
+          ...(pageParam ? { cursor: pageParam } : {}),
+        },
+      });
+      if (!response.ok) throw new Error(m['finances.loadError']());
+      return response.json();
+    },
+    getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
+  });
 
   const summary = summaryQuery.data;
+  const movements = useMemo(
+    () => movementsQuery.data?.pages.flatMap((page) => page.data) ?? [],
+    [movementsQuery.data],
+  );
   const categories = summary?.categories ?? [];
   const tags = summary?.tags ?? [];
-  const transaction = summary?.recentTransactions.find(
-    (item) => item.id === transactionId,
-  );
+  const transaction =
+    summary?.recentTransactions.find((item) => item.id === transactionId) ??
+    movements.find(
+      (item): item is FinanceMovementTransaction =>
+        item.source === 'transaction' && item.id === transactionId,
+    );
+  const hasNextMovementsPageRef = useRef(movementsQuery.hasNextPage);
+  const isFetchingMovementsRef = useRef(movementsQuery.isFetching);
+  const fetchNextMovementsPageRef = useRef(movementsQuery.fetchNextPage);
+  hasNextMovementsPageRef.current = movementsQuery.hasNextPage;
+  isFetchingMovementsRef.current = movementsQuery.isFetching;
+  fetchNextMovementsPageRef.current = movementsQuery.fetchNextPage;
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (!first?.isIntersecting) return;
+        if (
+          !hasNextMovementsPageRef.current ||
+          isFetchingMovementsRef.current
+        ) {
+          return;
+        }
+        void fetchNextMovementsPageRef.current();
+      },
+      {
+        root: null,
+        rootMargin: '240px 0px',
+        threshold: 0,
+      },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
   const transactionCategories = useMemo(
     () =>
       categories.filter((category) =>
@@ -683,7 +731,10 @@ function RouteComponent() {
       return response.json();
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['finances-summary'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
+      ]);
       setNewCategoryName('');
       toast.success(m['finances.categorySaved']());
     },
@@ -712,7 +763,10 @@ function RouteComponent() {
       return response.json();
     },
     onSuccess: async (category) => {
-      await queryClient.invalidateQueries({ queryKey: ['finances-summary'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
+      ]);
       selectCategoryToEdit(category);
       toast.success(m['finances.categoryUpdated']());
     },
@@ -732,7 +786,10 @@ function RouteComponent() {
       return response.json();
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['finances-summary'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
+      ]);
       setEditingCategoryId('');
       setEditingCategoryName('');
       toast.success(m['finances.categoryDeleted']());
@@ -749,6 +806,7 @@ function RouteComponent() {
   function invalidateFinanceQueries() {
     return Promise.all([
       queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+      queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
       queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
     ]);
   }
@@ -847,13 +905,15 @@ function RouteComponent() {
     });
   }
 
-  function prepareTransactionEdit(nextTransaction: FinanceTransaction) {
+  function prepareTransactionEdit(nextTransaction: EditableFinanceTransaction) {
     setEditingTransactionName(nextTransaction.description);
     setEditingTransactionCategoryId(nextTransaction.categoryId ?? '');
     setEditingTransactionTagsInput(tagsToInput(nextTransaction.tags));
   }
 
-  function submitTransactionUpdate(nextTransaction: FinanceTransaction) {
+  function submitTransactionUpdate(
+    nextTransaction: EditableFinanceTransaction,
+  ) {
     const name = editingTransactionName.trim();
     if (!name) {
       toast.error(m['finances.validation']());
@@ -870,7 +930,7 @@ function RouteComponent() {
     });
   }
 
-  async function shareTransaction(nextTransaction: FinanceTransaction) {
+  async function shareTransaction(nextTransaction: EditableFinanceTransaction) {
     const text = `${nextTransaction.description}: ${formatCurrency(
       nextTransaction.currency,
       nextTransaction.amount,
@@ -1712,8 +1772,10 @@ function RouteComponent() {
         </section>
 
         <FigmaHistory
-          transactions={summary.recentTransactions}
-          groupExpenseMovements={summary.recentGroupExpenseMovements}
+          movements={movements}
+          loadMoreRef={loadMoreRef}
+          isLoading={movementsQuery.isPending}
+          isFetchingNextPage={movementsQuery.isFetchingNextPage}
           onOpenTransaction={(nextTransaction) =>
             goTo('transaction', nextTransaction.id)
           }

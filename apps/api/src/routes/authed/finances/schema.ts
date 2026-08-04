@@ -20,6 +20,13 @@ export const financeTransactionListQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(50).default(20),
 });
 
+export const financeMovementListQuerySchema = financesSummaryQuerySchema.extend(
+  {
+    limit: z.coerce.number().int().positive().max(50).default(20),
+    cursor: z.string().trim().min(1).optional(),
+  },
+);
+
 export const createFinanceTransactionSchema = z.object({
   type: z.enum(['income', 'expense']),
   amount: z.number().positive(),
@@ -65,6 +72,9 @@ export const upsertFinanceBudgetSchema = z.object({
 
 export type FinancesSummaryQueryInput = z.infer<
   typeof financesSummaryQuerySchema
+>;
+export type FinanceMovementListQueryInput = z.infer<
+  typeof financeMovementListQuerySchema
 >;
 export type CreateFinanceTransactionInput = z.infer<
   typeof createFinanceTransactionSchema

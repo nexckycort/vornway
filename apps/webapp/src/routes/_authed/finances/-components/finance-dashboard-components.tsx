@@ -87,6 +87,36 @@ export function FigmaSummaryTile({
   );
 }
 
+function MovementTitle({
+  title,
+  badge,
+  badgeTone = 'neutral',
+}: {
+  title: string;
+  badge: string;
+  badgeTone?: 'neutral' | 'primary' | 'blue';
+}) {
+  const badgeClassName =
+    badgeTone === 'primary'
+      ? 'border-primary/10 bg-primary/5 text-primary'
+      : badgeTone === 'blue'
+        ? 'border-[#dfe4ff] bg-[#f5f7ff] text-[#4f46e5]'
+        : 'border-[#e9e9e9] bg-white text-[#626262]';
+
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <p className="min-w-0 truncate text-base font-semibold leading-6 text-[#1e1e1e]">
+        {title}
+      </p>
+      <span
+        className={`max-w-32 shrink-0 truncate rounded-full border px-2.5 py-0.5 text-[11px] font-medium leading-4 ${badgeClassName}`}
+      >
+        {badge}
+      </span>
+    </div>
+  );
+}
+
 export function FigmaHistory({
   movements,
   loadMoreRef,
@@ -127,24 +157,21 @@ export function FigmaHistory({
                 key={`transaction:${movement.id}`}
                 type="button"
                 onClick={() => onOpenTransaction(movement)}
-                className="flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+                className="flex w-full min-w-0 items-center gap-4 rounded-[24px] border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
               >
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e9e9e9] text-[#1e1e1e]">
-                  <HugeiconsIcon icon={Wallet02Icon} className="size-5" />
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#ededed] text-[#1e1e1e]">
+                  <HugeiconsIcon icon={Wallet02Icon} className="size-6" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
-                    {movement.description}
-                  </p>
-                  <p className="truncate text-xs leading-4 text-[#626262]">
-                    {movement.category?.name ?? m['finances.noCategory']()}
-                  </p>
+                  <MovementTitle
+                    title={movement.description}
+                    badge={
+                      movement.category?.name ?? m['finances.noCategory']()
+                    }
+                  />
                   <p className="mt-1 truncate text-xs leading-4 text-[#626262]">
                     {formatShortDate(movement.occurredAt)}
                   </p>
-                  <span className="mt-2 inline-flex max-w-full rounded-full bg-[#f4f4f2] px-2.5 py-1 text-[11px] font-medium leading-none text-[#626262]">
-                    {m['finances.personalMovement']()}
-                  </span>
                 </div>
                 <div className="min-w-0 shrink-0 text-right">
                   <p className="text-base font-medium leading-6 text-[#1e1e1e]">
@@ -174,24 +201,20 @@ export function FigmaHistory({
                 key={`debt-payment:${movement.id}`}
                 type="button"
                 onClick={() => onOpenDebtPayment(movement)}
-                className="flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+                className="flex w-full min-w-0 items-center gap-4 rounded-[24px] border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
               >
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#fce7f3] text-primary">
-                  <HugeiconsIcon icon={Wallet02Icon} className="size-5" />
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#fce7f3] text-primary">
+                  <HugeiconsIcon icon={Wallet02Icon} className="size-6" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
-                    {movement.description}
-                  </p>
-                  <p className="truncate text-xs leading-4 text-[#626262]">
-                    {movement.counterpartyName}
-                  </p>
+                  <MovementTitle
+                    title={movement.description}
+                    badge={m['finances.debtPayment']()}
+                    badgeTone="primary"
+                  />
                   <p className="mt-1 truncate text-xs leading-4 text-[#626262]">
                     {formatShortDate(movement.occurredAt)}
                   </p>
-                  <span className="mt-2 inline-flex max-w-full rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium leading-none text-primary">
-                    {m['finances.debtPayment']()}
-                  </span>
                 </div>
                 <div className="min-w-0 shrink-0 text-right">
                   <p className="text-base font-medium leading-6 text-[#1e1e1e]">
@@ -232,24 +255,20 @@ export function FigmaHistory({
               key={`group-expense:${movement.id}`}
               type="button"
               onClick={() => onOpenGroupExpense(movement)}
-              className="flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+              className="flex w-full min-w-0 items-center gap-4 rounded-[24px] border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
             >
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]">
-                <HugeiconsIcon icon={UserGroupIcon} className="size-5" />
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]">
+                <HugeiconsIcon icon={UserGroupIcon} className="size-6" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
-                  {movement.description}
-                </p>
-                <p className="truncate text-xs leading-4 text-[#626262]">
-                  {movement.category?.name ?? movement.groupName}
-                </p>
+                <MovementTitle
+                  title={movement.description}
+                  badge={movement.groupName}
+                  badgeTone="blue"
+                />
                 <p className="mt-1 truncate text-xs leading-4 text-[#626262]">
                   {formatShortDate(movement.occurredAt)}
                 </p>
-                <span className="mt-2 inline-flex max-w-full rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium leading-none text-primary">
-                  {movement.groupName}
-                </span>
               </div>
               <div className="min-w-0 shrink-0 text-right">
                 <p className="text-base font-medium leading-6 text-[#1e1e1e]">

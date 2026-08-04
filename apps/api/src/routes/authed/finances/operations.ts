@@ -4,6 +4,7 @@ import type {
   CreateFinanceCategoryInput,
   CreateFinanceTransactionInput,
   FinanceAccountListQueryInput,
+  FinanceAccountMovementListQueryInput,
   FinanceMovementListQueryInput,
   FinancesSummaryQueryInput,
   UpdateFinanceAccountInput,
@@ -76,6 +77,44 @@ type FinanceMovement =
         color: string | null;
       } | null;
     };
+
+function serializeFinanceAccount<
+  T extends {
+    openedAt: Date | null;
+    maturesAt: Date | null;
+    closedAt: Date | null;
+    archivedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  },
+>(account: T) {
+  const serialized = {
+    ...account,
+    openedAt: account.openedAt?.toISOString() ?? null,
+    maturesAt: account.maturesAt?.toISOString() ?? null,
+    closedAt: account.closedAt?.toISOString() ?? null,
+    archivedAt: account.archivedAt?.toISOString() ?? null,
+    createdAt: account.createdAt.toISOString(),
+    updatedAt: account.updatedAt.toISOString(),
+  };
+
+  return serialized as Omit<
+    T,
+    | 'openedAt'
+    | 'maturesAt'
+    | 'closedAt'
+    | 'archivedAt'
+    | 'createdAt'
+    | 'updatedAt'
+  > & {
+    openedAt: string | null;
+    maturesAt: string | null;
+    closedAt: string | null;
+    archivedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
 
 function toFinanceTransactionType(type: 'income' | 'expense' | 'both') {
   return type === 'income' ? 'INCOME' : type === 'expense' ? 'EXPENSE' : 'BOTH';
@@ -655,14 +694,67 @@ export const financeOperations = {
     const data = hasNextPage ? rows.slice(0, limit) : rows;
 
     return {
-      data: data.map((account) => ({
-        ...account,
-        openedAt: account.openedAt?.toISOString() ?? null,
-        maturesAt: account.maturesAt?.toISOString() ?? null,
-        closedAt: account.closedAt?.toISOString() ?? null,
-        archivedAt: account.archivedAt?.toISOString() ?? null,
-        createdAt: account.createdAt.toISOString(),
-        updatedAt: account.updatedAt.toISOString(),
+      data: data.map(serializeFinanceAccount),
+      pagination: {
+        limit,
+        total,
+        nextCursor: hasNextPage ? (data.at(-1)?.id ?? null) : null,
+      },
+    };
+  },
+
+  async getAccount(userId: string, accountId: string) {
+    const account = await db.financeAccount.findFirst({
+      where: { id: accountId, ownerId: userId, archivedAt: null },
+    });
+    return account ? serializeFinanceAccount(account) : null;
+  },
+
+  async listAccountMovements(
+    userId: string,
+    accountId: string,
+    input: FinanceAccountMovementListQueryInput,
+  ) {
+    const account = await db.financeAccount.findFirst({
+      where: { id: accountId, ownerId: userId, archivedAt: null },
+      select: { id: true },
+    });
+    if (!account) return null;
+
+    const limit = Math.min(input.limit, 50);
+    const where = { ownerId: userId, accountId };
+    const [total, rows] = await Promise.all([
+      db.financeTransaction.count({ where }),
+      db.financeTransaction.findMany({
+        where,
+        ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+        take: limit + 1,
+        orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+        include: {
+          category: true,
+          tags: { include: { tag: true } },
+        },
+      }),
+    ]);
+    const hasNextPage = rows.length > limit;
+    const data = hasNextPage ? rows.slice(0, limit) : rows;
+
+    return {
+      data: data.map((transaction) => ({
+        source: 'transaction' as const,
+        id: transaction.id,
+        description: transaction.description,
+        amount: transaction.amount,
+        currency: transaction.currency,
+        occurredAt: transaction.occurredAt.toISOString(),
+        type:
+          transaction.type === 'INCOME'
+            ? ('INCOME' as const)
+            : ('EXPENSE' as const),
+        accountId: transaction.accountId,
+        categoryId: transaction.categoryId,
+        category: transaction.category,
+        tags: transaction.tags.map((transactionTag) => transactionTag.tag),
       })),
       pagination: {
         limit,
@@ -1255,7 +1347,12 @@ export const financeOperations = {
   ) {
     const transaction = await db.financeTransaction.findFirst({
       where: { id: transactionId, ownerId: userId },
-      select: { id: true, accountId: true, type: true, amount: true },
+      select: {
+        id: true,
+        accountId: true,
+        type: true,
+        amount: true,
+      },
     });
     if (!transaction) return null;
     const tags =
@@ -1303,6 +1400,12 @@ export const financeOperations = {
         data: {
           ...(input.description
             ? { description: input.description.trim() }
+            : {}),
+          ...(input.amount !== undefined
+            ? { amount: money(input.amount) }
+            : {}),
+          ...(input.occurredAt !== undefined
+            ? { occurredAt: input.occurredAt }
             : {}),
           ...(input.categoryId !== undefined
             ? { categoryId: input.categoryId }

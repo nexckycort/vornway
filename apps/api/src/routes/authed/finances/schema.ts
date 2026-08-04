@@ -32,6 +32,11 @@ export const financeAccountListQuerySchema = z.object({
   cursor: z.string().trim().min(1).optional(),
 });
 
+export const financeAccountMovementListQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().max(50).default(20),
+  cursor: z.string().trim().min(1).optional(),
+});
+
 export const financeAccountParamsSchema = z.object({
   id: z.string().min(1),
 });
@@ -85,6 +90,8 @@ export const financeTransactionParamsSchema = z.object({
 
 export const updateFinanceTransactionSchema = z.object({
   description: z.string().trim().min(1).max(160).optional(),
+  amount: z.number().positive().optional(),
+  occurredAt: z.coerce.date().optional(),
   categoryId: z.string().min(1).nullable().optional(),
   accountId: z.string().min(1).nullable().optional(),
   tags: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
@@ -119,6 +126,9 @@ export type FinanceMovementListQueryInput = z.infer<
 >;
 export type FinanceAccountListQueryInput = z.infer<
   typeof financeAccountListQuerySchema
+>;
+export type FinanceAccountMovementListQueryInput = z.infer<
+  typeof financeAccountMovementListQuerySchema
 >;
 export type CreateFinanceAccountInput = z.infer<
   typeof createFinanceAccountSchema

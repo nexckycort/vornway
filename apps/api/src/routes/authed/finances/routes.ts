@@ -8,6 +8,7 @@ import {
   createFinanceCategorySchema,
   createFinanceTransactionSchema,
   financeAccountListQuerySchema,
+  financeAccountMovementListQuerySchema,
   financeAccountParamsSchema,
   financeCategoryParamsSchema,
   financeMovementListQuerySchema,
@@ -59,6 +60,36 @@ export const financesRoutes = new Hono<AppContext>()
           c.req.valid('query'),
         ),
       ),
+  )
+  .get(
+    '/accounts/:id',
+    zValidator('param', financeAccountParamsSchema),
+    async (c) => {
+      const result = await financeOperations.getAccount(
+        c.get('user').id,
+        c.req.valid('param').id,
+      );
+
+      return result
+        ? c.json(result)
+        : c.json({ error: 'Finance account not found' }, 404);
+    },
+  )
+  .get(
+    '/accounts/:id/movements',
+    zValidator('param', financeAccountParamsSchema),
+    zValidator('query', financeAccountMovementListQuerySchema),
+    async (c) => {
+      const result = await financeOperations.listAccountMovements(
+        c.get('user').id,
+        c.req.valid('param').id,
+        c.req.valid('query'),
+      );
+
+      return result
+        ? c.json(result)
+        : c.json({ error: 'Finance account not found' }, 404);
+    },
   )
   .post(
     '/accounts',

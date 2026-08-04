@@ -10,7 +10,13 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useNavigate,
+  useRouterState,
+} from '@tanstack/react-router';
 import type { RefObject } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -36,7 +42,7 @@ type FinanceView =
   | 'reports'
   | 'transaction';
 
-export const Route = createFileRoute('/_authed/finances')({
+export const Route = createFileRoute('/_authed/finances/')({
   validateSearch: (search: Record<string, unknown>) => ({
     view: isFinanceView(search.view) ? search.view : 'dashboard',
     month:
@@ -47,6 +53,8 @@ export const Route = createFileRoute('/_authed/finances')({
       typeof search.transactionId === 'string'
         ? search.transactionId
         : undefined,
+    accountId:
+      typeof search.accountId === 'string' ? search.accountId : undefined,
   }),
   component: RouteComponent,
 });
@@ -557,9 +565,20 @@ function FigmaHistory({
 }
 
 function RouteComponent() {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  if (pathname !== '/finances') {
+    return <Outlet />;
+  }
+
+  return <FinancesDashboard />;
+}
+
+function FinancesDashboard() {
   const queryClient = useQueryClient();
   const navigate = useNavigate({ from: Route.fullPath });
-  const { view, month, transactionId } = Route.useSearch();
+  const { view, month, transactionId, accountId } = Route.useSearch();
   const timeZone = getBrowserTimeZone();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
@@ -590,6 +609,8 @@ function RouteComponent() {
     categoryIcons[0],
   );
   const [editingTransactionName, setEditingTransactionName] = useState('');
+  const [editingTransactionAmount, setEditingTransactionAmount] = useState('');
+  const [editingTransactionDate, setEditingTransactionDate] = useState('');
   const [editingTransactionCategoryId, setEditingTransactionCategoryId] =
     useState('');
   const [editingTransactionAccountId, setEditingTransactionAccountId] =
@@ -672,12 +693,12 @@ function RouteComponent() {
     summary?.accounts.filter(
       (account) => account.status !== 'CLOSED' && account.currency === currency,
     ) ?? [];
+  const movementTransaction = movements.find(
+    (item) => item.source === 'transaction' && item.id === transactionId,
+  ) as FinanceMovementTransaction | undefined;
   const transaction =
     summary?.recentTransactions.find((item) => item.id === transactionId) ??
-    movements.find(
-      (item): item is FinanceMovementTransaction =>
-        item.source === 'transaction' && item.id === transactionId,
-    );
+    movementTransaction;
   const hasNextMovementsPageRef = useRef(movementsQuery.hasNextPage);
   const isFetchingMovementsRef = useRef(movementsQuery.isFetching);
   const fetchNextMovementsPageRef = useRef(movementsQuery.fetchNextPage);
@@ -965,6 +986,10 @@ function RouteComponent() {
     return Promise.all([
       queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
       queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
+      queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
+      queryClient.invalidateQueries({
+        queryKey: ['finances-account-movements'],
+      }),
       queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
     ]);
   }
@@ -973,6 +998,10 @@ function RouteComponent() {
     return Promise.all([
       queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
       queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
+      queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
+      queryClient.invalidateQueries({
+        queryKey: ['finances-account-movements'],
+      }),
     ]);
   }
 
@@ -1054,14 +1083,37 @@ function RouteComponent() {
     });
   }
 
-  function goTo(nextView: FinanceView, nextTransactionId?: string) {
+  function goTo(
+    nextView: FinanceView,
+    nextTransactionId?: string,
+    nextAccountId?: string,
+  ) {
     void navigate({
       search: {
         view: nextView,
         month,
         transactionId: nextTransactionId,
+        accountId: nextAccountId,
       },
     });
+  }
+
+  function goBackFromTransaction() {
+    if (accountId) {
+      void navigate({
+        to: '/finances/accounts/$id',
+        params: { id: accountId },
+        search: {
+          view,
+          month,
+          transactionId,
+          accountId,
+        },
+      });
+      return;
+    }
+
+    goTo('dashboard');
   }
 
   function setMonth(nextMonth: string) {
@@ -1070,6 +1122,7 @@ function RouteComponent() {
         view,
         month: nextMonth,
         transactionId,
+        accountId,
       },
     });
   }
@@ -1151,6 +1204,8 @@ function RouteComponent() {
 
   function prepareTransactionEdit(nextTransaction: EditableFinanceTransaction) {
     setEditingTransactionName(nextTransaction.description);
+    setEditingTransactionAmount(String(nextTransaction.amount));
+    setEditingTransactionDate(toInputDate(nextTransaction.occurredAt));
     setEditingTransactionCategoryId(nextTransaction.categoryId ?? '');
     setEditingTransactionAccountId(nextTransaction.accountId ?? '');
     setEditingTransactionTagsInput(tagsToInput(nextTransaction.tags));
@@ -1160,7 +1215,8 @@ function RouteComponent() {
     nextTransaction: EditableFinanceTransaction,
   ) {
     const name = editingTransactionName.trim();
-    if (!name) {
+    const parsedAmount = parseMoney(editingTransactionAmount);
+    if (!name || parsedAmount <= 0 || !editingTransactionDate) {
       toast.error(m['finances.validation']());
       return;
     }
@@ -1169,6 +1225,8 @@ function RouteComponent() {
       id: nextTransaction.id,
       input: {
         description: name,
+        amount: parsedAmount,
+        occurredAt: new Date(`${editingTransactionDate}T12:00:00`),
         categoryId: editingTransactionCategoryId || null,
         accountId: editingTransactionAccountId || null,
         tags: parseTagsInput(editingTransactionTagsInput),
@@ -1579,7 +1637,18 @@ function RouteComponent() {
                 >
                   <button
                     type="button"
-                    onClick={() => selectAccountToEdit(account)}
+                    onClick={() =>
+                      void navigate({
+                        to: '/finances/accounts/$id',
+                        params: { id: account.id },
+                        search: {
+                          view,
+                          month,
+                          transactionId,
+                          accountId,
+                        },
+                      })
+                    }
                     className="flex w-full min-w-0 items-start justify-between gap-3 text-left"
                   >
                     <div className="min-w-0">
@@ -1636,6 +1705,37 @@ function RouteComponent() {
                       ) : null}
                     </div>
                   </button>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        void navigate({
+                          to: '/finances/accounts/$id',
+                          params: { id: account.id },
+                          search: {
+                            view,
+                            month,
+                            transactionId,
+                            accountId,
+                          },
+                        })
+                      }
+                      className="rounded-full"
+                    >
+                      {m['finances.viewAccount']()}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => selectAccountToEdit(account)}
+                      className="rounded-full"
+                    >
+                      {m['finances.editAccount']()}
+                    </Button>
+                  </div>
                   {editingAccountId === account.id &&
                   account.status !== 'CLOSED' ? (
                     <div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -2129,7 +2229,7 @@ function RouteComponent() {
         <ScreenShell
           title={m['finances.movement']()}
           month={month}
-          onBack={() => goTo('dashboard')}
+          onBack={goBackFromTransaction}
         >
           <div className="rounded-[30px] bg-white p-5 text-sm text-black/45">
             {m['finances.movementNotFound']()}
@@ -2142,7 +2242,7 @@ function RouteComponent() {
       <ScreenShell
         title={m['finances.movement']()}
         month={month}
-        onBack={() => goTo('dashboard')}
+        onBack={goBackFromTransaction}
       >
         <section className="rounded-[34px] bg-white p-6">
           <div className="flex items-start justify-between gap-4">
@@ -2234,6 +2334,26 @@ function RouteComponent() {
               placeholder={m['finances.expensePlaceholder']()}
               className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
             />
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+              <input
+                inputMode="decimal"
+                value={editingTransactionAmount}
+                onChange={(event) =>
+                  setEditingTransactionAmount(event.target.value)
+                }
+                placeholder={m['finances.amountPlaceholder']()}
+                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
+              />
+              <input
+                type="date"
+                value={editingTransactionDate}
+                onChange={(event) =>
+                  setEditingTransactionDate(event.target.value)
+                }
+                className="h-13 min-w-0 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
+                aria-label={m['finances.date']()}
+              />
+            </div>
             <select
               value={editingTransactionCategoryId}
               onChange={(event) =>

@@ -11,6 +11,7 @@ import {
   MinusSignIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import {
   type InputHTMLAttributes,
@@ -20,6 +21,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { financesClient } from '#/api/finances';
 import { mapsClient } from '#/api/maps';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
@@ -157,6 +159,7 @@ const emptyAdvancedDetails: ExpenseAdvancedDetails = {
 };
 
 const resolveMapEndpoint = mapsClient.resolve.$post;
+const financesSummaryEndpoint = financesClient.summary.$get;
 
 const customCategoryIconId = 'custom';
 
@@ -420,9 +423,21 @@ function RouteComponent() {
     SharedExpenseItem[]
   >([]);
   const [currency, setCurrency] = useState('COP');
+  const financesSummaryQuery = useQuery({
+    queryKey: ['finances-summary', 'personal-expense-accounts', currency],
+    enabled: groupQuery.data?.type === 'personal',
+    queryFn: async () => {
+      const response = await financesSummaryEndpoint({
+        query: { currency },
+      });
+      if (!response.ok) throw new Error(m['finances.loadError']());
+      return response.json();
+    },
+  });
   const [paidByIds, setPaidByIds] = useState<string[]>([]);
   const [payerValues, setPayerValues] = useState<Record<string, string>>({});
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
@@ -470,6 +485,20 @@ function RouteComponent() {
   const expense = expenseQuery.data;
   const isPersonalSpace = groupQuery.data?.type === 'personal';
   const currentCurrency = currencyMeta[currency] ?? currencyMeta.COP;
+  const paymentAccounts = useMemo(
+    () =>
+      financesSummaryQuery.data?.accounts.filter(
+        (account) =>
+          account.status !== 'CLOSED' && account.currency === currency,
+      ) ?? [],
+    [currency, financesSummaryQuery.data?.accounts],
+  );
+  const selectedAccount = useMemo(
+    () =>
+      paymentAccounts.find((account) => account.id === selectedAccountId) ??
+      null,
+    [paymentAccounts, selectedAccountId],
+  );
   const selectedCategory = categories.find((item) => item.id === categoryId);
   const advancedDetailsEnabled =
     groupQuery.data?.advancedExpenseDetailsEnabled ?? false;
@@ -587,6 +616,14 @@ function RouteComponent() {
   }, [amount, currency]);
 
   useEffect(() => {
+    if (!selectedAccountId) return;
+    if (paymentAccounts.some((account) => account.id === selectedAccountId)) {
+      return;
+    }
+    setSelectedAccountId('');
+  }, [paymentAccounts, selectedAccountId]);
+
+  useEffect(() => {
     if (isEditMode) {
       if (!expense) return;
 
@@ -623,6 +660,9 @@ function RouteComponent() {
       );
       setCurrency(expense.currency);
       setCategoryId(expense.category?.id ?? null);
+      setSelectedAccountId(
+        ((expense as { accountId?: string | null }).accountId ?? '') || '',
+      );
       setTagsInput(tagsToInput(expense.tags));
       setPaidByIds(
         expense.paidByMembers.length > 0
@@ -1118,6 +1158,7 @@ function RouteComponent() {
         description: description.trim(),
         amount: normalizedAmount,
         currency,
+        ...(isPersonalSpace ? { accountId: selectedAccountId || null } : {}),
         ...(categoryId ? { categoryId } : {}),
         ...(isPersonalSpace ? { tags: parseTagsInput(tagsInput) } : {}),
         paidByIds,
@@ -1337,6 +1378,34 @@ function RouteComponent() {
             className="size-4 text-gray-400"
           />
         </button>
+
+        {isPersonalSpace ? (
+          <label className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 px-4 py-3.5">
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500">{m['finances.account']()}</p>
+              <p className="truncate text-sm font-medium text-gray-900">
+                {selectedAccount
+                  ? `${selectedAccount.name} · ${
+                      selectedAccount.institution ?? selectedAccount.currency
+                    }`
+                  : m['finances.noAccount']()}
+              </p>
+            </div>
+            <select
+              value={selectedAccountId}
+              onChange={(event) => setSelectedAccountId(event.target.value)}
+              className="max-w-[48%] rounded-full border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none"
+              aria-label={m['finances.account']()}
+            >
+              <option value="">{m['finances.noAccount']()}</option>
+              {paymentAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name} · {account.institution ?? account.currency}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
 
         {isPersonalSpace ? (
           <label className="flex flex-col gap-2 rounded-xl border border-gray-200 px-4 py-3.5">

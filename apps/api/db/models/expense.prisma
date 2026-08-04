@@ -18,6 +18,7 @@ model Expense {
   id          String   @id @default(cuid())
   groupId     String
   paidById    String // ID del GroupMember que pagó
+  accountId   String?
   categoryId  String?
   description String
   amount      Float
@@ -34,12 +35,14 @@ model Expense {
   metadata    Json?
 
   group        Group                @relation(fields: [groupId], references: [id])
+  account      FinanceAccount?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
   category     ExpenseCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   paidBy       GroupMember          @relation("MemberPaidExpenses", fields: [paidById], references: [id])
   payers       ExpensePayer[]
   participants ExpenseParticipant[]
 
   @@index([groupId, date(sort: Desc)])
+  @@index([accountId, date(sort: Desc)])
   @@index([groupId, expenseType, status])
   @@index([groupId, pinnedAt(sort: Desc)])
   @@map("expense")

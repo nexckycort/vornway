@@ -124,6 +124,7 @@ export const createGroupExpenseSchema = z
     description: z.string().min(1).max(160),
     amount: z.number().positive(),
     currency: z.string().min(1).max(8),
+    accountId: z.string().min(1).nullable().optional(),
     categoryId: z.string().min(1).optional(),
     paidById: z.string().min(1).optional(),
     paidByIds: z.array(z.string().min(1)).min(1).optional(),

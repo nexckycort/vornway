@@ -101,6 +101,20 @@ function getApiErrorMessage(error: unknown, fallback: string) {
   return getApiErrorMessage(candidate.error, fallback);
 }
 
+function invalidateFinanceQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+    queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
+    queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
+    queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
+    queryClient.invalidateQueries({
+      queryKey: ['finances-account-movements'],
+    }),
+  ]);
+}
+
 function slugifyFileName(value: string) {
   return value
     .normalize('NFD')
@@ -200,6 +214,7 @@ export function useTransferGroupOwnerMutation(groupId: string) {
         }),
         queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+        invalidateFinanceQueries(queryClient),
       ]);
     },
   });
@@ -230,6 +245,7 @@ export function useUpdateGroupSettingsMutation(groupId: string) {
         }),
         queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+        invalidateFinanceQueries(queryClient),
       ]);
     },
   });

@@ -20,6 +20,20 @@ type GroupExpensesInfiniteData = InfiniteData<{
   };
 }>;
 
+function invalidateFinanceQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+    queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
+    queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
+    queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
+    queryClient.invalidateQueries({
+      queryKey: ['finances-account-movements'],
+    }),
+  ]);
+}
+
 async function deleteExpense({ groupId, expenseId }: DeleteExpenseInput) {
   const response = await deleteExpenseEndpoint({
     param: {
@@ -78,6 +92,7 @@ export function useDeleteExpenseMutation(groupId: string) {
         }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
         queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        invalidateFinanceQueries(queryClient),
       ]);
     },
   });

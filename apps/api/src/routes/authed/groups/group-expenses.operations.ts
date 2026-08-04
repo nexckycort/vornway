@@ -3,6 +3,7 @@ import { db } from '#/infrastructure/database/connection';
 import { notificationInbox } from '#/infrastructure/notifications/notification-inbox';
 import { pushNotifications } from '#/infrastructure/push/push-notifications';
 import { resolveUserImageUrl } from '#/infrastructure/storage/user-images';
+import { applyAccountTransactionEffect } from '../finances/operations';
 import {
   deleteExpenseAttachment,
   resolveExpenseAttachmentUrl,
@@ -289,6 +290,33 @@ function readExpenseTags(metadata: unknown) {
   return normalizeExpenseTags(
     tags.filter((tag): tag is string => typeof tag === 'string'),
   );
+}
+
+async function validatePersonalExpenseAccount({
+  userId,
+  accountId,
+  currency,
+}: {
+  userId: string;
+  accountId: string | null | undefined;
+  currency: string;
+}) {
+  if (!accountId) return null;
+
+  const account = await db.financeAccount.findFirst({
+    where: {
+      id: accountId,
+      ownerId: userId,
+      currency,
+      archivedAt: null,
+      status: { not: 'CLOSED' },
+    },
+    select: { id: true },
+  });
+
+  if (!account) throw new Error('Invalid finance account');
+
+  return account.id;
 }
 
 export function createGroupExpensesHealth() {
@@ -797,6 +825,7 @@ export function createGroupExpensesHealth() {
           id: true,
           description: true,
           amount: true,
+          accountId: true,
           attachment: true,
           currency: true,
           date: true,
@@ -860,6 +889,7 @@ export function createGroupExpensesHealth() {
         id: expense.id,
         description: expense.description,
         amount: expense.amount,
+        accountId: expense.accountId,
         attachmentUrl: resolveExpenseAttachmentUrl(expense.attachment),
         currency: expense.currency,
         date: expense.date,
@@ -907,6 +937,7 @@ export function createGroupExpensesHealth() {
       lineItems,
       sharedSplit,
       tags,
+      accountId,
       attachmentImage,
       advancedDetails,
     }: CreateGroupExpenseInput): Promise<{ id: string }> => {
@@ -1003,6 +1034,14 @@ export function createGroupExpensesHealth() {
       const normalizedSharedSplit = sanitizeSharedSplit(sharedSplit);
       const normalizedTags =
         membership.group.type === 'personal' ? normalizeExpenseTags(tags) : [];
+      const normalizedAccountId =
+        membership.group.type === 'personal'
+          ? await validatePersonalExpenseAccount({
+              userId,
+              accountId,
+              currency,
+            })
+          : null;
 
       const expense = await db.$transaction(async (tx) => {
         const created = await tx.expense.create({
@@ -1010,6 +1049,7 @@ export function createGroupExpensesHealth() {
             ...(normalizedExpenseId ? { id: normalizedExpenseId } : {}),
             groupId,
             paidById: normalizedPayerIds[0] ?? validPayerIds[0],
+            accountId: normalizedAccountId,
             ...(categoryId ? { categoryId } : {}),
             description,
             amount,
@@ -1040,6 +1080,16 @@ export function createGroupExpensesHealth() {
           },
           select: { id: true },
         });
+
+        await applyAccountTransactionEffect(
+          tx,
+          {
+            accountId: normalizedAccountId,
+            type: 'EXPENSE',
+            amount,
+          },
+          1,
+        );
 
         if (lineItems && lineItems.length > 0) {
           const expenseParticipants = await tx.expenseParticipant.findMany({
@@ -1230,6 +1280,7 @@ export function createGroupExpensesHealth() {
       lineItems,
       sharedSplit,
       tags,
+      accountId,
       attachmentImage,
       advancedDetails,
     }: UpdateGroupExpenseInput): Promise<{ id: string }> => {
@@ -1307,6 +1358,14 @@ export function createGroupExpensesHealth() {
       const normalizedSharedSplit = sanitizeSharedSplit(sharedSplit);
       const normalizedTags =
         membership.group.type === 'personal' ? normalizeExpenseTags(tags) : [];
+      const normalizedAccountId =
+        membership.group.type === 'personal'
+          ? await validatePersonalExpenseAccount({
+              userId,
+              accountId,
+              currency,
+            })
+          : null;
 
       const expense = await db.$transaction(async (tx) => {
         const existingExpense = await tx.expense.findFirst({
@@ -1317,6 +1376,7 @@ export function createGroupExpensesHealth() {
           select: {
             id: true,
             amount: true,
+            accountId: true,
             attachment: true,
             currency: true,
             description: true,
@@ -1349,12 +1409,23 @@ export function createGroupExpensesHealth() {
           throw groupErrors.expenseDeleted();
         }
 
+        await applyAccountTransactionEffect(
+          tx,
+          {
+            accountId: existingExpense.accountId,
+            type: 'EXPENSE',
+            amount: existingExpense.amount,
+          },
+          -1,
+        );
+
         await tx.expense.update({
           where: { id: existingExpense.id },
           data: {
             description,
             amount,
             currency,
+            accountId: normalizedAccountId,
             ...(categoryId ? { categoryId } : { categoryId: null }),
             paidById: normalizedPayerIds[0] ?? validPayerIds[0],
             metadata: {
@@ -1373,6 +1444,16 @@ export function createGroupExpensesHealth() {
             },
           },
         });
+
+        await applyAccountTransactionEffect(
+          tx,
+          {
+            accountId: normalizedAccountId,
+            type: 'EXPENSE',
+            amount,
+          },
+          1,
+        );
 
         await tx.expenseParticipant.deleteMany({
           where: {
@@ -1539,6 +1620,7 @@ export function createGroupExpensesHealth() {
         select: {
           id: true,
           amount: true,
+          accountId: true,
           attachment: true,
           currency: true,
           description: true,
@@ -1573,6 +1655,16 @@ export function createGroupExpensesHealth() {
               : `[DELETED:${deletedAt.toISOString()}]`,
           },
         });
+
+        await applyAccountTransactionEffect(
+          tx,
+          {
+            accountId: expense.accountId,
+            type: 'EXPENSE',
+            amount: expense.amount,
+          },
+          -1,
+        );
 
         const group = await tx.group.findUnique({
           where: { id: groupId },

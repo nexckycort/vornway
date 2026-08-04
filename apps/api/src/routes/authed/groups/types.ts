@@ -25,6 +25,7 @@ export type CreateGroupExpenseInput = {
   description: string;
   amount: number;
   currency: string;
+  accountId?: string | null;
   categoryId?: string | null;
   paidById?: string;
   paidByIds?: string[];
@@ -578,6 +579,7 @@ export type GroupExpenseDetailResult = {
   id: string;
   description: string;
   amount: number;
+  accountId: string | null;
   currency: string;
   date: Date;
   isDeleted: boolean;

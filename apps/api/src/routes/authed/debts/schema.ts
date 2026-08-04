@@ -19,6 +19,7 @@ export const createDebtSchema = z.object({
 export const updateDebtSchema = createDebtSchema.partial();
 export const createPaymentSchema = z.object({
   amount: z.number().positive(),
+  accountId: z.string().min(1).optional(),
   paidAt: z.coerce.date().optional(),
   note: z.string().trim().max(400).optional(),
 });

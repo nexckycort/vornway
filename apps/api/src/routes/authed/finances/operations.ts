@@ -35,7 +35,7 @@ const movementCursorSeparator = '|';
 
 type MovementCursor = {
   occurredAt: Date;
-  source: 'transaction' | 'group-expense';
+  source: 'transaction' | 'group-expense' | 'debt-payment';
   id: string;
 };
 
@@ -76,6 +76,18 @@ type FinanceMovement =
         icon: string | null;
         color: string | null;
       } | null;
+    }
+  | {
+      source: 'debt-payment';
+      id: string;
+      debtId: string;
+      debtName: string;
+      counterpartyName: string;
+      description: string;
+      amount: number;
+      currency: string;
+      occurredAt: string;
+      type: 'INCOME' | 'EXPENSE';
     };
 
 function serializeFinanceAccount<
@@ -270,7 +282,9 @@ function decodeMovementCursor(cursor?: string): MovementCursor | null {
   const timestamp = Number(timestampValue);
   if (
     !Number.isFinite(timestamp) ||
-    (source !== 'transaction' && source !== 'group-expense') ||
+    (source !== 'transaction' &&
+      source !== 'group-expense' &&
+      source !== 'debt-payment') ||
     !id
   ) {
     return null;
@@ -332,7 +346,7 @@ function getCreditAvailable(creditLimit: number | null, usedCredit: number) {
   return money(Math.max(creditLimit - usedCredit, 0));
 }
 
-async function applyAccountTransactionEffect(
+export async function applyAccountTransactionEffect(
   tx: Tx,
   input: {
     accountId: string | null | undefined;
@@ -580,6 +594,21 @@ async function getDebtTotals(userId: string) {
   }
 
   return { owedByYou, owedToYou };
+}
+
+function getDebtViewerDirection(
+  debt: {
+    ownerId: string;
+    direction: string;
+  },
+  userId: string,
+) {
+  const ownerDirection = debt.direction === 'borrowed' ? 'borrowed' : 'lent';
+  return debt.ownerId === userId
+    ? ownerDirection
+    : ownerDirection === 'lent'
+      ? 'borrowed'
+      : 'lent';
 }
 
 async function getGoalTotals(userId: string) {
@@ -977,55 +1006,94 @@ export const financeOperations = {
       },
     };
 
-    const [transactionTotal, groupExpenseTotal, transactions, expenses] =
-      await Promise.all([
-        db.financeTransaction.count({
-          where: {
-            ownerId: userId,
-            occurredAt: { gte: range.start, lt: range.end },
+    const [
+      transactionTotal,
+      groupExpenseTotal,
+      debtPaymentTotal,
+      transactions,
+      expenses,
+      debtPayments,
+    ] = await Promise.all([
+      db.financeTransaction.count({
+        where: {
+          ownerId: userId,
+          occurredAt: { gte: range.start, lt: range.end },
+        },
+      }),
+      db.expense.count({
+        where: {
+          ...activeExpenseFilter,
+          date: { gte: range.start, lt: range.end },
+        },
+      }),
+      db.debtPayment.count({
+        where: {
+          paidAt: { gte: range.start, lt: range.end },
+          debt: { OR: [{ ownerId: userId }, { counterpartyId: userId }] },
+        },
+      }),
+      db.financeTransaction.findMany({
+        where: transactionWhere,
+        take: limit + 1,
+        orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+        include: {
+          category: true,
+          tags: { include: { tag: true } },
+        },
+      }),
+      db.expense.findMany({
+        where: activeExpenseFilter,
+        take: limit + 1,
+        orderBy: [{ date: 'desc' }, { id: 'desc' }],
+        select: {
+          id: true,
+          amount: true,
+          currency: true,
+          date: true,
+          description: true,
+          category: {
+            select: { id: true, name: true, icon: true, color: true },
           },
-        }),
-        db.expense.count({
-          where: {
-            ...activeExpenseFilter,
-            date: { gte: range.start, lt: range.end },
-          },
-        }),
-        db.financeTransaction.findMany({
-          where: transactionWhere,
-          take: limit + 1,
-          orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
-          include: {
-            category: true,
-            tags: { include: { tag: true } },
-          },
-        }),
-        db.expense.findMany({
-          where: activeExpenseFilter,
-          take: limit + 1,
-          orderBy: [{ date: 'desc' }, { id: 'desc' }],
-          select: {
-            id: true,
-            amount: true,
-            currency: true,
-            date: true,
-            description: true,
-            category: {
-              select: { id: true, name: true, icon: true, color: true },
+          group: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              GroupMember: { where: { userId }, select: { id: true } },
             },
-            group: {
-              select: {
-                id: true,
-                name: true,
-                type: true,
-                GroupMember: { where: { userId }, select: { id: true } },
-              },
-            },
-            payers: { select: { memberId: true, amount: true } },
-            participants: { select: { memberId: true, share: true } },
           },
-        }),
-      ]);
+          payers: { select: { memberId: true, amount: true } },
+          participants: { select: { memberId: true, share: true } },
+        },
+      }),
+      db.debtPayment.findMany({
+        where: {
+          paidAt: {
+            gte: range.start,
+            lt: range.end,
+            ...(cursorDateFilter ? cursorDateFilter : {}),
+          },
+          debt: { OR: [{ ownerId: userId }, { counterpartyId: userId }] },
+        },
+        take: limit + 1,
+        orderBy: [{ paidAt: 'desc' }, { id: 'desc' }],
+        select: {
+          id: true,
+          amount: true,
+          paidAt: true,
+          debt: {
+            select: {
+              id: true,
+              ownerId: true,
+              name: true,
+              counterpartyName: true,
+              direction: true,
+              currency: true,
+            },
+          },
+        },
+      }),
+    ]);
 
     const transactionMovements: FinanceMovement[] = transactions.map(
       (transaction) => ({
@@ -1087,7 +1155,29 @@ export const financeOperations = {
       },
     );
 
-    const movements = [...transactionMovements, ...groupExpenseMovements]
+    const debtPaymentMovements: FinanceMovement[] = debtPayments.map(
+      (payment) => {
+        const viewerDirection = getDebtViewerDirection(payment.debt, userId);
+        return {
+          source: 'debt-payment' as const,
+          id: payment.id,
+          debtId: payment.debt.id,
+          debtName: payment.debt.name,
+          counterpartyName: payment.debt.counterpartyName,
+          description: payment.debt.name,
+          amount: payment.amount,
+          currency: payment.debt.currency,
+          occurredAt: payment.paidAt.toISOString(),
+          type: viewerDirection === 'lent' ? 'INCOME' : 'EXPENSE',
+        };
+      },
+    );
+
+    const movements = [
+      ...transactionMovements,
+      ...groupExpenseMovements,
+      ...debtPaymentMovements,
+    ]
       .filter((movement) => isMovementAfterCursor(movement, cursor))
       .sort(compareMovements);
     const data = movements.slice(0, limit);
@@ -1098,7 +1188,7 @@ export const financeOperations = {
       data,
       pagination: {
         limit,
-        total: transactionTotal + groupExpenseTotal,
+        total: transactionTotal + groupExpenseTotal + debtPaymentTotal,
         nextCursor:
           hasNextPage && lastMovement
             ? encodeMovementCursor(lastMovement)
@@ -1119,6 +1209,7 @@ export const financeOperations = {
       budgets,
       groupExpenseTotals,
       debtTotals,
+      debtPayments,
       goalTotals,
     ] = await Promise.all([
       db.financeTransaction.findMany({
@@ -1151,6 +1242,22 @@ export const financeOperations = {
       }),
       getGroupExpenseTotals(userId, range.start, range.end),
       getDebtTotals(userId),
+      db.debtPayment.findMany({
+        where: {
+          paidAt: { gte: range.start, lt: range.end },
+          debt: { OR: [{ ownerId: userId }, { counterpartyId: userId }] },
+        },
+        select: {
+          amount: true,
+          debt: {
+            select: {
+              ownerId: true,
+              direction: true,
+              currency: true,
+            },
+          },
+        },
+      }),
       getGoalTotals(userId),
     ]);
 
@@ -1209,6 +1316,17 @@ export const financeOperations = {
           amount: money((currentTagTotal?.amount ?? 0) + transaction.amount),
         });
       }
+    }
+
+    for (const payment of debtPayments) {
+      const viewerDirection = getDebtViewerDirection(payment.debt, userId);
+      addCurrencyTotal(
+        viewerDirection === 'lent'
+          ? incomeByCurrency
+          : personalExpenseByCurrency,
+        payment.debt.currency,
+        payment.amount,
+      );
     }
 
     const totalExpenseByCurrency = { ...personalExpenseByCurrency };

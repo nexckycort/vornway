@@ -4,6 +4,7 @@ import type { RefObject } from 'react';
 import { formatCurrency, formatShortDate } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 import type {
+  FinanceDebtPaymentMovement,
   FinanceGroupExpenseMovement,
   FinanceMovement,
   FinanceMovementTransaction,
@@ -93,6 +94,7 @@ export function FigmaHistory({
   isFetchingNextPage,
   onOpenTransaction,
   onOpenGroupExpense,
+  onOpenDebtPayment,
 }: {
   movements: FinanceMovement[];
   loadMoreRef: RefObject<HTMLDivElement | null>;
@@ -100,6 +102,7 @@ export function FigmaHistory({
   isFetchingNextPage: boolean;
   onOpenTransaction: (transaction: FinanceMovementTransaction) => void;
   onOpenGroupExpense: (movement: FinanceGroupExpenseMovement) => void;
+  onOpenDebtPayment: (movement: FinanceDebtPaymentMovement) => void;
 }) {
   return (
     <section className="mt-4">
@@ -159,6 +162,53 @@ export function FigmaHistory({
                     {movement.type === 'INCOME'
                       ? m['finances.income']()
                       : m['finances.expense']()}
+                  </p>
+                </div>
+              </button>
+            );
+          }
+
+          if (movement.source === 'debt-payment') {
+            return (
+              <button
+                key={`debt-payment:${movement.id}`}
+                type="button"
+                onClick={() => onOpenDebtPayment(movement)}
+                className="flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#e9e9e9] bg-white p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+              >
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#fce7f3] text-primary">
+                  <HugeiconsIcon icon={Wallet02Icon} className="size-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-semibold leading-6 text-[#1e1e1e]">
+                    {movement.description}
+                  </p>
+                  <p className="truncate text-xs leading-4 text-[#626262]">
+                    {movement.counterpartyName}
+                  </p>
+                  <p className="mt-1 truncate text-xs leading-4 text-[#626262]">
+                    {formatShortDate(movement.occurredAt)}
+                  </p>
+                  <span className="mt-2 inline-flex max-w-full rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium leading-none text-primary">
+                    {m['finances.debtPayment']()}
+                  </span>
+                </div>
+                <div className="min-w-0 shrink-0 text-right">
+                  <p className="text-base font-medium leading-6 text-[#1e1e1e]">
+                    {formatCurrency(movement.currency, movement.amount, {
+                      maximumFractionDigits: 0,
+                    })}
+                  </p>
+                  <p
+                    className={`max-w-24 truncate text-xs leading-4 ${
+                      movement.type === 'INCOME'
+                        ? 'text-[#047857]'
+                        : 'text-[#b91c1c]'
+                    }`}
+                  >
+                    {movement.type === 'INCOME'
+                      ? m['finances.debtPaymentReceived']()
+                      : m['finances.debtPaymentSent']()}
                   </p>
                 </div>
               </button>

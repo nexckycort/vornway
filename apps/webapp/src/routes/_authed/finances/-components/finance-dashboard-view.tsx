@@ -10,6 +10,7 @@ import {
 } from './finance-dashboard-components';
 import { FinanceTab } from './finance-layout';
 import {
+  type FinanceDebtPaymentMovement,
   type FinanceGroupExpenseMovement,
   type FinanceMovement,
   type FinanceMovementTransaction,
@@ -205,6 +206,13 @@ export function FinanceDashboardView({
                 `/finances?view=dashboard&month=${month}`,
               ),
             })
+          }
+          onOpenDebtPayment={(movement: FinanceDebtPaymentMovement) =>
+            void navigate({
+              to: '/debts/$id',
+              params: { id: movement.debtId },
+              search: { from: 'finances' },
+            } as NavigateOptions)
           }
         />
       </div>

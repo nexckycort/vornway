@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { debtsClient } from '#/api/debts';
+import { financesClient } from '#/api/finances';
 import type { InferRequestType } from '#/api/types';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
@@ -21,6 +22,7 @@ const updateEndpoint = debtsClient[':id'].$patch;
 const paymentEndpoint = debtsClient[':id'].payments.$post;
 const deletePaymentEndpoint = debtsClient[':id'].payments[':paymentId'].$delete;
 const deleteDebtEndpoint = debtsClient[':id'].$delete;
+const financesSummaryEndpoint = financesClient.summary.$get;
 type Detail = {
   id: string;
   name: string;
@@ -36,9 +38,16 @@ type Detail = {
   status: 'active' | 'paid' | 'overdue';
   payments: Array<{
     id: string;
+    accountId?: string | null;
     amount: number;
     paidAt: string;
     note?: string | null;
+    account?: {
+      id: string;
+      name: string;
+      institution?: string | null;
+      currency: string;
+    } | null;
   }>;
   viewerRole: 'owner' | 'counterparty';
 };
@@ -54,12 +63,23 @@ function RouteComponent() {
   const [nameInput, setNameInput] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentNote, setPaymentNote] = useState('');
+  const [paymentAccountId, setPaymentAccountId] = useState('');
   const detailQuery = useQuery({
     queryKey: ['debt', id],
     queryFn: async () => {
       const response = await detailEndpoint({ param: { id } });
       if (!response.ok) throw new Error('debt_load_failed');
       return (await response.json()) as unknown as Detail;
+    },
+  });
+  const financesSummaryQuery = useQuery({
+    queryKey: ['finances-summary', 'debt-payment-accounts', 'COP'],
+    queryFn: async () => {
+      const response = await financesSummaryEndpoint({
+        query: { currency: 'COP' },
+      });
+      if (!response.ok) throw new Error('finance_summary_load_failed');
+      return response.json();
     },
   });
   const paymentMutation = useMutation({
@@ -72,10 +92,15 @@ function RouteComponent() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['debt', id] }),
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
       setPaymentAmount('');
       setPaymentNote('');
+      setPaymentAccountId('');
     },
   });
   const updateMutation = useMutation({
@@ -88,6 +113,10 @@ function RouteComponent() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['debt', id] }),
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
       setIsEditingName(false);
@@ -105,6 +134,10 @@ function RouteComponent() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['debt', id] }),
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
     },
@@ -137,9 +170,16 @@ function RouteComponent() {
     if (!detail || !Number.isFinite(amount) || amount <= 0) return;
     void paymentMutation.mutate({
       amount,
+      ...(paymentAccountId ? { accountId: paymentAccountId } : {}),
       ...(paymentNote.trim() ? { note: paymentNote.trim() } : {}),
     });
   };
+  const paymentAccounts =
+    financesSummaryQuery.data?.accounts.filter(
+      (account) =>
+        account.status !== 'CLOSED' &&
+        account.currency === (detail?.currency ?? 'COP'),
+    ) ?? [];
 
   return (
     <MobilePageLayout
@@ -286,6 +326,18 @@ function RouteComponent() {
                 placeholder={m['debts.paymentNotePlaceholder']()}
                 className="h-12 w-full rounded-2xl border px-4"
               />
+              <select
+                value={paymentAccountId}
+                onChange={(event) => setPaymentAccountId(event.target.value)}
+                className="h-12 w-full rounded-2xl border px-4"
+              >
+                <option value="">{m['finances.noAccount']()}</option>
+                {paymentAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name} · {account.institution ?? account.currency}
+                  </option>
+                ))}
+              </select>
               <Button
                 type="button"
                 disabled={paymentMutation.isPending}
@@ -312,6 +364,7 @@ function RouteComponent() {
                       <p className="text-xs text-gray-500">
                         {new Date(payment.paidAt).toLocaleDateString()}
                         {payment.note ? ` · ${payment.note}` : ''}
+                        {payment.account ? ` · ${payment.account.name}` : ''}
                       </p>
                     </div>
                     {detail.viewerRole === 'owner' ? (

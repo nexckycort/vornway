@@ -45,6 +45,7 @@ model FinanceAccount {
 
   owner        User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   transactions FinanceTransaction[]
+  debtPayments DebtPayment[]
 
   @@index([ownerId, archivedAt])
   @@index([ownerId, status, archivedAt])

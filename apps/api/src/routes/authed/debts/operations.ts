@@ -1,5 +1,6 @@
 import type { Prisma } from '#/generated/prisma/client';
 import { db } from '#/infrastructure/database/connection';
+import { applyAccountTransactionEffect } from '../finances/operations';
 import type {
   CreateDebtInput,
   CreatePaymentInput,
@@ -8,7 +9,13 @@ import type {
 
 const money = (value: number) => Number(value.toFixed(2));
 
-type DebtWithPayments = Prisma.DebtGetPayload<{ include: { payments: true } }>;
+type DebtWithPayments = Prisma.DebtGetPayload<{
+  include: { payments: { include: { account: true } } };
+}>;
+
+function debtPaymentTransactionType(direction: string) {
+  return direction === 'borrowed' ? 'EXPENSE' : 'INCOME';
+}
 
 function serialize(debt: DebtWithPayments, viewerId?: string) {
   const paid = money(
@@ -32,6 +39,14 @@ function serialize(debt: DebtWithPayments, viewerId?: string) {
     createdAt: debt.createdAt.toISOString(),
     payments: debt.payments.map((payment) => ({
       ...payment,
+      account: payment.account
+        ? {
+            id: payment.account.id,
+            name: payment.account.name,
+            institution: payment.account.institution,
+            currency: payment.account.currency,
+          }
+        : null,
       paidAt: payment.paidAt.toISOString(),
       createdAt: payment.createdAt.toISOString(),
     })),
@@ -61,7 +76,7 @@ export const debtOperations = {
             }
           : {}),
       },
-      include: { payments: true },
+      include: { payments: { include: { account: true } } },
       orderBy: { createdAt: 'desc' },
     });
     return debts
@@ -71,7 +86,12 @@ export const debtOperations = {
   async get(userId: string, id: string) {
     const debt = await db.debt.findFirst({
       where: { id, ...visibleTo(userId) },
-      include: { payments: { orderBy: { paidAt: 'desc' } } },
+      include: {
+        payments: {
+          orderBy: { paidAt: 'desc' },
+          include: { account: true },
+        },
+      },
     });
     return debt ? serialize(debt, userId) : null;
   },
@@ -107,14 +127,14 @@ export const debtOperations = {
         dueDate: input.dueDate,
         description: input.description,
       },
-      include: { payments: true },
+      include: { payments: { include: { account: true } } },
     });
     return serialize(debt, userId);
   },
   async update(userId: string, id: string, input: UpdateDebtInput) {
     const existing = await db.debt.findFirst({
       where: { id, ownerId: userId },
-      include: { payments: true },
+      include: { payments: { include: { account: true } } },
     });
     if (!existing) return null;
     if (input.counterpartyId === userId)
@@ -142,17 +162,30 @@ export const debtOperations = {
         currency: input.currency?.toUpperCase(),
         expectedTotal: money(principal + interest),
       },
-      include: { payments: true },
+      include: { payments: { include: { account: true } } },
     });
     return serialize(debt, userId);
   },
   async delete(userId: string, id: string) {
     const debt = await db.debt.findFirst({
       where: { id, ownerId: userId },
-      select: { id: true },
+      include: { payments: true },
     });
     if (!debt) return false;
-    await db.debt.delete({ where: { id } });
+    await db.$transaction(async (tx) => {
+      for (const payment of debt.payments) {
+        await applyAccountTransactionEffect(
+          tx,
+          {
+            accountId: payment.accountId,
+            type: debtPaymentTransactionType(debt.direction),
+            amount: payment.amount,
+          },
+          -1,
+        );
+      }
+      await tx.debt.delete({ where: { id } });
+    });
     return true;
   },
   async payment(userId: string, id: string, input: CreatePaymentInput) {
@@ -166,34 +199,67 @@ export const debtOperations = {
       debt.payments.reduce((sum, payment) => sum + payment.amount, 0);
     if (input.amount > remaining + 0.01)
       throw new Error('Payment exceeds remaining balance');
-    await db.$transaction([
-      db.debtPayment.create({
+    if (input.accountId) {
+      const account = await db.financeAccount.findFirst({
+        where: {
+          id: input.accountId,
+          ownerId: userId,
+          currency: debt.currency,
+          archivedAt: null,
+          status: { not: 'CLOSED' },
+        },
+        select: { id: true },
+      });
+      if (!account) throw new Error('Invalid finance account');
+    }
+    await db.$transaction(async (tx) => {
+      const payment = await tx.debtPayment.create({
         data: {
           debtId: id,
+          accountId: input.accountId,
           amount: input.amount,
           paidAt: input.paidAt,
           note: input.note,
         },
-      }),
-      db.debt.update({
+      });
+      await tx.debt.update({
         where: { id },
         data: { updatedAt: new Date() },
-      }),
-    ]);
+      });
+      await applyAccountTransactionEffect(
+        tx,
+        {
+          accountId: payment.accountId,
+          type: debtPaymentTransactionType(debt.direction),
+          amount: payment.amount,
+        },
+        1,
+      );
+    });
     return debtOperations.get(userId, id);
   },
   async deletePayment(userId: string, debtId: string, paymentId: string) {
     const payment = await db.debtPayment.findFirst({
       where: { id: paymentId, debt: { id: debtId, ownerId: userId } },
+      include: { debt: true },
     });
     if (!payment) return null;
-    await db.$transaction([
-      db.debtPayment.delete({ where: { id: paymentId } }),
-      db.debt.update({
+    await db.$transaction(async (tx) => {
+      await applyAccountTransactionEffect(
+        tx,
+        {
+          accountId: payment.accountId,
+          type: debtPaymentTransactionType(payment.debt.direction),
+          amount: payment.amount,
+        },
+        -1,
+      );
+      await tx.debtPayment.delete({ where: { id: paymentId } });
+      await tx.debt.update({
         where: { id: debtId },
         data: { updatedAt: new Date() },
-      }),
-    ]);
+      });
+    });
     return debtOperations.get(userId, debtId);
   },
 };

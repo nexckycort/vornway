@@ -27,13 +27,16 @@ model Debt {
 model DebtPayment {
   id          String   @id @default(cuid())
   debtId      String
+  accountId   String?
   amount      Float
   paidAt      DateTime @default(now())
   note        String?
   createdAt   DateTime @default(now())
 
   debt        Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  account     FinanceAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([debtId, paidAt(sort: Desc)])
+  @@index([accountId])
   @@map("debt_payment")
 }

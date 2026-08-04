@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { debtsClient } from '#/api/debts';
+import { financesClient } from '#/api/finances';
 import type { InferRequestType, InferResponseType } from '#/api/types';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
@@ -29,12 +30,20 @@ const detailEndpoint = debtsClient[':id'].$get;
 const updateEndpoint = debtsClient[':id'].$patch;
 const paymentEndpoint = debtsClient[':id'].payments.$post;
 const deletePaymentEndpoint = debtsClient[':id'].payments[':paymentId'].$delete;
+const financesSummaryEndpoint = financesClient.summary.$get;
 type Debt = InferResponseType<typeof listEndpoint>[number];
 type DebtPayment = {
   id: string;
+  accountId?: string | null;
   amount: number;
   paidAt: string;
   note?: string | null;
+  account?: {
+    id: string;
+    name: string;
+    institution?: string | null;
+    currency: string;
+  } | null;
 };
 type DebtDetail = Debt & {
   payments: DebtPayment[];
@@ -66,6 +75,7 @@ function RouteComponent() {
   const [counterpartyId, setCounterpartyId] = useState<string | undefined>();
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentNote, setPaymentNote] = useState('');
+  const [paymentAccountId, setPaymentAccountId] = useState('');
   const userSearch = useUserSearchQuery(name);
 
   const debtsQuery = useQuery({
@@ -84,6 +94,16 @@ function RouteComponent() {
         param: { id: selectedDebtId ?? '' },
       });
       if (!response.ok) throw new Error('debt_load_failed');
+      return response.json();
+    },
+  });
+  const financesSummaryQuery = useQuery({
+    queryKey: ['finances-summary', 'debt-payment-accounts', 'COP'],
+    queryFn: async () => {
+      const response = await financesSummaryEndpoint({
+        query: { currency: 'COP' },
+      });
+      if (!response.ok) throw new Error('finance_summary_load_failed');
       return response.json();
     },
   });
@@ -119,10 +139,15 @@ function RouteComponent() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
         queryClient.invalidateQueries({ queryKey: ['debt', selectedDebtId] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
       setPaymentAmount('');
       setPaymentNote('');
+      setPaymentAccountId('');
       setShowPaymentForm(false);
     },
   });
@@ -144,6 +169,10 @@ function RouteComponent() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
         queryClient.invalidateQueries({ queryKey: ['debt', selectedDebtId] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
     },
@@ -193,11 +222,18 @@ function RouteComponent() {
       id: selectedDebtId,
       input: {
         amount: amountValue,
+        ...(paymentAccountId ? { accountId: paymentAccountId } : {}),
         ...(paymentNote.trim() ? { note: paymentNote.trim() } : {}),
       },
     });
   }
   const detail = detailQuery.data as unknown as DebtDetail | undefined;
+  const paymentAccounts =
+    financesSummaryQuery.data?.accounts.filter(
+      (account) =>
+        account.status !== 'CLOSED' &&
+        account.currency === (detail?.currency ?? 'COP'),
+    ) ?? [];
   const backTo = from === 'finances' ? '/finances' : '/';
 
   return (
@@ -479,6 +515,18 @@ function RouteComponent() {
                   placeholder={m['debts.paymentNotePlaceholder']()}
                   className="h-12 w-full rounded-2xl border bg-white px-4"
                 />
+                <select
+                  value={paymentAccountId}
+                  onChange={(event) => setPaymentAccountId(event.target.value)}
+                  className="h-12 w-full rounded-2xl border bg-white px-4"
+                >
+                  <option value="">{m['finances.noAccount']()}</option>
+                  {paymentAccounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name} · {account.institution ?? account.currency}
+                    </option>
+                  ))}
+                </select>
                 <Button
                   type="button"
                   disabled={paymentMutation.isPending}
@@ -504,6 +552,7 @@ function RouteComponent() {
                       <p className="text-xs text-gray-500">
                         {new Date(payment.paidAt).toLocaleDateString()}
                         {payment.note ? ` · ${payment.note}` : ''}
+                        {payment.account ? ` · ${payment.account.name}` : ''}
                       </p>
                     </div>
                     {detail.viewerRole === 'owner' ? (

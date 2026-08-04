@@ -73,6 +73,10 @@ export type FinanceGroupExpenseMovement = Extract<
   FinanceMovement,
   { source: 'group-expense' }
 >;
+export type FinanceDebtPaymentMovement = Extract<
+  FinanceMovement,
+  { source: 'debt-payment' }
+>;
 export type FinanceTag = FinanceSummary['tags'][number];
 export type FinanceCategoryKind = 'income' | 'expense' | 'both';
 export type EditableFinanceTransaction =

@@ -109,7 +109,7 @@ function MovementTitle({
         {title}
       </p>
       <span
-        className={`max-w-32 shrink-0 truncate rounded-full border px-2.5 py-0.5 text-[11px] font-medium leading-4 ${badgeClassName}`}
+        className={`max-w-32 shrink-0 truncate rounded-full border px-2.5 py-0.5 text-[10px] font-medium leading-4 ${badgeClassName}`}
       >
         {badge}
       </span>
@@ -171,6 +171,9 @@ export function FigmaHistory({
                   />
                   <p className="mt-1 truncate text-xs leading-4 text-[#626262]">
                     {formatShortDate(movement.occurredAt)}
+                  </p>
+                  <p className="truncate text-[11px] leading-4 text-[#8a8a8a]">
+                    {movement.accountName ?? m['finances.noAccount']()}
                   </p>
                 </div>
                 <div className="min-w-0 shrink-0 text-right">

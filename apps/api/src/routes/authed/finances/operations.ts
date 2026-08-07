@@ -49,6 +49,7 @@ type FinanceMovement =
       occurredAt: string;
       type: 'INCOME' | 'EXPENSE';
       accountId: string | null;
+      accountName: string | null;
       categoryId: string | null;
       category: {
         id: string;
@@ -1050,6 +1051,7 @@ export const financeOperations = {
         orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
         include: {
           category: true,
+          account: { select: { name: true } },
           tags: { include: { tag: true } },
         },
       }),
@@ -1117,6 +1119,7 @@ export const financeOperations = {
         occurredAt: transaction.occurredAt.toISOString(),
         type: transaction.type === 'INCOME' ? 'INCOME' : 'EXPENSE',
         accountId: transaction.accountId,
+        accountName: transaction.account?.name ?? null,
         categoryId: transaction.categoryId,
         category: transaction.category,
         tags: transaction.tags.map((transactionTag) => transactionTag.tag),

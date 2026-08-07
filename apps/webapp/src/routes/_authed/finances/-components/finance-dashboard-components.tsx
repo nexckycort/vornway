@@ -105,7 +105,7 @@ function MovementTitle({
 
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <p className="min-w-0 truncate text-base font-semibold leading-6 text-[#1e1e1e]">
+      <p className="min-w-0 truncate text-sm font-semibold leading-5 text-[#1e1e1e]">
         {title}
       </p>
       <span
@@ -169,11 +169,11 @@ export function FigmaHistory({
                       movement.category?.name ?? m['finances.noCategory']()
                     }
                   />
-                  <p className="mt-1 truncate text-xs leading-4 text-[#626262]">
-                    {formatShortDate(movement.occurredAt)}
-                  </p>
                   <p className="truncate text-[11px] leading-4 text-[#8a8a8a]">
                     {movement.accountName ?? m['finances.noAccount']()}
+                  </p>
+                  <p className="truncate text-xs leading-4 text-[#626262]">
+                    {formatShortDate(movement.occurredAt)}
                   </p>
                 </div>
                 <div className="min-w-0 shrink-0 text-right">

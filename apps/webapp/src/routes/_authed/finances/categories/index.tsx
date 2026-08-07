@@ -3,6 +3,13 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '#/components/ui/button';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
 import { m } from '#/paraglide/messages.js';
 import { ScreenShell } from '../-components/finance-layout';
 import {
@@ -124,8 +131,7 @@ function CategoriesRoute() {
     },
     onSuccess: async () => {
       await invalidateCategoryQueries(queryClient);
-      setEditingCategoryId('');
-      setEditingCategoryName('');
+      closeCategoryEditor();
       toast.success(m['finances.categoryDeleted']());
     },
     onError: (error) => {
@@ -178,6 +184,11 @@ function CategoriesRoute() {
     });
   }
 
+  function closeCategoryEditor() {
+    setEditingCategoryId('');
+    setEditingCategoryName('');
+  }
+
   const categories = summaryQuery.data?.categories ?? [];
 
   return (
@@ -205,8 +216,8 @@ function CategoriesRoute() {
           {m['finances.loadError']()}
         </div>
       ) : (
-        <div className="grid gap-5 md:grid-cols-[1fr_1.1fr]">
-          <section className="rounded-[30px] bg-white p-5">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+          <section className="min-w-0 rounded-[30px] bg-white p-5">
             <h2 className="text-lg font-semibold">
               {m['finances.createCategory']()}
             </h2>
@@ -242,30 +253,26 @@ function CategoriesRoute() {
             </div>
           </section>
 
-          <section className="rounded-[30px] bg-white p-5">
+          <section className="min-w-0 rounded-[30px] bg-white p-5">
             <h2 className="text-lg font-semibold">
               {m['finances.editCategory']()}
             </h2>
-            <div className="mt-4 grid gap-2">
+            <div className="mt-4 grid max-h-[min(60vh,32rem)] min-w-0 gap-2 overflow-y-auto pr-1">
               {categories.map((category) => (
                 <button
                   key={category.id}
                   type="button"
                   onClick={() => selectCategoryToEdit(category)}
-                  className={`flex items-center gap-3 rounded-[20px] p-3 text-left ${
-                    editingCategoryId === category.id
-                      ? 'bg-black text-white'
-                      : 'bg-[#f7f7f4]'
-                  }`}
+                  className="flex min-w-0 items-center gap-3 rounded-[20px] bg-[#f7f7f4] p-3 text-left transition-colors hover:bg-[#ededeb]"
                 >
                   <span
-                    className="size-4 rounded-full"
+                    className="size-3.5 shrink-0 rounded-full"
                     style={{ backgroundColor: category.color ?? '#101113' }}
                   />
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold">
                     {category.name}
                   </span>
-                  <span className="text-xs opacity-60">
+                  <span className="max-w-[40%] shrink-0 truncate text-xs text-black/45">
                     {getCategoryKindLabel(
                       toCategoryKind(category.transactionType),
                     )}
@@ -273,16 +280,26 @@ function CategoriesRoute() {
                 </button>
               ))}
             </div>
+          </section>
 
-            {editingCategoryId ? (
-              <div className="mt-5 grid gap-4 border-t border-black/5 pt-5">
+          <Drawer
+            open={Boolean(editingCategoryId)}
+            onOpenChange={(open) => {
+              if (!open) closeCategoryEditor();
+            }}
+          >
+            <DrawerContent className="overflow-hidden bg-[#f7f7f4]">
+              <DrawerHeader>
+                <DrawerTitle>{m['finances.editCategory']()}</DrawerTitle>
+              </DrawerHeader>
+              <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-5 pb-4">
                 <input
                   value={editingCategoryName}
                   onChange={(event) =>
                     setEditingCategoryName(event.target.value)
                   }
                   placeholder={m['finances.categoryPlaceholder']()}
-                  className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
+                  className="h-13 rounded-[20px] border border-black/5 bg-white px-4 text-sm outline-none"
                 />
                 <CategoryTypePicker
                   value={editingCategoryType}
@@ -296,34 +313,34 @@ function CategoriesRoute() {
                   value={editingCategoryIcon}
                   onChange={setEditingCategoryIcon}
                 />
-                <div className="grid grid-cols-[1fr_auto] gap-2">
-                  <Button
-                    type="button"
-                    onClick={submitCategoryUpdate}
-                    disabled={updateCategoryMutation.isPending}
-                    className="h-12 rounded-full"
-                  >
-                    {updateCategoryMutation.isPending
-                      ? m['common.saving']()
-                      : m['finances.saveCategoryChanges']()}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={() => {
-                      if (confirm(m['finances.deleteCategoryConfirm']())) {
-                        deleteCategoryMutation.mutate(editingCategoryId);
-                      }
-                    }}
-                    disabled={deleteCategoryMutation.isPending}
-                    className="h-12 rounded-full"
-                  >
-                    {m['common.delete']()}
-                  </Button>
-                </div>
               </div>
-            ) : null}
-          </section>
+              <DrawerFooter className="grid grid-cols-[1fr_auto] border-t border-black/5 bg-[#f7f7f4]/95 backdrop-blur">
+                <Button
+                  type="button"
+                  onClick={submitCategoryUpdate}
+                  disabled={updateCategoryMutation.isPending}
+                  className="h-12 rounded-full"
+                >
+                  {updateCategoryMutation.isPending
+                    ? m['common.saving']()
+                    : m['finances.saveCategoryChanges']()}
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    if (confirm(m['finances.deleteCategoryConfirm']())) {
+                      deleteCategoryMutation.mutate(editingCategoryId);
+                    }
+                  }}
+                  disabled={deleteCategoryMutation.isPending}
+                  className="h-12 rounded-full"
+                >
+                  {m['common.delete']()}
+                </Button>
+              </DrawerFooter>
+            </DrawerContent>
+          </Drawer>
         </div>
       )}
     </ScreenShell>

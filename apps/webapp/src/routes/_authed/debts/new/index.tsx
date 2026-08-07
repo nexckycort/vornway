@@ -25,7 +25,9 @@ function RouteComponent() {
   const [debtName, setDebtName] = useState('');
   const [name, setName] = useState('');
   const [counterpartyId, setCounterpartyId] = useState<string>();
-  const [amount, setAmount] = useState('');
+  const [amounts, setAmounts] = useState(() => [
+    { value: '', loanDate: new Date().toISOString().slice(0, 10) },
+  ]);
   const [direction, setDirection] = useState<'lent' | 'borrowed'>('lent');
   const [interest, setInterest] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -47,7 +49,16 @@ function RouteComponent() {
   });
 
   const submit = () => {
-    const principalAmount = Number(amount.replace(/[^\d.]/g, ''));
+    const parsedAmounts = amounts
+      .map((item) => ({
+        amount: Number(item.value.replace(/[^\d.]/g, '')),
+        loanDate: item.loanDate,
+      }))
+      .filter((item) => Number.isFinite(item.amount) && item.amount > 0);
+    const principalAmount = parsedAmounts.reduce(
+      (total, item) => total + item.amount,
+      0,
+    );
     if (
       !debtName.trim() ||
       !name.trim() ||
@@ -61,6 +72,7 @@ function RouteComponent() {
       ...(counterpartyId ? { counterpartyId } : {}),
       direction,
       principalAmount,
+      amounts: parsedAmounts,
       currency: 'COP',
       interestType: interest ? 'percentage' : 'none',
       ...(interest ? { interestValue: Number(interest) } : {}),
@@ -130,13 +142,65 @@ function RouteComponent() {
             </div>
           ) : null}
         </div>
-        <input
-          value={amount}
-          onChange={(event) => setAmount(event.target.value)}
-          inputMode="decimal"
-          placeholder={m['debts.amountPlaceholder']()}
-          className="h-14 w-full rounded-2xl border border-gray-200 px-4 text-base outline-none focus:border-primary"
-        />
+        {amounts.map((item, index) => (
+          <div key={`amount-${index}`} className="flex gap-2">
+            <input
+              value={item.value}
+              onChange={(event) =>
+                setAmounts((current) =>
+                  current.map((item, itemIndex) =>
+                    itemIndex === index
+                      ? { ...item, value: event.target.value }
+                      : item,
+                  ),
+                )
+              }
+              inputMode="decimal"
+              placeholder={m['debts.amountPlaceholder']()}
+              className="h-14 min-w-0 flex-1 rounded-2xl border border-gray-200 px-4 text-base outline-none focus:border-primary"
+            />
+            <input
+              type="date"
+              value={item.loanDate}
+              onChange={(event) =>
+                setAmounts((current) =>
+                  current.map((item, itemIndex) =>
+                    itemIndex === index
+                      ? { ...item, loanDate: event.target.value }
+                      : item,
+                  ),
+                )
+              }
+              aria-label={m['debts.amountDate']()}
+              className="h-14 w-36 rounded-2xl border border-gray-200 px-3 text-sm outline-none focus:border-primary"
+            />
+            {amounts.length > 1 ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setAmounts((current) =>
+                    current.filter((_, itemIndex) => itemIndex !== index),
+                  )
+                }
+                className="px-3 text-sm text-gray-500"
+              >
+                {m['debts.removeAmount']()}
+              </button>
+            ) : null}
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            setAmounts((current) => [
+              ...current,
+              { value: '', loanDate: new Date().toISOString().slice(0, 10) },
+            ])
+          }
+          className="text-left text-sm font-medium text-primary"
+        >
+          + {m['debts.addAmount']()}
+        </button>
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"

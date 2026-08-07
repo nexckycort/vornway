@@ -11,7 +11,7 @@ import type {
 const money = (value: number) => Number(value.toFixed(2));
 
 type DebtWithPayments = Prisma.DebtGetPayload<{
-  include: { payments: { include: { account: true } } };
+  include: { amounts: true; payments: { include: { account: true } } };
 }>;
 
 function debtPaymentTransactionType(direction: string) {
@@ -51,6 +51,12 @@ function serialize(debt: DebtWithPayments, viewerId?: string) {
       paidAt: payment.paidAt.toISOString(),
       createdAt: payment.createdAt.toISOString(),
     })),
+    amounts: debt.amounts.map((amount) => ({
+      id: amount.id,
+      amount: amount.amount,
+      loanDate: amount.loanDate.toISOString(),
+      createdAt: amount.createdAt.toISOString(),
+    })),
   };
 }
 
@@ -77,7 +83,7 @@ export const debtOperations = {
             }
           : {}),
       },
-      include: { payments: { include: { account: true } } },
+      include: { amounts: true, payments: { include: { account: true } } },
       orderBy: { createdAt: 'desc' },
     });
     return debts
@@ -88,6 +94,7 @@ export const debtOperations = {
     const debt = await db.debt.findFirst({
       where: { id, ...visibleTo(userId) },
       include: {
+        amounts: true,
         payments: {
           orderBy: { paidAt: 'desc' },
           include: { account: true },
@@ -106,13 +113,19 @@ export const debtOperations = {
       });
       if (!counterparty) throw new Error('Counterparty not found');
     }
+    const amounts = input.amounts ?? [
+      { amount: input.principalAmount, loanDate: new Date() },
+    ];
+    const principalAmount = money(
+      amounts.reduce((total, item) => total + item.amount, 0),
+    );
     const interest =
       input.interestType === 'percentage'
-        ? input.principalAmount * ((input.interestValue ?? 0) / 100)
+        ? principalAmount * ((input.interestValue ?? 0) / 100)
         : input.interestType === 'fixed'
           ? (input.interestValue ?? 0)
           : 0;
-    const expectedTotal = money(input.principalAmount + interest);
+    const expectedTotal = money(principalAmount + interest);
     const debt = await db.debt.create({
       data: {
         ownerId: userId,
@@ -120,22 +133,23 @@ export const debtOperations = {
         counterpartyName: input.counterpartyName,
         counterpartyId: input.counterpartyId,
         direction: input.direction,
-        principalAmount: input.principalAmount,
+        principalAmount,
         interestType: input.interestType,
         interestValue: input.interestValue,
         expectedTotal,
+        amounts: { create: amounts },
         currency: input.currency.toUpperCase(),
         dueDate: input.dueDate,
         description: input.description,
       },
-      include: { payments: { include: { account: true } } },
+      include: { amounts: true, payments: { include: { account: true } } },
     });
     return serialize(debt, userId);
   },
   async update(userId: string, id: string, input: UpdateDebtInput) {
     const existing = await db.debt.findFirst({
       where: { id, ownerId: userId },
-      include: { payments: { include: { account: true } } },
+      include: { amounts: true, payments: { include: { account: true } } },
     });
     if (!existing) return null;
     if (input.counterpartyId === userId)
@@ -147,7 +161,15 @@ export const debtOperations = {
       });
       if (!counterparty) throw new Error('Counterparty not found');
     }
-    const principal = input.principalAmount ?? existing.principalAmount;
+    const amounts =
+      input.amounts ??
+      existing.amounts.map((item) => ({
+        amount: item.amount,
+        loanDate: item.loanDate,
+      }));
+    const principal = money(
+      amounts.reduce((total, item) => total + item.amount, 0),
+    );
     const type = input.interestType ?? existing.interestType;
     const value = input.interestValue ?? existing.interestValue ?? 0;
     const interest =
@@ -159,11 +181,27 @@ export const debtOperations = {
     const debt = await db.debt.update({
       where: { id },
       data: {
-        ...input,
+        name: input.name,
+        counterpartyName: input.counterpartyName,
+        counterpartyId: input.counterpartyId,
+        direction: input.direction,
+        principalAmount: principal,
+        ...(input.amounts
+          ? {
+              amounts: {
+                deleteMany: {},
+                create: amounts,
+              },
+            }
+          : {}),
         currency: input.currency?.toUpperCase(),
+        interestType: input.interestType,
+        interestValue: input.interestValue,
+        dueDate: input.dueDate,
+        description: input.description,
         expectedTotal: money(principal + interest),
       },
-      include: { payments: { include: { account: true } } },
+      include: { amounts: true, payments: { include: { account: true } } },
     });
     return serialize(debt, userId);
   },

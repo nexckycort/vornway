@@ -47,6 +47,7 @@ type DebtPayment = {
   } | null;
 };
 type DebtDetail = Debt & {
+  amounts: { id: string; amount: number; createdAt: string }[];
   payments: DebtPayment[];
   expectedTotal: number;
   paidAmount: number;
@@ -69,7 +70,9 @@ function RouteComponent() {
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [debtName, setDebtName] = useState('');
   const [name, setName] = useState('');
-  const [amount, setAmount] = useState('');
+  const [amounts, setAmounts] = useState(() => [
+    { value: '', loanDate: new Date().toISOString().slice(0, 10) },
+  ]);
   const [direction, setDirection] = useState<'lent' | 'borrowed'>('lent');
   const [interest, setInterest] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -217,7 +220,9 @@ function RouteComponent() {
     setShowForm(false);
     setDebtName('');
     setName('');
-    setAmount('');
+    setAmounts([
+      { value: '', loanDate: new Date().toISOString().slice(0, 10) },
+    ]);
     setInterest('');
     setDueDate('');
     setDescription('');
@@ -225,7 +230,16 @@ function RouteComponent() {
     setCounterpartyId(undefined);
   }
   function submit() {
-    const principalAmount = Number(amount.replace(/[^\d.]/g, ''));
+    const parsedAmounts = amounts
+      .map((item) => ({
+        amount: Number(item.value.replace(/[^\d.]/g, '')),
+        loanDate: item.loanDate,
+      }))
+      .filter((item) => Number.isFinite(item.amount) && item.amount > 0);
+    const principalAmount = parsedAmounts.reduce(
+      (total, item) => total + item.amount,
+      0,
+    );
     if (
       !debtName.trim() ||
       !name.trim() ||
@@ -241,6 +255,7 @@ function RouteComponent() {
         ...(counterpartyId ? { counterpartyId } : {}),
         direction,
         principalAmount,
+        amounts: parsedAmounts,
         currency: 'COP',
         interestType: interest ? 'percentage' : 'none',
         ...(interest ? { interestValue: Number(interest) } : {}),
@@ -389,13 +404,68 @@ function RouteComponent() {
                   ))}
                 </div>
               ) : null}
-              <input
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                inputMode="decimal"
-                placeholder={m['debts.amountPlaceholder']()}
-                className="h-12 w-full rounded-2xl border px-4"
-              />
+              {amounts.map((item, index) => (
+                <div key={`amount-${index}`} className="flex gap-2">
+                  <input
+                    value={item.value}
+                    onChange={(e) =>
+                      setAmounts((current) =>
+                        current.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? { ...item, value: e.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                    inputMode="decimal"
+                    placeholder={m['debts.amountPlaceholder']()}
+                    className="h-12 min-w-0 flex-1 rounded-2xl border px-4"
+                  />
+                  <input
+                    type="date"
+                    value={item.loanDate}
+                    onChange={(e) =>
+                      setAmounts((current) =>
+                        current.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? { ...item, loanDate: e.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                    aria-label={m['debts.amountDate']()}
+                    className="h-12 w-36 rounded-2xl border px-3 text-sm"
+                  />
+                  {amounts.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAmounts((current) =>
+                          current.filter((_, itemIndex) => itemIndex !== index),
+                        )
+                      }
+                      className="px-2 text-xs text-gray-500"
+                    >
+                      {m['debts.removeAmount']()}
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  setAmounts((current) => [
+                    ...current,
+                    {
+                      value: '',
+                      loanDate: new Date().toISOString().slice(0, 10),
+                    },
+                  ])
+                }
+                className="text-left text-sm font-medium text-primary"
+              >
+                + {m['debts.addAmount']()}
+              </button>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -474,7 +544,19 @@ function RouteComponent() {
                       setEditingDebtId(detail.id);
                       setDebtName(detail.name);
                       setName(detail.counterpartyName);
-                      setAmount(String(detail.principalAmount));
+                      setAmounts(
+                        detail.amounts?.length
+                          ? detail.amounts.map((item) => ({
+                              value: String(item.amount),
+                              loanDate: item.loanDate.slice(0, 10),
+                            }))
+                          : [
+                              {
+                                value: String(detail.principalAmount),
+                                loanDate: detail.createdAt.slice(0, 10),
+                              },
+                            ],
+                      );
                       setDirection(detail.direction as 'lent' | 'borrowed');
                       setInterest(
                         detail.interestType === 'percentage'

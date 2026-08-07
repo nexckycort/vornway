@@ -17,11 +17,25 @@ model Debt {
 
   owner             User      @relation("DebtOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   counterparty      User?     @relation("DebtCounterparty", fields: [counterpartyId], references: [id], onDelete: SetNull)
+  amounts           DebtAmount[]
   payments          DebtPayment[]
 
   @@index([ownerId, createdAt(sort: Desc)])
   @@index([ownerId, dueDate])
   @@map("debt")
+}
+
+model DebtAmount {
+  id        String   @id @default(cuid())
+  debtId    String
+  amount    Float
+  loanDate  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  debt      Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+
+  @@index([debtId, createdAt(sort: Desc)])
+  @@map("debt_amount")
 }
 
 model DebtPayment {

@@ -120,7 +120,14 @@ export function FinanceDashboardView({
           >
             {m['finances.budgets']()}
           </FinanceTab>
-          <FinanceTab onClick={() => onGoTo('reports')}>
+          <FinanceTab
+            onClick={() =>
+              void navigate({
+                to: '/finances/reports',
+                search: { month },
+              })
+            }
+          >
             {m['finances.reports']()}
           </FinanceTab>
         </nav>

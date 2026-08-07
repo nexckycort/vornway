@@ -48,7 +48,6 @@ import {
   updateCategoryEndpoint,
   upsertBudgetEndpoint,
 } from './-components/finance-model';
-import { FinanceReportsView } from './-components/finance-reports-view';
 import { CreateTransactionView } from './-components/finance-transaction-views';
 
 export const Route = createFileRoute('/_authed/finances/')({
@@ -480,14 +479,6 @@ function FinancesDashboard() {
     summary.totals.owedToYouByCurrency,
     currency,
   );
-  const goalSaved = getCurrencyValue(
-    summary.totals.goalSavedByCurrency,
-    currency,
-  );
-  const goalTarget = getCurrencyValue(
-    summary.totals.goalTargetByCurrency,
-    currency,
-  );
   const accountTotal = getCurrencyValue(
     summary.totals.accountTotalByCurrency,
     currency,
@@ -828,27 +819,6 @@ function FinancesDashboard() {
           </div>
         </section>
       </ScreenShell>
-    );
-  }
-
-  if (view === 'reports') {
-    return (
-      <FinanceReportsView
-        month={month}
-        summary={summary}
-        income={income}
-        totalExpense={totalExpense}
-        personalExpense={personalExpense}
-        groupExpense={groupExpense}
-        balance={balance}
-        owedByYou={owedByYou}
-        owedToYou={owedToYou}
-        goalSaved={goalSaved}
-        goalTarget={goalTarget}
-        accountAvailable={accountAvailable}
-        accountLocked={accountLocked}
-        onBack={() => goTo('dashboard')}
-      />
     );
   }
 

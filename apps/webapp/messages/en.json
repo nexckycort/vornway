@@ -341,6 +341,7 @@
     "reportsExpenseRatioInsight": "Your expenses are {percent}% of your income.",
     "reportsNoIncomeInsight": "There is no income recorded this month; the analysis focuses on expenses and accounts.",
     "reportsSpendingMixInsight": "Personal expenses: {personal}. Shared spaces: {group}.",
+    "reportsExpensesByCategory": "Expenses by category",
     "reportsTopCategoryInsight": "{category} represents {percent}% of this month's expenses.",
     "reportsNoCategoryInsight": "There are no categorized expenses this month yet.",
     "reportsTopTagInsight": "#{tag} adds up to {amount}. Use it to understand subcategories like home, outing, or delivery.",

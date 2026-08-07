@@ -8,8 +8,7 @@ export type FinanceView =
   | 'new'
   | 'accounts'
   | 'categories'
-  | 'budgets'
-  | 'reports';
+  | 'budgets';
 
 export const summaryEndpoint = financesClient.summary.$get;
 export const movementsEndpoint = financesClient.movements.$get;
@@ -91,7 +90,6 @@ export const financeViews = new Set<FinanceView>([
   'accounts',
   'categories',
   'budgets',
-  'reports',
 ]);
 export const categoryColors = [
   '#111827',

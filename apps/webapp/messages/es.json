@@ -341,6 +341,7 @@
     "reportsExpenseRatioInsight": "Tus gastos equivalen al {percent}% de tus ingresos.",
     "reportsNoIncomeInsight": "No hay ingresos registrados este mes; el análisis se enfoca en salidas y cuentas.",
     "reportsSpendingMixInsight": "Gastos personales: {personal}. Espacios compartidos: {group}.",
+    "reportsExpensesByCategory": "Gastos por categoría",
     "reportsTopCategoryInsight": "{category} concentra el {percent}% de tus gastos del mes.",
     "reportsNoCategoryInsight": "Aún no hay gastos categorizados este mes.",
     "reportsTopTagInsight": "#{tag} suma {amount}. Úsalo para entender subcategorías como casa, salida o domicilio.",

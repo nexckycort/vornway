@@ -267,6 +267,26 @@ export function FinanceReportsView({
               value={percent(groupExpense, totalExpense)}
               amount={moneyLabel(groupExpense)}
             />
+            <div className="border-t border-black/5 pt-4">
+              <p className="mb-4 text-sm font-semibold">
+                {m['finances.reportsExpensesByCategory']()}
+              </p>
+              {categoryTotals.length > 0 ? (
+                <div className="grid gap-4">
+                  {categoryTotals.map((category) => (
+                    <ProgressRow
+                      key={`${category.categoryId ?? 'none'}:${category.currency}`}
+                      label={category.categoryName}
+                      value={percent(category.amount, totalExpense)}
+                      amount={moneyLabel(category.amount)}
+                      tone="primary"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Insight>{m['finances.reportsNoCategoryInsight']()}</Insight>
+              )}
+            </div>
             <Insight>
               {topCategory
                 ? m['finances.reportsTopCategoryInsight']({

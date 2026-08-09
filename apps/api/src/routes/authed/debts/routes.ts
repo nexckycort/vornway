@@ -5,9 +5,12 @@ import { debtOperations } from './operations';
 import {
   createDebtSchema,
   createPaymentSchema,
+  debtAmountIdSchema,
+  debtAmountSchema,
   debtIdSchema,
   debtListSchema,
   paymentIdSchema,
+  updateDebtAmountSchema,
   updateDebtSchema,
   updatePaymentSchema,
 } from './schema';
@@ -51,6 +54,38 @@ export const debtsRoutes = new Hono<AppContext>()
       ? c.json({ deleted: true })
       : c.json({ error: 'Debt not found' }, 404);
   })
+  .post(
+    '/:id/amounts',
+    zValidator('param', debtIdSchema),
+    zValidator('json', debtAmountSchema),
+    async (c) => {
+      const result = await debtOperations.addAmount(
+        c.get('user').id,
+        c.req.valid('param').id,
+        c.req.valid('json'),
+      );
+      return result
+        ? c.json(result, 201)
+        : c.json({ error: 'Debt not found' }, 404);
+    },
+  )
+  .patch(
+    '/:id/amounts/:amountId',
+    zValidator('param', debtAmountIdSchema),
+    zValidator('json', updateDebtAmountSchema),
+    async (c) => {
+      const params = c.req.valid('param');
+      const result = await debtOperations.updateAmount(
+        c.get('user').id,
+        params.id,
+        params.amountId,
+        c.req.valid('json'),
+      );
+      return result
+        ? c.json(result)
+        : c.json({ error: 'Debt amount not found' }, 404);
+    },
+  )
   .post(
     '/:id/payments',
     zValidator('param', debtIdSchema),

@@ -2,8 +2,10 @@ import type { Prisma } from '#/generated/prisma/client';
 import { db } from '#/infrastructure/database/connection';
 import { applyAccountTransactionEffect } from '../finances/operations';
 import type {
+  CreateDebtAmountInput,
   CreateDebtInput,
   CreatePaymentInput,
+  UpdateDebtAmountInput,
   UpdateDebtInput,
   UpdatePaymentInput,
 } from './schema';
@@ -276,6 +278,87 @@ export const debtOperations = {
       );
     });
     return debtOperations.get(userId, id);
+  },
+  async addAmount(userId: string, id: string, input: CreateDebtAmountInput) {
+    const debt = await db.debt.findFirst({
+      where: { id, ownerId: userId },
+    });
+    if (!debt) return null;
+
+    const principalAmount = money(debt.principalAmount + input.amount);
+    const interest =
+      debt.interestType === 'percentage'
+        ? principalAmount * ((debt.interestValue ?? 0) / 100)
+        : debt.interestType === 'fixed'
+          ? (debt.interestValue ?? 0)
+          : 0;
+
+    await db.$transaction(async (tx) => {
+      await tx.debtAmount.create({
+        data: {
+          debtId: id,
+          amount: input.amount,
+          loanDate: input.loanDate,
+        },
+      });
+      await tx.debt.update({
+        where: { id },
+        data: {
+          principalAmount,
+          expectedTotal: money(principalAmount + interest),
+          updatedAt: new Date(),
+        },
+      });
+    });
+
+    return debtOperations.get(userId, id);
+  },
+  async updateAmount(
+    userId: string,
+    debtId: string,
+    amountId: string,
+    input: UpdateDebtAmountInput,
+  ) {
+    const amount = await db.debtAmount.findFirst({
+      where: { id: amountId, debtId, debt: { ownerId: userId } },
+      include: { debt: { include: { amounts: true } } },
+    });
+    if (!amount) return null;
+
+    const nextAmount = input.amount ?? amount.amount;
+    const principalAmount = money(
+      amount.debt.amounts.reduce(
+        (total, item) =>
+          total + (item.id === amountId ? nextAmount : item.amount),
+        0,
+      ),
+    );
+    const interest =
+      amount.debt.interestType === 'percentage'
+        ? principalAmount * ((amount.debt.interestValue ?? 0) / 100)
+        : amount.debt.interestType === 'fixed'
+          ? (amount.debt.interestValue ?? 0)
+          : 0;
+
+    await db.$transaction(async (tx) => {
+      await tx.debtAmount.update({
+        where: { id: amountId },
+        data: {
+          ...(input.amount !== undefined ? { amount: input.amount } : {}),
+          ...(input.loanDate !== undefined ? { loanDate: input.loanDate } : {}),
+        },
+      });
+      await tx.debt.update({
+        where: { id: debtId },
+        data: {
+          principalAmount,
+          expectedTotal: money(principalAmount + interest),
+          updatedAt: new Date(),
+        },
+      });
+    });
+
+    return debtOperations.get(userId, debtId);
   },
   async updatePayment(
     userId: string,

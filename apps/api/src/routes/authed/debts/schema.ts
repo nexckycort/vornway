@@ -3,7 +3,7 @@ import * as z from 'zod';
 export const debtIdSchema = z.object({ id: z.string().min(1) });
 const direction = z.enum(['lent', 'borrowed']);
 const interestType = z.enum(['none', 'percentage', 'fixed']);
-const debtAmount = z.object({
+export const debtAmountSchema = z.object({
   amount: z.number().positive(),
   loanDate: z.coerce.date(),
 });
@@ -14,7 +14,7 @@ export const createDebtSchema = z.object({
   counterpartyId: z.string().min(1).optional(),
   direction,
   principalAmount: z.number().positive(),
-  amounts: z.array(debtAmount).min(1).optional(),
+  amounts: z.array(debtAmountSchema).min(1).optional(),
   interestType: interestType.default('none'),
   interestValue: z.number().nonnegative().optional(),
   currency: z.string().trim().length(3),
@@ -35,11 +35,18 @@ export const paymentIdSchema = z.object({
   id: z.string().min(1),
   paymentId: z.string().min(1),
 });
+export const debtAmountIdSchema = z.object({
+  id: z.string().min(1),
+  amountId: z.string().min(1),
+});
+export const updateDebtAmountSchema = debtAmountSchema.partial();
 export const debtListSchema = z.object({
   status: z.enum(['active', 'paid', 'overdue', 'all']).default('active'),
   search: z.string().trim().max(120).optional(),
 });
 export type CreateDebtInput = z.infer<typeof createDebtSchema>;
+export type CreateDebtAmountInput = z.infer<typeof debtAmountSchema>;
+export type UpdateDebtAmountInput = z.infer<typeof updateDebtAmountSchema>;
 export type UpdateDebtInput = z.infer<typeof updateDebtSchema>;
 export type CreatePaymentInput = z.infer<typeof createPaymentSchema>;
 export type UpdatePaymentInput = z.infer<typeof updatePaymentSchema>;

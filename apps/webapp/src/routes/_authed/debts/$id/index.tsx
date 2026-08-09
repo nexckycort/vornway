@@ -19,6 +19,8 @@ export const Route = createFileRoute('/_authed/debts/$id/')({
 });
 const detailEndpoint = debtsClient[':id'].$get;
 const updateEndpoint = debtsClient[':id'].$patch;
+const amountEndpoint = debtsClient[':id'].amounts.$post;
+const updateAmountEndpoint = debtsClient[':id'].amounts[':amountId'].$patch;
 const paymentEndpoint = debtsClient[':id'].payments.$post;
 const updatePaymentEndpoint = debtsClient[':id'].payments[':paymentId'].$patch;
 const deletePaymentEndpoint = debtsClient[':id'].payments[':paymentId'].$delete;
@@ -31,6 +33,12 @@ type Detail = {
   counterpartyId?: string | null;
   direction: 'lent' | 'borrowed';
   principalAmount: number;
+  amounts: Array<{
+    id: string;
+    amount: number;
+    loanDate: string;
+    createdAt: string;
+  }>;
   expectedTotal: number;
   paidAmount: number;
   remainingAmount: number;
@@ -53,6 +61,8 @@ type Detail = {
   viewerRole: 'owner' | 'counterparty';
 };
 type UpdateInput = InferRequestType<typeof updateEndpoint>['json'];
+type AmountInput = InferRequestType<typeof amountEndpoint>['json'];
+type UpdateAmountInput = InferRequestType<typeof updateAmountEndpoint>['json'];
 type PaymentInput = InferRequestType<typeof paymentEndpoint>['json'];
 type UpdatePaymentInput = InferRequestType<
   typeof updatePaymentEndpoint
@@ -65,6 +75,11 @@ function RouteComponent() {
   const { from } = Route.useSearch();
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
+  const [amountInput, setAmountInput] = useState('');
+  const [amountDateInput, setAmountDateInput] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
+  const [editingAmountId, setEditingAmountId] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentNote, setPaymentNote] = useState('');
   const [paymentAccountId, setPaymentAccountId] = useState('');
@@ -107,6 +122,46 @@ function RouteComponent() {
       setPaymentAmount('');
       setPaymentNote('');
       setPaymentAccountId('');
+    },
+  });
+  const amountMutation = useMutation({
+    mutationFn: async (input: AmountInput) => {
+      const response = await amountEndpoint({ param: { id }, json: input });
+      if (!response.ok) throw new Error('debt_amount_failed');
+      return response.json();
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['debt', id] }),
+        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
+      setAmountInput('');
+      setAmountDateInput(new Date().toISOString().slice(0, 10));
+    },
+  });
+  const updateAmountMutation = useMutation({
+    mutationFn: async ({
+      amountId,
+      input,
+    }: {
+      amountId: string;
+      input: UpdateAmountInput;
+    }) => {
+      const response = await updateAmountEndpoint({
+        param: { id, amountId },
+        json: input,
+      });
+      if (!response.ok) throw new Error('debt_amount_update_failed');
+      return response.json();
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['debt', id] }),
+        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
+      setEditingAmountId('');
     },
   });
   const updateMutation = useMutation({
@@ -208,6 +263,12 @@ function RouteComponent() {
       ...(paymentAccountId ? { accountId: paymentAccountId } : {}),
       ...(paymentNote.trim() ? { note: paymentNote.trim() } : {}),
     });
+  };
+  const submitAmount = () => {
+    const amount = Number(amountInput.replace(/[^\d.]/g, ''));
+    if (!detail || !Number.isFinite(amount) || amount <= 0 || !amountDateInput)
+      return;
+    void amountMutation.mutate({ amount, loanDate: amountDateInput });
   };
   const paymentAccounts =
     financesSummaryQuery.data?.accounts.filter(
@@ -353,6 +414,127 @@ function RouteComponent() {
               ? new Date(detail.dueDate).toLocaleDateString()
               : m['debts.noDueDate']()}
           </p>
+          {detail.viewerRole === 'owner' ? (
+            <div className="space-y-3 rounded-3xl border border-gray-100 p-4">
+              <h3 className="font-semibold">{m['debts.addAmountTitle']()}</h3>
+              <div className="grid grid-cols-[1fr_auto] gap-2">
+                <input
+                  value={amountInput}
+                  onChange={(event) => setAmountInput(event.target.value)}
+                  inputMode="decimal"
+                  placeholder={m['debts.amountPlaceholder']()}
+                  className="h-12 min-w-0 rounded-2xl border px-4"
+                />
+                <input
+                  type="date"
+                  value={amountDateInput}
+                  onChange={(event) => setAmountDateInput(event.target.value)}
+                  aria-label={m['debts.amountDate']()}
+                  className="h-12 w-36 rounded-2xl border px-3 text-sm"
+                />
+              </div>
+              <Button
+                type="button"
+                disabled={amountMutation.isPending}
+                onClick={submitAmount}
+                className="h-12 w-full rounded-full"
+              >
+                {m['debts.saveAmount']()}
+              </Button>
+            </div>
+          ) : null}
+          <div>
+            <h3 className="font-semibold">{m['debts.amountHistory']()}</h3>
+            <div className="mt-3 space-y-2">
+              {detail.amounts.map((amount) => (
+                <div key={amount.id} className="rounded-2xl border p-3">
+                  {editingAmountId === amount.id ? (
+                    <div className="grid gap-2">
+                      <div className="grid grid-cols-[1fr_auto] gap-2">
+                        <input
+                          value={amountInput}
+                          onChange={(event) =>
+                            setAmountInput(event.target.value)
+                          }
+                          inputMode="decimal"
+                          className="h-11 min-w-0 rounded-2xl border px-3"
+                        />
+                        <input
+                          type="date"
+                          value={amountDateInput}
+                          onChange={(event) =>
+                            setAmountDateInput(event.target.value)
+                          }
+                          aria-label={m['debts.amountDate']()}
+                          className="h-11 w-36 rounded-2xl border px-3 text-sm"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          disabled={updateAmountMutation.isPending}
+                          onClick={() => {
+                            const nextAmount = Number(
+                              amountInput.replace(/[^\d.]/g, ''),
+                            );
+                            if (
+                              !Number.isFinite(nextAmount) ||
+                              nextAmount <= 0 ||
+                              !amountDateInput
+                            )
+                              return;
+                            updateAmountMutation.mutate({
+                              amountId: amount.id,
+                              input: {
+                                amount: nextAmount,
+                                loanDate: amountDateInput,
+                              },
+                            });
+                          }}
+                          className="h-10 rounded-full"
+                        >
+                          {m['debts.saveAmountChanges']()}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setEditingAmountId('')}
+                          className="h-10 rounded-full"
+                        >
+                          {m['common.cancel']()}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium">
+                          {formatCurrency(detail.currency, amount.amount)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(amount.loanDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {detail.viewerRole === 'owner' ? (
+                        <button
+                          type="button"
+                          aria-label={m['debts.editAmount']()}
+                          onClick={() => {
+                            setEditingAmountId(amount.id);
+                            setAmountInput(String(amount.amount));
+                            setAmountDateInput(amount.loanDate.slice(0, 10));
+                          }}
+                          className="rounded-full p-2 text-gray-500"
+                        >
+                          <HugeiconsIcon icon={Edit02Icon} className="size-4" />
+                        </button>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
           {detail.viewerRole === 'owner' && detail.remainingAmount > 0 ? (
             <div className="space-y-3 rounded-3xl border border-gray-100 p-4">
               <h3 className="font-semibold">{m['debts.registerPayment']()}</h3>

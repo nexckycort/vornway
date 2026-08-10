@@ -1,18 +1,20 @@
-import {
-  Add01Icon,
-  ArrowLeftIcon,
-  Delete02Icon,
-  Edit02Icon,
-} from '@hugeicons/core-free-icons';
+import { Add01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { debtsClient } from '#/api/debts';
-import { financesClient } from '#/api/finances';
 import type { InferRequestType, InferResponseType } from '#/api/types';
-import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
 import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
@@ -21,110 +23,44 @@ export const Route = createFileRoute('/_authed/debts/')({
   validateSearch: (search: Record<string, unknown>) => ({
     from: search.from === 'finances' ? ('finances' as const) : undefined,
   }),
-  component: RouteComponent,
+  component: DebtsRoute,
 });
 
 const listEndpoint = debtsClient.index.$get;
 const createEndpoint = debtsClient.index.$post;
-const detailEndpoint = debtsClient[':id'].$get;
-const updateEndpoint = debtsClient[':id'].$patch;
-const paymentEndpoint = debtsClient[':id'].payments.$post;
-const updatePaymentEndpoint = debtsClient[':id'].payments[':paymentId'].$patch;
-const deletePaymentEndpoint = debtsClient[':id'].payments[':paymentId'].$delete;
-const financesSummaryEndpoint = financesClient.summary.$get;
 type Debt = InferResponseType<typeof listEndpoint>[number];
-type DebtPayment = {
-  id: string;
-  accountId?: string | null;
-  amount: number;
-  paidAt: string;
-  note?: string | null;
-  account?: {
-    id: string;
-    name: string;
-    institution?: string | null;
-    currency: string;
-  } | null;
-};
-type DebtDetail = Debt & {
-  amounts: { id: string; amount: number; createdAt: string }[];
-  payments: DebtPayment[];
-  expectedTotal: number;
-  paidAmount: number;
-  remainingAmount: number;
-  dueDate: string | null;
-  status: 'active' | 'paid' | 'overdue';
-};
 type CreateDebt = InferRequestType<typeof createEndpoint>['json'];
-type UpdateDebt = InferRequestType<typeof updateEndpoint>['json'];
-type CreatePayment = InferRequestType<typeof paymentEndpoint>['json'];
-type UpdatePayment = InferRequestType<typeof updatePaymentEndpoint>['json'];
+type Filter = 'all' | 'active' | 'paid';
 
-function RouteComponent() {
+const today = () => new Date().toISOString().slice(0, 10);
+
+function DebtsRoute() {
   const navigate = useNavigate();
-  const { from } = Route.useSearch();
   const queryClient = useQueryClient();
-  const [showForm, setShowForm] = useState(false);
-  const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
-  const [selectedDebtId, setSelectedDebtId] = useState<string | null>(null);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [debtName, setDebtName] = useState('');
+  const { from } = Route.useSearch();
+  const [filter, setFilter] = useState<Filter>('active');
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [name, setName] = useState('');
-  const [amounts, setAmounts] = useState(() => [
-    { value: '', loanDate: new Date().toISOString().slice(0, 10) },
-  ]);
+  const [person, setPerson] = useState('');
+  const [counterpartyId, setCounterpartyId] = useState<string>();
+  const [amount, setAmount] = useState('');
+  const [loanDate, setLoanDate] = useState(today);
   const [direction, setDirection] = useState<'lent' | 'borrowed'>('lent');
-  const [interest, setInterest] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [description, setDescription] = useState('');
-  const [counterpartyId, setCounterpartyId] = useState<string | undefined>();
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentNote, setPaymentNote] = useState('');
-  const [paymentAccountId, setPaymentAccountId] = useState('');
-  const [editingPaymentId, setEditingPaymentId] = useState('');
-  const [editingPaymentAccountId, setEditingPaymentAccountId] = useState('');
-  const userSearch = useUserSearchQuery(name);
+  const [note, setNote] = useState('');
+  const userSearch = useUserSearchQuery(person);
 
   const debtsQuery = useQuery({
-    queryKey: ['debts'],
+    queryKey: ['debts', 'all'],
     queryFn: async () => {
       const response = await listEndpoint({ query: { status: 'all' } });
       if (!response.ok) throw new Error('debt_load_failed');
       return response.json();
     },
   });
-  const detailQuery = useQuery({
-    queryKey: ['debt', selectedDebtId],
-    enabled: Boolean(selectedDebtId),
-    queryFn: async () => {
-      const response = await detailEndpoint({
-        param: { id: selectedDebtId ?? '' },
-      });
-      if (!response.ok) throw new Error('debt_load_failed');
-      return response.json();
-    },
-  });
-  const financesSummaryQuery = useQuery({
-    queryKey: ['finances-summary', 'debt-payment-accounts', 'COP'],
-    queryFn: async () => {
-      const response = await financesSummaryEndpoint({
-        query: { currency: 'COP' },
-      });
-      if (!response.ok) throw new Error('finance_summary_load_failed');
-      return response.json();
-    },
-  });
   const createMutation = useMutation({
-    mutationFn: async ({
-      id,
-      input,
-    }: {
-      id: string | null;
-      input: CreateDebt | UpdateDebt;
-    }) => {
-      const response = id
-        ? await updateEndpoint({ param: { id }, json: input as UpdateDebt })
-        : await createEndpoint({ json: input as CreateDebt });
+    mutationFn: async (input: CreateDebt) => {
+      const response = await createEndpoint({ json: input });
       if (!response.ok) throw new Error('debt_create_failed');
       return response.json();
     },
@@ -133,647 +69,334 @@ function RouteComponent() {
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
-      closeCreateForm();
-    },
-  });
-  const paymentMutation = useMutation({
-    mutationFn: async ({ id, input }: { id: string; input: CreatePayment }) => {
-      const response = await paymentEndpoint({ param: { id }, json: input });
-      if (!response.ok) throw new Error('debt_payment_failed');
-      return response.json();
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['debts'] }),
-        queryClient.invalidateQueries({ queryKey: ['debt', selectedDebtId] }),
-        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
-        queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
-        queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-      setPaymentAmount('');
-      setPaymentNote('');
-      setPaymentAccountId('');
-      setShowPaymentForm(false);
-    },
-  });
-  const deletePaymentMutation = useMutation({
-    mutationFn: async ({
-      id,
-      paymentId,
-    }: {
-      id: string;
-      paymentId: string;
-    }) => {
-      const response = await deletePaymentEndpoint({
-        param: { id, paymentId },
-      });
-      if (!response.ok) throw new Error('debt_payment_delete_failed');
-      return response.json();
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['debts'] }),
-        queryClient.invalidateQueries({ queryKey: ['debt', selectedDebtId] }),
-        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
-        queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
-        queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-    },
-  });
-  const updatePaymentMutation = useMutation({
-    mutationFn: async ({
-      id,
-      paymentId,
-      input,
-    }: {
-      id: string;
-      paymentId: string;
-      input: UpdatePayment;
-    }) => {
-      const response = await updatePaymentEndpoint({
-        param: { id, paymentId },
-        json: input,
-      });
-      if (!response.ok) throw new Error('debt_payment_update_failed');
-      return response.json();
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['debts'] }),
-        queryClient.invalidateQueries({ queryKey: ['debt', selectedDebtId] }),
-        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
-        queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
-        queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-      setEditingPaymentId('');
-      setEditingPaymentAccountId('');
+      closeDrawer();
+      toast.success(m['debts.created']());
     },
   });
 
-  function closeCreateForm() {
-    setShowForm(false);
-    setDebtName('');
+  const debts = (debtsQuery.data ?? []) as Debt[];
+  const visibleDebts = debts.filter((debt) =>
+    filter === 'all'
+      ? true
+      : filter === 'paid'
+        ? debt.status === 'paid'
+        : debt.status !== 'paid',
+  );
+  const receivable = debts
+    .filter((debt) => debt.direction === 'lent' && debt.status !== 'paid')
+    .reduce((total, debt) => total + debt.remainingAmount, 0);
+  const activeCount = debts.filter((debt) => debt.status !== 'paid').length;
+
+  function closeDrawer() {
+    setDrawerOpen(false);
     setName('');
-    setAmounts([
-      { value: '', loanDate: new Date().toISOString().slice(0, 10) },
-    ]);
-    setInterest('');
-    setDueDate('');
-    setDescription('');
-    setEditingDebtId(null);
+    setPerson('');
     setCounterpartyId(undefined);
+    setAmount('');
+    setLoanDate(today());
+    setDirection('lent');
+    setDueDate('');
+    setNote('');
   }
   function submit() {
-    const parsedAmounts = amounts
-      .map((item) => ({
-        amount: Number(item.value.replace(/[^\d.]/g, '')),
-        loanDate: item.loanDate,
-      }))
-      .filter((item) => Number.isFinite(item.amount) && item.amount > 0);
-    const principalAmount = parsedAmounts.reduce(
-      (total, item) => total + item.amount,
-      0,
-    );
+    const parsedAmount = Number(amount.replace(/[^\d.]/g, ''));
     if (
-      !debtName.trim() ||
       !name.trim() ||
-      !Number.isFinite(principalAmount) ||
-      principalAmount <= 0
+      !person.trim() ||
+      !Number.isFinite(parsedAmount) ||
+      parsedAmount <= 0
     )
       return;
-    void createMutation.mutate({
-      id: editingDebtId,
-      input: {
-        name: debtName.trim(),
-        counterpartyName: name.trim(),
-        ...(counterpartyId ? { counterpartyId } : {}),
-        direction,
-        principalAmount,
-        amounts: parsedAmounts,
-        currency: 'COP',
-        interestType: interest ? 'percentage' : 'none',
-        ...(interest ? { interestValue: Number(interest) } : {}),
-        ...(dueDate ? { dueDate } : {}),
-        ...(description.trim() ? { description: description.trim() } : {}),
-      },
+    createMutation.mutate({
+      name: name.trim(),
+      counterpartyName: person.trim(),
+      ...(counterpartyId ? { counterpartyId } : {}),
+      direction,
+      principalAmount: parsedAmount,
+      amounts: [
+        {
+          amount: parsedAmount,
+          loanDate,
+        },
+      ],
+      interestType: 'none',
+      currency: 'COP',
+      ...(dueDate ? { dueDate } : {}),
+      ...(note.trim() ? { description: note.trim() } : {}),
     });
   }
-  function submitPayment() {
-    if (!selectedDebtId) return;
-    const amountValue = Number(paymentAmount.replace(/[^\d.]/g, ''));
-    if (!Number.isFinite(amountValue) || amountValue <= 0) return;
-    void paymentMutation.mutate({
-      id: selectedDebtId,
-      input: {
-        amount: amountValue,
-        ...(paymentAccountId ? { accountId: paymentAccountId } : {}),
-        ...(paymentNote.trim() ? { note: paymentNote.trim() } : {}),
-      },
-    });
-  }
-  function submitPaymentAccountUpdate() {
-    if (!detail || !editingPaymentId) return;
-    void updatePaymentMutation.mutate({
-      id: detail.id,
-      paymentId: editingPaymentId,
-      input: { accountId: editingPaymentAccountId || null },
-    });
-  }
-  const detail = detailQuery.data as unknown as DebtDetail | undefined;
-  const paymentAccounts =
-    financesSummaryQuery.data?.accounts.filter(
-      (account) =>
-        account.status !== 'CLOSED' &&
-        account.currency === (detail?.currency ?? 'COP'),
-    ) ?? [];
-  const backTo = from === 'finances' ? '/finances' : '/';
 
   return (
-    <MobilePageLayout
-      title={m['debts.title']()}
-      onBack={() => navigate({ to: backTo })}
-    >
-      <div className="flex flex-1 flex-col gap-4 pb-28">
-        <Button
-          type="button"
-          onClick={() =>
-            navigate({
-              to: '/debts/new',
-              search: { from },
-            })
-          }
-          className="h-12 rounded-full"
-        >
-          <HugeiconsIcon icon={Add01Icon} className="mr-2 size-4" />
-          {m['debts.create']()}
-        </Button>
-        {debtsQuery.isLoading ? (
-          <p className="text-sm text-gray-500">{m['common.loading']()}</p>
-        ) : null}
-        {debtsQuery.data?.map((debt: Debt) => (
-          <button
-            key={debt.id}
-            type="button"
+    <main className="h-dvh bg-[#fafaf8] text-[#171717] md:h-[calc(100dvh-2.5rem)]">
+      <div className="mx-auto flex h-full w-full max-w-[560px] flex-col bg-[#fafaf8]">
+        <header className="flex items-center justify-between px-4 pb-4 pt-[calc(var(--safe-top)+1rem)]">
+          <Button
+            variant="outline"
+            className="size-11"
             onClick={() =>
-              navigate({
-                to: '/debts/$id',
-                params: { id: debt.id },
-                search: { from },
-              })
+              navigate({ to: from === 'finances' ? '/finances' : '/' })
             }
-            className="rounded-[24px] border border-gray-200 bg-white p-4 text-left shadow-sm"
+            aria-label={m['common.back']()}
           >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-base font-semibold">{debt.name}</p>
-                <p className="mt-1 text-xs text-gray-500">
-                  {debt.counterpartyName} ·{' '}
-                  {debt.direction === 'lent'
-                    ? m['debts.lent']()
-                    : m['debts.borrowed']()}
-                </p>
-              </div>
-              <p className="font-semibold">
-                {formatCurrency(debt.currency, debt.remainingAmount)}
+            ←
+          </Button>
+          <h1 className="text-lg font-semibold">{m['debts.title']()}</h1>
+          <Button
+            className="size-11 rounded-full"
+            onClick={() => setDrawerOpen(true)}
+            aria-label={m['debts.create']()}
+          >
+            <HugeiconsIcon icon={Add01Icon} className="size-5" />
+          </Button>
+        </header>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(var(--safe-bottom)+1.5rem)]">
+          <section className="rounded-3xl bg-white px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+            <p className="text-xs font-medium uppercase tracking-wide text-black/45">
+              {m['debts.receivable']()}
+            </p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight">
+              {formatCurrency('COP', receivable, { maximumFractionDigits: 0 })}
+            </p>
+            <p className="mt-1 text-sm text-black/50">
+              {activeCount} {m['debts.activeDebts']()}
+            </p>
+          </section>
+          <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
+            {(['active', 'all', 'paid'] as const).map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setFilter(item)}
+                className={`h-9 shrink-0 rounded-full px-4 text-sm font-medium ${filter === item ? 'bg-[#171717] text-white' : 'bg-white text-black/55'}`}
+              >
+                {m[
+                  `debts.filter${item[0].toUpperCase()}${item.slice(1)}` as
+                    | 'debts.filterActive'
+                    | 'debts.filterAll'
+                    | 'debts.filterPaid'
+                ]()}
+              </button>
+            ))}
+          </div>
+          <section className="mt-4">
+            {debtsQuery.isLoading ? (
+              <p className="py-8 text-sm text-black/45">
+                {m['common.loading']()}
               </p>
+            ) : null}
+            {!debtsQuery.isLoading && visibleDebts.length === 0 ? (
+              <div className="rounded-3xl bg-white px-5 py-10 text-center text-sm text-black/45">
+                {m['debts.empty']()}
+              </div>
+            ) : null}
+            <div className="grid gap-2">
+              {visibleDebts.map((debt) => (
+                <DebtListItem
+                  key={debt.id}
+                  debt={debt}
+                  onClick={() =>
+                    navigate({
+                      to: '/debts/$id',
+                      params: { id: debt.id },
+                      search: { from },
+                    })
+                  }
+                />
+              ))}
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{
-                  width: `${Math.min(100, (debt.paidAmount / debt.expectedTotal) * 100)}%`,
-                }}
-              />
-            </div>
-          </button>
-        ))}
+          </section>
+        </div>
       </div>
 
-      {showForm ? (
-        <div className="fixed inset-0 z-50 flex items-end bg-black/30">
-          <div className="w-full rounded-t-[32px] bg-white p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
-            <button
-              type="button"
-              onClick={closeCreateForm}
-              aria-label={m['common.close']()}
-            >
-              <HugeiconsIcon icon={ArrowLeftIcon} />
-            </button>
-            <h2 className="mt-3 text-xl font-semibold">
-              {editingDebtId ? m['debts.edit']() : m['debts.newTitle']()}
-            </h2>
-            <div className="mt-4 space-y-3">
-              <input
-                value={debtName}
-                onChange={(e) => setDebtName(e.target.value)}
-                placeholder={m['debts.namePlaceholder']()}
-                className="h-12 w-full rounded-2xl border px-4"
-              />
+      <Drawer
+        open={drawerOpen}
+        onOpenChange={(open) => (open ? setDrawerOpen(true) : closeDrawer())}
+      >
+        <DrawerContent className="bg-[#fafaf8]" scrollable>
+          <DrawerHeader>
+            <DrawerTitle>{m['debts.newTitle']()}</DrawerTitle>
+          </DrawerHeader>
+          <div className="grid gap-4 px-5 pb-4">
+            <Field label={m['debts.namePlaceholder']()}>
               <input
                 value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setCounterpartyId(undefined);
-                }}
-                placeholder={m['debts.personPlaceholder']()}
-                className="h-12 w-full rounded-2xl border px-4"
+                onChange={(event) => setName(event.target.value)}
+                className="input"
               />
-              {userSearch.data?.data?.length && !counterpartyId ? (
-                <div className="rounded-2xl border bg-white p-2 shadow-sm">
-                  {userSearch.data.data.map((user) => (
-                    <button
-                      key={user.id}
-                      type="button"
-                      onClick={() => {
-                        setCounterpartyId(user.id);
-                        setName(user.name);
-                      }}
-                      className="flex w-full items-center justify-between rounded-xl p-2 text-left hover:bg-gray-50"
-                    >
-                      <span className="font-medium">{user.name}</span>
-                      <span className="text-xs text-gray-500">
-                        {user.username ?? user.email}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-              {amounts.map((item, index) => (
-                <div key={`amount-${index}`} className="flex gap-2">
-                  <input
-                    value={item.value}
-                    onChange={(e) =>
-                      setAmounts((current) =>
-                        current.map((item, itemIndex) =>
-                          itemIndex === index
-                            ? { ...item, value: e.target.value }
-                            : item,
-                        ),
-                      )
-                    }
-                    inputMode="decimal"
-                    placeholder={m['debts.amountPlaceholder']()}
-                    className="h-12 min-w-0 flex-1 rounded-2xl border px-4"
-                  />
-                  <input
-                    type="date"
-                    value={item.loanDate}
-                    onChange={(e) =>
-                      setAmounts((current) =>
-                        current.map((item, itemIndex) =>
-                          itemIndex === index
-                            ? { ...item, loanDate: e.target.value }
-                            : item,
-                        ),
-                      )
-                    }
-                    aria-label={m['debts.amountDate']()}
-                    className="h-12 w-36 rounded-2xl border px-3 text-sm"
-                  />
-                  {amounts.length > 1 ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setAmounts((current) =>
-                          current.filter((_, itemIndex) => itemIndex !== index),
-                        )
-                      }
-                      className="px-2 text-xs text-gray-500"
-                    >
-                      {m['debts.removeAmount']()}
-                    </button>
-                  ) : null}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() =>
-                  setAmounts((current) => [
-                    ...current,
-                    {
-                      value: '',
-                      loanDate: new Date().toISOString().slice(0, 10),
-                    },
-                  ])
-                }
-                className="text-left text-sm font-medium text-primary"
-              >
-                + {m['debts.addAmount']()}
-              </button>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDirection('lent')}
-                  className={`rounded-2xl border p-3 ${direction === 'lent' ? 'border-primary bg-primary/5' : ''}`}
-                >
-                  {m['debts.lent']()}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDirection('borrowed')}
-                  className={`rounded-2xl border p-3 ${direction === 'borrowed' ? 'border-primary bg-primary/5' : ''}`}
-                >
-                  {m['debts.borrowed']()}
-                </button>
-              </div>
-              <input
-                value={interest}
-                onChange={(e) => setInterest(e.target.value)}
-                inputMode="decimal"
-                placeholder={m['debts.interestPlaceholder']()}
-                className="h-12 w-full rounded-2xl border px-4"
-              />
-              <input
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                type="date"
-                className="h-12 w-full rounded-2xl border px-4"
-              />
-              <input
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={m['debts.descriptionPlaceholder']()}
-                className="h-12 w-full rounded-2xl border px-4"
-              />
-              <Button
-                type="button"
-                disabled={createMutation.isPending}
-                onClick={submit}
-                className="h-12 w-full rounded-full"
-              >
-                {m['debts.save']()}
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {detail ? (
-        <div className="fixed inset-0 z-50 flex items-end bg-black/30">
-          <div className="max-h-[90dvh] w-full overflow-y-auto rounded-t-[32px] bg-white p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedDebtId(null);
-                setShowPaymentForm(false);
-                setEditingPaymentId('');
-                setEditingPaymentAccountId('');
-              }}
-              aria-label={m['common.close']()}
-            >
-              <HugeiconsIcon icon={ArrowLeftIcon} />
-            </button>
-            <div className="mt-3 flex items-start justify-between">
-              <div>
-                <h2 className="text-xl font-semibold">{detail.name}</h2>
-                <p className="text-sm text-gray-500">
-                  {detail.counterpartyName}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {detail.viewerRole === 'owner' ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingDebtId(detail.id);
-                      setDebtName(detail.name);
-                      setName(detail.counterpartyName);
-                      setAmounts(
-                        detail.amounts?.length
-                          ? detail.amounts.map((item) => ({
-                              value: String(item.amount),
-                              loanDate: item.loanDate.slice(0, 10),
-                            }))
-                          : [
-                              {
-                                value: String(detail.principalAmount),
-                                loanDate: detail.createdAt.slice(0, 10),
-                              },
-                            ],
-                      );
-                      setDirection(detail.direction as 'lent' | 'borrowed');
-                      setInterest(
-                        detail.interestType === 'percentage'
-                          ? String(detail.interestValue ?? '')
-                          : '',
-                      );
-                      setDueDate(
-                        detail.dueDate ? detail.dueDate.slice(0, 10) : '',
-                      );
-                      setDescription(detail.description ?? '');
-                      setCounterpartyId(detail.counterpartyId ?? undefined);
-                      setSelectedDebtId(null);
-                      setShowForm(true);
-                    }}
-                    aria-label={m['debts.edit']()}
-                  >
-                    <HugeiconsIcon icon={Edit02Icon} className="size-4" />
-                  </button>
+            </Field>
+            <Field label={m['debts.personPlaceholder']()}>
+              <div className="relative">
+                <input
+                  value={person}
+                  onChange={(event) => {
+                    setPerson(event.target.value);
+                    setCounterpartyId(undefined);
+                  }}
+                  className="input"
+                />
+                {userSearch.data?.data?.length && !counterpartyId ? (
+                  <div className="absolute inset-x-0 top-full z-10 mt-2 rounded-2xl border bg-white p-2 shadow-xl">
+                    {userSearch.data.data.map((user) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => {
+                          setCounterpartyId(user.id);
+                          setPerson(user.name);
+                        }}
+                        className="block w-full rounded-xl px-3 py-3 text-left text-sm hover:bg-black/[0.03]"
+                      >
+                        {user.name}
+                      </button>
+                    ))}
+                  </div>
                 ) : null}
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium">
-                  {m[
-                    `debts.${detail.status}` as
-                      | 'debts.active'
-                      | 'debts.paid'
-                      | 'debts.overdue'
-                  ]()}
-                </span>
               </div>
-            </div>
-            <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-2xl bg-gray-50 p-3">
-                <p className="text-xs text-gray-500">
-                  {m['debts.expectedTotal']()}
-                </p>
-                <p className="mt-1 font-semibold">
-                  {formatCurrency(detail.currency, detail.expectedTotal)}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-gray-50 p-3">
-                <p className="text-xs text-gray-500">
-                  {m['debts.paidAmount']()}
-                </p>
-                <p className="mt-1 font-semibold">
-                  {formatCurrency(detail.currency, detail.paidAmount)}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-gray-50 p-3">
-                <p className="text-xs text-gray-500">
-                  {m['debts.remainingAmount']()}
-                </p>
-                <p className="mt-1 font-semibold">
-                  {formatCurrency(detail.currency, detail.remainingAmount)}
-                </p>
-              </div>
-            </div>
-            <p className="mt-4 text-sm text-gray-500">
-              {detail.dueDate
-                ? new Date(detail.dueDate).toLocaleDateString()
-                : m['debts.noDueDate']()}
-            </p>
-            {detail.viewerRole === 'owner' ? (
+            </Field>
+            <div className="grid grid-cols-2 gap-2">
               <Button
-                type="button"
-                onClick={() => setShowPaymentForm((value) => !value)}
-                disabled={detail.remainingAmount <= 0}
-                className="mt-4 h-12 w-full rounded-full"
+                variant={direction === 'lent' ? 'default' : 'outline'}
+                className="h-11 rounded-2xl"
+                onClick={() => setDirection('lent')}
               >
-                {m['debts.registerPayment']()}
+                {m['debts.lent']()}
               </Button>
-            ) : null}
-            {detail.viewerRole === 'owner' && showPaymentForm ? (
-              <div className="mt-3 space-y-3 rounded-2xl bg-gray-50 p-3">
-                <input
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  inputMode="decimal"
-                  placeholder={m['debts.paymentAmountPlaceholder']()}
-                  className="h-12 w-full rounded-2xl border bg-white px-4"
-                />
-                <input
-                  value={paymentNote}
-                  onChange={(e) => setPaymentNote(e.target.value)}
-                  placeholder={m['debts.paymentNotePlaceholder']()}
-                  className="h-12 w-full rounded-2xl border bg-white px-4"
-                />
-                <select
-                  value={paymentAccountId}
-                  onChange={(event) => setPaymentAccountId(event.target.value)}
-                  className="h-12 w-full rounded-2xl border bg-white px-4"
-                >
-                  <option value="">{m['finances.noAccount']()}</option>
-                  {paymentAccounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name} · {account.institution ?? account.currency}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  type="button"
-                  disabled={paymentMutation.isPending}
-                  onClick={submitPayment}
-                  className="h-12 w-full rounded-full"
-                >
-                  {m['debts.savePayment']()}
-                </Button>
-              </div>
-            ) : null}
-            <h3 className="mt-6 font-semibold">{m['debts.payments']()}</h3>
-            {detail.payments.length ? (
-              <div className="mt-2 space-y-2">
-                {detail.payments.map((payment: DebtPayment) => {
-                  const isEditingPayment = editingPaymentId === payment.id;
-                  return (
-                    <div key={payment.id} className="rounded-2xl border p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-medium">
-                            {formatCurrency(detail.currency, payment.amount)}
-                          </p>
-                          <p className="truncate text-xs text-gray-500">
-                            {new Date(payment.paidAt).toLocaleDateString()}
-                            {payment.note ? ` · ${payment.note}` : ''}
-                            {payment.account
-                              ? ` · ${payment.account.name}`
-                              : ''}
-                          </p>
-                        </div>
-                        {detail.viewerRole === 'owner' ? (
-                          <div className="flex shrink-0 items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingPaymentId(payment.id);
-                                setEditingPaymentAccountId(
-                                  payment.accountId ?? '',
-                                );
-                              }}
-                              aria-label={m['debts.editPaymentAccount']()}
-                            >
-                              <HugeiconsIcon
-                                icon={Edit02Icon}
-                                className="size-4 text-gray-500"
-                              />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                deletePaymentMutation.mutate({
-                                  id: detail.id,
-                                  paymentId: payment.id,
-                                })
-                              }
-                              aria-label={m['common.delete']()}
-                            >
-                              <HugeiconsIcon
-                                icon={Delete02Icon}
-                                className="size-4 text-gray-500"
-                              />
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                      {isEditingPayment ? (
-                        <div className="mt-3 grid gap-2">
-                          <select
-                            value={editingPaymentAccountId}
-                            onChange={(event) =>
-                              setEditingPaymentAccountId(event.target.value)
-                            }
-                            className="h-11 w-full rounded-2xl border px-3 text-sm"
-                          >
-                            <option value="">
-                              {m['finances.noAccount']()}
-                            </option>
-                            {paymentAccounts.map((account) => (
-                              <option key={account.id} value={account.id}>
-                                {account.name} ·{' '}
-                                {account.institution ?? account.currency}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Button
-                              type="button"
-                              disabled={updatePaymentMutation.isPending}
-                              onClick={submitPaymentAccountUpdate}
-                              className="h-10 rounded-full"
-                            >
-                              {m['common.saveChanges']()}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              disabled={updatePaymentMutation.isPending}
-                              onClick={() => {
-                                setEditingPaymentId('');
-                                setEditingPaymentAccountId('');
-                              }}
-                              className="h-10 rounded-full"
-                            >
-                              {m['common.cancel']()}
-                            </Button>
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="mt-2 text-sm text-gray-500">
-                {m['debts.noPayments']()}
-              </p>
-            )}
+              <Button
+                variant={direction === 'borrowed' ? 'default' : 'outline'}
+                className="h-11 rounded-2xl"
+                onClick={() => setDirection('borrowed')}
+              >
+                {m['debts.borrowed']()}
+              </Button>
+            </div>
+            <Field label={m['debts.amountPlaceholder']()}>
+              <input
+                inputMode="decimal"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                className="input text-xl"
+              />
+            </Field>
+            <Field label={m['debts.amountDate']()}>
+              <input
+                type="date"
+                value={loanDate}
+                onChange={(event) => setLoanDate(event.target.value)}
+                className="input"
+              />
+            </Field>
+            <Field label={m['debts.dueDate']()}>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(event) => setDueDate(event.target.value)}
+                className="input"
+              />
+            </Field>
+            <Field label={m['debts.descriptionPlaceholder']()}>
+              <textarea
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                className="input min-h-20 py-3"
+              />
+            </Field>
           </div>
+          <DrawerFooter>
+            <Button
+              className="h-12 rounded-2xl"
+              disabled={createMutation.isPending}
+              onClick={submit}
+            >
+              {m['debts.create']()}
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    </main>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid gap-1.5 text-sm font-medium text-black/65">
+      <span>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function DebtListItem({ debt, onClick }: { debt: Debt; onClick: () => void }) {
+  const progress =
+    debt.expectedTotal > 0
+      ? Math.min(100, (debt.paidAmount / debt.expectedTotal) * 100)
+      : 0;
+  const lastLoan = debt.amounts
+    ?.slice()
+    .sort((a, b) => +new Date(b.loanDate) - +new Date(a.loanDate))[0];
+  const lastPayment = debt.payments
+    ?.slice()
+    .sort((a, b) => +new Date(b.paidAt) - +new Date(a.paidAt))[0];
+  const last =
+    lastPayment &&
+    (!lastLoan || +new Date(lastPayment.paidAt) > +new Date(lastLoan.loanDate))
+      ? { date: lastPayment.paidAt, amount: lastPayment.amount, label: 'Abono' }
+      : lastLoan
+        ? {
+            date: lastLoan.loanDate,
+            amount: lastLoan.amount,
+            label: 'Préstamo',
+          }
+        : null;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full rounded-2xl bg-white px-4 py-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-transform active:scale-[0.99]"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-base font-semibold">
+            {debt.counterpartyName}
+          </p>
+          <p className="mt-0.5 truncate text-xs text-black/45">{debt.name}</p>
         </div>
-      ) : null}
-    </MobilePageLayout>
+        <div className="shrink-0 text-right">
+          <p className="text-base font-semibold">
+            {formatCurrency(debt.currency, debt.remainingAmount, {
+              maximumFractionDigits: 0,
+            })}
+          </p>
+          <Status status={debt.status} />
+        </div>
+      </div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-black/6">
+        <div
+          className="h-full rounded-full bg-primary transition-all"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-black/45">
+        <span>
+          {Math.round(progress)}% {m['debts.paid']().toLowerCase()}
+        </span>
+        <span className="truncate">
+          {last
+            ? `${last.label} · ${formatCurrency(debt.currency, last.amount, { maximumFractionDigits: 0 })} · ${new Date(last.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`
+            : m['debts.noActivity']()}
+        </span>
+      </div>
+    </button>
+  );
+}
+
+function Status({ status }: { status: Debt['status'] }) {
+  return (
+    <span
+      className={`mt-1 block text-[10px] font-medium ${status === 'paid' ? 'text-emerald-700' : status === 'overdue' ? 'text-amber-700' : 'text-black/40'}`}
+    >
+      {m[
+        `debts.${status}` as 'debts.active' | 'debts.paid' | 'debts.overdue'
+      ]()}
+    </span>
   );
 }

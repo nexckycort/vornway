@@ -360,6 +360,42 @@ export const debtOperations = {
 
     return debtOperations.get(userId, debtId);
   },
+  async deleteAmount(userId: string, debtId: string, amountId: string) {
+    const amount = await db.debtAmount.findFirst({
+      where: { id: amountId, debtId, debt: { ownerId: userId } },
+      include: { debt: { include: { amounts: true } } },
+    });
+    if (!amount) return null;
+    if (amount.debt.amounts.length <= 1) {
+      throw new Error('A debt must keep at least one loan amount');
+    }
+
+    const principalAmount = money(
+      amount.debt.amounts
+        .filter((item) => item.id !== amountId)
+        .reduce((total, item) => total + item.amount, 0),
+    );
+    const interest =
+      amount.debt.interestType === 'percentage'
+        ? principalAmount * ((amount.debt.interestValue ?? 0) / 100)
+        : amount.debt.interestType === 'fixed'
+          ? (amount.debt.interestValue ?? 0)
+          : 0;
+
+    await db.$transaction(async (tx) => {
+      await tx.debtAmount.delete({ where: { id: amountId } });
+      await tx.debt.update({
+        where: { id: debtId },
+        data: {
+          principalAmount,
+          expectedTotal: money(principalAmount + interest),
+          updatedAt: new Date(),
+        },
+      });
+    });
+
+    return debtOperations.get(userId, debtId);
+  },
   async updatePayment(
     userId: string,
     debtId: string,

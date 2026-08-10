@@ -86,6 +86,21 @@ export const debtsRoutes = new Hono<AppContext>()
         : c.json({ error: 'Debt amount not found' }, 404);
     },
   )
+  .delete(
+    '/:id/amounts/:amountId',
+    zValidator('param', debtAmountIdSchema),
+    async (c) => {
+      const params = c.req.valid('param');
+      const result = await debtOperations.deleteAmount(
+        c.get('user').id,
+        params.id,
+        params.amountId,
+      );
+      return result
+        ? c.json(result)
+        : c.json({ error: 'Debt amount not found' }, 404);
+    },
+  )
   .post(
     '/:id/payments',
     zValidator('param', debtIdSchema),

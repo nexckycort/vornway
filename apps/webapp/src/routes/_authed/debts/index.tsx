@@ -33,6 +33,8 @@ type CreateDebt = InferRequestType<typeof createEndpoint>['json'];
 type Filter = 'all' | 'active' | 'paid';
 
 const today = () => new Date().toISOString().slice(0, 10);
+const debtInputClass =
+  'h-11 w-full rounded-2xl border border-black/10 bg-white px-3 text-base text-[#171717] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15';
 
 function DebtsRoute() {
   const navigate = useNavigate();
@@ -221,7 +223,7 @@ function DebtsRoute() {
               <input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                className="input"
+                className={debtInputClass}
               />
             </Field>
             <Field label={m['debts.personPlaceholder']()}>
@@ -232,7 +234,7 @@ function DebtsRoute() {
                     setPerson(event.target.value);
                     setCounterpartyId(undefined);
                   }}
-                  className="input"
+                  className={debtInputClass}
                 />
                 {userSearch.data?.data?.length && !counterpartyId ? (
                   <div className="absolute inset-x-0 top-full z-10 mt-2 rounded-2xl border bg-white p-2 shadow-xl">

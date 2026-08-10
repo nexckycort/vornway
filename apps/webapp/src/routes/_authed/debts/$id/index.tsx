@@ -98,6 +98,10 @@ type SheetMode =
   | null;
 
 const today = () => new Date().toISOString().slice(0, 10);
+const debtInputClass =
+  'h-11 w-full rounded-2xl border border-black/10 bg-white px-3 text-base text-[#171717] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15';
+const debtTextareaClass =
+  'w-full rounded-2xl border border-black/10 bg-white px-3 py-3 text-base text-[#171717] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15';
 const dateLabel = (date: string) =>
   new Date(date).toLocaleDateString(undefined, {
     day: 'numeric',
@@ -644,7 +648,7 @@ function RouteComponent() {
                 <input
                   value={debtName}
                   onChange={(event) => setDebtName(event.target.value)}
-                  className="input"
+                  className={debtInputClass}
                 />
               </Field>
               <Field label={m['debts.dueDate']()}>
@@ -652,14 +656,14 @@ function RouteComponent() {
                   type="date"
                   value={debtDueDate}
                   onChange={(event) => setDebtDueDate(event.target.value)}
-                  className="input"
+                  className={debtInputClass}
                 />
               </Field>
               <Field label={m['debts.descriptionPlaceholder']()}>
                 <textarea
                   value={debtDescription}
                   onChange={(event) => setDebtDescription(event.target.value)}
-                  className="input min-h-24 py-3"
+                  className={`${debtTextareaClass} min-h-24`}
                 />
               </Field>
             </div>
@@ -670,7 +674,7 @@ function RouteComponent() {
                   inputMode="decimal"
                   value={amount}
                   onChange={(event) => setAmount(event.target.value)}
-                  className="input text-xl"
+                  className={`${debtInputClass} text-xl`}
                 />
               </Field>
               <Field label={m['debts.amountDate']()}>
@@ -678,7 +682,7 @@ function RouteComponent() {
                   type="date"
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
-                  className="input"
+                  className={debtInputClass}
                 />
               </Field>
               {sheetMode !== 'loan' ? (
@@ -686,7 +690,7 @@ function RouteComponent() {
                   <select
                     value={accountId}
                     onChange={(event) => setAccountId(event.target.value)}
-                    className="input"
+                    className={debtInputClass}
                   >
                     <option value="">{m['finances.noAccount']()}</option>
                     {paymentAccounts.map((account) => (
@@ -703,7 +707,7 @@ function RouteComponent() {
                     value={note}
                     onChange={(event) => setNote(event.target.value)}
                     placeholder={m['debts.descriptionPlaceholder']()}
-                    className="input min-h-20 py-3"
+                    className={`${debtTextareaClass} min-h-20`}
                   />
                 </Field>
               ) : null}
@@ -734,6 +738,9 @@ function RouteComponent() {
               onClick={() => {
                 if (sheetMode === 'edit-debt')
                   updateDebtMutation.mutate({
+                    counterpartyName: detail.counterpartyName,
+                    direction: detail.direction,
+                    currency: detail.currency,
                     name: debtName.trim(),
                     description: debtDescription.trim() || undefined,
                     dueDate: debtDueDate || null,

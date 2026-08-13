@@ -339,12 +339,12 @@ function RouteComponent() {
         ? Math.abs(splitSum - 100) < 0.01 &&
           participantIds.every(
             (participantUserId) =>
-              Number(participantValues[participantUserId] ?? 0) > 0,
+              Number(participantValues[participantUserId] ?? 0) >= 0,
           )
         : Math.abs(splitSum - amount) < 0.01 &&
           participantIds.every(
             (participantUserId) =>
-              Number(participantValues[participantUserId] ?? 0) > 0,
+              Number(participantValues[participantUserId] ?? 0) >= 0,
           ));
 
   const canSubmit =

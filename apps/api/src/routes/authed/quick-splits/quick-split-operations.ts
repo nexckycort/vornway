@@ -144,7 +144,7 @@ function createPercentageShares(input: {
   for (const participantId of participantIds) {
     const percentage = percentageShares[participantId];
 
-    if (!Number.isFinite(percentage) || percentage <= 0) {
+    if (!Number.isFinite(percentage) || percentage < 0) {
       throw new QuickSplitExpenseSharesInvalidError({
         reason: 'invalid_participant_percentage',
       });

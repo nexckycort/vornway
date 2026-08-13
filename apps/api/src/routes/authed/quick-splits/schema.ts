@@ -60,7 +60,7 @@ export const createQuickSplitExpenseSchema = z
     paidByParticipantId: z.string().min(1).optional(),
     splitMethod: z.enum(['equal', 'percentage', 'exact']).default('equal'),
     percentageShares: z
-      .record(z.string().min(1), z.number().positive())
+      .record(z.string().min(1), z.number().nonnegative())
       .optional(),
     exactShares: z
       .record(z.string().min(1), z.number().nonnegative())

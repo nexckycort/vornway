@@ -13,7 +13,15 @@ const authConfig = {
   baseURL: env.BETTER_AUTH_URL,
   trustedOrigins: [
     'https://app.vornway.com',
-    ...(env.NODE_ENV === 'development' ? ['https://app.dev.vornway.com'] : []),
+    'vornway://',
+    ...(env.NODE_ENV === 'development'
+      ? [
+          'https://app.dev.vornway.com',
+          'exp://',
+          'exp://**',
+          'exp://192.168.*.*:*/**',
+        ]
+      : []),
   ],
   database: prismaAdapter(db, {
     provider: 'postgresql',

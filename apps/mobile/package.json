@@ -4,12 +4,15 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "check": "biome check --write",
+    "clean": "rm -rf node_modules && rm -rf dist",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@better-auth/expo": "catalog:auth",
@@ -22,7 +25,9 @@
     "expo-glass-effect": "~57.0.1",
     "expo-image": "~57.0.2",
     "expo-linking": "~57.0.5",
+    "expo-network": "^57.0.1",
     "expo-router": "~57.0.12",
+    "expo-secure-store": "~57.0.1",
     "expo-splash-screen": "~57.0.6",
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.2",

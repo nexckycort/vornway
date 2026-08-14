@@ -34,7 +34,8 @@
     },
     "catalogs": {
       "auth": {
-        "better-auth": "^1.6.25"
+        "@better-auth/expo": "^1.6.26",
+        "better-auth": "^1.6.26"
       },
       "tooling": {
         "@biomejs/biome": "^2.5.4"

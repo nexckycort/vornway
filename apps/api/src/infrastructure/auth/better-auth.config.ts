@@ -1,3 +1,4 @@
+import { expo } from '@better-auth/expo';
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { anonymous, emailOTP } from 'better-auth/plugins';
@@ -40,6 +41,7 @@ const authConfig = {
     },
   },
   plugins: [
+    expo(),
     emailOTP({
       async sendVerificationOTP(data) {
         console.log(data.email, data.otp);

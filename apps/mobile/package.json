@@ -12,7 +12,9 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@better-auth/expo": "catalog:auth",
     "@expo/ui": "~57.0.10",
+    "better-auth": "catalog:auth",
     "expo": "~57.0.12",
     "expo-constants": "~57.0.10",
     "expo-device": "~57.0.1",

@@ -34,7 +34,7 @@ export const Route = createFileRoute('/_authed/groups/new/')({
   component: RouteComponent,
 });
 
-const groupTypes = ['viajes', 'meta', 'personal', 'otros'] as const;
+const DEFAULT_SHARED_TYPE = 'espacio';
 
 function RouteComponent() {
   const navigate = useNavigate();
@@ -53,7 +53,9 @@ function RouteComponent() {
   } = Route.useSearch();
 
   const [name, setName] = useState(searchName);
-  const [type, setType] = useState<string>(searchType || groupTypes[0]);
+  const [type, setType] = useState<string>(
+    searchType || (spaceKind === 'personal' ? 'personal' : DEFAULT_SHARED_TYPE),
+  );
   const [description, setDescription] = useState(searchDescription);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
@@ -77,7 +79,14 @@ function RouteComponent() {
     step !== 'details' && !searchName && !searchType && !draftId;
 
   const isValid = name.trim().length > 0 && type.trim().length > 0;
-  const isPersonalSpace = selectedSpaceKind === 'personal';
+
+  useEffect(() => {
+    if (selectedSpaceKind === 'personal' && type !== 'personal') {
+      setType('personal');
+    } else if (selectedSpaceKind === 'shared' && type !== DEFAULT_SHARED_TYPE) {
+      setType(DEFAULT_SHARED_TYPE);
+    }
+  }, [selectedSpaceKind, type]);
 
   useEffect(() => {
     if (showSelection) return;
@@ -92,11 +101,17 @@ function RouteComponent() {
     if (!draft) return;
 
     setName(draft.name);
-    setType(draft.type || groupTypes[0]);
+    setType(
+      selectedSpaceKind === 'personal'
+        ? 'personal'
+        : draft.type === 'personal'
+          ? DEFAULT_SHARED_TYPE
+          : draft.type || DEFAULT_SHARED_TYPE,
+    );
     setDescription(draft.description);
     setImageDataUrl(draft.image?.dataUrl ?? null);
     setImageFileName(draft.image?.fileName ?? null);
-  }, [draftId, showSelection]);
+  }, [draftId, selectedSpaceKind, showSelection]);
 
   useEffect(() => {
     if (showSelection) return;
@@ -157,9 +172,11 @@ function RouteComponent() {
     if (!isValid) return;
 
     const nextDraftId = draftId || createGroupDraftId();
+    const normalizedType =
+      selectedSpaceKind === 'personal' ? 'personal' : DEFAULT_SHARED_TYPE;
     saveGroupDraft(nextDraftId, {
       name: name.trim(),
-      type: type.trim(),
+      type: normalizedType,
       description: description.trim(),
       image: imageDataUrl
         ? {
@@ -174,7 +191,7 @@ function RouteComponent() {
       search: {
         draftId: nextDraftId,
         name: name.trim(),
-        type: type.trim(),
+        type: normalizedType,
         description: description.trim(),
         from,
         spaceKind: selectedSpaceKind ?? 'shared',
@@ -196,7 +213,10 @@ function RouteComponent() {
               step: 'details',
               spaceKind: selectedSpaceKind,
               name: '',
-              type: selectedSpaceKind === 'personal' ? 'personal' : 'viajes',
+              type:
+                selectedSpaceKind === 'personal'
+                  ? 'personal'
+                  : DEFAULT_SHARED_TYPE,
               description: '',
               draftId: '',
               from,
@@ -240,25 +260,6 @@ function RouteComponent() {
               maxLength={120}
             />
           </label>
-
-          {isPersonalSpace ? null : (
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-[#334155]">
-                {t.form.type}
-              </span>
-              <select
-                value={type}
-                onChange={(event) => setType(event.target.value)}
-                className="h-12 rounded-2xl border border-[#e2e8f0] bg-white px-4 text-sm outline-none transition-colors focus:border-primary"
-              >
-                {groupTypes.map((item) => (
-                  <option key={item} value={item}>
-                    {getGroupTypeLabel(item, t)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
 
           <label className="flex flex-col gap-2">
             <span className="text-sm font-medium text-[#334155]">
@@ -471,14 +472,4 @@ function SpaceTypeSelection({
       </div>
     </main>
   );
-}
-
-function getGroupTypeLabel(
-  value: (typeof groupTypes)[number],
-  t: ReturnType<typeof getGroupDetailMessages>,
-) {
-  if (value === 'viajes') return t.form.typeTrip;
-  if (value === 'meta') return t.form.typeGoal;
-  if (value === 'personal') return t.form.typePersonal;
-  return t.form.typeOther;
 }

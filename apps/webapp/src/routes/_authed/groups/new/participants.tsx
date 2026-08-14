@@ -232,9 +232,10 @@ function RouteComponent() {
 
     setError(null);
 
+    const normalizedType = spaceKind === 'personal' ? 'personal' : 'espacio';
     const groupValues: CreateGroupFormValues = {
       name: draft?.name ?? name,
-      type: spaceKind === 'personal' ? 'personal' : (draft?.type ?? type),
+      type: normalizedType,
       description: draft?.description ?? description,
       ...(draft?.image
         ? {

@@ -1,3 +1,4 @@
+import { useMinimizeOnScroll } from 'expo-glass-tabs';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
@@ -5,13 +6,12 @@ import {
   ActivityIndicator,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { authClient } from '@/lib/auth-client';
 
 import { ActionCard, HomeSection } from './components/home-card';
@@ -22,6 +22,7 @@ import { useHomeData } from './hooks/use-home-data';
 export default function HomeScreen() {
   const router = useRouter();
   const { data, error, isLoading, reload } = useHomeData();
+  const onScroll = useMinimizeOnScroll();
   const { data: session } = authClient.useSession();
   const userName = useMemo(
     () =>
@@ -42,7 +43,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView
+      <Animated.ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl
@@ -51,6 +52,8 @@ export default function HomeScreen() {
             tintColor="#DE034D"
           />
         }
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
@@ -132,7 +135,7 @@ export default function HomeScreen() {
             ) : null}
           </>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }

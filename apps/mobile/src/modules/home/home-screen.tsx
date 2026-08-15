@@ -170,7 +170,8 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FAFAFA' },
   content: {
     paddingHorizontal: 16,
-    paddingBottom: 32,
+    // Keep the last card above the floating glass tab bar.
+    paddingBottom: 152,
     backgroundColor: '#FAFAFA',
   },
   loading: {

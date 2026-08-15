@@ -17,6 +17,7 @@
   "dependencies": {
     "@better-auth/expo": "catalog:auth",
     "@expo/ui": "~57.0.10",
+    "@react-native-vector-icons/ionicons": "^13.1.2",
     "@vornway/api": "workspace:*",
     "better-auth": "catalog:auth",
     "expo": "~57.0.12",

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { authClient } from '@/lib/auth-client';
+import { authClient, getAuthCallbackURL } from '@/lib/auth-client';
 
 const slides = [
   {
@@ -46,7 +46,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (session) {
-      router.replace('/explore');
+      router.replace({ pathname: '/(tabs)' });
     }
   }, [router, session]);
 
@@ -57,14 +57,14 @@ export default function LoginScreen() {
     try {
       const result = await authClient.signIn.social({
         provider: 'google',
-        callbackURL: '/',
+        callbackURL: getAuthCallbackURL(),
       });
 
       if (result.error) {
         throw new Error(result.error.message);
       }
 
-      router.replace('/explore');
+      router.replace({ pathname: '/(tabs)' });
     } catch (signInError) {
       console.error('Error signing in with Google:', signInError);
       setError('No se pudo iniciar sesión con Google. Intenta de nuevo.');

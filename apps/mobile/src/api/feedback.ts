@@ -1,0 +1,9 @@
+import { createFeedbackClient } from '@vornway/api/hc/feedback';
+
+import { API_URL } from '@/lib/auth-client';
+
+import { fetchWithCredentials } from './fetch';
+
+export const feedbackClient = createFeedbackClient(`${API_URL}/api/feedback`, {
+  fetch: fetchWithCredentials,
+});

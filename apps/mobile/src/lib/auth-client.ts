@@ -12,9 +12,17 @@ const expoAuthPlugin = expoClient({
   scheme: 'vornway',
   storagePrefix: 'vornway',
   storage: SecureStore,
+  // SecureStore's synchronous native API is unavailable in Expo web.
+  // The browser keeps the session in its regular cookie jar instead.
+  disableCache: Platform.OS === 'web',
 }) as unknown as BetterAuthClientPlugin;
 
 export const authClient = createAuthClient({
   baseURL: API_URL,
   plugins: [expoAuthPlugin],
 });
+
+export const getAuthCallbackURL = () =>
+  Platform.OS === 'web' && typeof window !== 'undefined'
+    ? window.location.origin
+    : '/';

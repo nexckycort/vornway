@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  homeClient,
-  notificationsClient,
-  quickSplitsClient,
-} from '../home.api';
+import { homeClient } from '@/api/home';
+import { notificationsClient } from '@/api/notifications';
+import { quickSplitsClient } from '@/api/quick-splits';
+import { authClient } from '@/lib/auth-client';
 import type { HomeData } from '../home.types';
 
 type HomeResponse = {
@@ -124,6 +123,8 @@ function mapHome(
 }
 
 export function useHomeData() {
+  const { data: session, isPending: isSessionPending } =
+    authClient.useSession();
   const [data, setData] = useState<HomeData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -165,8 +166,11 @@ export function useHomeData() {
   }, []);
 
   useEffect(() => {
+    // Do not race the first RPC request against Better Auth's session restore.
+    // On web this also lets the browser attach its auth cookie first.
+    if (isSessionPending || !session) return;
     void reload();
-  }, [reload]);
+  }, [isSessionPending, reload, session]);
 
   return { data, error, isLoading, reload };
 }

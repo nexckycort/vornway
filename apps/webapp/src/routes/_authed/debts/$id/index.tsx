@@ -692,7 +692,9 @@ function RouteComponent() {
                   className={debtInputClass}
                 />
               </Field>
-              {sheetMode === 'payment' || sheetMode === 'loan' ? (
+              {sheetMode === 'payment' ||
+              sheetMode === 'loan' ||
+              sheetMode === 'edit-loan' ? (
                 <Field label={m['finances.account']()}>
                   <select
                     value={accountId}

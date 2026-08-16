@@ -585,13 +585,18 @@ function RouteComponent() {
                 className="h-11 rounded-2xl"
                 onClick={() => {
                   const activity = selectedActivity;
-                  if (activity)
-                    openForm(
-                      activity.kind === 'payment'
-                        ? 'edit-payment'
-                        : 'edit-loan',
-                      activity,
-                    );
+                  if (!activity) return;
+                  setSelectedActivity(null);
+                  window.setTimeout(
+                    () =>
+                      openForm(
+                        activity.kind === 'payment'
+                          ? 'edit-payment'
+                          : 'edit-loan',
+                        activity,
+                      ),
+                    180,
+                  );
                 }}
               >
                 {m['debts.edit']()}

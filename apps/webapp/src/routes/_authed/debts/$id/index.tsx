@@ -51,6 +51,7 @@ type DebtDetail = {
   viewerRole: 'owner' | 'counterparty';
   amounts: Array<{
     id: string;
+    account?: { id: string; name: string } | null;
     amount: number;
     loanDate: string;
     note?: string | null;
@@ -79,6 +80,7 @@ type Activity =
       amount: number;
       date: string;
       note?: string | null;
+      account?: { id: string; name: string } | null;
     }
   | {
       kind: 'payment';
@@ -163,6 +165,7 @@ function RouteComponent() {
               amount: item.amount,
               date: item.loanDate,
               note: item.note,
+              account: item.account,
             })),
             ...detail.payments.map((item) => ({
               kind: 'payment' as const,
@@ -312,9 +315,7 @@ function RouteComponent() {
       setAmount(String(activity.amount));
       setDate(activity.date.slice(0, 10));
       setNote(activity.note ?? '');
-      setAccountId(
-        activity.kind === 'payment' ? (activity.account?.id ?? '') : '',
-      );
+      setAccountId(activity.account?.id ?? '');
     }
   }
   function submitForm() {
@@ -331,6 +332,7 @@ function RouteComponent() {
       amountMutation.mutate({
         amount: value,
         loanDate: date,
+        ...(accountId ? { accountId } : {}),
       });
     } else if (sheetMode === 'edit-loan' && selectedActivity) {
       updateAmountMutation.mutate({
@@ -685,7 +687,7 @@ function RouteComponent() {
                   className={debtInputClass}
                 />
               </Field>
-              {sheetMode !== 'loan' ? (
+              {sheetMode === 'payment' || sheetMode === 'loan' ? (
                 <Field label={m['finances.account']()}>
                   <select
                     value={accountId}
@@ -808,9 +810,7 @@ function ActivityRow({
           {isPayment ? 'Abono recibido' : 'Dinero prestado'}
         </span>
         <span className="mt-0.5 block truncate text-xs text-black/45">
-          {isPayment && activity.account
-            ? activity.account.name
-            : (activity.note ?? '')}
+          {activity.account?.name ?? activity.note ?? ''}
         </span>
       </span>
       <span

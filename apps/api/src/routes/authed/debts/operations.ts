@@ -13,11 +13,33 @@ import type {
 const money = (value: number) => Number(value.toFixed(2));
 
 type DebtWithPayments = Prisma.DebtGetPayload<{
-  include: { amounts: true; payments: { include: { account: true } } };
+  include: {
+    amounts: { include: { account: true } };
+    payments: { include: { account: true } };
+  };
 }>;
 
 function debtPaymentTransactionType(direction: string) {
   return direction === 'borrowed' ? 'EXPENSE' : 'INCOME';
+}
+
+async function validateAccount(
+  userId: string,
+  accountId: string | undefined,
+  currency: string,
+) {
+  if (!accountId) return;
+  const account = await db.financeAccount.findFirst({
+    where: {
+      id: accountId,
+      ownerId: userId,
+      currency,
+      archivedAt: null,
+      status: { not: 'CLOSED' },
+    },
+    select: { id: true },
+  });
+  if (!account) throw new Error('Invalid finance account');
 }
 
 function serialize(debt: DebtWithPayments, viewerId?: string) {
@@ -55,6 +77,14 @@ function serialize(debt: DebtWithPayments, viewerId?: string) {
     })),
     amounts: debt.amounts.map((amount) => ({
       id: amount.id,
+      account: amount.account
+        ? {
+            id: amount.account.id,
+            name: amount.account.name,
+            institution: amount.account.institution,
+            currency: amount.account.currency,
+          }
+        : null,
       amount: amount.amount,
       loanDate: amount.loanDate.toISOString(),
       createdAt: amount.createdAt.toISOString(),
@@ -85,7 +115,10 @@ export const debtOperations = {
             }
           : {}),
       },
-      include: { amounts: true, payments: { include: { account: true } } },
+      include: {
+        amounts: { include: { account: true } },
+        payments: { include: { account: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
     return debts
@@ -96,7 +129,7 @@ export const debtOperations = {
     const debt = await db.debt.findFirst({
       where: { id, ...visibleTo(userId) },
       include: {
-        amounts: true,
+        amounts: { include: { account: true } },
         payments: {
           orderBy: { paidAt: 'desc' },
           include: { account: true },
@@ -118,6 +151,13 @@ export const debtOperations = {
     const amounts = input.amounts ?? [
       { amount: input.principalAmount, loanDate: new Date() },
     ];
+    for (const amount of amounts) {
+      await validateAccount(
+        userId,
+        amount.accountId,
+        input.currency.toUpperCase(),
+      );
+    }
     const principalAmount = money(
       amounts.reduce((total, item) => total + item.amount, 0),
     );
@@ -144,14 +184,20 @@ export const debtOperations = {
         dueDate: input.dueDate,
         description: input.description,
       },
-      include: { amounts: true, payments: { include: { account: true } } },
+      include: {
+        amounts: { include: { account: true } },
+        payments: { include: { account: true } },
+      },
     });
     return serialize(debt, userId);
   },
   async update(userId: string, id: string, input: UpdateDebtInput) {
     const existing = await db.debt.findFirst({
       where: { id, ownerId: userId },
-      include: { amounts: true, payments: { include: { account: true } } },
+      include: {
+        amounts: { include: { account: true } },
+        payments: { include: { account: true } },
+      },
     });
     if (!existing) return null;
     if (input.counterpartyId === userId)
@@ -203,7 +249,10 @@ export const debtOperations = {
         description: input.description,
         expectedTotal: money(principal + interest),
       },
-      include: { amounts: true, payments: { include: { account: true } } },
+      include: {
+        amounts: { include: { account: true } },
+        payments: { include: { account: true } },
+      },
     });
     return serialize(debt, userId);
   },
@@ -235,6 +284,7 @@ export const debtOperations = {
       include: { payments: true },
     });
     if (!debt) return null;
+    await validateAccount(userId, input.accountId, debt.currency);
     const remaining =
       debt.expectedTotal -
       debt.payments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -284,6 +334,7 @@ export const debtOperations = {
       where: { id, ownerId: userId },
     });
     if (!debt) return null;
+    await validateAccount(userId, input.accountId, debt.currency);
 
     const principalAmount = money(debt.principalAmount + input.amount);
     const interest =
@@ -297,6 +348,7 @@ export const debtOperations = {
       await tx.debtAmount.create({
         data: {
           debtId: id,
+          accountId: input.accountId,
           amount: input.amount,
           loanDate: input.loanDate,
         },
@@ -321,9 +373,14 @@ export const debtOperations = {
   ) {
     const amount = await db.debtAmount.findFirst({
       where: { id: amountId, debtId, debt: { ownerId: userId } },
-      include: { debt: { include: { amounts: true } } },
+      include: { debt: { include: { amounts: true } }, account: true },
     });
     if (!amount) return null;
+    await validateAccount(
+      userId,
+      input.accountId ?? amount.accountId ?? undefined,
+      amount.debt.currency,
+    );
 
     const nextAmount = input.amount ?? amount.amount;
     const principalAmount = money(
@@ -345,6 +402,9 @@ export const debtOperations = {
         where: { id: amountId },
         data: {
           ...(input.amount !== undefined ? { amount: input.amount } : {}),
+          ...(input.accountId !== undefined
+            ? { accountId: input.accountId }
+            : {}),
           ...(input.loanDate !== undefined ? { loanDate: input.loanDate } : {}),
         },
       });

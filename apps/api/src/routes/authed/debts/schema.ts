@@ -5,6 +5,7 @@ const direction = z.enum(['lent', 'borrowed']);
 const interestType = z.enum(['none', 'percentage', 'fixed']);
 export const debtAmountSchema = z.object({
   amount: z.number().positive(),
+  accountId: z.string().min(1).optional(),
   loanDate: z.coerce.date(),
 });
 

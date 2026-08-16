@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { debtsClient } from '#/api/debts';
+import { financesClient } from '#/api/finances';
 import type { InferRequestType, InferResponseType } from '#/api/types';
 import { Button } from '#/components/ui/button';
 import {
@@ -46,11 +47,26 @@ function DebtsRoute() {
   const [person, setPerson] = useState('');
   const [counterpartyId, setCounterpartyId] = useState<string>();
   const [amount, setAmount] = useState('');
+  const [accountId, setAccountId] = useState('');
   const [loanDate, setLoanDate] = useState(today);
   const [direction, setDirection] = useState<'lent' | 'borrowed'>('lent');
   const [dueDate, setDueDate] = useState('');
   const [note, setNote] = useState('');
   const userSearch = useUserSearchQuery(person);
+  const accountsQuery = useQuery({
+    queryKey: ['finances-summary', 'debt-loan-accounts', 'COP'],
+    queryFn: async () => {
+      const response = await financesClient.summary.$get({
+        query: { currency: 'COP' },
+      });
+      if (!response.ok) throw new Error('finance_summary_load_failed');
+      return response.json();
+    },
+  });
+  const accounts =
+    accountsQuery.data?.accounts.filter(
+      (account) => account.status !== 'CLOSED' && account.currency === 'COP',
+    ) ?? [];
 
   const debtsQuery = useQuery({
     queryKey: ['debts', 'all'],
@@ -95,6 +111,7 @@ function DebtsRoute() {
     setPerson('');
     setCounterpartyId(undefined);
     setAmount('');
+    setAccountId('');
     setLoanDate(today());
     setDirection('lent');
     setDueDate('');
@@ -118,6 +135,7 @@ function DebtsRoute() {
       amounts: [
         {
           amount: parsedAmount,
+          ...(accountId ? { accountId } : {}),
           loanDate,
         },
       ],
@@ -286,6 +304,20 @@ function DebtsRoute() {
                 onChange={(event) => setLoanDate(event.target.value)}
                 className="input"
               />
+            </Field>
+            <Field label={m['finances.account']()}>
+              <select
+                value={accountId}
+                onChange={(event) => setAccountId(event.target.value)}
+                className={debtInputClass}
+              >
+                <option value="">{m['finances.noAccount']()}</option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
             </Field>
             <Field label={m['debts.dueDate']()}>
               <input

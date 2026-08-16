@@ -22,6 +22,8 @@ COPY . .
 
 WORKDIR /app/apps/api
 RUN bun run db:generate && bun run build
+# execute the migrations to ensure the database is up to date
+RUN bun run db:migrate:deploy
 
 # ---------------- runtime ----------------
 FROM gcr.io/distroless/base

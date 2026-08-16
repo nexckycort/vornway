@@ -337,7 +337,11 @@ function RouteComponent() {
     } else if (sheetMode === 'edit-loan' && selectedActivity) {
       updateAmountMutation.mutate({
         amountId: selectedActivity.id,
-        json: { amount: value, loanDate: date },
+        json: {
+          amount: value,
+          loanDate: date,
+          ...(accountId ? { accountId } : {}),
+        },
       });
     } else if (sheetMode === 'edit-payment' && selectedActivity) {
       updatePaymentMutation.mutate({

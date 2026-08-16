@@ -23,6 +23,10 @@ function debtPaymentTransactionType(direction: string) {
   return direction === 'borrowed' ? 'EXPENSE' : 'INCOME';
 }
 
+function debtLoanTransactionType(direction: string) {
+  return direction === 'borrowed' ? 'INCOME' : 'EXPENSE';
+}
+
 async function validateAccount(
   userId: string,
   accountId: string | undefined,
@@ -168,26 +172,40 @@ export const debtOperations = {
           ? (input.interestValue ?? 0)
           : 0;
     const expectedTotal = money(principalAmount + interest);
-    const debt = await db.debt.create({
-      data: {
-        ownerId: userId,
-        name: input.name,
-        counterpartyName: input.counterpartyName,
-        counterpartyId: input.counterpartyId,
-        direction: input.direction,
-        principalAmount,
-        interestType: input.interestType,
-        interestValue: input.interestValue,
-        expectedTotal,
-        amounts: { create: amounts },
-        currency: input.currency.toUpperCase(),
-        dueDate: input.dueDate,
-        description: input.description,
-      },
-      include: {
-        amounts: { include: { account: true } },
-        payments: { include: { account: true } },
-      },
+    const debt = await db.$transaction(async (tx) => {
+      const created = await tx.debt.create({
+        data: {
+          ownerId: userId,
+          name: input.name,
+          counterpartyName: input.counterpartyName,
+          counterpartyId: input.counterpartyId,
+          direction: input.direction,
+          principalAmount,
+          interestType: input.interestType,
+          interestValue: input.interestValue,
+          expectedTotal,
+          amounts: { create: amounts },
+          currency: input.currency.toUpperCase(),
+          dueDate: input.dueDate,
+          description: input.description,
+        },
+        include: {
+          amounts: { include: { account: true } },
+          payments: { include: { account: true } },
+        },
+      });
+      for (const amount of amounts) {
+        await applyAccountTransactionEffect(
+          tx,
+          {
+            accountId: amount.accountId,
+            type: debtLoanTransactionType(input.direction),
+            amount: amount.amount,
+          },
+          1,
+        );
+      }
+      return created;
     });
     return serialize(debt, userId);
   },
@@ -259,7 +277,7 @@ export const debtOperations = {
   async delete(userId: string, id: string) {
     const debt = await db.debt.findFirst({
       where: { id, ownerId: userId },
-      include: { payments: true },
+      include: { payments: true, amounts: true },
     });
     if (!debt) return false;
     await db.$transaction(async (tx) => {
@@ -270,6 +288,17 @@ export const debtOperations = {
             accountId: payment.accountId,
             type: debtPaymentTransactionType(debt.direction),
             amount: payment.amount,
+          },
+          -1,
+        );
+      }
+      for (const amount of debt.amounts) {
+        await applyAccountTransactionEffect(
+          tx,
+          {
+            accountId: amount.accountId,
+            type: debtLoanTransactionType(debt.direction),
+            amount: amount.amount,
           },
           -1,
         );
@@ -361,6 +390,15 @@ export const debtOperations = {
           updatedAt: new Date(),
         },
       });
+      await applyAccountTransactionEffect(
+        tx,
+        {
+          accountId: input.accountId,
+          type: debtLoanTransactionType(debt.direction),
+          amount: input.amount,
+        },
+        1,
+      );
     });
 
     return debtOperations.get(userId, id);
@@ -398,6 +436,15 @@ export const debtOperations = {
           : 0;
 
     await db.$transaction(async (tx) => {
+      await applyAccountTransactionEffect(
+        tx,
+        {
+          accountId: amount.accountId,
+          type: debtLoanTransactionType(amount.debt.direction),
+          amount: amount.amount,
+        },
+        -1,
+      );
       await tx.debtAmount.update({
         where: { id: amountId },
         data: {
@@ -416,6 +463,16 @@ export const debtOperations = {
           updatedAt: new Date(),
         },
       });
+      await applyAccountTransactionEffect(
+        tx,
+        {
+          accountId:
+            input.accountId !== undefined ? input.accountId : amount.accountId,
+          type: debtLoanTransactionType(amount.debt.direction),
+          amount: nextAmount,
+        },
+        1,
+      );
     });
 
     return debtOperations.get(userId, debtId);
@@ -443,6 +500,15 @@ export const debtOperations = {
           : 0;
 
     await db.$transaction(async (tx) => {
+      await applyAccountTransactionEffect(
+        tx,
+        {
+          accountId: amount.accountId,
+          type: debtLoanTransactionType(amount.debt.direction),
+          amount: amount.amount,
+        },
+        -1,
+      );
       await tx.debtAmount.delete({ where: { id: amountId } });
       await tx.debt.update({
         where: { id: debtId },

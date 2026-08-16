@@ -513,7 +513,7 @@ function RouteComponent() {
                 setDebtName(detail.name);
                 setDebtDescription(detail.description ?? '');
                 setDebtDueDate(detail.dueDate?.slice(0, 10) ?? '');
-                setSheetMode('edit-debt');
+                window.setTimeout(() => setSheetMode('edit-debt'), 180);
               }}
             >
               {m['debts.edit']()}

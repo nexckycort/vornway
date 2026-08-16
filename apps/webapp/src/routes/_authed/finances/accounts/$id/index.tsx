@@ -461,6 +461,14 @@ function RouteComponent() {
                   },
                 )}
               />
+              <DetailRow
+                label={m['finances.accountOpeningBalance']()}
+                value={formatCurrency(
+                  account.currency,
+                  account.openingBalance,
+                  { maximumFractionDigits: 0 },
+                )}
+              />
             </section>
 
             {account.notes ? (

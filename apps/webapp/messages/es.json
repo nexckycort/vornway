@@ -236,6 +236,7 @@
     "accountInstitutionPlaceholder": "Banco o entidad",
     "accountCurrencyPlaceholder": "COP",
     "accountCurrentBalance": "Saldo actual",
+    "accountOpeningBalance": "Monto inicial",
     "accountCurrentDebt": "Deuda actual",
     "accountAvailableBalance": "Disponible",
     "accountCreditLimit": "Tope de la tarjeta",

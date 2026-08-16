@@ -236,6 +236,7 @@
     "accountInstitutionPlaceholder": "Bank or institution",
     "accountCurrencyPlaceholder": "USD",
     "accountCurrentBalance": "Current balance",
+    "accountOpeningBalance": "Opening balance",
     "accountCurrentDebt": "Current debt",
     "accountAvailableBalance": "Available",
     "accountCreditLimit": "Credit limit",

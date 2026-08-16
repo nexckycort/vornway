@@ -86,6 +86,8 @@ function DebtsRoute() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
       ]);
       closeDrawer();
       toast.success(m['debts.created']());

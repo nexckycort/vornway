@@ -764,25 +764,81 @@ export const financeOperations = {
     if (!account) return null;
 
     const limit = Math.min(input.limit, 50);
-    const where = { ownerId: userId, accountId };
-    const [total, rows] = await Promise.all([
-      db.financeTransaction.count({ where }),
-      db.financeTransaction.findMany({
-        where,
-        ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
-        take: limit + 1,
-        orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
-        include: {
-          category: true,
-          tags: { include: { tag: true } },
-        },
-      }),
-    ]);
-    const hasNextPage = rows.length > limit;
-    const data = hasNextPage ? rows.slice(0, limit) : rows;
+    let cursorDate: Date | undefined;
+    let cursorId: string | undefined;
+    if (input.cursor) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(input.cursor)) as {
+          occurredAt?: string;
+          id?: string;
+        };
+        if (parsed.occurredAt && parsed.id) {
+          cursorDate = new Date(parsed.occurredAt);
+          cursorId = parsed.id;
+        }
+      } catch {
+        // Ignore cursors from the previous transaction-only response format.
+      }
+    }
+    const cursorFilter =
+      cursorDate && cursorId
+        ? {
+            OR: [
+              { occurredAt: { lt: cursorDate } },
+              { occurredAt: cursorDate, id: { lt: cursorId } },
+            ],
+          }
+        : {};
+    const expenseCursorFilter =
+      cursorDate && cursorId
+        ? {
+            OR: [
+              { date: { lt: cursorDate } },
+              { date: cursorDate, id: { lt: cursorId } },
+            ],
+          }
+        : {};
+    const transactionWhere = { ownerId: userId, accountId, ...cursorFilter };
+    const expenseWhere = {
+      accountId,
+      status: 'ACTIVE' as const,
+      ...expenseCursorFilter,
+    };
+    const [transactionTotal, expenseTotal, transactions, expenses] =
+      await Promise.all([
+        db.financeTransaction.count({ where: { ownerId: userId, accountId } }),
+        db.expense.count({ where: expenseWhere }),
+        db.financeTransaction.findMany({
+          where: transactionWhere,
+          take: limit + 1,
+          orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+          include: {
+            category: true,
+            tags: { include: { tag: true } },
+          },
+        }),
+        db.expense.findMany({
+          where: expenseWhere,
+          take: limit + 1,
+          orderBy: [{ date: 'desc' }, { id: 'desc' }],
+          select: {
+            id: true,
+            description: true,
+            amount: true,
+            currency: true,
+            date: true,
+            accountId: true,
+            categoryId: true,
+            category: {
+              select: { id: true, name: true, icon: true, color: true },
+            },
+            group: { select: { id: true, name: true } },
+          },
+        }),
+      ]);
 
-    return {
-      data: data.map((transaction) => ({
+    const movements = [
+      ...transactions.map((transaction) => ({
         source: 'transaction' as const,
         id: transaction.id,
         description: transaction.description,
@@ -798,10 +854,45 @@ export const financeOperations = {
         category: transaction.category,
         tags: transaction.tags.map((transactionTag) => transactionTag.tag),
       })),
+      ...expenses.map((expense) => ({
+        source: 'group-expense' as const,
+        id: expense.id,
+        description: expense.description,
+        amount: expense.amount,
+        currency: expense.currency,
+        occurredAt: expense.date.toISOString(),
+        type: 'EXPENSE' as const,
+        accountId: expense.accountId,
+        categoryId: expense.categoryId,
+        category: expense.category,
+        tags: [],
+        groupId: expense.group.id,
+        groupName: expense.group.name,
+      })),
+    ].sort((left, right) => {
+      const dateDifference =
+        new Date(right.occurredAt).getTime() -
+        new Date(left.occurredAt).getTime();
+      return dateDifference || right.id.localeCompare(left.id);
+    });
+    const data = movements.slice(0, limit);
+    const hasNextPage = movements.length > limit;
+    const lastMovement = data.at(-1);
+
+    return {
+      data,
       pagination: {
         limit,
-        total,
-        nextCursor: hasNextPage ? (data.at(-1)?.id ?? null) : null,
+        total: transactionTotal + expenseTotal,
+        nextCursor:
+          hasNextPage && lastMovement
+            ? encodeURIComponent(
+                JSON.stringify({
+                  occurredAt: lastMovement.occurredAt,
+                  id: lastMovement.id,
+                }),
+              )
+            : null,
       },
     };
   },

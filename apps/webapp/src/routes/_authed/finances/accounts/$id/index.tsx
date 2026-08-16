@@ -114,7 +114,10 @@ function MovementRow({
         </p>
         <div className="mt-1 flex min-w-0 items-center gap-2">
           <span className="min-w-0 truncate rounded-full bg-[#f4f4f2] px-2 py-0.5 text-xs font-medium text-black/50">
-            {movement.category?.name ?? m['finances.noCategory']()}
+            {movement.category?.name ??
+              (movement.source === 'group-expense'
+                ? movement.groupName
+                : m['finances.noCategory']())}
           </span>
           <span className="shrink-0 text-xs text-black/35">
             {formatShortDate(movement.occurredAt)}
@@ -488,14 +491,22 @@ function RouteComponent() {
                     key={movement.id}
                     movement={movement}
                     onPress={() =>
-                      void navigate({
-                        to: '/finances/movements/$id',
-                        params: { id: movement.id },
-                        search: {
-                          month: getMonthKey(movement.occurredAt),
-                          accountId: id,
-                        },
-                      })
+                      void (movement.source === 'group-expense'
+                        ? navigate({
+                            to: '/groups/$id/expense/$expenseId',
+                            params: {
+                              id: movement.groupId,
+                              expenseId: movement.id,
+                            },
+                          })
+                        : navigate({
+                            to: '/finances/movements/$id',
+                            params: { id: movement.id },
+                            search: {
+                              month: getMonthKey(movement.occurredAt),
+                              accountId: id,
+                            },
+                          }))
                     }
                   />
                 ))}

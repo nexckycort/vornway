@@ -125,6 +125,15 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* iOS standalone PWAs can report a zero top inset while keeping the
+   translucent status bar over the app content. Keep headers below the clock. */
+@media (display-mode: standalone) {
+  :root {
+    --safe-top: max(env(safe-area-inset-top, 0px), 24px);
+    --safe-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+  }
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

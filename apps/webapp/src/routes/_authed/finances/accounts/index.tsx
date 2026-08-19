@@ -1,3 +1,5 @@
+import { Add01Icon, Wallet02Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 import {
   useInfiniteQuery,
   useMutation,
@@ -268,8 +270,9 @@ function RouteComponent() {
             resetAccountForm();
             setIsAccountDrawerOpen(true);
           }}
-          className="h-13 rounded-full"
+          className="h-13 rounded-full shadow-[0_8px_18px_rgba(222,3,77,0.18)]"
         >
+          <HugeiconsIcon icon={Add01Icon} className="size-5" />
           {m['finances.createAccount']()}
         </Button>
 
@@ -286,7 +289,7 @@ function RouteComponent() {
             accounts.map((account) => (
               <article
                 key={account.id}
-                className="min-w-0 overflow-hidden rounded-[28px] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+                className="min-w-0 overflow-hidden rounded-[28px] border border-[#e8ecee] bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.04)]"
               >
                 <button
                   type="button"
@@ -299,21 +302,26 @@ function RouteComponent() {
                   }
                   className="flex w-full min-w-0 items-start justify-between gap-3 text-left"
                 >
-                  <div className="min-w-0">
-                    <h3 className="truncate text-base font-semibold">
-                      {account.name}
-                    </h3>
-                    <p className="mt-1 truncate text-xs text-black/45">
-                      {account.institution ||
-                        getAccountTypeLabel(account.accountType)}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
-                        {getAccountTypeLabel(account.accountType)}
-                      </span>
-                      <span className="rounded-full bg-[#f4f4f2] px-2.5 py-1 text-[11px] font-medium text-black/50">
-                        {getAccountStatusLabel(account.status)}
-                      </span>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#fce7f3] text-primary">
+                      <HugeiconsIcon icon={Wallet02Icon} className="size-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="truncate text-base font-semibold">
+                        {account.name}
+                      </h3>
+                      <p className="mt-1 truncate text-xs text-black/45">
+                        {account.institution ||
+                          getAccountTypeLabel(account.accountType)}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+                          {getAccountTypeLabel(account.accountType)}
+                        </span>
+                        <span className="rounded-full bg-[#f4f4f2] px-2.5 py-1 text-[11px] font-medium text-black/50">
+                          {getAccountStatusLabel(account.status)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="min-w-0 shrink-0 text-right">
@@ -351,7 +359,7 @@ function RouteComponent() {
                     ) : null}
                   </div>
                 </button>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-4 flex flex-wrap gap-2 border-t border-[#eef0f1] pt-3">
                   <Button
                     type="button"
                     variant="outline"
@@ -402,7 +410,7 @@ function RouteComponent() {
             if (!open) resetAccountForm();
           }}
         >
-          <DrawerContent className="overflow-hidden bg-[#f7f7f4]">
+          <DrawerContent className="overflow-hidden bg-[#fafafa]">
             <DrawerHeader>
               <DrawerTitle>
                 {editingAccountId
@@ -526,7 +534,7 @@ function RouteComponent() {
               />
             </div>
 
-            <DrawerFooter className="shrink-0 border-t border-black/5 bg-[#f7f7f4]/95 backdrop-blur">
+            <DrawerFooter className="shrink-0 border-t border-black/5 bg-[#fafafa]/95 backdrop-blur">
               <Button
                 type="button"
                 onClick={submitAccount}

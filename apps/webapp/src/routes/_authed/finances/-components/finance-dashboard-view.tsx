@@ -106,8 +106,12 @@ export function FinanceDashboardView({
           <FinanceTab active onClick={() => onGoTo('dashboard')}>
             {m['finances.movements']()}
           </FinanceTab>
-          <FinanceTab onClick={() => void navigate({ to: '/goals' })}>
-            {m['finances.goals']()}
+          <FinanceTab
+            onClick={() =>
+              void navigate({ to: '/finances/accounts', search: { month } })
+            }
+          >
+            {m['finances.accounts']()}
           </FinanceTab>
           <FinanceTab
             onClick={() =>
@@ -119,12 +123,8 @@ export function FinanceDashboardView({
           >
             {m['finances.debts']()}
           </FinanceTab>
-          <FinanceTab
-            onClick={() =>
-              void navigate({ to: '/finances/accounts', search: { month } })
-            }
-          >
-            {m['finances.accounts']()}
+          <FinanceTab onClick={() => void navigate({ to: '/goals' })}>
+            {m['finances.goals']()}
           </FinanceTab>
           <FinanceTab
             onClick={() =>

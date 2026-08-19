@@ -14,8 +14,8 @@ export function ScreenShell({
   children: ReactNode;
 }) {
   return (
-    <main className="min-h-screen bg-[#f7f7f4] text-[#101113]">
-      <div className="mx-auto flex min-h-screen w-full max-w-[560px] flex-col px-5 pb-28 pt-6 md:max-w-5xl">
+    <main className="min-h-screen bg-[#efefef] text-[#101113] md:px-4 md:py-4">
+      <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa] px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-[calc(var(--safe-top)+1rem)] md:min-h-[calc(100dvh-2rem)] md:max-w-5xl md:rounded-[28px] md:px-5 md:pt-6">
         <header className="flex items-center justify-between gap-3">
           <button
             type="button"

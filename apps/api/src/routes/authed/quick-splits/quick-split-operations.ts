@@ -92,7 +92,10 @@ function createExactShares(input: {
   const shares: Record<string, number> = {};
 
   for (const participantId of participantIds) {
-    const share = exactShares[participantId];
+    // An exact split may omit participants whose share is zero. This is
+    // equivalent to sending `{ [participantId]: 0 }` and keeps the API
+    // compatible with clients that only serialize non-zero shares.
+    const share = exactShares[participantId] ?? 0;
 
     if (!Number.isFinite(share) || share < 0) {
       throw new QuickSplitExpenseSharesInvalidError({

@@ -375,6 +375,7 @@ export const quickSplitOperations = {
 
     const normalizedAmount = normalizeAmount(amount);
     const normalizedCurrency = currency.trim().toUpperCase();
+
     if (normalizedCurrency !== expense.currency.trim().toUpperCase()) {
       throw new QuickSplitSettlementAmountInvalidError();
     }
@@ -765,6 +766,21 @@ export const quickSplitOperations = {
     const normalizedAmount = normalizeAmount(amount);
     const normalizedCurrency = currency.trim().toUpperCase();
 
+    const participantIdByUserId = new Map(
+      quickSplit.participants
+        .filter((participant) => participant.userId)
+        .map((participant) => [participant.userId as string, participant.id]),
+    );
+    const normalizeShareKeys = (shares?: Record<string, number>) =>
+      shares
+        ? Object.fromEntries(
+            Object.entries(shares).map(([participantId, share]) => [
+              participantIdByUserId.get(participantId) ?? participantId,
+              share,
+            ]),
+          )
+        : undefined;
+
     if (normalizedExpenseId) {
       let existingExpense: Awaited<
         ReturnType<typeof quickSplitsPersistence.findExpenseById>
@@ -801,13 +817,13 @@ export const quickSplitOperations = {
         ? createExactShares({
             amount: normalizedAmount,
             participantIds: normalizedParticipantIds,
-            exactShares,
+            exactShares: normalizeShareKeys(exactShares),
           })
         : splitMethod === 'percentage'
           ? createPercentageShares({
               amount: normalizedAmount,
               participantIds: normalizedParticipantIds,
-              percentageShares,
+              percentageShares: normalizeShareKeys(percentageShares),
             })
           : createEqualShares({
               amount: normalizedAmount,

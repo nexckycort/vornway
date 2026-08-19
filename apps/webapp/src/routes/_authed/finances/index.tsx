@@ -458,38 +458,16 @@ function FinancesDashboard() {
   }
 
   const income = getCurrencyValue(summary.totals.incomeByCurrency, currency);
-  const personalExpense = getCurrencyValue(
-    summary.totals.personalExpenseByCurrency,
-    currency,
-  );
-  const groupExpense = getCurrencyValue(
-    summary.totals.groupExpenseByCurrency,
-    currency,
-  );
   const totalExpense = getCurrencyValue(
     summary.totals.totalExpenseByCurrency,
     currency,
   );
   const balance = getCurrencyValue(summary.totals.balanceByCurrency, currency);
-  const owedByYou = getCurrencyValue(
-    summary.totals.owedByYouByCurrency,
-    currency,
-  );
-  const owedToYou = getCurrencyValue(
-    summary.totals.owedToYouByCurrency,
-    currency,
-  );
-  const accountTotal = getCurrencyValue(
-    summary.totals.accountTotalByCurrency,
-    currency,
-  );
-  const accountAvailable = getCurrencyValue(
-    summary.totals.accountAvailableByCurrency,
-    currency,
-  );
-  const accountLocked = getCurrencyValue(
-    summary.totals.accountLockedByCurrency,
-    currency,
+  const categoryTotals = Object.fromEntries(
+    categories.map((category) => [
+      category.id,
+      categorySpend(summary, category.id),
+    ]),
   );
   if (view === 'new') {
     return (
@@ -828,13 +806,8 @@ function FinancesDashboard() {
       income={income}
       totalExpense={totalExpense}
       balance={balance}
-      groupExpense={groupExpense}
-      personalExpense={personalExpense}
-      owedToYou={owedToYou}
-      owedByYou={owedByYou}
-      accountTotal={accountTotal}
-      accountAvailable={accountAvailable}
-      accountLocked={accountLocked}
+      categories={categories}
+      categoryTotals={categoryTotals}
       movements={movements}
       loadMoreRef={loadMoreRef}
       isMovementsLoading={movementsQuery.isPending}

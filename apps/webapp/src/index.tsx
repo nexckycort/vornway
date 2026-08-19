@@ -199,12 +199,6 @@ if (rootEl) {
   );
 }
 
-// Desactivar menú contextual del click derecho para comportamiento móvil
-document.addEventListener('contextmenu', (e) => {
-  e.preventDefault();
-  return false;
-});
-
 // Desactivar arrastrar y soltar para comportamiento móvil
 document.addEventListener('dragstart', (e) => {
   e.preventDefault();

@@ -7,33 +7,37 @@ export function ScreenShell({
   month,
   onBack,
   children,
+  showHeader = true,
 }: {
   title: string;
   month: string;
   onBack: () => void;
   children: ReactNode;
+  showHeader?: boolean;
 }) {
   return (
     <main className="min-h-screen bg-[#efefef] text-[#101113] md:px-4 md:py-4">
       <div className="mx-auto flex min-h-screen w-full max-w-[412px] flex-col bg-[#fafafa] px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-[calc(var(--safe-top)+1rem)] md:min-h-[calc(100dvh-2rem)] md:max-w-5xl md:rounded-[28px] md:px-5 md:pt-6">
-        <header className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex size-11 items-center justify-center rounded-full border border-black/10 bg-white text-xl"
-            aria-label={m['finances.back']()}
-          >
-            <span aria-hidden="true">‹</span>
-          </button>
-          <div className="min-w-0 text-center">
-            <p className="text-xs font-medium text-black/45">
-              {formatMonthLabel(month)}
-            </p>
-            <h1 className="truncate text-lg font-semibold">{title}</h1>
-          </div>
-          <div className="size-11" />
-        </header>
-        <div className="mt-7">{children}</div>
+        {showHeader ? (
+          <header className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex size-11 items-center justify-center rounded-full border border-black/10 bg-white text-xl"
+              aria-label={m['finances.back']()}
+            >
+              <span aria-hidden="true">‹</span>
+            </button>
+            <div className="min-w-0 text-center">
+              <p className="text-xs font-medium text-black/45">
+                {formatMonthLabel(month)}
+              </p>
+              <h1 className="truncate text-lg font-semibold">{title}</h1>
+            </div>
+            <div className="size-11" />
+          </header>
+        ) : null}
+        <div className={showHeader ? 'mt-7' : 'mt-6'}>{children}</div>
       </div>
     </main>
   );

@@ -27,13 +27,10 @@ import {
   currency,
   currentMonthKey,
   deleteAccountEndpoint,
-  type FinanceAccount,
   type FinanceAccountInput,
   type FinanceAccountUpdateInput,
-  getAccountStatusLabel,
   getAccountTypeLabel,
   parseMoney,
-  toInputDate,
   updateAccountEndpoint,
 } from '../-components/finance-model';
 
@@ -183,30 +180,6 @@ function RouteComponent() {
     setAccountNotes('');
   }
 
-  function selectAccountToEdit(account: FinanceAccount) {
-    setEditingAccountId(account.id);
-    setEditingAccountStatus(account.status);
-    setAccountName(account.name);
-    setAccountType(
-      account.accountType.toLowerCase() as FinanceAccountInput['type'],
-    );
-    setAccountInstitution(account.institution ?? '');
-    setAccountCurrency(account.currency);
-    setAccountCurrentBalance(String(account.currentBalance));
-    setAccountAvailableBalance(String(account.availableBalance));
-    setAccountLockedBalance(String(account.lockedBalance));
-    setAccountCreditLimit(
-      account.creditLimit === null ? '' : String(account.creditLimit),
-    );
-    setAccountOpenedAt(toInputDate(account.openedAt));
-    setAccountMaturesAt(toInputDate(account.maturesAt));
-    setAccountInterestRate(
-      account.interestRate === null ? '' : String(account.interestRate),
-    );
-    setAccountNotes(account.notes ?? '');
-    setIsAccountDrawerOpen(true);
-  }
-
   function submitAccount() {
     const name = accountName.trim();
     const currentBalance = parseMoney(accountCurrentBalance);
@@ -251,6 +224,7 @@ function RouteComponent() {
     <ScreenShell
       title={m['finances.accounts']()}
       month={month}
+      showHeader={false}
       onBack={() =>
         void navigate({
           to: '/finances',
@@ -264,6 +238,9 @@ function RouteComponent() {
       }
     >
       <div className="grid min-w-0 gap-4">
+        <h2 className="text-base font-semibold text-[#1e1e1e]">
+          {m['finances.accounts']()}
+        </h2>
         <Button
           type="button"
           onClick={() => {
@@ -289,7 +266,7 @@ function RouteComponent() {
             accounts.map((account) => (
               <article
                 key={account.id}
-                className="min-w-0 overflow-hidden rounded-[28px] border border-[#e8ecee] bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.04)]"
+                className="min-w-0 overflow-hidden rounded-[18px] border border-[#e8ecee] bg-white p-3 shadow-[0_2px_5px_rgba(15,23,42,0.04)]"
               >
                 <button
                   type="button"
@@ -303,8 +280,11 @@ function RouteComponent() {
                   className="flex w-full min-w-0 items-start justify-between gap-3 text-left"
                 >
                   <div className="flex min-w-0 items-start gap-3">
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#fce7f3] text-primary">
-                      <HugeiconsIcon icon={Wallet02Icon} className="size-5" />
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#ededed] text-[#4b4b4b]">
+                      <HugeiconsIcon
+                        icon={Wallet02Icon}
+                        className="size-[18px]"
+                      />
                     </div>
                     <div className="min-w-0">
                       <h3 className="truncate text-base font-semibold">
@@ -314,14 +294,6 @@ function RouteComponent() {
                         {account.institution ||
                           getAccountTypeLabel(account.accountType)}
                       </p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
-                          {getAccountTypeLabel(account.accountType)}
-                        </span>
-                        <span className="rounded-full bg-[#f4f4f2] px-2.5 py-1 text-[11px] font-medium text-black/50">
-                          {getAccountStatusLabel(account.status)}
-                        </span>
-                      </div>
                     </div>
                   </div>
                   <div className="min-w-0 shrink-0 text-right">
@@ -359,32 +331,6 @@ function RouteComponent() {
                     ) : null}
                   </div>
                 </button>
-                <div className="mt-4 flex flex-wrap gap-2 border-t border-[#eef0f1] pt-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      void navigate({
-                        to: '/finances/accounts/$id',
-                        params: { id: account.id },
-                        search: { month },
-                      })
-                    }
-                    className="rounded-full"
-                  >
-                    {m['finances.viewAccount']()}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => selectAccountToEdit(account)}
-                    className="rounded-full"
-                  >
-                    {m['finances.editAccount']()}
-                  </Button>
-                </div>
               </article>
             ))
           )}

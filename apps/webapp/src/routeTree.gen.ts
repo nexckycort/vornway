@@ -13,6 +13,7 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifications'
 import { Route as AuthedConverterRouteImport } from './routes/_authed/converter'
+import { Route as AuthedFinancesRouteRouteImport } from './routes/_authed/finances/route'
 import { Route as PublicLoginIndexRouteImport } from './routes/_public/login/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
 import { Route as AuthedGroupsIndexRouteImport } from './routes/_authed/groups/index'
@@ -71,6 +72,11 @@ const AuthedConverterRoute = AuthedConverterRouteImport.update({
   path: '/converter',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedFinancesRouteRoute = AuthedFinancesRouteRouteImport.update({
+  id: '/finances',
+  path: '/finances',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const PublicLoginIndexRoute = PublicLoginIndexRouteImport.update({
   id: '/login/',
   path: '/login/',
@@ -92,9 +98,9 @@ const AuthedGoalsIndexRoute = AuthedGoalsIndexRouteImport.update({
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedFinancesIndexRoute = AuthedFinancesIndexRouteImport.update({
-  id: '/finances/',
-  path: '/finances/',
-  getParentRoute: () => AuthedRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedFinancesRouteRoute,
 } as any)
 const AuthedDebtsIndexRoute = AuthedDebtsIndexRouteImport.update({
   id: '/debts/',
@@ -165,27 +171,27 @@ const AuthedGoalsIdIndexRoute = AuthedGoalsIdIndexRouteImport.update({
 } as any)
 const AuthedFinancesReportsIndexRoute =
   AuthedFinancesReportsIndexRouteImport.update({
-    id: '/finances/reports/',
-    path: '/finances/reports/',
-    getParentRoute: () => AuthedRoute,
+    id: '/reports/',
+    path: '/reports/',
+    getParentRoute: () => AuthedFinancesRouteRoute,
   } as any)
 const AuthedFinancesCategoriesIndexRoute =
   AuthedFinancesCategoriesIndexRouteImport.update({
-    id: '/finances/categories/',
-    path: '/finances/categories/',
-    getParentRoute: () => AuthedRoute,
+    id: '/categories/',
+    path: '/categories/',
+    getParentRoute: () => AuthedFinancesRouteRoute,
   } as any)
 const AuthedFinancesBudgetsIndexRoute =
   AuthedFinancesBudgetsIndexRouteImport.update({
-    id: '/finances/budgets/',
-    path: '/finances/budgets/',
-    getParentRoute: () => AuthedRoute,
+    id: '/budgets/',
+    path: '/budgets/',
+    getParentRoute: () => AuthedFinancesRouteRoute,
   } as any)
 const AuthedFinancesAccountsIndexRoute =
   AuthedFinancesAccountsIndexRouteImport.update({
-    id: '/finances/accounts/',
-    path: '/finances/accounts/',
-    getParentRoute: () => AuthedRoute,
+    id: '/accounts/',
+    path: '/accounts/',
+    getParentRoute: () => AuthedFinancesRouteRoute,
   } as any)
 const AuthedDebtsNewIndexRoute = AuthedDebtsNewIndexRouteImport.update({
   id: '/debts/new/',
@@ -245,15 +251,15 @@ const AuthedGroupsIdAddExpenseIndexRoute =
   } as any)
 const AuthedFinancesMovementsIdIndexRoute =
   AuthedFinancesMovementsIdIndexRouteImport.update({
-    id: '/finances/movements/$id/',
-    path: '/finances/movements/$id/',
-    getParentRoute: () => AuthedRoute,
+    id: '/movements/$id/',
+    path: '/movements/$id/',
+    getParentRoute: () => AuthedFinancesRouteRoute,
   } as any)
 const AuthedFinancesAccountsIdIndexRoute =
   AuthedFinancesAccountsIdIndexRouteImport.update({
-    id: '/finances/accounts/$id/',
-    path: '/finances/accounts/$id/',
-    getParentRoute: () => AuthedRoute,
+    id: '/accounts/$id/',
+    path: '/accounts/$id/',
+    getParentRoute: () => AuthedFinancesRouteRoute,
   } as any)
 const AuthedGroupsIdExpenseExpenseIdRoute =
   AuthedGroupsIdExpenseExpenseIdRouteImport.update({
@@ -288,6 +294,7 @@ const AuthedGroupsIdMemberMemberIdIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedhomeIndexRoute
+  '/finances': typeof AuthedFinancesRouteRouteWithChildren
   '/converter': typeof AuthedConverterRoute
   '/notifications': typeof AuthedNotificationsRoute
   '/expenses/friends': typeof AuthedExpensesFriendsRouteWithChildren
@@ -375,6 +382,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
+  '/_authed/finances': typeof AuthedFinancesRouteRouteWithChildren
   '/_authed/converter': typeof AuthedConverterRoute
   '/_authed/notifications': typeof AuthedNotificationsRoute
   '/_authed/expenses/friends': typeof AuthedExpensesFriendsRouteWithChildren
@@ -421,6 +429,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/finances'
     | '/converter'
     | '/notifications'
     | '/expenses/friends'
@@ -507,6 +516,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/_public'
+    | '/_authed/finances'
     | '/_authed/converter'
     | '/_authed/notifications'
     | '/_authed/expenses/friends'
@@ -585,6 +595,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedConverterRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/finances': {
+      id: '/_authed/finances'
+      path: '/finances'
+      fullPath: '/finances'
+      preLoaderRoute: typeof AuthedFinancesRouteRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_public/login/': {
       id: '/_public/login/'
       path: '/login'
@@ -615,10 +632,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authed/finances/': {
       id: '/_authed/finances/'
-      path: '/finances'
+      path: '/'
       fullPath: '/finances/'
       preLoaderRoute: typeof AuthedFinancesIndexRouteImport
-      parentRoute: typeof AuthedRoute
+      parentRoute: typeof AuthedFinancesRouteRoute
     }
     '/_authed/debts/': {
       id: '/_authed/debts/'
@@ -713,31 +730,31 @@ declare module '@tanstack/react-router' {
     }
     '/_authed/finances/reports/': {
       id: '/_authed/finances/reports/'
-      path: '/finances/reports'
+      path: '/reports'
       fullPath: '/finances/reports/'
       preLoaderRoute: typeof AuthedFinancesReportsIndexRouteImport
-      parentRoute: typeof AuthedRoute
+      parentRoute: typeof AuthedFinancesRouteRoute
     }
     '/_authed/finances/categories/': {
       id: '/_authed/finances/categories/'
-      path: '/finances/categories'
+      path: '/categories'
       fullPath: '/finances/categories/'
       preLoaderRoute: typeof AuthedFinancesCategoriesIndexRouteImport
-      parentRoute: typeof AuthedRoute
+      parentRoute: typeof AuthedFinancesRouteRoute
     }
     '/_authed/finances/budgets/': {
       id: '/_authed/finances/budgets/'
-      path: '/finances/budgets'
+      path: '/budgets'
       fullPath: '/finances/budgets/'
       preLoaderRoute: typeof AuthedFinancesBudgetsIndexRouteImport
-      parentRoute: typeof AuthedRoute
+      parentRoute: typeof AuthedFinancesRouteRoute
     }
     '/_authed/finances/accounts/': {
       id: '/_authed/finances/accounts/'
-      path: '/finances/accounts'
+      path: '/accounts'
       fullPath: '/finances/accounts/'
       preLoaderRoute: typeof AuthedFinancesAccountsIndexRouteImport
-      parentRoute: typeof AuthedRoute
+      parentRoute: typeof AuthedFinancesRouteRoute
     }
     '/_authed/debts/new/': {
       id: '/_authed/debts/new/'
@@ -811,17 +828,17 @@ declare module '@tanstack/react-router' {
     }
     '/_authed/finances/movements/$id/': {
       id: '/_authed/finances/movements/$id/'
-      path: '/finances/movements/$id'
+      path: '/movements/$id'
       fullPath: '/finances/movements/$id/'
       preLoaderRoute: typeof AuthedFinancesMovementsIdIndexRouteImport
-      parentRoute: typeof AuthedRoute
+      parentRoute: typeof AuthedFinancesRouteRoute
     }
     '/_authed/finances/accounts/$id/': {
       id: '/_authed/finances/accounts/$id/'
-      path: '/finances/accounts/$id'
+      path: '/accounts/$id'
       fullPath: '/finances/accounts/$id/'
       preLoaderRoute: typeof AuthedFinancesAccountsIdIndexRouteImport
-      parentRoute: typeof AuthedRoute
+      parentRoute: typeof AuthedFinancesRouteRoute
     }
     '/_authed/groups/$id/expense/$expenseId': {
       id: '/_authed/groups/$id/expense/$expenseId'
@@ -861,6 +878,29 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthedFinancesRouteRouteChildren {
+  AuthedFinancesIndexRoute: typeof AuthedFinancesIndexRoute
+  AuthedFinancesAccountsIndexRoute: typeof AuthedFinancesAccountsIndexRoute
+  AuthedFinancesBudgetsIndexRoute: typeof AuthedFinancesBudgetsIndexRoute
+  AuthedFinancesCategoriesIndexRoute: typeof AuthedFinancesCategoriesIndexRoute
+  AuthedFinancesReportsIndexRoute: typeof AuthedFinancesReportsIndexRoute
+  AuthedFinancesAccountsIdIndexRoute: typeof AuthedFinancesAccountsIdIndexRoute
+  AuthedFinancesMovementsIdIndexRoute: typeof AuthedFinancesMovementsIdIndexRoute
+}
+
+const AuthedFinancesRouteRouteChildren: AuthedFinancesRouteRouteChildren = {
+  AuthedFinancesIndexRoute: AuthedFinancesIndexRoute,
+  AuthedFinancesAccountsIndexRoute: AuthedFinancesAccountsIndexRoute,
+  AuthedFinancesBudgetsIndexRoute: AuthedFinancesBudgetsIndexRoute,
+  AuthedFinancesCategoriesIndexRoute: AuthedFinancesCategoriesIndexRoute,
+  AuthedFinancesReportsIndexRoute: AuthedFinancesReportsIndexRoute,
+  AuthedFinancesAccountsIdIndexRoute: AuthedFinancesAccountsIdIndexRoute,
+  AuthedFinancesMovementsIdIndexRoute: AuthedFinancesMovementsIdIndexRoute,
+}
+
+const AuthedFinancesRouteRouteWithChildren =
+  AuthedFinancesRouteRoute._addFileChildren(AuthedFinancesRouteRouteChildren)
+
 interface AuthedExpensesFriendsRouteChildren {
   AuthedExpensesFriendsQuickSplitIdExpenseIdRoute: typeof AuthedExpensesFriendsQuickSplitIdExpenseIdRoute
 }
@@ -890,6 +930,7 @@ const AuthedGroupsNewRouteWithChildren = AuthedGroupsNewRoute._addFileChildren(
 )
 
 interface AuthedRouteChildren {
+  AuthedFinancesRouteRoute: typeof AuthedFinancesRouteRouteWithChildren
   AuthedConverterRoute: typeof AuthedConverterRoute
   AuthedNotificationsRoute: typeof AuthedNotificationsRoute
   AuthedExpensesFriendsRoute: typeof AuthedExpensesFriendsRouteWithChildren
@@ -898,7 +939,6 @@ interface AuthedRouteChildren {
   AuthedGroupsNewRoute: typeof AuthedGroupsNewRouteWithChildren
   AuthedhomeIndexRoute: typeof AuthedhomeIndexRoute
   AuthedDebtsIndexRoute: typeof AuthedDebtsIndexRoute
-  AuthedFinancesIndexRoute: typeof AuthedFinancesIndexRoute
   AuthedGoalsIndexRoute: typeof AuthedGoalsIndexRoute
   AuthedGroupsIndexRoute: typeof AuthedGroupsIndexRoute
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
@@ -906,10 +946,6 @@ interface AuthedRouteChildren {
   AuthedGroupsIdSettleRoute: typeof AuthedGroupsIdSettleRoute
   AuthedDebtsIdIndexRoute: typeof AuthedDebtsIdIndexRoute
   AuthedDebtsNewIndexRoute: typeof AuthedDebtsNewIndexRoute
-  AuthedFinancesAccountsIndexRoute: typeof AuthedFinancesAccountsIndexRoute
-  AuthedFinancesBudgetsIndexRoute: typeof AuthedFinancesBudgetsIndexRoute
-  AuthedFinancesCategoriesIndexRoute: typeof AuthedFinancesCategoriesIndexRoute
-  AuthedFinancesReportsIndexRoute: typeof AuthedFinancesReportsIndexRoute
   AuthedGoalsIdIndexRoute: typeof AuthedGoalsIdIndexRoute
   AuthedGoalsNewIndexRoute: typeof AuthedGoalsNewIndexRoute
   AuthedGroupsIdIndexRoute: typeof AuthedGroupsIdIndexRoute
@@ -917,8 +953,6 @@ interface AuthedRouteChildren {
   AuthedProfileFeedbackIndexRoute: typeof AuthedProfileFeedbackIndexRoute
   AuthedProfileStatsIndexRoute: typeof AuthedProfileStatsIndexRoute
   AuthedGroupsIdExpenseExpenseIdRoute: typeof AuthedGroupsIdExpenseExpenseIdRoute
-  AuthedFinancesAccountsIdIndexRoute: typeof AuthedFinancesAccountsIdIndexRoute
-  AuthedFinancesMovementsIdIndexRoute: typeof AuthedFinancesMovementsIdIndexRoute
   AuthedGroupsIdAddExpenseIndexRoute: typeof AuthedGroupsIdAddExpenseIndexRoute
   AuthedGroupsIdEditIndexRoute: typeof AuthedGroupsIdEditIndexRoute
   AuthedGroupsIdReportsIndexRoute: typeof AuthedGroupsIdReportsIndexRoute
@@ -930,6 +964,7 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedFinancesRouteRoute: AuthedFinancesRouteRouteWithChildren,
   AuthedConverterRoute: AuthedConverterRoute,
   AuthedNotificationsRoute: AuthedNotificationsRoute,
   AuthedExpensesFriendsRoute: AuthedExpensesFriendsRouteWithChildren,
@@ -938,7 +973,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedGroupsNewRoute: AuthedGroupsNewRouteWithChildren,
   AuthedhomeIndexRoute: AuthedhomeIndexRoute,
   AuthedDebtsIndexRoute: AuthedDebtsIndexRoute,
-  AuthedFinancesIndexRoute: AuthedFinancesIndexRoute,
   AuthedGoalsIndexRoute: AuthedGoalsIndexRoute,
   AuthedGroupsIndexRoute: AuthedGroupsIndexRoute,
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
@@ -946,10 +980,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedGroupsIdSettleRoute: AuthedGroupsIdSettleRoute,
   AuthedDebtsIdIndexRoute: AuthedDebtsIdIndexRoute,
   AuthedDebtsNewIndexRoute: AuthedDebtsNewIndexRoute,
-  AuthedFinancesAccountsIndexRoute: AuthedFinancesAccountsIndexRoute,
-  AuthedFinancesBudgetsIndexRoute: AuthedFinancesBudgetsIndexRoute,
-  AuthedFinancesCategoriesIndexRoute: AuthedFinancesCategoriesIndexRoute,
-  AuthedFinancesReportsIndexRoute: AuthedFinancesReportsIndexRoute,
   AuthedGoalsIdIndexRoute: AuthedGoalsIdIndexRoute,
   AuthedGoalsNewIndexRoute: AuthedGoalsNewIndexRoute,
   AuthedGroupsIdIndexRoute: AuthedGroupsIdIndexRoute,
@@ -957,8 +987,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedProfileFeedbackIndexRoute: AuthedProfileFeedbackIndexRoute,
   AuthedProfileStatsIndexRoute: AuthedProfileStatsIndexRoute,
   AuthedGroupsIdExpenseExpenseIdRoute: AuthedGroupsIdExpenseExpenseIdRoute,
-  AuthedFinancesAccountsIdIndexRoute: AuthedFinancesAccountsIdIndexRoute,
-  AuthedFinancesMovementsIdIndexRoute: AuthedFinancesMovementsIdIndexRoute,
   AuthedGroupsIdAddExpenseIndexRoute: AuthedGroupsIdAddExpenseIndexRoute,
   AuthedGroupsIdEditIndexRoute: AuthedGroupsIdEditIndexRoute,
   AuthedGroupsIdReportsIndexRoute: AuthedGroupsIdReportsIndexRoute,

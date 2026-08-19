@@ -81,7 +81,7 @@ function RouteComponent() {
 function FinancesDashboard() {
   const queryClient = useQueryClient();
   const navigate = useNavigate({ from: Route.fullPath });
-  const { view, month, transactionId, accountId } = Route.useSearch();
+  const { view, month } = Route.useSearch();
   const timeZone = getBrowserTimeZone();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
@@ -347,17 +347,6 @@ function FinancesDashboard() {
         month,
         transactionId: nextTransactionId,
         accountId: nextAccountId,
-      },
-    });
-  }
-
-  function setMonth(nextMonth: string) {
-    void navigate({
-      search: {
-        view,
-        month: nextMonth,
-        transactionId,
-        accountId,
       },
     });
   }
@@ -812,7 +801,6 @@ function FinancesDashboard() {
       loadMoreRef={loadMoreRef}
       isMovementsLoading={movementsQuery.isPending}
       isFetchingNextMovementsPage={movementsQuery.isFetchingNextPage}
-      onSetMonth={setMonth}
       onGoTo={goTo}
     />
   );

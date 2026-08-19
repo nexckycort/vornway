@@ -43,6 +43,8 @@ function RouteComponent() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
       ]);
       await navigate({ to: '/debts', search: { from }, replace: true });
     },

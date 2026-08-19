@@ -9,6 +9,7 @@ import {
 } from './finance-dashboard-components';
 import type {
   FinanceCategory,
+  FinanceDebtLoanMovement,
   FinanceDebtPaymentMovement,
   FinanceGroupExpenseMovement,
   FinanceMovement,
@@ -84,7 +85,9 @@ export function FinanceDashboardView({
               ),
             })
           }
-          onOpenDebtPayment={(movement: FinanceDebtPaymentMovement) =>
+          onOpenDebtPayment={(
+            movement: FinanceDebtPaymentMovement | FinanceDebtLoanMovement,
+          ) =>
             void navigate({
               to: '/debts/$id',
               params: { id: movement.debtId },

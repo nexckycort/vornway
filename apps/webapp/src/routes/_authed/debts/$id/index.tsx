@@ -187,6 +187,8 @@ function RouteComponent() {
       queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       queryClient.invalidateQueries({ queryKey: ['finances-summary'] }),
       queryClient.invalidateQueries({ queryKey: ['finances-movements'] }),
+      queryClient.invalidateQueries({ queryKey: ['finances-accounts'] }),
+      queryClient.invalidateQueries({ queryKey: ['finances-account'] }),
     ]);
 
   const paymentMutation = useMutation({
@@ -294,7 +296,7 @@ function RouteComponent() {
       return response.json();
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['debts'] });
+      await invalidate();
       await navigate({ to: '/debts', search: { from }, replace: true });
     },
   });

@@ -234,110 +234,112 @@ function DebtsRoute() {
         open={drawerOpen}
         onOpenChange={(open) => (open ? setDrawerOpen(true) : closeDrawer())}
       >
-        <DrawerContent className="bg-[#fafaf8]" scrollable>
+        <DrawerContent className="h-[84dvh] overflow-hidden bg-[#fafaf8]">
           <DrawerHeader>
             <DrawerTitle>{m['debts.newTitle']()}</DrawerTitle>
           </DrawerHeader>
-          <div className="grid gap-4 px-5 pb-4">
-            <Field label={m['debts.namePlaceholder']()}>
-              <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className={debtInputClass}
-              />
-            </Field>
-            <Field label={m['debts.personPlaceholder']()}>
-              <div className="relative">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
+            <div className="grid gap-4">
+              <Field label={m['debts.namePlaceholder']()}>
                 <input
-                  value={person}
-                  onChange={(event) => {
-                    setPerson(event.target.value);
-                    setCounterpartyId(undefined);
-                  }}
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
                   className={debtInputClass}
                 />
-                {userSearch.data?.data?.length && !counterpartyId ? (
-                  <div className="absolute inset-x-0 top-full z-10 mt-2 rounded-2xl border bg-white p-2 shadow-xl">
-                    {userSearch.data.data.map((user) => (
-                      <button
-                        key={user.id}
-                        type="button"
-                        onClick={() => {
-                          setCounterpartyId(user.id);
-                          setPerson(user.name);
-                        }}
-                        className="block w-full rounded-xl px-3 py-3 text-left text-sm hover:bg-black/[0.03]"
-                      >
-                        {user.name}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
+              </Field>
+              <Field label={m['debts.personPlaceholder']()}>
+                <div className="relative">
+                  <input
+                    value={person}
+                    onChange={(event) => {
+                      setPerson(event.target.value);
+                      setCounterpartyId(undefined);
+                    }}
+                    className={debtInputClass}
+                  />
+                  {userSearch.data?.data?.length && !counterpartyId ? (
+                    <div className="absolute inset-x-0 top-full z-10 mt-2 rounded-2xl border bg-white p-2 shadow-xl">
+                      {userSearch.data.data.map((user) => (
+                        <button
+                          key={user.id}
+                          type="button"
+                          onClick={() => {
+                            setCounterpartyId(user.id);
+                            setPerson(user.name);
+                          }}
+                          className="block w-full rounded-xl px-3 py-3 text-left text-sm hover:bg-black/[0.03]"
+                        >
+                          {user.name}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </Field>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={direction === 'lent' ? 'default' : 'outline'}
+                  className="h-11 rounded-2xl"
+                  onClick={() => setDirection('lent')}
+                >
+                  {m['debts.lent']()}
+                </Button>
+                <Button
+                  variant={direction === 'borrowed' ? 'default' : 'outline'}
+                  className="h-11 rounded-2xl"
+                  onClick={() => setDirection('borrowed')}
+                >
+                  {m['debts.borrowed']()}
+                </Button>
               </div>
-            </Field>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={direction === 'lent' ? 'default' : 'outline'}
-                className="h-11 rounded-2xl"
-                onClick={() => setDirection('lent')}
-              >
-                {m['debts.lent']()}
-              </Button>
-              <Button
-                variant={direction === 'borrowed' ? 'default' : 'outline'}
-                className="h-11 rounded-2xl"
-                onClick={() => setDirection('borrowed')}
-              >
-                {m['debts.borrowed']()}
-              </Button>
+              <Field label={m['debts.amountPlaceholder']()}>
+                <input
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(event) => setAmount(event.target.value)}
+                  className="input text-xl"
+                />
+              </Field>
+              <Field label={m['debts.amountDate']()}>
+                <input
+                  type="date"
+                  value={loanDate}
+                  onChange={(event) => setLoanDate(event.target.value)}
+                  className="input"
+                />
+              </Field>
+              <Field label={m['finances.account']()}>
+                <select
+                  value={accountId}
+                  onChange={(event) => setAccountId(event.target.value)}
+                  className={debtInputClass}
+                >
+                  <option value="">{m['finances.noAccount']()}</option>
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={m['debts.dueDate']()}>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(event) => setDueDate(event.target.value)}
+                  className="input"
+                />
+              </Field>
+              <Field label={m['debts.descriptionPlaceholder']()}>
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  className="input min-h-20 py-3"
+                />
+              </Field>
             </div>
-            <Field label={m['debts.amountPlaceholder']()}>
-              <input
-                inputMode="decimal"
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-                className="input text-xl"
-              />
-            </Field>
-            <Field label={m['debts.amountDate']()}>
-              <input
-                type="date"
-                value={loanDate}
-                onChange={(event) => setLoanDate(event.target.value)}
-                className="input"
-              />
-            </Field>
-            <Field label={m['finances.account']()}>
-              <select
-                value={accountId}
-                onChange={(event) => setAccountId(event.target.value)}
-                className={debtInputClass}
-              >
-                <option value="">{m['finances.noAccount']()}</option>
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label={m['debts.dueDate']()}>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(event) => setDueDate(event.target.value)}
-                className="input"
-              />
-            </Field>
-            <Field label={m['debts.descriptionPlaceholder']()}>
-              <textarea
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                className="input min-h-20 py-3"
-              />
-            </Field>
           </div>
-          <DrawerFooter>
+          <DrawerFooter className="shrink-0 border-t border-black/5 bg-[#fafaf8]/95 backdrop-blur">
             <Button
               className="h-12 rounded-2xl"
               disabled={createMutation.isPending}

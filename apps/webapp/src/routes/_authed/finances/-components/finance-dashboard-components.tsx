@@ -5,6 +5,7 @@ import { formatCurrency, formatShortDate } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 import type {
   FinanceCategory,
+  FinanceDebtLoanMovement,
   FinanceDebtPaymentMovement,
   FinanceGroupExpenseMovement,
   FinanceMovement,
@@ -201,7 +202,9 @@ export function FigmaHistory({
   isFetchingNextPage: boolean;
   onOpenTransaction: (transaction: FinanceMovementTransaction) => void;
   onOpenGroupExpense: (movement: FinanceGroupExpenseMovement) => void;
-  onOpenDebtPayment: (movement: FinanceDebtPaymentMovement) => void;
+  onOpenDebtPayment: (
+    movement: FinanceDebtPaymentMovement | FinanceDebtLoanMovement,
+  ) => void;
 }) {
   const [filter, setFilter] = useState<
     'all' | 'income' | 'expense' | 'group' | 'debt'
@@ -209,7 +212,11 @@ export function FigmaHistory({
   const filteredMovements = movements.filter((movement) => {
     if (filter === 'all') return true;
     if (filter === 'group') return movement.source === 'group-expense';
-    if (filter === 'debt') return movement.source === 'debt-payment';
+    if (filter === 'debt') {
+      return (
+        movement.source === 'debt-payment' || movement.source === 'debt-loan'
+      );
+    }
     return (
       movement.source === 'transaction' &&
       (filter === 'income'
@@ -306,7 +313,10 @@ export function FigmaHistory({
             );
           }
 
-          if (movement.source === 'debt-payment') {
+          if (
+            movement.source === 'debt-payment' ||
+            movement.source === 'debt-loan'
+          ) {
             return (
               <button
                 key={`debt-payment:${movement.id}`}
@@ -320,7 +330,11 @@ export function FigmaHistory({
                 <div className="min-w-0 flex-1">
                   <MovementTitle
                     title={movement.description}
-                    badge={m['finances.debtPayment']()}
+                    badge={
+                      movement.source === 'debt-loan'
+                        ? m['finances.debts']()
+                        : m['finances.debtPayment']()
+                    }
                     badgeTone="primary"
                   />
                   <p className="mt-1 truncate text-xs leading-4 text-[#626262]">
@@ -340,9 +354,13 @@ export function FigmaHistory({
                         : 'text-[#b91c1c]'
                     }`}
                   >
-                    {movement.type === 'INCOME'
-                      ? m['finances.debtPaymentReceived']()
-                      : m['finances.debtPaymentSent']()}
+                    {movement.source === 'debt-loan'
+                      ? movement.type === 'INCOME'
+                        ? m['finances.income']()
+                        : m['finances.expense']()
+                      : movement.type === 'INCOME'
+                        ? m['finances.debtPaymentReceived']()
+                        : m['finances.debtPaymentSent']()}
                   </p>
                 </div>
               </button>

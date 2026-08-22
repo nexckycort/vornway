@@ -350,6 +350,13 @@ function formatEditableNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
+function splitAmountEqually(amount: number, count: number): string[] {
+  if (count <= 0) return [];
+
+  const equalValue = formatEditableNumber(amount / count);
+  return Array.from({ length: count }, () => equalValue);
+}
+
 function parseTagsInput(value: string) {
   const tags = value
     .split(/[\s,]+/)
@@ -797,10 +804,14 @@ function RouteComponent() {
       }
 
       const next: Record<string, string> = {};
+      const equalValues = splitAmountEqually(
+        normalizedAmount,
+        paidByIds.length,
+      );
 
-      for (const payerId of paidByIds) {
-        next[payerId] = '';
-      }
+      paidByIds.forEach((payerId, index) => {
+        next[payerId] = equalValues[index] ?? '';
+      });
 
       return next;
     });
@@ -865,10 +876,19 @@ function RouteComponent() {
     }, 0);
   }, [paidByIds, payerValues]);
 
+  const payerValuesAreEqual =
+    paidByIds.length > 1 &&
+    paidByIds.every(
+      (memberId) => payerValues[memberId] === payerValues[paidByIds[0] ?? ''],
+    );
+  const payerRoundingAdjustment = normalizedAmount - payerSum;
   const payerSplitIsValid =
     paidByIds.length <= 1 ||
-    (Math.abs(payerSum - normalizedAmount) < 0.01 &&
+    ((Math.abs(payerSum - normalizedAmount) < 0.01 ||
+      (payerValuesAreEqual && Math.abs(payerRoundingAdjustment) <= 0.01)) &&
       paidByIds.every((memberId) => Number(payerValues[memberId] ?? 0) > 0));
+  const payerSumForDisplay =
+    payerSplitIsValid && payerValuesAreEqual ? normalizedAmount : payerSum;
   const sharedExpenseItemsAreValid = normalizedSharedExpenseItems.every(
     (item) => item.name.trim().length > 0 && item.normalizedAmount > 0,
   );
@@ -1100,6 +1120,15 @@ function RouteComponent() {
     setError(null);
 
     try {
+      const payerAmounts = paidByIds.map((memberId) => ({
+        memberId,
+        amount: Number(payerValues[memberId] ?? '0'),
+      }));
+      if (payerValuesAreEqual && Math.abs(payerRoundingAdjustment) <= 0.01) {
+        const lastPayer = payerAmounts[payerAmounts.length - 1];
+        if (lastPayer) lastPayer.amount += payerRoundingAdjustment;
+      }
+
       const exactShares =
         selectedCount === 0 || splitMethod === 'equal'
           ? undefined
@@ -1148,13 +1177,7 @@ function RouteComponent() {
           : null;
 
       const payload = {
-        payers:
-          paidByIds.length > 1
-            ? paidByIds.map((memberId) => ({
-                memberId,
-                amount: Number(payerValues[memberId] ?? '0'),
-              }))
-            : undefined,
+        payers: paidByIds.length > 1 ? payerAmounts : undefined,
         description: description.trim(),
         amount: normalizedAmount,
         currency,
@@ -1563,7 +1586,7 @@ function RouteComponent() {
                         payerSplitIsValid ? 'text-gray-500' : 'text-red-500'
                       }
                     >
-                      {formatMoney(currency, payerSum)}
+                      {formatMoney(currency, payerSumForDisplay)}
                     </span>
                   </div>
                 </div>

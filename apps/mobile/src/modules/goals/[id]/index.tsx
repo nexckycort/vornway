@@ -40,6 +40,7 @@ type Goal = {
   members?: Member[];
   group?: { id: string };
   contributions?: Contribution[];
+  myMembership?: { role: string } | null;
 };
 
 export default function GoalDetailScreen() {
@@ -56,6 +57,8 @@ export default function GoalDetailScreen() {
   >('manual');
   const [memberId, setMemberId] = useState('');
   const [contributionAmount, setContributionAmount] = useState('');
+  const [contributionDate, setContributionDate] = useState('');
+  const [contributionNotes, setContributionNotes] = useState('');
   const [participantSearch, setParticipantSearch] = useState('');
   const goalQuery = useQuery({
     queryKey: ['goal-detail', id],
@@ -123,6 +126,12 @@ export default function GoalDetailScreen() {
         json: {
           memberId,
           amount: Number(contributionAmount.replace(',', '.')),
+          ...(contributionDate
+            ? { contributedAt: new Date(contributionDate) }
+            : {}),
+          ...(contributionNotes.trim()
+            ? { notes: contributionNotes.trim() }
+            : {}),
         },
       });
       if (!response.ok) throw new Error('goal_contribution_failed');
@@ -150,6 +159,7 @@ export default function GoalDetailScreen() {
     },
   });
   const goal = goalQuery.data;
+  const isAdmin = goal?.myMembership?.role === 'admin';
   const progress = goal
     ? (goal.progress ?? goal.savedAmount / goal.targetAmount)
     : 0;
@@ -171,7 +181,7 @@ export default function GoalDetailScreen() {
   }
   function saveContribution() {
     const value = Number(contributionAmount.replace(',', '.'));
-    if (!memberId || !Number.isFinite(value) || value <= 0) return;
+    if (!isAdmin || !memberId || !Number.isFinite(value) || value <= 0) return;
     void contributionMutation
       .mutateAsync()
       .catch(() => Alert.alert('No se pudo registrar', 'Intenta nuevamente.'));
@@ -268,8 +278,11 @@ export default function GoalDetailScreen() {
               ))}
               <Button
                 variant="outline"
+                disabled={!isAdmin || !goal.members?.length}
                 onPress={() => {
                   setMemberId(goal.members?.[0]?.id ?? '');
+                  setContributionDate(new Date().toISOString().slice(0, 10));
+                  setContributionNotes('');
                   setDrawer('contribution');
                 }}
               >
@@ -337,16 +350,40 @@ export default function GoalDetailScreen() {
           ) : (
             <>
               <Label>Participante</Label>
-              <Input
-                value={memberId}
-                onChangeText={setMemberId}
-                placeholder="ID del participante"
-              />
+              {goal?.members?.map((member) => (
+                <Button
+                  key={member.id}
+                  variant={memberId === member.id ? 'default' : 'outline'}
+                  onPress={() => setMemberId(member.id)}
+                >
+                  <Text
+                    style={
+                      memberId === member.id
+                        ? styles.buttonText
+                        : styles.outlineText
+                    }
+                  >
+                    {member.name}
+                  </Text>
+                </Button>
+              ))}
               <Label>Monto</Label>
               <Input
                 value={contributionAmount}
                 onChangeText={setContributionAmount}
                 keyboardType="decimal-pad"
+              />
+              <Label>Fecha</Label>
+              <Input
+                value={contributionDate}
+                onChangeText={setContributionDate}
+                placeholder="AAAA-MM-DD"
+              />
+              <Label>Notas</Label>
+              <Input
+                value={contributionNotes}
+                onChangeText={setContributionNotes}
+                placeholder="Opcional"
               />
             </>
           )}

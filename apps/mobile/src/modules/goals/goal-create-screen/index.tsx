@@ -1,8 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
 import { goalsClient } from '@/api/goals';
+import { usersClient } from '@/api/users';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,12 +32,29 @@ export default function GoalCreateScreen() {
   const [suggestedContributionAmount, setSuggestedContributionAmount] =
     useState('');
   const [participants, setParticipants] = useState('');
+  const [participantSearch, setParticipantSearch] = useState('');
+  const [linkedParticipants, setLinkedParticipants] = useState<
+    Array<{ name: string; userId: string }>
+  >([]);
   const [goalType, setGoalType] = useState<
     'saving' | 'trip' | 'gift' | 'event' | 'custom'
   >('saving');
   const [contributionMode, setContributionMode] = useState<
     'manual' | 'monthly' | 'flexible' | 'suggested'
   >('manual');
+  const participantSearchQuery = useQuery({
+    queryKey: ['goal-participant-search', participantSearch.trim()],
+    enabled: participantSearch.trim().length > 1,
+    queryFn: async () => {
+      const response = await usersClient.search.$get({
+        query: { query: participantSearch.trim() },
+      });
+      if (!response.ok) throw new Error('participant_search_failed');
+      return response.json() as Promise<{
+        data: Array<{ id: string; name: string; username?: string | null }>;
+      }>;
+    },
+  });
   const mutation = useMutation({
     mutationFn: async () => {
       const target = Number(targetAmount.replace(',', '.'));
@@ -92,11 +110,14 @@ export default function GoalCreateScreen() {
             : {}),
           goalType,
           contributionMode,
-          participants: participants
-            .split(',')
-            .map((value) => value.trim())
-            .filter(Boolean)
-            .map((value) => ({ name: value })),
+          participants: [
+            ...participants
+              .split(',')
+              .map((value) => value.trim())
+              .filter(Boolean)
+              .map((value) => ({ name: value })),
+            ...linkedParticipants,
+          ],
         },
       });
       if (!response.ok) throw new Error('failed');
@@ -222,6 +243,48 @@ export default function GoalCreateScreen() {
             placeholder="Ana, Carlos"
           />
           <Text style={styles.hint}>Sepáralos con comas.</Text>
+          <Input
+            value={participantSearch}
+            onChangeText={setParticipantSearch}
+            placeholder="Buscar usuario para vincular"
+          />
+          {participantSearchQuery.data?.data?.map((participant) => (
+            <Button
+              key={participant.id}
+              variant="outline"
+              onPress={() => {
+                if (
+                  linkedParticipants.some(
+                    (current) => current.userId === participant.id,
+                  )
+                )
+                  return;
+                setLinkedParticipants((current) => [
+                  ...current,
+                  { name: participant.name, userId: participant.id },
+                ]);
+                setParticipantSearch('');
+              }}
+            >
+              <Text style={styles.outlineText}>
+                {participant.name}
+                {participant.username ? ` · @${participant.username}` : ''}
+              </Text>
+            </Button>
+          ))}
+          {linkedParticipants.map((participant) => (
+            <Button
+              key={participant.userId}
+              variant="ghost"
+              onPress={() =>
+                setLinkedParticipants((current) =>
+                  current.filter((item) => item.userId !== participant.userId),
+                )
+              }
+            >
+              <Text style={styles.hint}>✓ {participant.name} · Quitar</Text>
+            </Button>
+          ))}
           <Button
             disabled={mutation.isPending}
             onPress={() =>
@@ -250,4 +313,5 @@ const styles = StyleSheet.create({
   card: { gap: 12, margin: 16, padding: 18 },
   hint: { color: '#64748B', fontSize: 12 },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  outlineText: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
 });

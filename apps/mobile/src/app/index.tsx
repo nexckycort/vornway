@@ -4,6 +4,7 @@ import {
   Image,
   Pressable,
   ScrollView,
+  type ScrollViewInstance,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -38,7 +39,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
-  const carouselRef = useRef<ScrollView>(null);
+  const carouselRef = useRef<ScrollViewInstance>(null);
   const { data: session } = authClient.useSession();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isLoading, setIsLoading] = useState(false);

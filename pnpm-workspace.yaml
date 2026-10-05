@@ -1,9 +1,8 @@
 minimumReleaseAge: 4320 # minutes
-minimumReleaseAgeExclude:
-  - hono
-  - portless
 
 sharedWorkspaceLockfile: false
+
+autoDedupe: true
 
 packages:
   - 'apps/*'

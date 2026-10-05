@@ -1,5 +1,1 @@
-import ExpensesScreen from '@/modules/expenses/expenses-screen';
-
-export default function FriendsScreen() {
-  return <ExpensesScreen />;
-}
+export { default } from '@/modules/expenses/expenses-screen';

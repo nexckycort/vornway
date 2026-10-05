@@ -89,6 +89,12 @@ export default function GroupExpenseDetailScreen() {
     expenseQuery.data && 'description' in expenseQuery.data
       ? expenseQuery.data
       : null;
+  const advancedDetails =
+    expense && 'advancedDetails' in expense ? expense.advancedDetails : null;
+  const lineItems =
+    expense && 'lineItems' in expense && Array.isArray(expense.lineItems)
+      ? expense.lineItems
+      : [];
   return (
     <Screen>
       <ScreenHeader title="Detalle del gasto" onBack={() => router.back()} />
@@ -106,6 +112,76 @@ export default function GroupExpenseDetailScreen() {
                 ? `Pagado por ${expense.paidBy.name}`
                 : 'Gasto compartido'}
             </Text>
+            {expense.paidByMembers && expense.paidByMembers.length > 1 ? (
+              <Text style={styles.copy}>
+                Pagado entre{' '}
+                {expense.paidByMembers.map((member) => member.name).join(', ')}
+              </Text>
+            ) : null}
+            {advancedDetails ? (
+              <Card style={styles.detailsCard}>
+                <Text style={styles.subtitle}>Detalles avanzados</Text>
+                <Text style={styles.copy}>Tipo: {advancedDetails.type}</Text>
+                {advancedDetails.placeName ? (
+                  <Text style={styles.copy}>
+                    Lugar: {advancedDetails.placeName}
+                  </Text>
+                ) : null}
+                {advancedDetails.address ? (
+                  <Text style={styles.copy}>
+                    Dirección: {advancedDetails.address}
+                  </Text>
+                ) : null}
+                {advancedDetails.contactName ? (
+                  <Text style={styles.copy}>
+                    Contacto: {advancedDetails.contactName}
+                  </Text>
+                ) : null}
+                {advancedDetails.phone ? (
+                  <Text style={styles.copy}>
+                    Teléfono: {advancedDetails.phone}
+                  </Text>
+                ) : null}
+                {advancedDetails.email ? (
+                  <Text style={styles.copy}>
+                    Correo: {advancedDetails.email}
+                  </Text>
+                ) : null}
+                {advancedDetails.bookingCode ? (
+                  <Text style={styles.copy}>
+                    Reserva: {advancedDetails.bookingCode}
+                  </Text>
+                ) : null}
+                {advancedDetails.reservationTime ? (
+                  <Text style={styles.copy}>
+                    Fecha: {advancedDetails.reservationTime}
+                  </Text>
+                ) : null}
+                {advancedDetails.websiteUrl ? (
+                  <Text style={styles.copy}>
+                    Web: {advancedDetails.websiteUrl}
+                  </Text>
+                ) : null}
+                {advancedDetails.notes ? (
+                  <Text style={styles.copy}>
+                    Notas: {advancedDetails.notes}
+                  </Text>
+                ) : null}
+              </Card>
+            ) : null}
+            {lineItems.length > 0 ? (
+              <Card style={styles.detailsCard}>
+                <Text style={styles.subtitle}>Desglose</Text>
+                {lineItems.map((item) => (
+                  <Text
+                    key={`${item.memberId}-${item.description}-${item.amount}`}
+                    style={styles.copy}
+                  >
+                    {item.description}: {item.amount}
+                  </Text>
+                ))}
+              </Card>
+            ) : null}
             <Button
               variant="outline"
               onPress={() => {
@@ -172,7 +248,9 @@ export default function GroupExpenseDetailScreen() {
 const styles = StyleSheet.create({
   content: { paddingBottom: 152 },
   card: { gap: 12, margin: 16, padding: 20 },
+  detailsCard: { gap: 8, padding: 12 },
   title: { color: '#0F172A', fontSize: 22, fontWeight: '600' },
+  subtitle: { color: '#0F172A', fontSize: 16, fontWeight: '600' },
   amount: { color: '#DE034D', fontSize: 28, fontWeight: '600' },
   copy: { color: '#64748B', fontSize: 14 },
   delete: { color: '#B91C1C', fontSize: 14, fontWeight: '600' },

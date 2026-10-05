@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
 
@@ -29,25 +30,35 @@ export default function GroupReportsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('balance');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const reportRange = useMemo(
+    () => ({
+      range: startDate || endDate ? ('custom' as const) : ('all' as const),
+      ...(startDate ? { startDate } : {}),
+      ...(endDate ? { endDate } : {}),
+    }),
+    [endDate, startDate],
+  );
   const totalsQuery = useQuery({
-    queryKey: ['group-report-totals', id],
+    queryKey: ['group-report-totals', id, reportRange],
     enabled: Boolean(id),
     queryFn: async () => {
       const response = await groupsClient[':id'].reports.totals.$get({
         param: { id: id ?? '' },
-        query: { range: 'all' },
+        query: reportRange,
       });
       if (!response.ok) throw new Error('No se pudo cargar el reporte');
       return response.json();
     },
   });
   const balancesQuery = useQuery({
-    queryKey: ['group-report-balances', id],
+    queryKey: ['group-report-balances', id, reportRange],
     enabled: Boolean(id) && tab === 'balance',
     queryFn: async () => {
       const response = await groupsClient[':id'].reports.balances.$get({
         param: { id: id ?? '' },
-        query: { range: 'all' },
+        query: reportRange,
       });
       if (!response.ok) throw new Error('No se pudo cargar los saldos');
       return response.json();
@@ -86,6 +97,28 @@ export default function GroupReportsScreen() {
           <Text style={styles.buttonText}>Totales</Text>
         </Button>
       </View>
+      <Card style={styles.filterCard}>
+        <Text style={styles.title}>Filtrar por fechas</Text>
+        <Input
+          value={startDate}
+          onChangeText={setStartDate}
+          placeholder="Desde (AAAA-MM-DD)"
+        />
+        <Input
+          value={endDate}
+          onChangeText={setEndDate}
+          placeholder="Hasta (AAAA-MM-DD)"
+        />
+        <Button
+          variant="outline"
+          onPress={() => {
+            setStartDate('');
+            setEndDate('');
+          }}
+        >
+          <Text style={styles.outlineText}>Todas las fechas</Text>
+        </Button>
+      </Card>
       <ScrollView contentContainerStyle={styles.content}>
         {loading ? <Spinner color="#DE034D" /> : null}
         {tab === 'totals' && totals ? (
@@ -160,6 +193,7 @@ const styles = StyleSheet.create({
   content: { gap: 12, padding: 16 },
   tabs: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 8 },
   card: { gap: 12, padding: 20 },
+  filterCard: { gap: 10, marginHorizontal: 16, padding: 16 },
   title: { color: '#0F172A', fontSize: 18, fontWeight: '600' },
   amount: { color: '#DE034D', fontSize: 28, fontWeight: '600' },
   copy: { color: '#64748B', fontSize: 14 },
@@ -171,4 +205,5 @@ const styles = StyleSheet.create({
   },
   negative: { color: '#DC2626' },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  outlineText: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
 });

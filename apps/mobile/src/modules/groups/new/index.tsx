@@ -1,43 +1,28 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
-import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
-import { Spinner } from '@/components/ui/spinner';
 
 export default function GroupCreateScreen() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [spaceType, setSpaceType] = useState<'trip' | 'personal'>('trip');
-  const [participants, setParticipants] = useState('');
-  const [saving, setSaving] = useState(false);
-  async function submit() {
+  function submit() {
     if (!name.trim()) return;
-    setSaving(true);
-    const response = await groupsClient.index.$post({
-      json: {
+    router.push({
+      pathname: '/groups/new/participants',
+      params: {
         name: name.trim(),
         type: spaceType,
-        description: description.trim() || undefined,
-        participants: participants
-          .split(',')
-          .map((participant) => participant.trim())
-          .filter(Boolean)
-          .map((participant) => ({ name: participant })),
+        description: description.trim(),
       },
-    });
-    setSaving(false);
-    if (!response.ok) {
-      Alert.alert('No se pudo crear', 'Intenta nuevamente.');
-      return;
-    }
-    router.back();
+    } as never);
   }
   return (
     <Screen>
@@ -68,21 +53,8 @@ export default function GroupCreateScreen() {
           onChangeText={setDescription}
           placeholder="Opcional"
         />
-        <Label>Participantes</Label>
-        <Input
-          value={participants}
-          onChangeText={setParticipants}
-          placeholder="Ana, Carlos, Luisa"
-        />
-        <Text style={styles.hint}>
-          Sepáralos con comas. Puedes agregarlos después.
-        </Text>
-        <Button disabled={saving} onPress={() => void submit()}>
-          {saving ? (
-            <Spinner color="#FFFFFF" />
-          ) : (
-            <Text style={styles.buttonText}>Crear espacio</Text>
-          )}
+        <Button onPress={submit}>
+          <Text style={styles.buttonText}>Continuar con participantes</Text>
         </Button>
       </Card>
     </Screen>

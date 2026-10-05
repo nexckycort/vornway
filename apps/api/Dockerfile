@@ -3,7 +3,7 @@ FROM oven/bun AS base
 WORKDIR /app
 
 # ---------------- install deps ----------------
-FROM ghcr.io/pnpm/pnpm:11 AS install
+FROM ghcr.io/pnpm/pnpm:12.9.1 AS install
 
 # Copy workspace config plus the api package manifest and local lockfile
 RUN mkdir -p /temp/dev/apps/api

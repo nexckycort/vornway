@@ -14,6 +14,31 @@ import {
 } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
+import { Spinner } from '@/components/ui/spinner';
+
+const CATEGORY_COLORS = [
+  '#FF7FA3',
+  '#5BD9CC',
+  '#D978F4',
+  '#FFA0A0',
+  '#FFD741',
+  '#62D9AA',
+  '#9DAEF9',
+  '#FFC06D',
+] as const;
+const CATEGORY_ICONS = [
+  ['food', '🍴', 'Comida'],
+  ['transport', '🚗', 'Transporte'],
+  ['hotel', '🛏️', 'Alojamiento'],
+  ['party', '🎉', 'Entretenimiento'],
+  ['activities', '🌲', 'Actividades'],
+  ['shopping', '🛍️', 'Compras'],
+  ['travel', '✈️', 'Viaje'],
+  ['work', '💼', 'Trabajo'],
+  ['bank', '🏦', 'Banco'],
+  ['gift', '🎁', 'Regalos'],
+] as const;
+
 export default function GroupCategoriesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -51,7 +76,10 @@ export default function GroupCategoriesScreen() {
       if (!response.ok) throw new Error('No se pudo crear la categoría');
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
+        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
+      ]);
       setName('');
       setIcon('');
       setColor('#FF7FA3');
@@ -67,7 +95,10 @@ export default function GroupCategoriesScreen() {
       if (!response.ok) throw new Error('No se pudo eliminar la categoría');
     },
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
+        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
+      ]),
   });
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -81,7 +112,10 @@ export default function GroupCategoriesScreen() {
       if (!response.ok) throw new Error('No se pudo actualizar la categoría');
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
+        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
+      ]);
       setEditingId(null);
       setName('');
       setIcon('');
@@ -100,7 +134,10 @@ export default function GroupCategoriesScreen() {
       if (!response.ok) throw new Error('No se pudieron mover los gastos');
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
+        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
+      ]);
       setMovingId(null);
     },
   });
@@ -112,56 +149,138 @@ export default function GroupCategoriesScreen() {
   }
   return (
     <Screen>
-      <ScreenHeader title="Categorías" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={styles.content}>
-        <Card style={styles.form}>
-          <Input
-            value={name}
-            onChangeText={setName}
-            placeholder="Nueva categoría"
-          />
-          <Input
-            value={icon}
-            onChangeText={setIcon}
-            placeholder="Ícono opcional (emoji)"
-            maxLength={4}
-          />
-          <Button onPress={() => void add()}>
-            <Text style={styles.buttonText}>Agregar categoría</Text>
+      <ScreenHeader
+        title="Categorías"
+        onBack={() => router.replace(`/groups/${id}/settings` as never)}
+      />
+      {groupQuery.isLoading ? (
+        <Spinner color="#DE034D" />
+      ) : groupQuery.isError ? (
+        <Card style={styles.empty}>
+          <Text style={styles.emptyText}>
+            No pudimos cargar las categorías.
+          </Text>
+          <Button onPress={() => void groupQuery.refetch()}>
+            <Text style={styles.editText}>Reintentar</Text>
           </Button>
         </Card>
-        {categories.map((category) => (
-          <Card key={category.id} style={styles.item}>
-            <Text style={styles.title}>{category.name}</Text>
-            <Button
-              variant="outline"
-              onPress={() => {
-                setEditingId(category.id);
-                setName(category.name);
-                setIcon(category.icon ?? '');
-                setColor(category.color ?? '#FF7FA3');
-              }}
-            >
-              <Text style={styles.editText}>Editar</Text>
+      ) : (
+        <ScrollView contentContainerStyle={styles.content}>
+          <Card style={styles.form}>
+            <Input
+              value={name}
+              onChangeText={setName}
+              placeholder="Nueva categoría"
+            />
+            <Input
+              value={icon}
+              onChangeText={setIcon}
+              placeholder="Ícono opcional (emoji)"
+              maxLength={4}
+            />
+            <Text style={styles.label}>Ícono</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {CATEGORY_ICONS.map(([value, emoji, label]) => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant={icon === value ? 'default' : 'outline'}
+                  onPress={() => setIcon(value)}
+                >
+                  <Text
+                    style={icon === value ? styles.buttonText : styles.editText}
+                  >
+                    {emoji} {label}
+                  </Text>
+                </Button>
+              ))}
+            </ScrollView>
+            <Text style={styles.label}>Color</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {CATEGORY_COLORS.map((value) => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant={color === value ? 'default' : 'outline'}
+                  onPress={() => setColor(value)}
+                  style={{
+                    backgroundColor: color === value ? value : undefined,
+                  }}
+                >
+                  <Text
+                    style={
+                      color === value ? styles.buttonText : styles.editText
+                    }
+                  >
+                    {value}
+                  </Text>
+                </Button>
+              ))}
+            </ScrollView>
+            <Button onPress={() => void add()}>
+              <Text style={styles.buttonText}>Agregar categoría</Text>
             </Button>
-            <Button
-              variant="destructive"
-              disabled={deleteMutation.isPending}
-              onPress={() => deleteMutation.mutate(category.id)}
-            >
-              <Text style={styles.deleteText}>Eliminar</Text>
-            </Button>
-            {(category.expenseCount ?? 0) > 0 ? (
+          </Card>
+          {categories.length === 0 ? (
+            <Card style={styles.empty}>
+              <Text style={styles.emptyText}>Aún no hay categorías.</Text>
+            </Card>
+          ) : null}
+          {categories.map((category) => (
+            <Card key={category.id} style={styles.item}>
+              <Text style={styles.title}>
+                {category.icon ? `${iconLabel(category.icon)} ` : ''}
+                {category.name}
+              </Text>
               <Button
                 variant="outline"
-                onPress={() => setMovingId(category.id)}
+                onPress={() => {
+                  setEditingId(category.id);
+                  setName(category.name);
+                  setIcon(category.icon ?? '');
+                  setColor(category.color ?? '#FF7FA3');
+                }}
               >
-                <Text style={styles.editText}>Mover gastos</Text>
+                <Text style={styles.editText}>Editar</Text>
               </Button>
-            ) : null}
-          </Card>
-        ))}
-      </ScrollView>
+              <Button
+                variant="destructive"
+                disabled={deleteMutation.isPending}
+                onPress={() =>
+                  Alert.alert(
+                    'Eliminar categoría',
+                    category.expenseCount
+                      ? `Tiene ${category.expenseCount} gastos. Primero mueve esos gastos a otra categoría.`
+                      : `¿Quieres eliminar ${category.name}?`,
+                    [
+                      { text: 'Cancelar', style: 'cancel' },
+                      ...(category.expenseCount
+                        ? []
+                        : [
+                            {
+                              text: 'Eliminar',
+                              style: 'destructive' as const,
+                              onPress: () => deleteMutation.mutate(category.id),
+                            },
+                          ]),
+                    ],
+                  )
+                }
+              >
+                <Text style={styles.deleteText}>Eliminar</Text>
+              </Button>
+              {(category.expenseCount ?? 0) > 0 ? (
+                <Button
+                  variant="outline"
+                  onPress={() => setMovingId(category.id)}
+                >
+                  <Text style={styles.editText}>Mover gastos</Text>
+                </Button>
+              ) : null}
+            </Card>
+          ))}
+        </ScrollView>
+      )}
       <Drawer
         open={editingId !== null}
         onOpenChange={(open) => {
@@ -179,18 +298,26 @@ export default function GroupCategoriesScreen() {
             placeholder="Ícono opcional"
             maxLength={4}
           />
+          <Text style={styles.label}>Ícono</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {CATEGORY_ICONS.map(([value, emoji, label]) => (
+              <Button
+                key={value}
+                size="sm"
+                variant={icon === value ? 'default' : 'outline'}
+                onPress={() => setIcon(value)}
+              >
+                <Text
+                  style={icon === value ? styles.buttonText : styles.editText}
+                >
+                  {emoji} {label}
+                </Text>
+              </Button>
+            ))}
+          </ScrollView>
           <Text style={styles.label}>Color</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {[
-              '#FF7FA3',
-              '#5BD9CC',
-              '#D978F4',
-              '#FFA0A0',
-              '#FFD741',
-              '#62D9AA',
-              '#9DAEF9',
-              '#FFC06D',
-            ].map((value) => (
+            {CATEGORY_COLORS.map((value) => (
               <Button
                 key={value}
                 variant={color === value ? 'default' : 'outline'}
@@ -257,4 +384,10 @@ const styles = StyleSheet.create({
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
   deleteText: { color: '#B91C1C', fontSize: 14, fontWeight: '600' },
   editText: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
+  empty: { gap: 12, margin: 16, padding: 20 },
+  emptyText: { color: '#64748B', fontSize: 14 },
 });
+
+function iconLabel(value: string) {
+  return CATEGORY_ICONS.find(([id]) => id === value)?.[1] ?? value;
+}

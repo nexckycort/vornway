@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
 import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ export default function GroupEditScreen() {
   const [type, setType] = useState('viajes');
   const [description, setDescription] = useState('');
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
+  const hydratedRef = useRef(false);
   const groupQuery = useQuery({
     queryKey: ['group-summary', id],
     enabled: Boolean(id),
@@ -34,7 +35,8 @@ export default function GroupEditScreen() {
   const group =
     groupQuery.data && 'name' in groupQuery.data ? groupQuery.data : null;
   useEffect(() => {
-    if (!group) return;
+    if (!group || hydratedRef.current) return;
+    hydratedRef.current = true;
     setName(group.name);
     setType(group.type || 'viajes');
     setDescription(group.description ?? '');
@@ -56,9 +58,12 @@ export default function GroupEditScreen() {
       if (!response.ok) throw new Error('save_failed');
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
-      await queryClient.invalidateQueries({ queryKey: ['groups-list'] });
-      router.back();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
+        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+      ]);
+      router.replace(`/groups/${id}` as never);
     },
   });
   async function chooseImage() {
@@ -78,9 +83,19 @@ export default function GroupEditScreen() {
   }
   return (
     <Screen>
-      <ScreenHeader title="Editar espacio" onBack={() => router.back()} />
+      <ScreenHeader
+        title="Editar espacio"
+        onBack={() => router.replace(`/groups/${id}` as never)}
+      />
       {groupQuery.isLoading ? (
         <Spinner color="#DE034D" />
+      ) : groupQuery.isError || !group ? (
+        <Card style={styles.empty}>
+          <Text style={styles.errorText}>No pudimos cargar el espacio.</Text>
+          <Button onPress={() => void groupQuery.refetch()}>
+            <Text style={styles.outlineText}>Reintentar</Text>
+          </Button>
+        </Card>
       ) : (
         <Card style={styles.card}>
           <Label>Nombre</Label>
@@ -143,4 +158,6 @@ const styles = StyleSheet.create({
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
   outlineText: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
   image: { borderRadius: 16, height: 120, width: 120 },
+  empty: { gap: 12, margin: 16, padding: 20 },
+  errorText: { color: '#64748B', fontSize: 14 },
 });

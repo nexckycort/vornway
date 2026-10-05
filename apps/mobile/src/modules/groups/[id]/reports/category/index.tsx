@@ -1,13 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+
+type DateFilterMode = 'all' | 'day' | 'range';
 
 function toBoundary(value: string, end: boolean) {
   if (!value) return undefined;
@@ -21,31 +23,60 @@ type CategoryExpense = {
   amount: number;
   currency: string;
   date: string;
-  category?: { id?: string | null; name?: string | null } | null;
+  category?: {
+    id?: string | null;
+    name?: string | null;
+    icon?: string | null;
+    color?: string | null;
+  } | null;
 };
 
 export default function GroupCategoryReportScreen() {
-  const { id, categoryKey, categoryId, categoryName } = useLocalSearchParams<{
+  const {
+    id,
+    categoryKey,
+    categoryId,
+    categoryName,
+    uncategorized,
+    currency: initialCurrency,
+    startDate: initialStartDate,
+    endDate: initialEndDate,
+  } = useLocalSearchParams<{
     id: string;
     categoryKey?: string;
     categoryId?: string;
     categoryName?: string;
+    uncategorized?: string;
+    currency?: string;
+    startDate?: string;
+    endDate?: string;
   }>();
   const router = useRouter();
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(
+    initialStartDate?.slice(0, 10) ?? '',
+  );
+  const [endDate, setEndDate] = useState(initialEndDate?.slice(0, 10) ?? '');
+  const [dateFilterMode, setDateFilterMode] = useState<DateFilterMode>(
+    initialStartDate || initialEndDate ? 'range' : 'all',
+  );
+  const [selectedDay, setSelectedDay] = useState('');
+  const [selectedCurrency, setSelectedCurrency] = useState(
+    initialCurrency ?? '',
+  );
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<
     string[]
   >([]);
   const reportQuery = useMemo(() => {
-    const start = toBoundary(startDate, false);
-    const end = toBoundary(endDate, true);
+    const rangeStart = dateFilterMode === 'day' ? selectedDay : startDate;
+    const rangeEnd = dateFilterMode === 'day' ? selectedDay : endDate;
+    const start = toBoundary(rangeStart, false);
+    const end = toBoundary(rangeEnd, true);
     return {
-      range: start && end ? ('custom' as const) : ('all' as const),
+      range: dateFilterMode === 'all' ? ('all' as const) : ('custom' as const),
       ...(start ? { startDate: start } : {}),
       ...(end ? { endDate: end } : {}),
     };
-  }, [endDate, startDate]);
+  }, [dateFilterMode, endDate, selectedDay, startDate]);
   const groupQuery = useQuery({
     queryKey: ['group-summary', id],
     enabled: Boolean(id),
@@ -69,11 +100,32 @@ export default function GroupCategoryReportScreen() {
       return response.json();
     },
   });
+  const sharesQuery = useQuery({
+    queryKey: ['group-report-shares', id, reportQuery],
+    enabled: Boolean(id),
+    queryFn: async () => {
+      const response = await groupsClient[':id'].reports.shares.$get({
+        param: { id: id ?? '' },
+        query: reportQuery,
+      });
+      if (!response.ok) throw new Error('shares_load_failed');
+      return (await response.json()) as {
+        memberShares: Array<{
+          memberId: string;
+          name: string;
+          categorySharesByCurrency?: Record<string, Record<string, number>>;
+        }>;
+      };
+    },
+  });
   const totals =
     totalsQuery.data && 'totalsByCurrency' in totalsQuery.data
       ? totalsQuery.data
       : null;
-  const currency = Object.keys(totals?.totalsByCurrency ?? {})[0] ?? 'COP';
+  const currencies = Object.keys(totals?.totalsByCurrency ?? {});
+  const currency = currencies.includes(selectedCurrency)
+    ? selectedCurrency
+    : (currencies[0] ?? 'COP');
   const category =
     totals && 'categoriesByCurrency' in totals
       ? totals.categoriesByCurrency[currency]?.find(
@@ -98,6 +150,7 @@ export default function GroupCategoryReportScreen() {
             ...reportQuery,
             currency,
             ...(categoryId ? { categoryId } : {}),
+            ...(uncategorized === 'true' ? { uncategorized: 'true' } : {}),
             ...(selectedParticipantIds.length > 0
               ? { participantIds: selectedParticipantIds.join(',') }
               : {}),
@@ -110,12 +163,17 @@ export default function GroupCategoryReportScreen() {
   });
   const name = category?.name ?? categoryName ?? 'Categoría';
   const amount = category?.amount ?? 0;
+  const categoryColor =
+    ('fill' in (category ?? {}) ? category?.fill : null) ?? '#14B8A6';
+  const categoryIcon =
+    ('icon' in (category ?? {}) ? category?.icon : null) ?? '🏷️';
   const total = totals?.totalsByCurrency?.[currency] ?? 0;
   const percentage = total > 0 ? Math.round((amount / total) * 100) : 0;
   const members =
     groupQuery.data && 'members' in groupQuery.data
       ? groupQuery.data.members
       : [];
+  const participantShares = sharesQuery.data?.memberShares ?? [];
   const historyQuery = useQuery({
     queryKey: [
       'group-report-category-history',
@@ -156,8 +214,11 @@ export default function GroupCategoryReportScreen() {
       for (const expense of responses.flat()) unique.set(expense.id, expense);
       return Array.from(unique.values())
         .filter((expense) => {
+          if (expense.currency !== currency) return false;
           if (categoryId) return expense.category?.id === categoryId;
-          if (categoryKey === 'uncategorized') return !expense.category;
+          if (uncategorized === 'true' || categoryKey === 'uncategorized') {
+            return !expense.category;
+          }
           return expense.category?.name === name;
         })
         .sort(
@@ -169,14 +230,62 @@ export default function GroupCategoryReportScreen() {
   const historyExpenses = historyQuery.data ?? [];
   return (
     <Screen>
-      <ScreenHeader title="Detalle de categoría" onBack={() => router.back()} />
+      <ScreenHeader
+        title="Detalle de categoría"
+        onBack={() => router.replace(`/groups/${id}/reports` as never)}
+      />
       <ScrollView contentContainerStyle={styles.content}>
         {totalsQuery.isLoading ? (
           <Spinner color="#DE034D" />
+        ) : totalsQuery.isError || groupQuery.isError || sharesQuery.isError ? (
+          <Card style={styles.card}>
+            <Text style={styles.copy}>No pudimos cargar la categoría.</Text>
+            <Button
+              onPress={() => {
+                void totalsQuery.refetch();
+                void groupQuery.refetch();
+                void sharesQuery.refetch();
+              }}
+            >
+              <Text style={styles.buttonText}>Reintentar</Text>
+            </Button>
+          </Card>
         ) : (
           <>
+            {currencies.length > 1 ? (
+              <Card style={styles.currencyCard}>
+                <Text style={styles.copy}>Moneda</Text>
+                {currencies.map((item) => (
+                  <Button
+                    key={item}
+                    variant={item === currency ? 'default' : 'outline'}
+                    onPress={() => setSelectedCurrency(item)}
+                  >
+                    <Text
+                      style={
+                        item === currency
+                          ? styles.buttonText
+                          : styles.outlineText
+                      }
+                    >
+                      {item}
+                    </Text>
+                  </Button>
+                ))}
+              </Card>
+            ) : null}
             <Card style={styles.card}>
-              <Text style={styles.title}>{name}</Text>
+              <View style={styles.categoryHeader}>
+                <View
+                  style={[
+                    styles.categoryIcon,
+                    { backgroundColor: `${categoryColor}22` },
+                  ]}
+                >
+                  <Text style={styles.categoryEmoji}>{categoryIcon}</Text>
+                </View>
+                <Text style={styles.title}>{name}</Text>
+              </View>
               <Text style={styles.amount}>
                 {amount} {currency}
               </Text>
@@ -186,19 +295,58 @@ export default function GroupCategoryReportScreen() {
             </Card>
             <Card style={styles.card}>
               <Text style={styles.title}>Filtros</Text>
-              <Input
-                value={startDate}
-                onChangeText={setStartDate}
-                placeholder="Desde (AAAA-MM-DD)"
-              />
-              <Input
-                value={endDate}
-                onChangeText={setEndDate}
-                placeholder="Hasta (AAAA-MM-DD)"
-              />
+              <View style={styles.filterModes}>
+                {(
+                  [
+                    ['all', 'Todas'],
+                    ['day', 'Día'],
+                    ['range', 'Rango'],
+                  ] as const
+                ).map(([value, label]) => (
+                  <Button
+                    key={value}
+                    size="sm"
+                    variant={dateFilterMode === value ? 'default' : 'outline'}
+                    onPress={() => setDateFilterMode(value)}
+                  >
+                    <Text
+                      style={
+                        dateFilterMode === value
+                          ? styles.buttonText
+                          : styles.outlineText
+                      }
+                    >
+                      {label}
+                    </Text>
+                  </Button>
+                ))}
+              </View>
+              {dateFilterMode === 'day' ? (
+                <Input
+                  value={selectedDay}
+                  onChangeText={setSelectedDay}
+                  placeholder="Día (AAAA-MM-DD)"
+                />
+              ) : null}
+              {dateFilterMode === 'range' ? (
+                <>
+                  <Input
+                    value={startDate}
+                    onChangeText={setStartDate}
+                    placeholder="Desde (AAAA-MM-DD)"
+                  />
+                  <Input
+                    value={endDate}
+                    onChangeText={setEndDate}
+                    placeholder="Hasta (AAAA-MM-DD)"
+                  />
+                </>
+              ) : null}
               <Button
                 variant="outline"
                 onPress={() => {
+                  setDateFilterMode('all');
+                  setSelectedDay('');
                   setStartDate('');
                   setEndDate('');
                   setSelectedParticipantIds([]);
@@ -209,6 +357,17 @@ export default function GroupCategoryReportScreen() {
               <Text style={styles.copy}>Participantes</Text>
               {members.map((member) => {
                 const active = selectedParticipantIds.includes(member.id);
+                const share = participantShares.find(
+                  (item) => item.memberId === member.id,
+                );
+                const categoryShareKey =
+                  uncategorized === 'true'
+                    ? 'Sin categoría::'
+                    : (categoryKey ?? (categoryId || 'Sin categoría::'));
+                const memberAmount =
+                  share?.categorySharesByCurrency?.[currency]?.[
+                    categoryShareKey
+                  ] ?? 0;
                 return (
                   <Button
                     key={member.id}
@@ -224,7 +383,7 @@ export default function GroupCategoryReportScreen() {
                     <Text
                       style={active ? styles.buttonText : styles.outlineText}
                     >
-                      {member.name}
+                      {member.name} · {memberAmount} {currency}
                     </Text>
                   </Button>
                 );
@@ -273,6 +432,17 @@ export default function GroupCategoryReportScreen() {
 const styles = StyleSheet.create({
   content: { gap: 12, padding: 16 },
   card: { gap: 12, padding: 20 },
+  categoryHeader: { alignItems: 'center', flexDirection: 'row', gap: 12 },
+  categoryIcon: {
+    alignItems: 'center',
+    borderRadius: 16,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  categoryEmoji: { fontSize: 22 },
+  currencyCard: { gap: 8, padding: 16 },
+  filterModes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   title: { color: '#0F172A', fontSize: 20, fontWeight: '600' },
   amount: { color: '#DE034D', fontSize: 28, fontWeight: '600' },
   copy: { color: '#64748B', fontSize: 14 },

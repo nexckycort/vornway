@@ -79,6 +79,12 @@ export default function GroupDetailScreen() {
               >
                 <Text style={styles.outlineText}>Configuración</Text>
               </Button>
+              <Button
+                variant="outline"
+                onPress={() => router.push(`/groups/${id}/settle` as never)}
+              >
+                <Text style={styles.outlineText}>Liquidar saldos</Text>
+              </Button>
             </Card>
             <Card style={styles.card}>
               <Text style={styles.section}>Participantes</Text>

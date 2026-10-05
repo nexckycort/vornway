@@ -1,5 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { goalsClient } from '@/api/goals';
@@ -21,36 +22,29 @@ type Goal = {
 };
 export default function GoalsScreen() {
   const router = useRouter();
-  const [goals, setGoals] = useState<Goal[]>([]);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const load = useCallback(async () => {
-    const response = await goalsClient.index.$get({
-      query: {
-        limit: '50',
-        ...(search.trim() ? { search: search.trim() } : {}),
-      },
-    });
-    if (response.ok)
-      setGoals(((await response.json()) as unknown as { data: Goal[] }).data);
-    setLoading(false);
-    setRefreshing(false);
-  }, [search]);
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const goalsQuery = useQuery({
+    queryKey: ['goals-list', search.trim()],
+    queryFn: async () => {
+      const response = await goalsClient.index.$get({
+        query: {
+          limit: '50',
+          ...(search.trim() ? { search: search.trim() } : {}),
+        },
+      });
+      if (!response.ok) throw new Error('goals_load_failed');
+      return (await response.json()) as unknown as { data: Goal[] };
+    },
+  });
+  const goals = goalsQuery.data?.data ?? [];
   return (
     <Screen>
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              void load();
-            }}
+            refreshing={goalsQuery.isRefetching}
+            onRefresh={() => void goalsQuery.refetch()}
           />
         }
       >
@@ -64,8 +58,15 @@ export default function GoalsScreen() {
           placeholder="Buscar metas"
           style={styles.search}
         />
-        {loading ? (
+        {goalsQuery.isLoading ? (
           <Spinner color="#DE034D" />
+        ) : goalsQuery.isError ? (
+          <Card style={styles.empty}>
+            <Text style={styles.title}>No se pudieron cargar las metas</Text>
+            <Button onPress={() => void goalsQuery.refetch()}>
+              <Text style={styles.buttonText}>Reintentar</Text>
+            </Button>
+          </Card>
         ) : goals.length === 0 ? (
           <Card style={styles.empty}>
             <Text style={styles.title}>Aún no tienes metas</Text>

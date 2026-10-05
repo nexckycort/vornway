@@ -1,5 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -28,26 +29,22 @@ type GroupPage = { data: Group[]; pagination?: { nextCursor?: string | null } };
 
 export default function GroupsScreen() {
   const router = useRouter();
-  const [groups, setGroups] = useState<Group[]>([]);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const load = useCallback(async () => {
-    const response = await groupsClient.index.$get({
-      query: {
-        limit: '50',
-        filter: 'all',
-        ...(search.trim() ? { search: search.trim() } : {}),
-      },
-    });
-    if (response.ok) setGroups(((await response.json()) as GroupPage).data);
-    setLoading(false);
-    setRefreshing(false);
-  }, [search]);
-  useEffect(() => {
-    void load();
-  }, [load]);
-  const visibleGroups = useMemo(() => groups, [groups]);
+  const groupsQuery = useQuery({
+    queryKey: ['groups-list', search.trim()],
+    queryFn: async () => {
+      const response = await groupsClient.index.$get({
+        query: {
+          limit: '50',
+          filter: 'all',
+          ...(search.trim() ? { search: search.trim() } : {}),
+        },
+      });
+      if (!response.ok) throw new Error('groups_load_failed');
+      return (await response.json()) as unknown as GroupPage;
+    },
+  });
+  const groups = groupsQuery.data?.data ?? [];
 
   return (
     <Screen>
@@ -55,11 +52,8 @@ export default function GroupsScreen() {
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              void load();
-            }}
+            refreshing={groupsQuery.isRefetching}
+            onRefresh={() => void groupsQuery.refetch()}
           />
         }
       >
@@ -75,9 +69,18 @@ export default function GroupsScreen() {
           placeholder="Buscar espacios"
           style={styles.search}
         />
-        {loading ? (
+        {groupsQuery.isLoading ? (
           <Spinner color="#DE034D" />
-        ) : visibleGroups.length === 0 ? (
+        ) : groupsQuery.isError ? (
+          <Card style={styles.empty}>
+            <Text style={styles.emptyTitle}>
+              No se pudieron cargar los espacios
+            </Text>
+            <Button onPress={() => void groupsQuery.refetch()}>
+              <Text style={styles.buttonText}>Reintentar</Text>
+            </Button>
+          </Card>
+        ) : groups.length === 0 ? (
           <Card style={styles.empty}>
             <Text style={styles.emptyTitle}>Aún no tienes espacios</Text>
             <Text style={styles.copy}>
@@ -88,7 +91,7 @@ export default function GroupsScreen() {
             </Button>
           </Card>
         ) : (
-          visibleGroups.map((group) => (
+          groups.map((group) => (
             <Card key={group.id} style={styles.card}>
               <View style={styles.row}>
                 <View style={styles.copyWrap}>

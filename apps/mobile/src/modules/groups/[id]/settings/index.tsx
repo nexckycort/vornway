@@ -64,7 +64,7 @@ export default function GroupSettingsScreen() {
   async function shareInvite() {
     if (!group?.inviteCode) return;
     await Share.share({
-      message: `Únete a ${group.name} en Vornway: ${group.inviteCode}`,
+      message: `Únete a ${group.name} en Vornway: https://join.vornway.com/${group.inviteCode}`,
     });
   }
   return (

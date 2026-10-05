@@ -32,6 +32,8 @@ type Goal = {
   targetAmount: number;
   savedAmount: number;
   currency: string;
+  endDate?: string;
+  contributionMode?: 'manual' | 'monthly' | 'flexible' | 'suggested';
   progress?: number;
   members?: Member[];
   contributions?: Contribution[];
@@ -45,6 +47,10 @@ export default function GoalDetailScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [contributionMode, setContributionMode] = useState<
+    'manual' | 'monthly' | 'flexible' | 'suggested'
+  >('manual');
   const [memberId, setMemberId] = useState('');
   const [contributionAmount, setContributionAmount] = useState('');
   const goalQuery = useQuery({
@@ -66,6 +72,8 @@ export default function GoalDetailScreen() {
           name: title.trim(),
           description: description.trim(),
           targetAmount: Number(targetAmount.replace(',', '.')),
+          ...(endDate ? { endDate } : {}),
+          contributionMode,
         },
       });
       if (!response.ok) throw new Error('goal_update_failed');
@@ -119,6 +127,8 @@ export default function GoalDetailScreen() {
     setTitle(goal.title);
     setDescription(goal.description ?? '');
     setTargetAmount(String(goal.targetAmount));
+    setEndDate(goal.endDate?.slice(0, 10) ?? '');
+    setContributionMode(goal.contributionMode ?? 'manual');
     setDrawer('edit');
   }
   function saveEdit() {
@@ -219,6 +229,38 @@ export default function GoalDetailScreen() {
                 onChangeText={setTargetAmount}
                 keyboardType="decimal-pad"
               />
+              <Label>Fecha de finalización</Label>
+              <Input
+                value={endDate}
+                onChangeText={setEndDate}
+                placeholder="AAAA-MM-DD"
+              />
+              <Label>Modo de aporte</Label>
+              {(['manual', 'monthly', 'flexible', 'suggested'] as const).map(
+                (mode) => (
+                  <Button
+                    key={mode}
+                    variant={contributionMode === mode ? 'default' : 'outline'}
+                    onPress={() => setContributionMode(mode)}
+                  >
+                    <Text
+                      style={
+                        contributionMode === mode
+                          ? styles.buttonText
+                          : styles.outlineText
+                      }
+                    >
+                      {mode === 'manual'
+                        ? 'Manual'
+                        : mode === 'monthly'
+                          ? 'Mensual'
+                          : mode === 'flexible'
+                            ? 'Flexible'
+                            : 'Sugerido'}
+                    </Text>
+                  </Button>
+                ),
+              )}
             </>
           ) : (
             <>

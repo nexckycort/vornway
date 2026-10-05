@@ -28,6 +28,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     '@react-native-vector-icons/ionicons',
     'expo-camera',
+    'expo-notifications',
     'expo-router',
     [
       'expo-splash-screen',

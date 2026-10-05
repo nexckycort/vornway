@@ -99,12 +99,22 @@ export default function GroupDetailScreen() {
             <Card style={styles.card}>
               <Text style={styles.section}>Saldos</Text>
               {group.memberBalances.map((member) => (
-                <Text key={member.memberId} style={styles.copy}>
-                  {member.name}:{' '}
-                  {Object.entries(member.balances)
-                    .map(([currency, amount]) => `${amount} ${currency}`)
-                    .join(' · ') || '0'}
-                </Text>
+                <Button
+                  key={member.memberId}
+                  variant="ghost"
+                  onPress={() =>
+                    router.push(
+                      `/groups/${id}/member/${member.memberId}` as never,
+                    )
+                  }
+                >
+                  <Text style={styles.copy}>
+                    {member.name}:{' '}
+                    {Object.entries(member.balances)
+                      .map(([currency, amount]) => `${amount} ${currency}`)
+                      .join(' · ') || '0'}
+                  </Text>
+                </Button>
               ))}
             </Card>
             <Card style={styles.card}>

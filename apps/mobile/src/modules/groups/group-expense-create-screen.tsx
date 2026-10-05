@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
@@ -11,6 +12,13 @@ import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
 
 type SplitMethod = 'equal' | 'percentage' | 'exact';
+type AdvancedExpenseType =
+  | 'stay'
+  | 'food'
+  | 'transport'
+  | 'activity'
+  | 'purchase'
+  | 'other';
 
 export default function GroupExpenseCreateScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -28,6 +36,21 @@ export default function GroupExpenseCreateScreen() {
   const [lineItemDescriptions, setLineItemDescriptions] = useState<
     Record<string, string>
   >({});
+  const [advancedType, setAdvancedType] =
+    useState<AdvancedExpenseType>('other');
+  const [placeName, setPlaceName] = useState('');
+  const [address, setAddress] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [bookingCode, setBookingCode] = useState('');
+  const [reservationTime, setReservationTime] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [notes, setNotes] = useState('');
+  const [attachment, setAttachment] = useState<{
+    dataUrl: string;
+    fileName?: string;
+  } | null>(null);
   const groupQuery = useQuery({
     queryKey: ['group-summary', id],
     enabled: Boolean(id),
@@ -47,6 +70,26 @@ export default function GroupExpenseCreateScreen() {
     groupQuery.data && 'categories' in groupQuery.data
       ? groupQuery.data.categories
       : [];
+  const advancedDetailsEnabled = Boolean(
+    groupQuery.data &&
+      'advancedExpenseDetailsEnabled' in groupQuery.data &&
+      groupQuery.data.advancedExpenseDetailsEnabled,
+  );
+  const chooseAttachment = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.7,
+      base64: true,
+    });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    if (!asset?.base64) return;
+    setAttachment({
+      dataUrl: `data:${asset.mimeType ?? 'image/jpeg'};base64,${asset.base64}`,
+      ...(asset.fileName ? { fileName: asset.fileName } : {}),
+    });
+  };
   useEffect(() => {
     if (selectedIds.length === 0 && members.length > 0)
       setSelectedIds(members.map((member) => member.id));
@@ -134,6 +177,33 @@ export default function GroupExpenseCreateScreen() {
               }
             : {}),
           ...(categoryId ? { categoryId } : {}),
+          ...(advancedDetailsEnabled
+            ? {
+                advancedDetails: {
+                  type: advancedType,
+                  ...(placeName.trim() ? { placeName: placeName.trim() } : {}),
+                  ...(address.trim() ? { address: address.trim() } : {}),
+                  ...(contactName.trim()
+                    ? { contactName: contactName.trim() }
+                    : {}),
+                  ...(phone.trim() ? { phone: phone.trim() } : {}),
+                  ...(email.trim() ? { email: email.trim() } : {}),
+                  ...(bookingCode.trim()
+                    ? { bookingCode: bookingCode.trim() }
+                    : {}),
+                  ...(reservationTime.trim()
+                    ? { reservationTime: reservationTime.trim() }
+                    : {}),
+                  ...(websiteUrl.trim()
+                    ? { websiteUrl: websiteUrl.trim() }
+                    : {}),
+                  ...(notes.trim() ? { notes: notes.trim() } : {}),
+                },
+              }
+            : {}),
+          ...(advancedDetailsEnabled && attachment
+            ? { attachmentImage: attachment }
+            : {}),
         },
       });
       if (!response.ok) throw new Error('failed');
@@ -294,6 +364,88 @@ export default function GroupExpenseCreateScreen() {
               ))}
             </>
           ) : null}
+          {advancedDetailsEnabled ? (
+            <>
+              <Label>Detalles avanzados</Label>
+              <Text style={styles.helperText}>
+                Agrega información útil para recordar este gasto.
+              </Text>
+              {(
+                [
+                  ['other', 'Otro'],
+                  ['food', 'Comida'],
+                  ['stay', 'Alojamiento'],
+                  ['transport', 'Transporte'],
+                  ['activity', 'Actividad'],
+                  ['purchase', 'Compra'],
+                ] as const
+              ).map(([value, label]) => (
+                <Button
+                  key={value}
+                  variant={advancedType === value ? 'default' : 'outline'}
+                  onPress={() => setAdvancedType(value)}
+                >
+                  <Text style={styles.buttonText}>{label}</Text>
+                </Button>
+              ))}
+              <Input
+                value={placeName}
+                onChangeText={setPlaceName}
+                placeholder="Lugar o nombre"
+              />
+              <Input
+                value={address}
+                onChangeText={setAddress}
+                placeholder="Dirección"
+              />
+              <Input
+                value={contactName}
+                onChangeText={setContactName}
+                placeholder="Persona de contacto"
+              />
+              <Input
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                placeholder="Teléfono"
+              />
+              <Input
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder="Correo electrónico"
+              />
+              <Input
+                value={bookingCode}
+                onChangeText={setBookingCode}
+                placeholder="Código de reserva"
+              />
+              <Input
+                value={reservationTime}
+                onChangeText={setReservationTime}
+                placeholder="Fecha u hora de reserva"
+              />
+              <Input
+                value={websiteUrl}
+                onChangeText={setWebsiteUrl}
+                autoCapitalize="none"
+                keyboardType="url"
+                placeholder="Sitio web"
+              />
+              <Input
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                placeholder="Notas"
+              />
+              <Button variant="outline" onPress={() => void chooseAttachment()}>
+                <Text style={styles.outlineText}>
+                  {attachment ? 'Cambiar imagen adjunta' : 'Adjuntar imagen'}
+                </Text>
+              </Button>
+            </>
+          ) : null}
           <Button
             disabled={mutation.isPending}
             onPress={() =>
@@ -322,4 +474,6 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 152 },
   card: { gap: 12, margin: 16, padding: 18 },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  outlineText: { color: '#111827', fontSize: 14, fontWeight: '600' },
+  helperText: { color: '#6B7280', fontSize: 13 },
 });

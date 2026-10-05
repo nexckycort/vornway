@@ -1,73 +1,181 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text } from 'react-native';
+import { useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
 import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
 
-type Expense = {
-  description: string;
-  amount: number;
-  currency: string;
-  paidBy?: { name: string };
-};
 export default function GroupExpenseDetailScreen() {
   const { id, expenseId } = useLocalSearchParams<{
     id: string;
     expenseId: string;
   }>();
   const router = useRouter();
-  const [expense, setExpense] = useState<Expense | null>(null);
-  useEffect(() => {
-    if (!id || !expenseId) return;
-    void groupsClient[':id'].expenses[':expenseId']
-      .$get({ param: { id, expenseId } })
-      .then(async (response) => {
-        if (response.ok)
-          setExpense((await response.json()) as unknown as Expense);
+  const queryClient = useQueryClient();
+  const [editOpen, setEditOpen] = useState(false);
+  const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState('');
+  const expenseQuery = useQuery({
+    queryKey: ['group-expense', id, expenseId],
+    enabled: Boolean(id && expenseId),
+    queryFn: async () => {
+      const response = await groupsClient[':id'].expenses[':expenseId'].$get({
+        param: { id: id ?? '', expenseId: expenseId ?? '' },
       });
-  }, [id, expenseId]);
-  async function remove() {
-    if (!id || !expenseId) return;
-    const response = await groupsClient[':id'].expenses[':expenseId'].$delete({
-      param: { id, expenseId },
-    });
-    if (!response.ok) {
-      Alert.alert('No se pudo eliminar', 'Intenta nuevamente.');
-      return;
-    }
-    router.back();
-  }
+      if (!response.ok) throw new Error('No se pudo cargar el gasto');
+      return response.json();
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const response = await groupsClient[':id'].expenses[':expenseId'].$delete(
+        { param: { id: id ?? '', expenseId: expenseId ?? '' } },
+      );
+      if (!response.ok) throw new Error('No se pudo eliminar');
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['group-expenses', id] });
+      await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
+      router.back();
+    },
+  });
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      const parsedAmount = Number(amount.replace(',', '.'));
+      if (
+        !description.trim() ||
+        !Number.isFinite(parsedAmount) ||
+        parsedAmount <= 0
+      ) {
+        throw new Error('invalid');
+      }
+      const response = await groupsClient[':id'].expenses[':expenseId'].$put({
+        param: { id: id ?? '', expenseId: expenseId ?? '' },
+        json: {
+          description: description.trim(),
+          amount: parsedAmount,
+          currency: expense?.currency ?? 'COP',
+          participantIds:
+            expense?.participants?.map((participant) => participant.memberId) ??
+            [],
+          splitMethod: 'equal',
+          ...(expense?.category?.id ? { categoryId: expense.category.id } : {}),
+        },
+      });
+      if (!response.ok) throw new Error('update_failed');
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['group-expense', id, expenseId],
+      });
+      await queryClient.invalidateQueries({ queryKey: ['group-expenses', id] });
+      await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
+      setEditOpen(false);
+    },
+  });
+  const expense =
+    expenseQuery.data && 'description' in expenseQuery.data
+      ? expenseQuery.data
+      : null;
   return (
     <Screen>
       <ScreenHeader title="Detalle del gasto" onBack={() => router.back()} />
-      {expense ? (
-        <Card style={styles.card}>
-          <Text style={styles.title}>{expense.description}</Text>
-          <Text style={styles.amount}>
-            {expense.amount} {expense.currency}
-          </Text>
-          <Text style={styles.copy}>
-            {expense.paidBy?.name
-              ? `Pagado por ${expense.paidBy.name}`
-              : 'Gasto compartido'}
-          </Text>
-          <Button variant="destructive" onPress={() => void remove()}>
-            <Text style={styles.delete}>Eliminar gasto</Text>
-          </Button>
-        </Card>
-      ) : (
-        <Spinner color="#DE034D" />
-      )}
+      <ScrollView contentContainerStyle={styles.content}>
+        {!expense ? (
+          <Spinner color="#DE034D" />
+        ) : (
+          <Card style={styles.card}>
+            <Text style={styles.title}>{expense.description}</Text>
+            <Text style={styles.amount}>
+              {expense.amount} {expense.currency}
+            </Text>
+            <Text style={styles.copy}>
+              {expense.paidBy?.name
+                ? `Pagado por ${expense.paidBy.name}`
+                : 'Gasto compartido'}
+            </Text>
+            <Button
+              variant="outline"
+              onPress={() => {
+                setDescription(expense.description);
+                setAmount(String(expense.amount));
+                setEditOpen(true);
+              }}
+            >
+              <Text style={styles.outline}>Editar gasto</Text>
+            </Button>
+            {expense.participants?.map((participant) => (
+              <Text key={participant.memberId} style={styles.copy}>
+                {participant.name}: {participant.share}
+              </Text>
+            ))}
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onPress={() =>
+                deleteMutation.mutate(undefined, {
+                  onError: () =>
+                    Alert.alert('No se pudo eliminar', 'Intenta nuevamente.'),
+                })
+              }
+            >
+              <Text style={styles.delete}>Eliminar gasto</Text>
+            </Button>
+          </Card>
+        )}
+      </ScrollView>
+      <Drawer open={editOpen} onOpenChange={setEditOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Editar gasto</DrawerTitle>
+          </DrawerHeader>
+          <Label>Descripción</Label>
+          <Input value={description} onChangeText={setDescription} />
+          <Label>Monto</Label>
+          <Input
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="decimal-pad"
+          />
+          <DrawerFooter>
+            <Button
+              disabled={updateMutation.isPending}
+              onPress={() =>
+                updateMutation.mutate(undefined, {
+                  onError: () =>
+                    Alert.alert('No se pudo actualizar', 'Intenta nuevamente.'),
+                })
+              }
+            >
+              <Text style={styles.buttonText}>
+                {updateMutation.isPending ? 'Guardando...' : 'Guardar cambios'}
+              </Text>
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </Screen>
   );
 }
 const styles = StyleSheet.create({
+  content: { paddingBottom: 152 },
   card: { gap: 12, margin: 16, padding: 20 },
   title: { color: '#0F172A', fontSize: 22, fontWeight: '600' },
   amount: { color: '#DE034D', fontSize: 28, fontWeight: '600' },
   copy: { color: '#64748B', fontSize: 14 },
   delete: { color: '#B91C1C', fontSize: 14, fontWeight: '600' },
+  buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  outline: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
 });

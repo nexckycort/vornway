@@ -14,6 +14,8 @@ export default function GroupCreateScreen() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [spaceType, setSpaceType] = useState<'trip' | 'personal'>('trip');
+  const [participants, setParticipants] = useState('');
   const [saving, setSaving] = useState(false);
   async function submit() {
     if (!name.trim()) return;
@@ -21,9 +23,13 @@ export default function GroupCreateScreen() {
     const response = await groupsClient.index.$post({
       json: {
         name: name.trim(),
-        type: 'trip',
+        type: spaceType,
         description: description.trim() || undefined,
-        participants: [],
+        participants: participants
+          .split(',')
+          .map((participant) => participant.trim())
+          .filter(Boolean)
+          .map((participant) => ({ name: participant })),
       },
     });
     setSaving(false);
@@ -43,12 +49,34 @@ export default function GroupCreateScreen() {
           onChangeText={setName}
           placeholder="Viaje a Cartagena"
         />
+        <Label>Tipo de espacio</Label>
+        <Button
+          variant={spaceType === 'trip' ? 'default' : 'outline'}
+          onPress={() => setSpaceType('trip')}
+        >
+          <Text style={styles.buttonText}>Compartido</Text>
+        </Button>
+        <Button
+          variant={spaceType === 'personal' ? 'default' : 'outline'}
+          onPress={() => setSpaceType('personal')}
+        >
+          <Text style={styles.buttonText}>Personal</Text>
+        </Button>
         <Label>Descripción</Label>
         <Input
           value={description}
           onChangeText={setDescription}
           placeholder="Opcional"
         />
+        <Label>Participantes</Label>
+        <Input
+          value={participants}
+          onChangeText={setParticipants}
+          placeholder="Ana, Carlos, Luisa"
+        />
+        <Text style={styles.hint}>
+          Sepáralos con comas. Puedes agregarlos después.
+        </Text>
         <Button disabled={saving} onPress={() => void submit()}>
           {saving ? (
             <Spinner color="#FFFFFF" />
@@ -64,4 +92,5 @@ export default function GroupCreateScreen() {
 const styles = StyleSheet.create({
   card: { gap: 12, margin: 16, padding: 18 },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  hint: { color: '#64748B', fontSize: 12 },
 });

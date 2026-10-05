@@ -1,37 +1,45 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, Switch, Text, View } from 'react-native';
 import { groupsClient } from '@/api/groups';
 import { Card } from '@/components/ui/card';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+
 export default function GroupSettingsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const [enabled, setEnabled] = useState(false);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    if (!id) return;
-    void groupsClient[':id']
-      .$get({ param: { id } })
-      .then(() => setLoading(false));
-  }, [id]);
-  async function toggle(value: boolean) {
-    if (!id) return;
-    setEnabled(value);
-    const response = await groupsClient[':id'].settings.$patch({
-      param: { id },
-      json: { advancedExpenseDetailsEnabled: value },
-    });
-    if (!response.ok) {
-      setEnabled(!value);
-      Alert.alert('No se pudo actualizar', 'Intenta nuevamente.');
-    }
-  }
+  const queryClient = useQueryClient();
+  const groupQuery = useQuery({
+    queryKey: ['group-summary', id],
+    enabled: Boolean(id),
+    queryFn: async () => {
+      const response = await groupsClient[':id'].$get({
+        param: { id: id ?? '' },
+      });
+      if (!response.ok) throw new Error('load_failed');
+      return response.json();
+    },
+  });
+  const group =
+    groupQuery.data && 'advancedExpenseDetailsEnabled' in groupQuery.data
+      ? groupQuery.data
+      : null;
+  const mutation = useMutation({
+    mutationFn: async (value: boolean) => {
+      const response = await groupsClient[':id'].settings.$patch({
+        param: { id: id ?? '' },
+        json: { advancedExpenseDetailsEnabled: value },
+      });
+      if (!response.ok) throw new Error('save_failed');
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
+  });
   return (
     <Screen>
       <ScreenHeader title="Configuración" onBack={() => router.back()} />
-      {loading ? (
+      {groupQuery.isLoading ? (
         <Spinner color="#DE034D" />
       ) : (
         <Card style={styles.card}>
@@ -44,10 +52,12 @@ export default function GroupSettingsScreen() {
               </Text>
             </View>
             <Switch
-              value={enabled}
-              onValueChange={(value) => void toggle(value)}
+              value={group?.advancedExpenseDetailsEnabled ?? false}
+              onValueChange={(value) => mutation.mutate(value)}
               trackColor={{ false: '#CBD5E1', true: '#F7A0BA' }}
-              thumbColor={enabled ? '#DE034D' : '#FFFFFF'}
+              thumbColor={
+                group?.advancedExpenseDetailsEnabled ? '#DE034D' : '#FFFFFF'
+              }
             />
           </View>
         </Card>

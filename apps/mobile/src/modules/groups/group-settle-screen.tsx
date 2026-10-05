@@ -1,7 +1,7 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, StyleSheet, Text } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
 import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -25,96 +25,163 @@ type Group = {
   }>;
   myMembership?: { id: string; name: string };
 };
+type Option = {
+  key: string;
+  fromMemberId: string;
+  fromName: string;
+  toMemberId: string;
+  toName: string;
+  amount: number;
+  currency: string;
+};
 export default function GroupSettleScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [selectedKey, setSelectedKey] = useState('');
   const [amount, setAmount] = useState('');
   const groupQuery = useQuery({
-    queryKey: ['group-detail', id],
+    queryKey: ['group-summary', id],
     enabled: Boolean(id),
     queryFn: async () => {
       const response = await groupsClient[':id'].$get({
         param: { id: id ?? '' },
       });
       if (!response.ok) throw new Error('group_load_failed');
-      return (await response.json()) as unknown as Group;
+      return (await response.json()) as Group;
     },
   });
-  const option =
-    groupQuery.data?.directDebts?.[0] ?? groupQuery.data?.directCredits?.[0];
-  const fromMemberId = groupQuery.data?.directDebts?.[0]
-    ? groupQuery.data?.myMembership?.id
-    : groupQuery.data?.directCredits?.[0]?.fromMemberId;
-  const toMemberId =
-    groupQuery.data?.directDebts?.[0]?.toMemberId ??
-    groupQuery.data?.myMembership?.id;
+  const options = useMemo<Option[]>(() => {
+    const group = groupQuery.data;
+    const me = group?.myMembership;
+    if (!me) return [];
+    return [
+      ...(group.directDebts ?? []).map((item) => ({
+        key: `${me.id}:${item.toMemberId}:${item.currency}`,
+        fromMemberId: me.id,
+        fromName: me.name,
+        toMemberId: item.toMemberId,
+        toName: item.toName,
+        amount: item.amount,
+        currency: item.currency,
+      })),
+      ...(group.directCredits ?? []).map((item) => ({
+        key: `${item.fromMemberId}:${me.id}:${item.currency}`,
+        fromMemberId: item.fromMemberId,
+        fromName: item.fromName,
+        toMemberId: me.id,
+        toName: me.name,
+        amount: item.amount,
+        currency: item.currency,
+      })),
+    ];
+  }, [groupQuery.data]);
+  const selected =
+    options.find((item) => item.key === selectedKey) ?? options[0];
+  useEffect(() => {
+    if (selected && !selectedKey) {
+      setSelectedKey(selected.key);
+      setAmount(String(selected.amount));
+    }
+  }, [selected, selectedKey]);
   const mutation = useMutation({
     mutationFn: async () => {
+      const value = Number(amount.replace(',', '.'));
+      if (
+        !selected ||
+        !Number.isFinite(value) ||
+        value <= 0 ||
+        value > selected.amount
+      )
+        throw new Error('invalid');
       const response = await groupsClient[':id'].settlements.$post({
         param: { id: id ?? '' },
         json: {
-          fromMemberId: fromMemberId ?? '',
-          toMemberId: toMemberId ?? '',
-          amount: Number(amount.replace(',', '.')),
-          currency: option?.currency ?? 'COP',
+          fromMemberId: selected.fromMemberId,
+          toMemberId: selected.toMemberId,
+          amount: value,
+          currency: selected.currency,
         },
       });
       if (!response.ok) throw new Error('settlement_failed');
-      return response.json();
     },
-    onSuccess: () => router.back(),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
+      await queryClient.invalidateQueries({ queryKey: ['group-reports', id] });
+      router.back();
+    },
   });
-  function submit() {
-    const value = Number(amount.replace(',', '.'));
-    if (!fromMemberId || !toMemberId || !Number.isFinite(value) || value <= 0)
-      return;
-    void mutation
-      .mutateAsync()
-      .catch(() => Alert.alert('No se pudo registrar', 'Intenta nuevamente.'));
-  }
   return (
     <Screen>
       <ScreenHeader title="Liquidar saldo" onBack={() => router.back()} />
-      {groupQuery.isLoading ? (
-        <Spinner color="#DE034D" />
-      ) : (
-        <Card style={styles.card}>
-          {option ? (
-            <>
-              <Text style={styles.title}>
-                {groupQuery.data?.directDebts?.[0]
-                  ? `Pagar a ${groupQuery.data.directDebts[0].toName}`
-                  : `Registrar pago de ${groupQuery.data?.directCredits?.[0]?.fromName ?? ''}`}
-              </Text>
+      <ScrollView contentContainerStyle={styles.content}>
+        {groupQuery.isLoading ? (
+          <Spinner color="#DE034D" />
+        ) : (
+          <Card style={styles.card}>
+            {options.length === 0 ? (
               <Text style={styles.copy}>
-                Saldo sugerido: {option.amount} {option.currency}
+                No hay saldos pendientes para liquidar.
               </Text>
-              <Label>Monto</Label>
-              <Input
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType="decimal-pad"
-                placeholder={String(option.amount)}
-              />
-              <Button disabled={mutation.isPending} onPress={submit}>
-                <Text style={styles.buttonText}>
-                  {mutation.isPending
-                    ? 'Guardando...'
-                    : 'Registrar liquidación'}
-                </Text>
-              </Button>
-            </>
-          ) : (
-            <Text style={styles.copy}>
-              No hay saldos pendientes para liquidar.
-            </Text>
-          )}
-        </Card>
-      )}
+            ) : (
+              <>
+                <Text style={styles.title}>Selecciona un movimiento</Text>
+                {options.map((option) => (
+                  <Button
+                    key={option.key}
+                    variant={
+                      option.key === selected?.key ? 'default' : 'outline'
+                    }
+                    onPress={() => {
+                      setSelectedKey(option.key);
+                      setAmount(String(option.amount));
+                    }}
+                  >
+                    <Text style={styles.buttonText}>
+                      {option.fromName} → {option.toName} · {option.amount}{' '}
+                      {option.currency}
+                    </Text>
+                  </Button>
+                ))}
+                {selected ? (
+                  <>
+                    <Label>Monto a liquidar</Label>
+                    <Input
+                      value={amount}
+                      onChangeText={setAmount}
+                      keyboardType="decimal-pad"
+                      placeholder={String(selected.amount)}
+                    />
+                    <Button
+                      disabled={mutation.isPending}
+                      onPress={() =>
+                        mutation.mutate(undefined, {
+                          onError: () =>
+                            Alert.alert(
+                              'No se pudo registrar',
+                              'El monto no puede superar el saldo pendiente.',
+                            ),
+                        })
+                      }
+                    >
+                      <Text style={styles.buttonText}>
+                        {mutation.isPending
+                          ? 'Guardando...'
+                          : 'Registrar liquidación'}
+                      </Text>
+                    </Button>
+                  </>
+                ) : null}
+              </>
+            )}
+          </Card>
+        )}
+      </ScrollView>
     </Screen>
   );
 }
 const styles = StyleSheet.create({
+  content: { paddingBottom: 152 },
   card: { gap: 14, margin: 16, padding: 20 },
   title: { color: '#0F172A', fontSize: 20, fontWeight: '600' },
   copy: { color: '#64748B', fontSize: 14, lineHeight: 20 },

@@ -1,35 +1,44 @@
+import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
-
 import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
 
-type Group = {
-  name: string;
-  description?: string | null;
-  members?: Array<{ id?: string; name: string }>;
-  expenses?: Array<{
-    id: string;
-    description: string;
-    amount: number;
-    currency: string;
-  }>;
-};
-
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const [group, setGroup] = useState<Group | null>(null);
-  useEffect(() => {
-    if (!id) return;
-    void groupsClient[':id'].$get({ param: { id } }).then(async (response) => {
-      if (response.ok) setGroup((await response.json()) as Group);
-    });
-  }, [id]);
+  const groupQuery = useQuery({
+    queryKey: ['group-summary', id],
+    enabled: Boolean(id),
+    queryFn: async () => {
+      const response = await groupsClient[':id'].$get({
+        param: { id: id ?? '' },
+      });
+      if (!response.ok) throw new Error('No se pudo cargar el espacio');
+      return response.json();
+    },
+  });
+  const expensesQuery = useQuery({
+    queryKey: ['group-expenses', id],
+    enabled: Boolean(id),
+    queryFn: async () => {
+      const response = await groupsClient[':id'].expenses.$get({
+        param: { id: id ?? '' },
+        query: { limit: '50' },
+      });
+      if (!response.ok) throw new Error('No se pudieron cargar los gastos');
+      return response.json();
+    },
+  });
+  const group =
+    groupQuery.data && 'name' in groupQuery.data ? groupQuery.data : null;
+  const expenses =
+    expensesQuery.data && 'data' in expensesQuery.data
+      ? expensesQuery.data.data
+      : [];
   return (
     <Screen>
       <ScreenHeader
@@ -37,9 +46,8 @@ export default function GroupDetailScreen() {
         onBack={() => router.back()}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        {!group ? (
-          <Spinner color="#DE034D" />
-        ) : (
+        {!groupQuery.isFetched ? <Spinner color="#DE034D" /> : null}
+        {group ? (
           <>
             <Card style={styles.card}>
               <Text style={styles.title}>{group.name}</Text>
@@ -59,7 +67,9 @@ export default function GroupDetailScreen() {
                   router.push(`/groups/${id}/participants` as never)
                 }
               >
-                <Text style={styles.outlineText}>Participantes</Text>
+                <Text style={styles.outlineText}>
+                  Participantes ({group.participantCount})
+                </Text>
               </Button>
               <Button
                 variant="outline"
@@ -87,38 +97,37 @@ export default function GroupDetailScreen() {
               </Button>
             </Card>
             <Card style={styles.card}>
-              <Text style={styles.section}>Participantes</Text>
-              {group.members?.map((member) => (
-                <Text key={member.id ?? member.name} style={styles.copy}>
-                  {member.name}
+              <Text style={styles.section}>Saldos</Text>
+              {group.memberBalances.map((member) => (
+                <Text key={member.memberId} style={styles.copy}>
+                  {member.name}:{' '}
+                  {Object.entries(member.balances)
+                    .map(([currency, amount]) => `${amount} ${currency}`)
+                    .join(' · ') || '0'}
                 </Text>
               ))}
             </Card>
             <Card style={styles.card}>
-              <Text style={styles.section}>Gastos</Text>
-              {group.expenses?.length ? (
-                group.expenses.map((expense) => (
-                  <Button
-                    key={expense.id}
-                    variant="ghost"
-                    onPress={() =>
-                      router.push(
-                        `/groups/${id}/expense/${expense.id}` as never,
-                      )
-                    }
-                  >
-                    <Text style={styles.copy}>
-                      {expense.description} · {expense.amount}{' '}
-                      {expense.currency}
-                    </Text>
-                  </Button>
-                ))
-              ) : (
+              <Text style={styles.section}>Gastos recientes</Text>
+              {expenses.length === 0 ? (
                 <Text style={styles.copy}>Aún no hay gastos.</Text>
-              )}
+              ) : null}
+              {expenses.map((expense) => (
+                <Button
+                  key={expense.id}
+                  variant="ghost"
+                  onPress={() =>
+                    router.push(`/groups/${id}/expense/${expense.id}` as never)
+                  }
+                >
+                  <Text style={styles.copy}>
+                    {expense.description} · {expense.amount} {expense.currency}
+                  </Text>
+                </Button>
+              ))}
             </Card>
           </>
-        )}
+        ) : null}
       </ScrollView>
     </Screen>
   );

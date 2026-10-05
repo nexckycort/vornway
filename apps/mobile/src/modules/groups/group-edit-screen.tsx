@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
@@ -8,49 +9,53 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+
 export default function GroupEditScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const groupQuery = useQuery({
+    queryKey: ['group-summary', id],
+    enabled: Boolean(id),
+    queryFn: async () => {
+      const response = await groupsClient[':id'].$get({
+        param: { id: id ?? '' },
+      });
+      if (!response.ok) throw new Error('load_failed');
+      return response.json();
+    },
+  });
+  const group =
+    groupQuery.data && 'name' in groupQuery.data ? groupQuery.data : null;
   useEffect(() => {
-    if (!id) return;
-    void groupsClient[':id'].$get({ param: { id } }).then(async (response) => {
-      if (response.ok) {
-        const group = (await response.json()) as {
-          name: string;
-          description?: string | null;
-        };
-        setName(group.name);
-        setDescription(group.description ?? '');
-      }
-      setLoading(false);
-    });
-  }, [id]);
-  async function save() {
-    if (!id || !name.trim()) return;
-    setSaving(true);
-    const response = await groupsClient[':id'].$patch({
-      param: { id },
-      json: {
-        name: name.trim(),
-        type: 'trip',
-        description: description.trim() || undefined,
-      },
-    });
-    setSaving(false);
-    if (!response.ok) {
-      Alert.alert('No se pudo guardar', 'Intenta nuevamente.');
-      return;
-    }
-    router.back();
-  }
+    if (!group) return;
+    setName(group.name);
+    setDescription(group.description ?? '');
+  }, [group]);
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const response = await groupsClient[':id'].$patch({
+        param: { id: id ?? '' },
+        json: {
+          name: name.trim(),
+          type: group?.type ?? 'trip',
+          description: description.trim() || undefined,
+        },
+      });
+      if (!response.ok) throw new Error('save_failed');
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
+      await queryClient.invalidateQueries({ queryKey: ['groups-list'] });
+      router.back();
+    },
+  });
   return (
     <Screen>
       <ScreenHeader title="Editar espacio" onBack={() => router.back()} />
-      {loading ? (
+      {groupQuery.isLoading ? (
         <Spinner color="#DE034D" />
       ) : (
         <Card style={styles.card}>
@@ -58,8 +63,16 @@ export default function GroupEditScreen() {
           <Input value={name} onChangeText={setName} />
           <Label>Descripción</Label>
           <Input value={description} onChangeText={setDescription} />
-          <Button disabled={saving} onPress={() => void save()}>
-            {saving ? (
+          <Button
+            disabled={mutation.isPending || !name.trim()}
+            onPress={() =>
+              mutation.mutate(undefined, {
+                onError: () =>
+                  Alert.alert('No se pudo guardar', 'Intenta nuevamente.'),
+              })
+            }
+          >
+            {mutation.isPending ? (
               <Spinner color="#FFFFFF" />
             ) : (
               <Text style={styles.buttonText}>Guardar cambios</Text>

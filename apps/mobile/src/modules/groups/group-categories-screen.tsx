@@ -1,28 +1,93 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
 import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 export default function GroupCategoriesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [name, setName] = useState('');
-  const [categories, setCategories] = useState<string[]>([]);
-  async function add() {
-    if (!id || !name.trim()) return;
-    const response = await groupsClient[':id'].categories.$post({
-      param: { id },
-      json: { name: name.trim() },
+  const [icon, setIcon] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const groupQuery = useQuery({
+    queryKey: ['group-summary', id],
+    enabled: Boolean(id),
+    queryFn: async () => {
+      const response = await groupsClient[':id'].$get({
+        param: { id: id ?? '' },
+      });
+      if (!response.ok) throw new Error('No se pudo cargar el espacio');
+      return response.json();
+    },
+  });
+  const categories =
+    groupQuery.data && 'categories' in groupQuery.data
+      ? groupQuery.data.categories
+      : [];
+  const createMutation = useMutation({
+    mutationFn: async (categoryName: string) => {
+      const response = await groupsClient[':id'].categories.$post({
+        param: { id: id ?? '' },
+        json: {
+          name: categoryName,
+          ...(icon.trim() ? { icon: icon.trim() } : {}),
+        },
+      });
+      if (!response.ok) throw new Error('No se pudo crear la categoría');
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
+      setName('');
+      setIcon('');
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: async (categoryId: string) => {
+      const response = await groupsClient[':id'].categories[
+        ':categoryId'
+      ].$delete({
+        param: { id: id ?? '', categoryId },
+      });
+      if (!response.ok) throw new Error('No se pudo eliminar la categoría');
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
+  });
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingId || !name.trim()) throw new Error('invalid');
+      const response = await groupsClient[':id'].categories[
+        ':categoryId'
+      ].$patch({
+        param: { id: id ?? '', categoryId: editingId },
+        json: { name: name.trim(), icon: icon.trim() || null },
+      });
+      if (!response.ok) throw new Error('No se pudo actualizar la categoría');
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
+      setEditingId(null);
+      setName('');
+      setIcon('');
+    },
+  });
+  function add() {
+    if (!id || !name.trim() || createMutation.isPending) return;
+    createMutation.mutate(name.trim(), {
+      onError: () => Alert.alert('No se pudo crear', 'Intenta nuevamente.'),
     });
-    if (!response.ok) {
-      Alert.alert('No se pudo crear', 'Intenta nuevamente.');
-      return;
-    }
-    setCategories((current) => [...current, name.trim()]);
-    setName('');
   }
   return (
     <Screen>
@@ -34,16 +99,71 @@ export default function GroupCategoriesScreen() {
             onChangeText={setName}
             placeholder="Nueva categoría"
           />
+          <Input
+            value={icon}
+            onChangeText={setIcon}
+            placeholder="Ícono opcional (emoji)"
+            maxLength={4}
+          />
           <Button onPress={() => void add()}>
             <Text style={styles.buttonText}>Agregar categoría</Text>
           </Button>
         </Card>
         {categories.map((category) => (
-          <Card key={category} style={styles.item}>
-            <Text style={styles.title}>{category}</Text>
+          <Card key={category.id} style={styles.item}>
+            <Text style={styles.title}>{category.name}</Text>
+            <Button
+              variant="outline"
+              onPress={() => {
+                setEditingId(category.id);
+                setName(category.name);
+                setIcon(category.icon ?? '');
+              }}
+            >
+              <Text style={styles.editText}>Editar</Text>
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onPress={() => deleteMutation.mutate(category.id)}
+            >
+              <Text style={styles.deleteText}>Eliminar</Text>
+            </Button>
           </Card>
         ))}
       </ScrollView>
+      <Drawer
+        open={editingId !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingId(null);
+        }}
+      >
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Editar categoría</DrawerTitle>
+          </DrawerHeader>
+          <Input value={name} onChangeText={setName} placeholder="Nombre" />
+          <Input
+            value={icon}
+            onChangeText={setIcon}
+            placeholder="Ícono opcional"
+            maxLength={4}
+          />
+          <DrawerFooter>
+            <Button
+              disabled={updateMutation.isPending}
+              onPress={() =>
+                updateMutation.mutate(undefined, {
+                  onError: () =>
+                    Alert.alert('No se pudo actualizar', 'Intenta nuevamente.'),
+                })
+              }
+            >
+              <Text style={styles.buttonText}>Guardar cambios</Text>
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </Screen>
   );
 }
@@ -53,4 +173,6 @@ const styles = StyleSheet.create({
   item: { padding: 16 },
   title: { color: '#0F172A', fontSize: 15, fontWeight: '600' },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  deleteText: { color: '#B91C1C', fontSize: 14, fontWeight: '600' },
+  editText: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
 });

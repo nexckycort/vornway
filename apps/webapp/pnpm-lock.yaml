@@ -12,6 +12,10 @@ catalogs:
     wrangler:
       specifier: ^4.115.0
       version: 4.115.0
+  query:
+    '@tanstack/react-query':
+      specifier: ^5.100.9
+      version: 5.101.2
   tooling:
     '@biomejs/biome':
       specifier: ^2.5.4
@@ -54,7 +58,7 @@ importers:
         specifier: ^1.0.36
         version: 1.0.47(@tanstack/query-core@5.101.2)(typescript@7.0.2)
       '@tanstack/react-query':
-        specifier: ^5.100.9
+        specifier: catalog:query
         version: 5.101.2(react@19.2.7)
       '@tanstack/react-router':
         specifier: ^1.168.25

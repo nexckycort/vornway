@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { homeClient } from '@/api/home';
 import { notificationsClient } from '@/api/notifications';
 import { quickSplitsClient } from '@/api/quick-splits';
@@ -125,15 +125,10 @@ function mapHome(
 export function useHomeData() {
   const { data: session, isPending: isSessionPending } =
     authClient.useSession();
-  const [data, setData] = useState<HomeData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
+  const query = useQuery({
+    queryKey: ['home-summary'],
+    enabled: !isSessionPending && Boolean(session),
+    queryFn: async () => {
       const [homeResponse, expensesResponse, notificationsResponse] =
         await Promise.all([
           homeClient.index.$get(),
@@ -148,29 +143,18 @@ export function useHomeData() {
       ) {
         throw new Error('No se pudo cargar el home');
       }
-
-      setData(
-        mapHome(
-          await homeResponse.json(),
-          await expensesResponse.json(),
-          await notificationsResponse.json(),
-        ),
+      return mapHome(
+        await homeResponse.json(),
+        await expensesResponse.json(),
+        await notificationsResponse.json(),
       );
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error ? loadError.message : 'Error inesperado',
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+  });
 
-  useEffect(() => {
-    // Do not race the first RPC request against Better Auth's session restore.
-    // On web this also lets the browser attach its auth cookie first.
-    if (isSessionPending || !session) return;
-    void reload();
-  }, [isSessionPending, reload, session]);
-
-  return { data, error, isLoading, reload };
+  return {
+    data: query.data ?? null,
+    error: query.error instanceof Error ? query.error.message : null,
+    isLoading: query.isLoading || isSessionPending,
+    reload: query.refetch,
+  };
 }

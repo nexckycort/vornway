@@ -24,7 +24,7 @@
     "@tanstack/db": "^0.6.5",
     "@tanstack/query-core": "^5.100.11",
     "@tanstack/query-db-collection": "^1.0.36",
-    "@tanstack/react-query": "^5.100.9",
+    "@tanstack/react-query": "catalog:query",
     "@tanstack/react-router": "^1.168.25",
     "@vornway/api": "workspace:*",
     "better-auth": "^1.6.9",

@@ -1,5 +1,5 @@
-import { SectionScreen } from '@/modules/navigation/section-screen';
+import ExpensesScreen from '@/modules/expenses/expenses-screen';
 
 export default function FriendsScreen() {
-  return <SectionScreen title="Amigos" />;
+  return <ExpensesScreen />;
 }

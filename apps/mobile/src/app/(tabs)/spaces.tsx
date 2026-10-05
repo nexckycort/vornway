@@ -1,5 +1,5 @@
-import { SectionScreen } from '@/modules/navigation/section-screen';
+import GroupsScreen from '@/modules/groups/groups-screen';
 
 export default function SpacesScreen() {
-  return <SectionScreen title="Espacios" />;
+  return <GroupsScreen />;
 }

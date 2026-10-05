@@ -19,7 +19,9 @@ export default function GroupCategoriesScreen() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('');
+  const [color, setColor] = useState('#FF7FA3');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [movingId, setMovingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const groupQuery = useQuery({
     queryKey: ['group-summary', id],
@@ -43,6 +45,7 @@ export default function GroupCategoriesScreen() {
         json: {
           name: categoryName,
           ...(icon.trim() ? { icon: icon.trim() } : {}),
+          color,
         },
       });
       if (!response.ok) throw new Error('No se pudo crear la categoría');
@@ -51,6 +54,7 @@ export default function GroupCategoriesScreen() {
       await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
       setName('');
       setIcon('');
+      setColor('#FF7FA3');
     },
   });
   const deleteMutation = useMutation({
@@ -72,7 +76,7 @@ export default function GroupCategoriesScreen() {
         ':categoryId'
       ].$patch({
         param: { id: id ?? '', categoryId: editingId },
-        json: { name: name.trim(), icon: icon.trim() || null },
+        json: { name: name.trim(), icon: icon.trim() || null, color },
       });
       if (!response.ok) throw new Error('No se pudo actualizar la categoría');
     },
@@ -81,6 +85,23 @@ export default function GroupCategoriesScreen() {
       setEditingId(null);
       setName('');
       setIcon('');
+      setColor('#FF7FA3');
+    },
+  });
+  const moveMutation = useMutation({
+    mutationFn: async (targetCategoryId: string | null) => {
+      if (!movingId) throw new Error('invalid');
+      const response = await groupsClient[':id'].categories[':categoryId'][
+        'move-expenses'
+      ].$post({
+        param: { id: id ?? '', categoryId: movingId },
+        json: { targetCategoryId },
+      });
+      if (!response.ok) throw new Error('No se pudieron mover los gastos');
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
+      setMovingId(null);
     },
   });
   function add() {
@@ -118,6 +139,7 @@ export default function GroupCategoriesScreen() {
                 setEditingId(category.id);
                 setName(category.name);
                 setIcon(category.icon ?? '');
+                setColor(category.color ?? '#FF7FA3');
               }}
             >
               <Text style={styles.editText}>Editar</Text>
@@ -129,6 +151,14 @@ export default function GroupCategoriesScreen() {
             >
               <Text style={styles.deleteText}>Eliminar</Text>
             </Button>
+            {(category.expenseCount ?? 0) > 0 ? (
+              <Button
+                variant="outline"
+                onPress={() => setMovingId(category.id)}
+              >
+                <Text style={styles.editText}>Mover gastos</Text>
+              </Button>
+            ) : null}
           </Card>
         ))}
       </ScrollView>
@@ -149,6 +179,27 @@ export default function GroupCategoriesScreen() {
             placeholder="Ícono opcional"
             maxLength={4}
           />
+          <Text style={styles.label}>Color</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {[
+              '#FF7FA3',
+              '#5BD9CC',
+              '#D978F4',
+              '#FFA0A0',
+              '#FFD741',
+              '#62D9AA',
+              '#9DAEF9',
+              '#FFC06D',
+            ].map((value) => (
+              <Button
+                key={value}
+                variant={color === value ? 'default' : 'outline'}
+                onPress={() => setColor(value)}
+              >
+                <Text style={styles.buttonText}>{value}</Text>
+              </Button>
+            ))}
+          </ScrollView>
           <DrawerFooter>
             <Button
               disabled={updateMutation.isPending}
@@ -164,6 +215,36 @@ export default function GroupCategoriesScreen() {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+      <Drawer
+        open={movingId !== null}
+        onOpenChange={(open) => {
+          if (!open) setMovingId(null);
+        }}
+      >
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Mover gastos</DrawerTitle>
+          </DrawerHeader>
+          <Button
+            variant="outline"
+            disabled={moveMutation.isPending}
+            onPress={() => moveMutation.mutate(null)}
+          >
+            <Text style={styles.editText}>Dejar sin categoría</Text>
+          </Button>
+          {categories
+            .filter((category) => category.id !== movingId)
+            .map((category) => (
+              <Button
+                key={category.id}
+                disabled={moveMutation.isPending}
+                onPress={() => moveMutation.mutate(category.id)}
+              >
+                <Text style={styles.buttonText}>{category.name}</Text>
+              </Button>
+            ))}
+        </DrawerContent>
+      </Drawer>
     </Screen>
   );
 }
@@ -172,6 +253,7 @@ const styles = StyleSheet.create({
   form: { gap: 12, padding: 16 },
   item: { padding: 16 },
   title: { color: '#0F172A', fontSize: 15, fontWeight: '600' },
+  label: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
   deleteText: { color: '#B91C1C', fontSize: 14, fontWeight: '600' },
   editText: { color: '#0F172A', fontSize: 14, fontWeight: '600' },

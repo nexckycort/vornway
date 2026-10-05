@@ -21,8 +21,13 @@ export default function GroupExpenseCreateScreen() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [categoryId, setCategoryId] = useState('');
   const [paidById, setPaidById] = useState('');
+  const [paidByIds, setPaidByIds] = useState<string[]>([]);
+  const [payerValues, setPayerValues] = useState<Record<string, string>>({});
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
   const [shareValues, setShareValues] = useState<Record<string, string>>({});
+  const [lineItemDescriptions, setLineItemDescriptions] = useState<
+    Record<string, string>
+  >({});
   const groupQuery = useQuery({
     queryKey: ['group-summary', id],
     enabled: Boolean(id),
@@ -45,7 +50,10 @@ export default function GroupExpenseCreateScreen() {
   useEffect(() => {
     if (selectedIds.length === 0 && members.length > 0)
       setSelectedIds(members.map((member) => member.id));
-    if (!paidById && members[0]) setPaidById(members[0].id);
+    if (!paidById && members[0]) {
+      setPaidById(members[0].id);
+      setPaidByIds([members[0].id]);
+    }
   }, [members, paidById, selectedIds.length]);
   const mutation = useMutation({
     mutationFn: async () => {
@@ -67,13 +75,29 @@ export default function GroupExpenseCreateScreen() {
         (sum, value) => sum + (Number(value.replace(',', '.')) || 0),
         0,
       );
+      const payerIds =
+        paidByIds.length > 0 ? paidByIds : paidById ? [paidById] : [];
+      const payerAmounts = payerIds.map((memberId) => ({
+        memberId,
+        amount:
+          payerIds.length === 1
+            ? parsedAmount
+            : Number((payerValues[memberId] ?? '').replace(',', '.')) || 0,
+      }));
+      const payerTotal = payerAmounts.reduce(
+        (sum, payer) => sum + payer.amount,
+        0,
+      );
       if (
         !id ||
         !description.trim() ||
         !Number.isFinite(parsedAmount) ||
         parsedAmount <= 0 ||
         selectedIds.length === 0 ||
-        !paidById ||
+        payerIds.length === 0 ||
+        (payerIds.length > 1 && Math.abs(payerTotal - parsedAmount) > 0.01) ||
+        (splitMethod === 'exact' &&
+          Object.values(values).some((value) => value <= 0)) ||
         (splitMethod !== 'equal' && Math.abs(rawTotal - expectedTotal) > 0.01)
       )
         throw new Error('invalid');
@@ -84,7 +108,9 @@ export default function GroupExpenseCreateScreen() {
           amount: parsedAmount,
           currency: 'COP',
           participantIds: selectedIds,
-          paidById,
+          paidById: payerIds[0],
+          paidByIds: payerIds,
+          ...(payerIds.length > 1 ? { payers: payerAmounts } : {}),
           splitMethod,
           ...(splitMethod !== 'equal'
             ? {
@@ -94,6 +120,17 @@ export default function GroupExpenseCreateScreen() {
                   splitMethod,
                   splitValues: values,
                 },
+              }
+            : {}),
+          ...(splitMethod === 'exact'
+            ? {
+                lineItems: selectedIds.map((memberId) => ({
+                  memberId,
+                  description:
+                    lineItemDescriptions[memberId]?.trim() ||
+                    'Gasto compartido',
+                  amount: values[memberId] ?? 0,
+                })),
               }
             : {}),
           ...(categoryId ? { categoryId } : {}),
@@ -153,12 +190,39 @@ export default function GroupExpenseCreateScreen() {
           {members.map((member) => (
             <Button
               key={`payer-${member.id}`}
-              variant={paidById === member.id ? 'default' : 'outline'}
-              onPress={() => setPaidById(member.id)}
+              variant={paidByIds.includes(member.id) ? 'default' : 'outline'}
+              onPress={() => {
+                setPaidByIds((current) => {
+                  const next = current.includes(member.id)
+                    ? current.filter((value) => value !== member.id)
+                    : [...current, member.id];
+                  setPaidById(next[0] ?? '');
+                  return next;
+                });
+              }}
             >
               <Text style={styles.buttonText}>{member.name}</Text>
             </Button>
           ))}
+          {paidByIds.length > 1
+            ? paidByIds.map((memberId) => {
+                const payer = members.find((member) => member.id === memberId);
+                return payer ? (
+                  <Input
+                    key={`payer-amount-${memberId}`}
+                    value={payerValues[memberId] ?? ''}
+                    onChangeText={(value) =>
+                      setPayerValues((current) => ({
+                        ...current,
+                        [memberId]: value,
+                      }))
+                    }
+                    keyboardType="decimal-pad"
+                    placeholder={`${payer.name} - parte pagada`}
+                  />
+                ) : null;
+              })
+            : null}
           <Label>Método de reparto</Label>
           {(['equal', 'percentage', 'exact'] as const).map((method) => (
             <Button
@@ -190,6 +254,23 @@ export default function GroupExpenseCreateScreen() {
                     }
                     keyboardType="decimal-pad"
                     placeholder={`${member.name} ${splitMethod === 'percentage' ? '%' : 'monto'}`}
+                  />
+                ))
+            : null}
+          {splitMethod === 'exact'
+            ? members
+                .filter((member) => selectedIds.includes(member.id))
+                .map((member) => (
+                  <Input
+                    key={`line-item-${member.id}`}
+                    value={lineItemDescriptions[member.id] ?? ''}
+                    onChangeText={(value) =>
+                      setLineItemDescriptions((current) => ({
+                        ...current,
+                        [member.id]: value,
+                      }))
+                    }
+                    placeholder={`Detalle para ${member.name}`}
                   />
                 ))
             : null}

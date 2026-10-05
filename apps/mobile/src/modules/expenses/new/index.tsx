@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { Image } from 'expo-image';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -9,72 +9,23 @@ import {
   View,
 } from 'react-native';
 
-import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
-import { authClient } from '@/lib/auth-client';
-
-type Group = {
-  id: string;
-  name: string;
-  imageUrl?: string | null;
-  updatedAt?: string;
-  participantCount?: number;
-  members?: Array<{
-    id: string;
-    name: string;
-    userId?: string | null;
-    image?: string | null;
-  }>;
-};
+import { useExpenseEntryData } from '../hooks/use-expense-entry-data';
 
 export default function ExpenseEntryScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: 'friends' | 'home' }>();
   const [search, setSearch] = useState('');
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
-  const { data: session } = authClient.useSession();
-  const currentUserId = (session as { user?: { id?: string | null } } | null)
-    ?.user?.id;
-  const groupsQuery = useQuery({
-    queryKey: ['expense-entry-groups'],
-    queryFn: async () => {
-      const response = await groupsClient.index.$get({
-        query: { limit: '50', filter: 'all' },
-      });
-      if (!response.ok) throw new Error('groups_load_failed');
-      return (await response.json()) as unknown as { data: Group[] };
-    },
-  });
-  const groups = groupsQuery.data?.data ?? [];
-  const friends = useMemo(() => {
-    const result = new Map<
-      string,
-      { id: string; name: string; image?: string | null; groups: number }
-    >();
-    for (const group of groups) {
-      for (const member of group.members ?? []) {
-        if (currentUserId && member.userId === currentUserId) continue;
-        const key = member.userId
-          ? `user:${member.userId}`
-          : `manual:${member.name.trim().toLowerCase()}`;
-        const previous = result.get(key);
-        result.set(key, {
-          id: previous?.id ?? member.id,
-          name: previous?.name ?? member.name,
-          image: previous?.image ?? member.image,
-          groups: (previous?.groups ?? 0) + 1,
-        });
-      }
-    }
-    return [...result.values()];
-  }, [currentUserId, groups]);
+  const { groupsQuery, spaces, recentFriends } = useExpenseEntryData();
   const normalizedSearch = search.trim().toLowerCase();
-  const visibleGroups = groups.filter((group) =>
+  const visibleGroups = spaces.filter((group) =>
     group.name.toLowerCase().includes(normalizedSearch),
   );
-  const visibleFriends = friends.filter((friend) =>
+  const visibleFriends = recentFriends.filter((friend) =>
     friend.name.toLowerCase().includes(normalizedSearch),
   );
 
@@ -87,20 +38,34 @@ export default function ExpenseEntryScreen() {
   }
 
   function continueWithFriends() {
-    const selected = friends.filter((friend) =>
+    const selected = recentFriends.filter((friend) =>
       selectedFriendIds.includes(friend.id),
     );
     router.push({
       pathname: '/expenses/quick-split',
       params: {
+        from: from ?? 'home',
         participants: selected.map((friend) => friend.name).join(', '),
+        participantData: JSON.stringify(
+          selected.map((friend) => ({
+            name: friend.name,
+            ...(friend.userId ? { userId: friend.userId } : {}),
+          })),
+        ),
       },
     } as never);
   }
 
   return (
     <Screen>
-      <ScreenHeader title="Nuevo gasto" onBack={() => router.back()} />
+      <ScreenHeader
+        title="Nuevo gasto"
+        onBack={() =>
+          router.replace(
+            (from === 'friends' ? '/expenses/friends' : '/(tabs)') as never,
+          )
+        }
+      />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.heading}>¿Con quién compartiste?</Text>
         <Text style={styles.description}>
@@ -124,13 +89,24 @@ export default function ExpenseEntryScreen() {
               router.push(`/groups/${group.id}/add-expense` as never)
             }
           >
+            {group.imageUrl ? (
+              <Image source={{ uri: group.imageUrl }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarFallback}>
+                <Text style={styles.avatarText}>{initials(group.name)}</Text>
+              </View>
+            )}
             <View style={styles.groupCopy}>
               <Text style={styles.groupName}>{group.name}</Text>
               <Text style={styles.meta}>
-                {group.participantCount ?? group.members?.length ?? 0}{' '}
-                participantes
+                {group.participantCount <= 1
+                  ? 'Solo tú'
+                  : `${group.participantCount} participantes`}
               </Text>
             </View>
+            <Text style={styles.tag}>
+              {group.participantCount <= 1 ? 'Personal' : 'Compartido'}
+            </Text>
             <Text style={styles.chevron}>›</Text>
           </Button>
         ))}
@@ -147,10 +123,17 @@ export default function ExpenseEntryScreen() {
               style={styles.friendRow}
               onPress={() => toggleFriend(friend.id)}
             >
+              {friend.image ? (
+                <Image source={{ uri: friend.image }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarFallback}>
+                  <Text style={styles.avatarText}>{initials(friend.name)}</Text>
+                </View>
+              )}
               <View style={styles.friendCopy}>
                 <Text style={styles.friendName}>{friend.name}</Text>
                 <Text style={styles.meta}>
-                  {friend.groups} espacios compartidos
+                  {friend.sharedGroupCount} espacios compartidos
                 </Text>
               </View>
               <Checkbox
@@ -195,6 +178,16 @@ const styles = StyleSheet.create({
     minHeight: 68,
     padding: 14,
   },
+  avatar: { borderRadius: 8, height: 44, width: 44 },
+  avatarFallback: {
+    alignItems: 'center',
+    backgroundColor: '#FFE2E8',
+    borderRadius: 8,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  avatarText: { color: '#DE034D', fontSize: 16, fontWeight: '700' },
   groupCopy: { flex: 1, gap: 4 },
   groupName: { color: '#0F172A', fontSize: 16, fontWeight: '600' },
   friendRow: {
@@ -207,7 +200,29 @@ const styles = StyleSheet.create({
   friendCopy: { flex: 1, gap: 4 },
   friendName: { color: '#0F172A', fontSize: 15, fontWeight: '600' },
   meta: { color: '#64748B', fontSize: 12 },
+  tag: {
+    backgroundColor: '#FFF0F2',
+    borderColor: '#FFE2E7',
+    borderRadius: 999,
+    borderWidth: 1,
+    color: '#DE034D',
+    fontSize: 12,
+    fontWeight: '500',
+    marginRight: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
   chevron: { color: '#DE034D', fontSize: 26 },
   empty: { color: '#64748B', fontSize: 13, paddingVertical: 8 },
   primaryText: { color: '#FFFFFF', fontWeight: '600' },
 });
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}

@@ -33,17 +33,28 @@ type Expense = {
     balance?: number;
     share?: number;
   }>;
+  settlements?: Array<{
+    id: string;
+    from: { id: string; name: string };
+    to: { id: string; name: string };
+    amount: number;
+    currency: string;
+    createdAt: string;
+  }>;
 };
 export default function QuickSplitExpenseDetailScreen() {
-  const { quickSplitId, expenseId } = useLocalSearchParams<{
+  const { quickSplitId, expenseId, from } = useLocalSearchParams<{
     quickSplitId: string;
     expenseId: string;
+    from?: 'home' | 'friends';
   }>();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [settlement, setSettlement] = useState('');
   const [fromParticipantId, setFromParticipantId] = useState('');
   const [toParticipantId, setToParticipantId] = useState('');
+  const [expandedSettlementParticipants, setExpandedSettlementParticipants] =
+    useState<Record<string, boolean>>({});
   const [editOpen, setEditOpen] = useState(false);
   const [editDescription, setEditDescription] = useState('');
   const [editAmount, setEditAmount] = useState('');
@@ -51,6 +62,10 @@ export default function QuickSplitExpenseDetailScreen() {
     'equal' | 'percentage' | 'exact'
   >('equal');
   const [editShares, setEditShares] = useState<Record<string, string>>({});
+  const [editCategory, setEditCategory] = useState('');
+  const [editItems, setEditItems] = useState<
+    Array<{ name: string; amount: string }>
+  >([]);
   const expenseQuery = useQuery({
     queryKey: ['quick-split-expense', quickSplitId, expenseId],
     enabled: Boolean(quickSplitId && expenseId),
@@ -120,13 +135,26 @@ export default function QuickSplitExpenseDetailScreen() {
                 ),
               }
             : {}),
-          ...(expense.metadata ? { metadata: expense.metadata } : {}),
+          metadata: {
+            ...(editCategory.trim() ? { category: editCategory.trim() } : {}),
+            ...(editItems.length > 0
+              ? {
+                  items: editItems
+                    .map((item) => ({
+                      name: item.name.trim(),
+                      amount: Number(item.amount.replace(',', '.')),
+                    }))
+                    .filter((item) => item.name.length > 0 && item.amount > 0),
+                }
+              : {}),
+          },
         },
       });
       if (!response.ok) throw new Error('update_failed');
     },
     onSuccess: async () => {
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
         queryClient.invalidateQueries({
           queryKey: ['quick-split-expense', quickSplitId, expenseId],
         }),
@@ -153,6 +181,7 @@ export default function QuickSplitExpenseDetailScreen() {
     },
     onSuccess: async () => {
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
         queryClient.invalidateQueries({
           queryKey: ['quick-split-expense', quickSplitId, expenseId],
         }),
@@ -168,7 +197,15 @@ export default function QuickSplitExpenseDetailScreen() {
       ].$delete({ param: { id: quickSplitId, expenseId } });
       if (!response.ok) throw new Error('delete_failed');
     },
-    onSuccess: () => router.back(),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['quick-split-expenses'] }),
+      ]);
+      router.replace(
+        from === 'home' ? ('/(tabs)' as never) : ('/expenses/friends' as never),
+      );
+    },
   });
   async function settle() {
     const amount = Number(settlement.replace(',', '.'));
@@ -205,6 +242,13 @@ export default function QuickSplitExpenseDetailScreen() {
     setEditDescription(expense.description);
     setEditAmount(String(expense.amount));
     setEditMethod(expense.splitMethod ?? 'equal');
+    setEditCategory(expense.metadata?.category ?? '');
+    setEditItems(
+      (expense.metadata?.items ?? []).map((item) => ({
+        name: item.name,
+        amount: String(item.amount),
+      })),
+    );
     setEditShares(
       Object.fromEntries(
         (expense.participants ?? []).map((participant) => [
@@ -223,21 +267,97 @@ export default function QuickSplitExpenseDetailScreen() {
   }
   return (
     <Screen>
-      <ScreenHeader title="Detalle del gasto" onBack={() => router.back()} />
+      <ScreenHeader
+        title="Detalle del gasto"
+        onBack={() =>
+          router.replace(
+            from === 'home'
+              ? ('/(tabs)' as never)
+              : ('/expenses/friends' as never),
+          )
+        }
+      />
       {expense ? (
         <Card style={styles.card}>
           <Text style={styles.title}>{expense.description}</Text>
           <Text style={styles.amount}>
             {expense.amount} {expense.currency}
           </Text>
+          {expense.metadata?.category ? (
+            <Text style={styles.copy}>
+              Categoría: {expense.metadata.category}
+            </Text>
+          ) : null}
+          {expense.metadata?.items?.length ? (
+            <Card style={styles.itemsCard}>
+              <Text style={styles.label}>Ítems compartidos</Text>
+              {expense.metadata.items.map((item) => (
+                <Text key={`${item.name}-${item.amount}`} style={styles.copy}>
+                  {item.name}: {item.amount} {expense.currency}
+                </Text>
+              ))}
+            </Card>
+          ) : null}
           <Button variant="outline" onPress={openEdit}>
             <Text style={styles.outlineText}>Editar gasto</Text>
           </Button>
-          {expense.participants?.map((participant) => (
-            <Text key={participant.id} style={styles.copy}>
-              {participant.name}: {participant.balance ?? 0}
-            </Text>
-          ))}
+          <Button
+            variant="outline"
+            onPress={() =>
+              router.push({
+                pathname: '/expenses/quick-split',
+                params: { quickSplitId, expenseId, from: 'friends' },
+              } as never)
+            }
+          >
+            <Text style={styles.outlineText}>Editar reparto completo</Text>
+          </Button>
+          {expense.participants?.map((participant) => {
+            const participantSettlements = (expense.settlements ?? []).filter(
+              (item) => item.from.id === participant.id,
+            );
+            const isExpanded = expandedSettlementParticipants[participant.id];
+            const visibleSettlements = isExpanded
+              ? participantSettlements
+              : participantSettlements.slice(0, 2);
+            const remainingSettlements = Math.max(
+              0,
+              participantSettlements.length - 2,
+            );
+            return (
+              <Card key={participant.id} style={styles.participantCard}>
+                <Text style={styles.copy}>
+                  {participant.name}:{' '}
+                  {participant.share ?? participant.balance ?? 0}{' '}
+                  {expense.currency}
+                </Text>
+                {visibleSettlements.map((item) => (
+                  <Text key={item.id} style={styles.settlementText}>
+                    {item.from.name} → {item.to.name}: {item.amount}{' '}
+                    {item.currency} ·{' '}
+                    {new Date(item.createdAt).toLocaleDateString('es-CO')}
+                  </Text>
+                ))}
+                {remainingSettlements > 0 ? (
+                  <Button
+                    variant="ghost"
+                    onPress={() =>
+                      setExpandedSettlementParticipants((current) => ({
+                        ...current,
+                        [participant.id]: !isExpanded,
+                      }))
+                    }
+                  >
+                    <Text style={styles.settlementToggle}>
+                      {isExpanded
+                        ? 'Ver menos'
+                        : `Ver más (${remainingSettlements})`}
+                    </Text>
+                  </Button>
+                ) : null}
+              </Card>
+            );
+          })}
           <Text style={styles.label}>Quién paga</Text>
           {expense.participants?.map((participant) => (
             <Button
@@ -281,7 +401,16 @@ export default function QuickSplitExpenseDetailScreen() {
           <Button
             variant="destructive"
             disabled={deleteMutation.isPending}
-            onPress={() => void remove()}
+            onPress={() =>
+              Alert.alert('Eliminar gasto', '¿Quieres eliminar este gasto?', [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Eliminar',
+                  style: 'destructive',
+                  onPress: () => void remove(),
+                },
+              ])
+            }
           >
             <Text style={styles.delete}>Eliminar gasto</Text>
           </Button>
@@ -301,6 +430,12 @@ export default function QuickSplitExpenseDetailScreen() {
             value={editAmount}
             onChangeText={setEditAmount}
             keyboardType="decimal-pad"
+          />
+          <Label>Categoría</Label>
+          <Input
+            value={editCategory}
+            onChangeText={setEditCategory}
+            placeholder="Comida, transporte..."
           />
           <Label>Método de reparto</Label>
           {(['equal', 'percentage', 'exact'] as const).map((method) => (
@@ -338,6 +473,52 @@ export default function QuickSplitExpenseDetailScreen() {
                 />
               ))
             : null}
+          <Label>Ítems compartidos</Label>
+          {editItems.map((item, index) => (
+            <Card key={`${item.name}-${item.amount}`} style={styles.itemRow}>
+              <Input
+                value={item.name}
+                onChangeText={(value) =>
+                  setEditItems((current) =>
+                    current.map((entry, itemIndex) =>
+                      itemIndex === index ? { ...entry, name: value } : entry,
+                    ),
+                  )
+                }
+                placeholder="Descripción del ítem"
+              />
+              <Input
+                value={item.amount}
+                onChangeText={(value) =>
+                  setEditItems((current) =>
+                    current.map((entry, itemIndex) =>
+                      itemIndex === index ? { ...entry, amount: value } : entry,
+                    ),
+                  )
+                }
+                keyboardType="decimal-pad"
+                placeholder="Monto"
+              />
+              <Button
+                variant="outline"
+                onPress={() =>
+                  setEditItems((current) =>
+                    current.filter((_, itemIndex) => itemIndex !== index),
+                  )
+                }
+              >
+                <Text style={styles.outlineText}>Eliminar ítem</Text>
+              </Button>
+            </Card>
+          ))}
+          <Button
+            variant="outline"
+            onPress={() =>
+              setEditItems((current) => [...current, { name: '', amount: '' }])
+            }
+          >
+            <Text style={styles.outlineText}>＋ Agregar ítem</Text>
+          </Button>
           <DrawerFooter>
             <Button
               disabled={updateMutation.isPending}
@@ -365,4 +546,9 @@ const styles = StyleSheet.create({
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
   delete: { color: '#B91C1C', fontSize: 14, fontWeight: '600' },
   outlineText: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
+  participantCard: { gap: 6, padding: 10 },
+  itemsCard: { gap: 6, padding: 10, backgroundColor: '#F8FAFC' },
+  itemRow: { gap: 8, padding: 10, backgroundColor: '#F8FAFC' },
+  settlementText: { color: '#94A3B8', fontSize: 12 },
+  settlementToggle: { color: '#0F172A', fontSize: 12, fontWeight: '600' },
 });

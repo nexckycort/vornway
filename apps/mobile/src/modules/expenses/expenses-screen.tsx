@@ -17,10 +17,13 @@ type Expense = {
   currency: string;
   quickSplitName?: string;
   paidBy?: { name: string };
+  currentUserBalance?: number;
 };
+type ExpenseFilter = 'all' | 'settled' | 'owed' | 'owe';
 export default function ExpensesScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<ExpenseFilter>('all');
   const expensesQuery = useQuery({
     queryKey: ['quick-split-expenses'],
     queryFn: async () => {
@@ -31,11 +34,19 @@ export default function ExpensesScreen() {
       return (await response.json()) as { data: Expense[] };
     },
   });
-  const visible = (expensesQuery.data?.data ?? []).filter((item) =>
-    `${item.description} ${item.quickSplitName ?? ''}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
+  const visible = (expensesQuery.data?.data ?? []).filter((item) => {
+    const matchesSearch =
+      `${item.description} ${item.quickSplitName ?? ''} ${item.paidBy?.name ?? ''}`
+        .toLowerCase()
+        .includes(search.toLowerCase());
+    const balance = item.currentUserBalance ?? 0;
+    const matchesFilter =
+      filter === 'all' ||
+      (filter === 'settled' && balance === 0) ||
+      (filter === 'owed' && balance > 0) ||
+      (filter === 'owe' && balance < 0);
+    return matchesSearch && matchesFilter;
+  });
   return (
     <Screen>
       <ScrollView
@@ -57,6 +68,35 @@ export default function ExpensesScreen() {
           placeholder="Buscar gastos"
           style={styles.search}
         />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filters}
+        >
+          {(
+            [
+              ['all', 'Todos'],
+              ['settled', 'Salda'],
+              ['owed', 'Le deben'],
+              ['owe', 'Debe'],
+            ] as const
+          ).map(([value, label]) => (
+            <Button
+              key={value}
+              variant={filter === value ? 'default' : 'outline'}
+              onPress={() => setFilter(value)}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  filter !== value && styles.filterTextOutline,
+                ]}
+              >
+                {label}
+              </Text>
+            </Button>
+          ))}
+        </ScrollView>
         {expensesQuery.isLoading ? (
           <Spinner color="#DE034D" />
         ) : visible.length === 0 ? (
@@ -99,10 +139,13 @@ const styles = StyleSheet.create({
   content: { gap: 14, padding: 16, paddingBottom: 152 },
   heading: { color: '#0F172A', fontSize: 28, fontWeight: '600' },
   search: { backgroundColor: '#FFFFFF', borderRadius: 24, height: 44 },
+  filters: { gap: 8, paddingVertical: 2 },
   card: { gap: 6, padding: 8 },
   empty: { alignItems: 'center', gap: 8, padding: 24 },
   title: { color: '#0F172A', fontSize: 16, fontWeight: '600' },
   copy: { color: '#64748B', fontSize: 14 },
   amount: { color: '#DE034D', fontSize: 18, fontWeight: '600' },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  filterText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
+  filterTextOutline: { color: '#0F172A' },
 });

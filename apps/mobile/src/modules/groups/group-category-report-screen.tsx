@@ -15,6 +15,15 @@ function toBoundary(value: string, end: boolean) {
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
+type CategoryExpense = {
+  id: string;
+  description: string;
+  amount: number;
+  currency: string;
+  date: string;
+  category?: { id?: string | null; name?: string | null } | null;
+};
+
 export default function GroupCategoryReportScreen() {
   const { id, categoryKey, categoryId, categoryName } = useLocalSearchParams<{
     id: string;
@@ -107,6 +116,57 @@ export default function GroupCategoryReportScreen() {
     groupQuery.data && 'members' in groupQuery.data
       ? groupQuery.data.members
       : [];
+  const historyQuery = useQuery({
+    queryKey: [
+      'group-report-category-history',
+      id,
+      categoryId,
+      categoryKey,
+      reportQuery,
+      selectedParticipantIds,
+    ],
+    enabled: Boolean(id && (categoryId || categoryKey) && members.length > 0),
+    queryFn: async () => {
+      const memberIds =
+        selectedParticipantIds.length > 0
+          ? selectedParticipantIds
+          : members.map((member) => member.id);
+      const responses = await Promise.all(
+        memberIds.map(async (memberId) => {
+          const response = await groupsClient[':id'].members[
+            ':memberId'
+          ].expenses.$get({
+            param: { id: id ?? '', memberId },
+            query: {
+              limit: '100',
+              ...(reportQuery.startDate
+                ? { startDate: reportQuery.startDate }
+                : {}),
+              ...(reportQuery.endDate ? { endDate: reportQuery.endDate } : {}),
+            },
+          });
+          if (!response.ok) return [] as CategoryExpense[];
+          const result = (await response.json()) as {
+            data?: CategoryExpense[];
+          };
+          return result.data ?? [];
+        }),
+      );
+      const unique = new Map<string, CategoryExpense>();
+      for (const expense of responses.flat()) unique.set(expense.id, expense);
+      return Array.from(unique.values())
+        .filter((expense) => {
+          if (categoryId) return expense.category?.id === categoryId;
+          if (categoryKey === 'uncategorized') return !expense.category;
+          return expense.category?.name === name;
+        })
+        .sort(
+          (left, right) =>
+            new Date(right.date).getTime() - new Date(left.date).getTime(),
+        );
+    },
+  });
+  const historyExpenses = historyQuery.data ?? [];
   return (
     <Screen>
       <ScreenHeader title="Detalle de categoría" onBack={() => router.back()} />
@@ -178,6 +238,31 @@ export default function GroupCategoryReportScreen() {
                   : 0}{' '}
                 gastos registrados en esta categoría.
               </Text>
+              {historyQuery.isLoading ? (
+                <Spinner color="#DE034D" />
+              ) : historyExpenses.length === 0 ? (
+                <Text style={styles.copy}>No hay gastos en este filtro.</Text>
+              ) : (
+                historyExpenses.map((expense) => (
+                  <Button
+                    key={expense.id}
+                    variant="ghost"
+                    onPress={() =>
+                      router.push(
+                        `/groups/${id}/expense/${expense.id}` as never,
+                      )
+                    }
+                  >
+                    <Text style={styles.historyTitle}>
+                      {expense.description}
+                    </Text>
+                    <Text style={styles.copy}>
+                      {expense.amount} {expense.currency} ·{' '}
+                      {new Date(expense.date).toLocaleDateString('es-CO')}
+                    </Text>
+                  </Button>
+                ))
+              )}
             </Card>
           </>
         )}
@@ -193,4 +278,5 @@ const styles = StyleSheet.create({
   copy: { color: '#64748B', fontSize: 14 },
   outlineText: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  historyTitle: { color: '#0F172A', fontSize: 15, fontWeight: '600' },
 });

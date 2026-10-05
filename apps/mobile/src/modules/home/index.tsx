@@ -61,7 +61,7 @@ export default function HomeScreen() {
           </View>
           <Button
             accessibilityLabel="Notificaciones"
-            onPress={() => router.push('/explore')}
+            onPress={() => router.push('/notifications' as never)}
             size="icon"
             variant="ghost"
             style={styles.bell}
@@ -77,13 +77,13 @@ export default function HomeScreen() {
           <ActionCard
             icon="＋"
             title="Crear espacio"
-            onPress={() => router.push('/explore')}
+            onPress={() => router.push('/groups/new' as never)}
           />
           <ActionCard
             icon="↗"
             title="Agregar gasto"
             primary
-            onPress={() => router.push('/explore')}
+            onPress={() => router.push('/expenses/new' as never)}
           />
         </View>
 
@@ -98,7 +98,7 @@ export default function HomeScreen() {
         ) : null}
 
         {!hasGroups ? (
-          <EmptyState onPress={() => router.push('/explore')} />
+          <EmptyState onPress={() => router.push('/groups/new' as never)} />
         ) : (
           <>
             {data && data.expenses.length > 0 ? (

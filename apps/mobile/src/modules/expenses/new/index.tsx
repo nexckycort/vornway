@@ -11,10 +11,10 @@ import {
 
 import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
+import { authClient } from '@/lib/auth-client';
 
 type Group = {
   id: string;
@@ -34,6 +34,9 @@ export default function ExpenseEntryScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
+  const { data: session } = authClient.useSession();
+  const currentUserId = (session as { user?: { id?: string | null } } | null)
+    ?.user?.id;
   const groupsQuery = useQuery({
     queryKey: ['expense-entry-groups'],
     queryFn: async () => {
@@ -52,6 +55,7 @@ export default function ExpenseEntryScreen() {
     >();
     for (const group of groups) {
       for (const member of group.members ?? []) {
+        if (currentUserId && member.userId === currentUserId) continue;
         const key = member.userId
           ? `user:${member.userId}`
           : `manual:${member.name.trim().toLowerCase()}`;
@@ -65,7 +69,7 @@ export default function ExpenseEntryScreen() {
       }
     }
     return [...result.values()];
-  }, [groups]);
+  }, [currentUserId, groups]);
   const normalizedSearch = search.trim().toLowerCase();
   const visibleGroups = groups.filter((group) =>
     group.name.toLowerCase().includes(normalizedSearch),

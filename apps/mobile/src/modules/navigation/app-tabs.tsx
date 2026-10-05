@@ -29,10 +29,10 @@ const ITEMS: TabItem[] = [
     iconName: 'grid-outline',
   },
   {
-    name: 'finances',
-    href: '/finances',
-    label: 'Finanzas',
-    iconName: 'wallet-outline',
+    name: 'goals',
+    href: '/goals',
+    label: 'Metas',
+    iconName: 'flag-outline',
   },
   {
     name: 'profile',

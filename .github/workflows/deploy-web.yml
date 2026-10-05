@@ -22,7 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       pnpm_config_verify_deps_before_run: false
-    env:
       PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.PUBLIC_VAPID_PUBLIC_KEY }}
     steps:
       - uses: actions/checkout@v7

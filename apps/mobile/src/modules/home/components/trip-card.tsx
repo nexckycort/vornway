@@ -1,13 +1,22 @@
 import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
 
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+  AvatarImage,
+} from '@/components/ui/avatar';
+import { Card } from '@/components/ui/card';
+
 import type { HomeTrip } from '../home.types';
 import { homeCardStyles } from './home-card';
 
 export function TripCard({ trip }: { trip: HomeTrip }) {
   const avatars = trip.members.slice(0, 3);
   return (
-    <View style={[homeCardStyles.card, styles.card]}>
+    <Card style={[homeCardStyles.card, styles.card]}>
       <View style={styles.imageWrap}>
         {trip.imageUrl ? (
           <Image
@@ -23,36 +32,31 @@ export function TripCard({ trip }: { trip: HomeTrip }) {
         <Text numberOfLines={1} style={styles.name}>
           {trip.name}
         </Text>
-        <View style={styles.people}>
+        <AvatarGroup style={styles.people}>
           {avatars.map((member) =>
             member.image ? (
-              <Image
-                key={member.id}
-                source={member.image}
-                style={styles.avatar}
-              />
+              <Avatar key={member.id} size="sm">
+                <AvatarImage source={{ uri: member.image }} />
+              </Avatar>
             ) : (
-              <View
-                key={member.id}
-                style={[styles.avatar, styles.avatarFallback]}
-              >
-                <Text>{member.name.charAt(0)}</Text>
-              </View>
+              <Avatar key={member.id} size="sm">
+                <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+              </Avatar>
             ),
           )}
           {trip.members.length > avatars.length ? (
-            <Text style={styles.extra}>
+            <AvatarGroupCount size="sm" style={styles.extra}>
               +{trip.members.length - avatars.length}
-            </Text>
+            </AvatarGroupCount>
           ) : null}
-        </View>
+        </AvatarGroup>
         {trip.balances.map((balance) => (
           <Text key={balance} numberOfLines={1} style={styles.balance}>
             {balance}
           </Text>
         ))}
       </View>
-    </View>
+    </Card>
   );
 }
 

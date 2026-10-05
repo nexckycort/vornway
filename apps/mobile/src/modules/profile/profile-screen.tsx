@@ -5,21 +5,23 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { usersClient } from '@/api/users';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
 
 import type { ProfileSession } from './profile.types';
@@ -34,10 +36,7 @@ type RowProps = {
 
 function ProfileRow({ icon, title, subtitle, trailing, onPress }: RowProps) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-    >
+    <Button variant="ghost" onPress={onPress} style={styles.row}>
       <View style={styles.rowIcon}>
         <Ionicons name={icon} size={21} color="#DE034D" />
       </View>
@@ -52,7 +51,7 @@ function ProfileRow({ icon, title, subtitle, trailing, onPress }: RowProps) {
       ) : (
         <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
       )}
-    </Pressable>
+    </Button>
   );
 }
 
@@ -154,7 +153,7 @@ export default function ProfileScreen() {
       >
         <Text style={styles.pageTitle}>Perfil</Text>
 
-        <View style={styles.userCard}>
+        <Card style={styles.userCard}>
           {imageOverride || user?.image ? (
             <Image
               source={{ uri: imageOverride || user?.image || undefined }}
@@ -165,13 +164,15 @@ export default function ProfileScreen() {
               <Ionicons name="person" size={28} color="#DE034D" />
             </View>
           )}
-          <Pressable
+          <Button
             disabled={isUpdatingImage}
             onPress={() => void updatePhoto()}
+            size="icon-sm"
+            variant="default"
             style={styles.photoButton}
           >
             <Ionicons name="camera-outline" size={16} color="#FFFFFF" />
-          </Pressable>
+          </Button>
           <View style={styles.userCopy}>
             <Text style={styles.userName}>{userName}</Text>
             {currentUsername ? (
@@ -181,9 +182,9 @@ export default function ProfileScreen() {
               {userEmail}
             </Text>
           </View>
-        </View>
+        </Card>
 
-        <View style={styles.card}>
+        <Card style={styles.card}>
           <ProfileRow
             icon="at-outline"
             title="Username"
@@ -252,119 +253,107 @@ export default function ProfileScreen() {
               onPress={() => router.push('/profile/stats' as never)}
             />
           ) : null}
-        </View>
+        </Card>
 
-        <View style={styles.card}>
+        <Card style={styles.card}>
           <Text style={styles.sessionLabel}>SESIÓN PRINCIPAL</Text>
           <Text style={styles.sessionCopy}>
             Cierra tu sesión en este dispositivo.
           </Text>
-          <Pressable
+          <Button
             disabled={isLoggingOut}
             onPress={() => void logout()}
+            variant="destructive"
             style={styles.logoutButton}
           >
             {isLoggingOut ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <Spinner color="#FFFFFF" />
             ) : (
               <>
                 <Ionicons name="log-out-outline" size={18} color="#FFFFFF" />
                 <Text style={styles.logoutText}>Cerrar sesión</Text>
               </>
             )}
-          </Pressable>
-        </View>
+          </Button>
+        </Card>
       </ScrollView>
 
-      <Modal
-        visible={usernameDialog}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setUsernameDialog(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Editar username</Text>
-            <Text style={styles.modalDescription}>
+      <Dialog open={usernameDialog} onOpenChange={setUsernameDialog}>
+        <DialogContent style={styles.modalCard}>
+          <DialogHeader>
+            <DialogTitle>Editar username</DialogTitle>
+            <DialogDescription>
               Elige cómo te encontrarán tus amigos.
-            </Text>
-            <TextInput
-              autoCapitalize="none"
-              autoCorrect={false}
-              maxLength={24}
-              value={username}
-              onChangeText={setUsername}
-              placeholder="tu_username"
-              style={styles.input}
-            />
-            <View style={styles.modalActions}>
-              <Pressable
-                onPress={() => setUsernameDialog(false)}
-                style={styles.cancelButton}
-              >
-                <Text>Cancelar</Text>
-              </Pressable>
-              <Pressable
-                disabled={isSaving}
-                onPress={() => void saveUsername()}
-                style={styles.saveButton}
-              >
-                {isSaving ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.saveText}>Guardar</Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={sessionsDialog}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSessionsDialog(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Sesiones activas</Text>
-              <Pressable onPress={() => setSessionsDialog(false)}>
-                <Ionicons name="close" size={24} color="#202124" />
-              </Pressable>
-            </View>
-            <Text style={styles.modalDescription}>
-              Dispositivos con acceso a tu cuenta.
-            </Text>
-            <ScrollView style={styles.sessionsList}>
-              {sessions.length === 0 ? (
-                <Text style={styles.emptySessions}>
-                  No se encontraron sesiones.
-                </Text>
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={24}
+            value={username}
+            onChangeText={setUsername}
+            placeholder="tu_username"
+            style={styles.input}
+          />
+          <DialogFooter>
+            <DialogClose>
+              <Text>Cancelar</Text>
+            </DialogClose>
+            <Button
+              disabled={isSaving}
+              onPress={() => void saveUsername()}
+              style={styles.saveButton}
+            >
+              {isSaving ? (
+                <Spinner color="#FFFFFF" />
               ) : (
-                sessions.map((item) => (
-                  <View key={item.id} style={styles.sessionItem}>
-                    <Ionicons
-                      name="phone-portrait-outline"
-                      size={22}
-                      color="#DE034D"
-                    />
-                    <View style={styles.sessionItemCopy}>
-                      <Text style={styles.sessionDevice}>
-                        {item.userAgent || 'Dispositivo desconocido'}
-                      </Text>
-                      <Text style={styles.sessionDate}>
-                        {new Date(item.createdAt).toLocaleDateString('es-CO')}
-                      </Text>
-                    </View>
-                  </View>
-                ))
+                <Text style={styles.saveText}>Guardar</Text>
               )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={sessionsDialog} onOpenChange={setSessionsDialog}>
+        <DialogContent style={styles.modalCard}>
+          <DialogHeader>
+            <View style={styles.modalHeader}>
+              <DialogTitle>Sesiones activas</DialogTitle>
+              <DialogClose>
+                <Ionicons name="close" size={24} color="#202124" />
+              </DialogClose>
+            </View>
+            <DialogDescription>
+              Dispositivos con acceso a tu cuenta.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollView style={styles.sessionsList}>
+            {sessions.length === 0 ? (
+              <Text style={styles.emptySessions}>
+                No se encontraron sesiones.
+              </Text>
+            ) : (
+              sessions.map((item) => (
+                <View key={item.id} style={styles.sessionItem}>
+                  <Ionicons
+                    name="phone-portrait-outline"
+                    size={22}
+                    color="#DE034D"
+                  />
+                  <View style={styles.sessionItemCopy}>
+                    <Text style={styles.sessionDevice}>
+                      {item.userAgent || 'Dispositivo desconocido'}
+                    </Text>
+                    <Text style={styles.sessionDate}>
+                      {new Date(item.createdAt).toLocaleDateString('es-CO')}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        </DialogContent>
+      </Dialog>
     </SafeAreaView>
   );
 }

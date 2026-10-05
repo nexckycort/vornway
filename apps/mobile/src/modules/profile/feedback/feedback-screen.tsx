@@ -1,20 +1,17 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { feedbackClient } from '@/api/feedback';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 
 import type {
   FeedbackItem,
@@ -140,14 +137,14 @@ export default function FeedbackScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
+          <Button variant="ghost" size="icon" onPress={() => router.back()}>
             <Text style={styles.back}>‹</Text>
-          </Pressable>
+          </Button>
           <Text style={styles.pageTitle}>Feedback</Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.typeSwitch}>
-          <Pressable
+          <Button
             onPress={() => setType('BUG')}
             style={[styles.typeButton, type === 'BUG' && styles.typeActive]}
           >
@@ -156,8 +153,8 @@ export default function FeedbackScreen() {
             >
               Reportar error
             </Text>
-          </Pressable>
-          <Pressable
+          </Button>
+          <Button
             onPress={() => setType('FEATURE_REQUEST')}
             style={[
               styles.typeButton,
@@ -173,11 +170,11 @@ export default function FeedbackScreen() {
             >
               Solicitar función
             </Text>
-          </Pressable>
+          </Button>
         </View>
-        <View style={styles.card}>
-          <Text style={styles.label}>Título</Text>
-          <TextInput
+        <Card style={styles.card}>
+          <Label style={styles.label}>Título</Label>
+          <Input
             value={title}
             onChangeText={setTitle}
             placeholder={
@@ -185,8 +182,8 @@ export default function FeedbackScreen() {
             }
             style={styles.input}
           />
-          <Text style={styles.label}>Descripción</Text>
-          <TextInput
+          <Label style={styles.label}>Descripción</Label>
+          <Textarea
             multiline
             value={description}
             onChangeText={setDescription}
@@ -197,13 +194,14 @@ export default function FeedbackScreen() {
             <Text style={styles.label}>Imágenes</Text>
             <Text style={styles.count}>{images.length}/5</Text>
           </View>
-          <Pressable
+          <Button
+            variant="outline"
             disabled={images.length >= 5}
             onPress={() => void chooseImages()}
             style={styles.addImages}
           >
             <Text style={styles.addImagesText}>＋ Agregar imágenes</Text>
-          </Pressable>
+          </Button>
           {images.length > 0 ? (
             <ScrollView horizontal contentContainerStyle={styles.imageList}>
               {images.map((image) => (
@@ -215,26 +213,26 @@ export default function FeedbackScreen() {
               ))}
             </ScrollView>
           ) : null}
-          <Pressable
+          <Button
             disabled={submitting}
             onPress={() => void submit()}
             style={styles.submit}
           >
             {submitting ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <Spinner color="#FFFFFF" />
             ) : (
               <Text style={styles.submitText}>
                 {type === 'BUG' ? 'Enviar error' : 'Enviar funcionalidad'}
               </Text>
             )}
-          </Pressable>
-        </View>
+          </Button>
+        </Card>
         <Text style={styles.sectionTitle}>Mis reportes</Text>
         <Text style={styles.sectionCopy}>
           Consulta el estado de tus solicitudes.
         </Text>
         {loading ? (
-          <ActivityIndicator color="#DE034D" />
+          <Spinner color="#DE034D" />
         ) : items.filter((item) => item.type === type).length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
@@ -247,7 +245,7 @@ export default function FeedbackScreen() {
           items
             .filter((item) => item.type === type)
             .map((item) => (
-              <View key={item.id} style={styles.feedbackCard}>
+              <Card key={item.id} style={styles.feedbackCard}>
                 <View style={styles.feedbackTop}>
                   <View style={styles.feedbackCopy}>
                     <Text numberOfLines={1} style={styles.feedbackTitle}>
@@ -260,12 +258,16 @@ export default function FeedbackScreen() {
                     </Text>
                   </View>
                   <View style={styles.feedbackActions}>
-                    <Text style={styles.status}>
+                    <Badge variant="secondary" style={styles.status}>
                       {statusLabels[item.status]}
-                    </Text>
-                    <Pressable onPress={() => remove(item)}>
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onPress={() => remove(item)}
+                    >
                       <Text style={styles.delete}>×</Text>
-                    </Pressable>
+                    </Button>
                   </View>
                 </View>
                 <Text style={styles.description}>{item.description}</Text>
@@ -283,7 +285,7 @@ export default function FeedbackScreen() {
                 <Text style={styles.date}>
                   {new Date(item.createdAt).toLocaleDateString('es-CO')}
                 </Text>
-              </View>
+              </Card>
             ))
         )}
       </ScrollView>

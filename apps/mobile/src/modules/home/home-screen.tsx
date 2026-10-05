@@ -2,16 +2,12 @@ import { useMinimizeOnScroll } from 'expo-glass-tabs';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
 
 import { ActionCard, HomeSection } from './components/home-card';
@@ -36,7 +32,7 @@ export default function HomeScreen() {
   if (isLoading && !data) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color="#DE034D" size="large" />
+        <Spinner color="#DE034D" size="large" />
       </View>
     );
   }
@@ -63,16 +59,18 @@ export default function HomeScreen() {
             </Text>
             <Text style={styles.welcome}>Bienvenido a Vornway</Text>
           </View>
-          <Pressable
+          <Button
             accessibilityLabel="Notificaciones"
             onPress={() => router.push('/explore')}
+            size="icon"
+            variant="ghost"
             style={styles.bell}
           >
             <Text style={styles.bellText}>♧</Text>
             {(data?.unreadNotifications ?? 0) > 0 ? (
               <View style={styles.dot} />
             ) : null}
-          </Pressable>
+          </Button>
         </View>
 
         <View style={styles.actions}>
@@ -90,9 +88,13 @@ export default function HomeScreen() {
         </View>
 
         {error ? (
-          <Pressable onPress={() => void reload()} style={styles.error}>
+          <Button
+            onPress={() => void reload()}
+            variant="ghost"
+            style={styles.error}
+          >
             <Text style={styles.errorText}>{error}. Toca para reintentar.</Text>
-          </Pressable>
+          </Button>
         ) : null}
 
         {!hasGroups ? (
@@ -142,7 +144,7 @@ export default function HomeScreen() {
 
 function EmptyState({ onPress }: { onPress: () => void }) {
   return (
-    <View style={styles.empty}>
+    <Card style={styles.empty}>
       <View style={styles.logoStack}>
         <View style={styles.logoPink} />
         <View style={styles.logoWhite}>
@@ -158,11 +160,11 @@ function EmptyState({ onPress }: { onPress: () => void }) {
         Crea tu primer espacio, organiza tus gastos y define tus metas de
         ahorro. Vornway te acompaña en cada paso.
       </Text>
-      <Pressable onPress={onPress} style={styles.createButton}>
+      <Button onPress={onPress} variant="outline" style={styles.createButton}>
         <Text style={styles.createIcon}>＋</Text>
         <Text style={styles.createText}>Crear espacio</Text>
-      </Pressable>
-    </View>
+      </Button>
+    </Card>
   );
 }
 

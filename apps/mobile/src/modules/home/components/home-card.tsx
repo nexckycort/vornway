@@ -1,4 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { Button } from '@/components/ui/button';
 
 export function HomeSection({
   title,
@@ -30,13 +32,9 @@ export function ActionCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <Button
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.action,
-        primary && styles.actionPrimary,
-        pressed && styles.pressed,
-      ]}
+      style={[styles.action, primary && styles.actionPrimary]}
     >
       <Text style={[styles.actionIcon, primary && styles.actionIconPrimary]}>
         {icon}
@@ -44,7 +42,7 @@ export function ActionCard({
       <Text style={[styles.actionText, primary && styles.actionTextPrimary]}>
         {title}
       </Text>
-    </Pressable>
+    </Button>
   );
 }
 

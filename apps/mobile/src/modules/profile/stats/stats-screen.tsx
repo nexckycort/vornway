@@ -1,16 +1,12 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { adminClient } from '@/api/admin';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
 
 export default function StatsScreen() {
@@ -47,28 +43,28 @@ export default function StatsScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
+          <Button variant="ghost" size="icon" onPress={() => router.back()}>
             <Text style={styles.back}>‹</Text>
-          </Pressable>
+          </Button>
           <Text style={styles.title}>Estadísticas</Text>
           <View style={{ width: 24 }} />
         </View>
         {!allowed ? (
-          <View style={styles.card}>
+          <Card style={styles.card}>
             <Text style={styles.title}>Sin acceso</Text>
             <Text style={styles.copy}>
               No tienes permisos para ver estas estadísticas.
             </Text>
-            <Pressable style={styles.button} onPress={() => router.back()}>
+            <Button style={styles.button} onPress={() => router.back()}>
               <Text style={styles.buttonText}>Volver al perfil</Text>
-            </Pressable>
-          </View>
+            </Button>
+          </Card>
         ) : (
           <>
-            <View style={styles.card}>
+            <Card style={styles.card}>
               <Text style={styles.copy}>Resumen general de Vornway.</Text>
               {loading ? (
-                <ActivityIndicator color="#DE034D" />
+                <Spinner color="#DE034D" />
               ) : (
                 <View style={styles.grid}>
                   <Stat
@@ -81,19 +77,19 @@ export default function StatsScreen() {
                   />
                 </View>
               )}
-            </View>
-            <View style={styles.card}>
+            </Card>
+            <Card style={styles.card}>
               <Text style={styles.title}>Feedback</Text>
               <Text style={styles.copy}>
                 Administra los reportes y solicitudes de los usuarios.
               </Text>
-              <Pressable
+              <Button
                 style={styles.button}
                 onPress={() => router.push('/profile/stats/feedback' as never)}
               >
                 <Text style={styles.buttonText}>Abrir bandeja</Text>
-              </Pressable>
-            </View>
+              </Button>
+            </Card>
           </>
         )}
       </ScrollView>

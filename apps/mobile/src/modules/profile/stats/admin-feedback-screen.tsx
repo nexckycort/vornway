@@ -1,17 +1,13 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { adminClient } from '@/api/admin';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
 
 type Item = {
@@ -67,38 +63,35 @@ export default function AdminFeedbackScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
+          <Button variant="ghost" size="icon" onPress={() => router.back()}>
             <Text style={styles.back}>‹</Text>
-          </Pressable>
+          </Button>
           <Text style={styles.title}>Bandeja de feedback</Text>
           <View style={{ width: 24 }} />
         </View>
         {email !== 'junior110120@gmail.com' ? (
-          <View style={styles.card}>
+          <Card style={styles.card}>
             <Text style={styles.title}>Sin acceso</Text>
             <Text style={styles.copy}>
               No tienes permisos para ver esta bandeja.
             </Text>
-          </View>
+          </Card>
         ) : loading ? (
-          <ActivityIndicator color="#DE034D" />
+          <Spinner color="#DE034D" />
         ) : (
           items.map((item) => (
-            <View key={item.id} style={styles.card}>
+            <Card key={item.id} style={styles.card}>
               <Text style={styles.itemTitle}>{item.title}</Text>
               <Text style={styles.copy}>
                 {item.user.name} · {item.type}
               </Text>
               <Text style={styles.description}>{item.description}</Text>
-              <Pressable
-                onPress={() => void update(item)}
-                style={styles.status}
-              >
-                <Text style={styles.statusText}>
+              <Button onPress={() => void update(item)} style={styles.status}>
+                <Badge variant="secondary" style={styles.statusText}>
                   {item.status} · tocar para cambiar
-                </Text>
-              </Pressable>
-            </View>
+                </Badge>
+              </Button>
+            </Card>
           ))
         )}
       </ScrollView>

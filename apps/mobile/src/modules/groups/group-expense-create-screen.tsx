@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
 
+type SplitMethod = 'equal' | 'percentage' | 'exact';
+
 export default function GroupExpenseCreateScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -18,6 +20,9 @@ export default function GroupExpenseCreateScreen() {
   const [amount, setAmount] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [categoryId, setCategoryId] = useState('');
+  const [paidById, setPaidById] = useState('');
+  const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
+  const [shareValues, setShareValues] = useState<Record<string, string>>({});
   const groupQuery = useQuery({
     queryKey: ['group-summary', id],
     enabled: Boolean(id),
@@ -40,16 +45,36 @@ export default function GroupExpenseCreateScreen() {
   useEffect(() => {
     if (selectedIds.length === 0 && members.length > 0)
       setSelectedIds(members.map((member) => member.id));
-  }, [members, selectedIds.length]);
+    if (!paidById && members[0]) setPaidById(members[0].id);
+  }, [members, paidById, selectedIds.length]);
   const mutation = useMutation({
     mutationFn: async () => {
       const parsedAmount = Number(amount.replace(',', '.'));
+      const values = Object.fromEntries(
+        selectedIds.map((memberId) => {
+          const entered =
+            Number((shareValues[memberId] ?? '').replace(',', '.')) || 0;
+          return [
+            memberId,
+            splitMethod === 'percentage'
+              ? (parsedAmount * entered) / 100
+              : entered,
+          ];
+        }),
+      );
+      const expectedTotal = splitMethod === 'percentage' ? 100 : parsedAmount;
+      const rawTotal = Object.values(shareValues).reduce(
+        (sum, value) => sum + (Number(value.replace(',', '.')) || 0),
+        0,
+      );
       if (
         !id ||
         !description.trim() ||
         !Number.isFinite(parsedAmount) ||
         parsedAmount <= 0 ||
-        selectedIds.length === 0
+        selectedIds.length === 0 ||
+        !paidById ||
+        (splitMethod !== 'equal' && Math.abs(rawTotal - expectedTotal) > 0.01)
       )
         throw new Error('invalid');
       const response = await groupsClient[':id'].expenses.$post({
@@ -59,7 +84,18 @@ export default function GroupExpenseCreateScreen() {
           amount: parsedAmount,
           currency: 'COP',
           participantIds: selectedIds,
-          splitMethod: 'equal',
+          paidById,
+          splitMethod,
+          ...(splitMethod !== 'equal'
+            ? {
+                exactShares: values,
+                sharedSplit: {
+                  amount: parsedAmount,
+                  splitMethod,
+                  splitValues: values,
+                },
+              }
+            : {}),
           ...(categoryId ? { categoryId } : {}),
         },
       });
@@ -113,6 +149,50 @@ export default function GroupExpenseCreateScreen() {
               </Button>
             );
           })}
+          <Label>Quién pagó</Label>
+          {members.map((member) => (
+            <Button
+              key={`payer-${member.id}`}
+              variant={paidById === member.id ? 'default' : 'outline'}
+              onPress={() => setPaidById(member.id)}
+            >
+              <Text style={styles.buttonText}>{member.name}</Text>
+            </Button>
+          ))}
+          <Label>Método de reparto</Label>
+          {(['equal', 'percentage', 'exact'] as const).map((method) => (
+            <Button
+              key={method}
+              variant={splitMethod === method ? 'default' : 'outline'}
+              onPress={() => setSplitMethod(method)}
+            >
+              <Text style={styles.buttonText}>
+                {method === 'equal'
+                  ? 'Partes iguales'
+                  : method === 'percentage'
+                    ? 'Porcentaje'
+                    : 'Montos exactos'}
+              </Text>
+            </Button>
+          ))}
+          {splitMethod !== 'equal'
+            ? members
+                .filter((member) => selectedIds.includes(member.id))
+                .map((member) => (
+                  <Input
+                    key={`share-${member.id}`}
+                    value={shareValues[member.id] ?? ''}
+                    onChangeText={(value) =>
+                      setShareValues((current) => ({
+                        ...current,
+                        [member.id]: value,
+                      }))
+                    }
+                    keyboardType="decimal-pad"
+                    placeholder={`${member.name} ${splitMethod === 'percentage' ? '%' : 'monto'}`}
+                  />
+                ))
+            : null}
           {categories.length > 0 ? (
             <>
               <Label>Categoría</Label>

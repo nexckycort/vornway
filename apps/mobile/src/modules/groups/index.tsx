@@ -26,17 +26,19 @@ type Group = {
   hasExpenses?: boolean;
 };
 type GroupPage = { data: Group[]; pagination?: { nextCursor?: string | null } };
+type GroupFilter = 'all' | 'theyOweYou' | 'youOweThem' | 'noDebt';
 
 export default function GroupsScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<GroupFilter>('all');
   const groupsQuery = useQuery({
-    queryKey: ['groups-list', search.trim()],
+    queryKey: ['groups-list', search.trim(), filter],
     queryFn: async () => {
       const response = await groupsClient.index.$get({
         query: {
           limit: '50',
-          filter: 'all',
+          filter,
           ...(search.trim() ? { search: search.trim() } : {}),
         },
       });
@@ -69,6 +71,36 @@ export default function GroupsScreen() {
           placeholder="Buscar espacios"
           style={styles.search}
         />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filters}
+        >
+          {(
+            [
+              ['all', 'Todos'],
+              ['theyOweYou', 'Te deben'],
+              ['youOweThem', 'Debes'],
+              ['noDebt', 'Sin deudas'],
+            ] as const
+          ).map(([value, label]) => (
+            <Button
+              key={value}
+              size="sm"
+              variant={filter === value ? 'default' : 'outline'}
+              onPress={() => setFilter(value)}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  filter !== value && styles.filterTextOutline,
+                ]}
+              >
+                {label}
+              </Text>
+            </Button>
+          ))}
+        </ScrollView>
         {groupsQuery.isLoading ? (
           <Spinner color="#DE034D" />
         ) : groupsQuery.isError ? (
@@ -134,12 +166,15 @@ const styles = StyleSheet.create({
   heading: { color: '#0F172A', fontSize: 30, fontWeight: '600' },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
   search: { backgroundColor: '#FFFFFF', borderRadius: 24, height: 44 },
+  filters: { gap: 8, paddingVertical: 2 },
   card: { gap: 8, padding: 16 },
   row: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   copyWrap: { flex: 1, gap: 4 },
   cardTitle: { color: '#0F172A', fontSize: 16, fontWeight: '600' },
   copy: { color: '#64748B', fontSize: 14, lineHeight: 20 },
   link: { color: '#DE034D', fontSize: 13, fontWeight: '600' },
+  filterText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
+  filterTextOutline: { color: '#0F172A' },
   empty: { alignItems: 'center', gap: 12, padding: 24 },
   emptyTitle: { color: '#0F172A', fontSize: 18, fontWeight: '600' },
 });

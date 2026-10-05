@@ -32,14 +32,19 @@ export default function GroupReportsScreen() {
   const [tab, setTab] = useState<Tab>('balance');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const reportRange = useMemo(
-    () => ({
-      range: startDate || endDate ? ('custom' as const) : ('all' as const),
-      ...(startDate ? { startDate } : {}),
-      ...(endDate ? { endDate } : {}),
-    }),
-    [endDate, startDate],
-  );
+  const reportRange = useMemo(() => {
+    const start = startDate
+      ? new Date(`${startDate}T00:00:00.000Z`).toISOString()
+      : undefined;
+    const end = endDate
+      ? new Date(`${endDate}T23:59:59.999Z`).toISOString()
+      : undefined;
+    return {
+      range: start && end ? ('custom' as const) : ('all' as const),
+      ...(start ? { startDate: start } : {}),
+      ...(end ? { endDate: end } : {}),
+    };
+  }, [endDate, startDate]);
   const totalsQuery = useQuery({
     queryKey: ['group-report-totals', id, reportRange],
     enabled: Boolean(id),

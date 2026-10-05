@@ -1,5 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,26 +18,18 @@ export default function StatsScreen() {
     ?.trim()
     .toLowerCase();
   const allowed = email === 'junior110120@gmail.com';
-  const [stats, setStats] = useState<{
-    totalUsers: number;
-    totalGroups: number;
-  } | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!allowed) return;
-    setLoading(true);
-    void adminClient.stats.$get().then(async (response) => {
-      if (response.ok)
-        setStats(
-          (await response.json()) as {
-            totalUsers: number;
-            totalGroups: number;
-          },
-        );
-      setLoading(false);
-    });
-  }, [allowed]);
+  const statsQuery = useQuery({
+    queryKey: ['admin-stats'],
+    enabled: allowed,
+    queryFn: async () => {
+      const response = await adminClient.stats.$get();
+      if (!response.ok) throw new Error('stats_load_failed');
+      return (await response.json()) as {
+        totalUsers: number;
+        totalGroups: number;
+      };
+    },
+  });
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -63,17 +55,17 @@ export default function StatsScreen() {
           <>
             <Card style={styles.card}>
               <Text style={styles.copy}>Resumen general de Vornway.</Text>
-              {loading ? (
+              {statsQuery.isLoading ? (
                 <Spinner color="#DE034D" />
               ) : (
                 <View style={styles.grid}>
                   <Stat
                     label="Usuarios"
-                    value={String(stats?.totalUsers ?? 0)}
+                    value={String(statsQuery.data?.totalUsers ?? 0)}
                   />
                   <Stat
                     label="Espacios"
-                    value={String(stats?.totalGroups ?? 0)}
+                    value={String(statsQuery.data?.totalGroups ?? 0)}
                   />
                 </View>
               )}

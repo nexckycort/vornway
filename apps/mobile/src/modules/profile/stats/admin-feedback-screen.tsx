@@ -1,5 +1,5 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -29,36 +29,33 @@ export default function AdminFeedbackScreen() {
   )?.user?.email
     ?.trim()
     .toLowerCase();
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    if (email !== 'junior110120@gmail.com') {
-      setLoading(false);
-      return;
-    }
-    void adminClient.feedback
-      .$get({ query: { limit: '50' } })
-      .then(async (response) => {
-        if (response.ok)
-          setItems(((await response.json()) as { data: Item[] }).data);
-        setLoading(false);
+  const queryClient = useQueryClient();
+  const feedbackQuery = useQuery({
+    queryKey: ['admin-feedback'],
+    enabled: email === 'junior110120@gmail.com',
+    queryFn: async () => {
+      const response = await adminClient.feedback.$get({
+        query: { limit: '50' },
       });
-  }, [email]);
-  async function update(item: Item) {
-    const next =
-      statuses[(statuses.indexOf(item.status) + 1) % statuses.length] ?? 'OPEN';
-    const response = await adminClient.feedback[':feedbackId'].$patch({
-      param: { feedbackId: item.id },
-      json: { status: next as never },
-    });
-    if (response.ok)
-      setItems((current) =>
-        current.map((entry) =>
-          entry.id === item.id ? { ...entry, status: next } : entry,
-        ),
-      );
-    else Alert.alert('Error', 'No se pudo actualizar el feedback.');
-  }
+      if (!response.ok) throw new Error('feedback_load_failed');
+      return ((await response.json()) as { data: Item[] }).data;
+    },
+  });
+  const updateMutation = useMutation({
+    mutationFn: async (item: Item) => {
+      const next =
+        statuses[(statuses.indexOf(item.status) + 1) % statuses.length] ??
+        'OPEN';
+      const response = await adminClient.feedback[':feedbackId'].$patch({
+        param: { feedbackId: item.id },
+        json: { status: next as never },
+      });
+      if (!response.ok) throw new Error('feedback_update_failed');
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin-feedback'] });
+    },
+  });
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -76,17 +73,29 @@ export default function AdminFeedbackScreen() {
               No tienes permisos para ver esta bandeja.
             </Text>
           </Card>
-        ) : loading ? (
+        ) : feedbackQuery.isLoading ? (
           <Spinner color="#DE034D" />
         ) : (
-          items.map((item) => (
+          (feedbackQuery.data ?? []).map((item) => (
             <Card key={item.id} style={styles.card}>
               <Text style={styles.itemTitle}>{item.title}</Text>
               <Text style={styles.copy}>
                 {item.user.name} · {item.type}
               </Text>
               <Text style={styles.description}>{item.description}</Text>
-              <Button onPress={() => void update(item)} style={styles.status}>
+              <Button
+                disabled={updateMutation.isPending}
+                onPress={() =>
+                  updateMutation.mutate(item, {
+                    onError: () =>
+                      Alert.alert(
+                        'Error',
+                        'No se pudo actualizar el feedback.',
+                      ),
+                  })
+                }
+                style={styles.status}
+              >
                 <Badge variant="secondary" style={styles.statusText}>
                   {item.status} · tocar para cambiar
                 </Badge>

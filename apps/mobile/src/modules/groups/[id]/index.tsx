@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -71,6 +71,16 @@ export default function GroupDetailScreen() {
               <Text style={styles.copy}>
                 {group.description || 'Organiza aquí los detalles de tu viaje.'}
               </Text>
+              <Button
+                variant="outline"
+                onPress={() =>
+                  void Share.share({
+                    message: `Únete a ${group.name} en Vornway: https://join.vornway.com/${group.inviteCode}`,
+                  })
+                }
+              >
+                <Text style={styles.outlineText}>Compartir invitación</Text>
+              </Button>
               <Button
                 onPress={() =>
                   router.push(`/groups/${id}/add-expense` as never)

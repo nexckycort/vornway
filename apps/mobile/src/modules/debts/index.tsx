@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
 import { debtsClient } from '@/api/debts';
+import { usersClient } from '@/api/users';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -15,6 +16,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { useI18n } from '@/lib/i18n';
+
+import { formatDebtAmount } from './format';
 
 type Debt = {
   id: string;
@@ -24,15 +28,25 @@ type Debt = {
   currency: string;
   direction: string;
   status: string;
+  expectedTotal?: number;
+  paidAmount?: number;
+  amounts?: Array<{ amount: number; loanDate: string }>;
+  payments?: Array<{ amount: number; paidAt: string }>;
 };
 type DebtFilter = 'active' | 'all' | 'paid';
 export default function DebtsScreen() {
   const router = useRouter();
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [person, setPerson] = useState('');
+  const [counterpartyId, setCounterpartyId] = useState<string>();
   const [amount, setAmount] = useState('');
+  const [direction, setDirection] = useState<'lent' | 'borrowed'>('lent');
+  const [loanDate, setLoanDate] = useState(today());
+  const [dueDate, setDueDate] = useState('');
+  const [note, setNote] = useState('');
   const [filter, setFilter] = useState<DebtFilter>('active');
   const debtsQuery = useQuery({
     queryKey: ['debts'],
@@ -42,6 +56,17 @@ export default function DebtsScreen() {
       });
       if (!response.ok) throw new Error('debts_load_failed');
       return (await response.json()) as Debt[];
+    },
+  });
+  const userSearch = useQuery({
+    queryKey: ['debt-counterparty-search', person.trim()],
+    enabled: person.trim().length > 1 && !counterpartyId,
+    queryFn: async () => {
+      const response = await usersClient.search.$get({
+        query: { query: person.trim() },
+      });
+      if (!response.ok) throw new Error('user_search_failed');
+      return response.json();
     },
   });
   const createMutation = useMutation({
@@ -58,23 +83,32 @@ export default function DebtsScreen() {
         json: {
           name: name.trim(),
           counterpartyName: person.trim(),
-          direction: 'lent',
+          ...(counterpartyId ? { counterpartyId } : {}),
+          direction,
           principalAmount: value,
-          amounts: [
-            { amount: value, loanDate: new Date().toISOString().slice(0, 10) },
-          ],
+          amounts: [{ amount: value, loanDate }],
           interestType: 'none',
           currency: 'COP',
+          ...(dueDate ? { dueDate } : {}),
+          ...(note.trim() ? { description: note.trim() } : {}),
         },
       });
       if (!response.ok) throw new Error('create_failed');
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['debts'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      ]);
       setOpen(false);
       setName('');
       setPerson('');
+      setCounterpartyId(undefined);
       setAmount('');
+      setDirection('lent');
+      setLoanDate(today());
+      setDueDate('');
+      setNote('');
     },
   });
   const debts = debtsQuery.data ?? [];
@@ -92,18 +126,24 @@ export default function DebtsScreen() {
   return (
     <Screen>
       <ScreenHeader
-        title="Deudas"
+        title={t('debts.title')}
         action={
           <Button size="sm" onPress={() => setOpen(true)}>
-            <Text style={styles.buttonText}>＋ Nueva</Text>
+            <Text style={styles.buttonText}>＋ {t('debts.create')}</Text>
           </Button>
         }
       />
       <ScrollView contentContainerStyle={styles.content}>
         <Card style={styles.summary}>
-          <Text style={styles.summaryLabel}>POR COBRAR</Text>
-          <Text style={styles.summaryAmount}>{receivable} COP</Text>
-          <Text style={styles.copy}>{activeCount} deudas activas</Text>
+          <Text style={styles.summaryLabel}>
+            {t('debts.receivable').toUpperCase()}
+          </Text>
+          <Text style={styles.summaryAmount}>
+            {formatDebtAmount(receivable, 'COP')}
+          </Text>
+          <Text style={styles.copy}>
+            {activeCount} {t('debts.activeDebts')}
+          </Text>
         </Card>
         <ScrollView
           horizontal
@@ -112,9 +152,9 @@ export default function DebtsScreen() {
         >
           {(
             [
-              ['active', 'Activas'],
-              ['all', 'Todas'],
-              ['paid', 'Pagadas'],
+              ['active', t('debts.filterActive')],
+              ['all', t('debts.filterAll')],
+              ['paid', t('debts.filterPaid')],
             ] as const
           ).map(([value, label]) => (
             <Button
@@ -138,17 +178,14 @@ export default function DebtsScreen() {
           <Spinner color="#DE034D" />
         ) : debtsQuery.isError ? (
           <Card style={styles.empty}>
-            <Text style={styles.title}>No se pudieron cargar las deudas</Text>
+            <Text style={styles.title}>{t('debts.loadError')}</Text>
             <Button onPress={() => void debtsQuery.refetch()}>
-              <Text style={styles.buttonText}>Reintentar</Text>
+              <Text style={styles.buttonText}>{t('common.retry')}</Text>
             </Button>
           </Card>
         ) : visibleDebts.length === 0 ? (
           <Card style={styles.empty}>
-            <Text style={styles.title}>No tienes deudas activas</Text>
-            <Text style={styles.copy}>
-              Registra préstamos o dinero pendiente.
-            </Text>
+            <Text style={styles.title}>{t('debts.empty')}</Text>
           </Card>
         ) : (
           visibleDebts.map((item) => (
@@ -160,11 +197,17 @@ export default function DebtsScreen() {
                 <Text style={styles.title}>{item.name}</Text>
                 <Text style={styles.copy}>
                   {item.direction === 'lent'
-                    ? `Te debe ${item.counterpartyName}`
-                    : `Debes a ${item.counterpartyName}`}
+                    ? `${t('debts.lentTo')} ${item.counterpartyName}`
+                    : `${t('debts.borrowedFrom')} ${item.counterpartyName}`}
                 </Text>
                 <Text style={styles.amount}>
-                  {item.remainingAmount} {item.currency}
+                  {formatDebtAmount(item.remainingAmount, item.currency)}
+                </Text>
+                <Text style={styles.copy}>
+                  {progressFor(item)}% {t('debts.paid').toLowerCase()}
+                </Text>
+                <Text style={styles.copy}>
+                  {lastActivity(item) ?? t('debts.noActivity')}
                 </Text>
               </Button>
             </Card>
@@ -174,19 +217,85 @@ export default function DebtsScreen() {
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Nueva deuda</DrawerTitle>
+            <DrawerTitle>{t('debts.newTitle')}</DrawerTitle>
           </DrawerHeader>
-          <Input value={name} onChangeText={setName} placeholder="Nombre" />
+          <Input
+            value={name}
+            onChangeText={setName}
+            placeholder={t('debts.namePlaceholder')}
+          />
           <Input
             value={person}
-            onChangeText={setPerson}
-            placeholder="Persona"
+            onChangeText={(value) => {
+              setPerson(value);
+              setCounterpartyId(undefined);
+            }}
+            placeholder={t('debts.personPlaceholder')}
           />
+          {userSearch.data?.data?.length && !counterpartyId
+            ? userSearch.data.data.map((user) => (
+                <Button
+                  key={user.id}
+                  variant="outline"
+                  onPress={() => {
+                    setCounterpartyId(user.id);
+                    setPerson(user.name);
+                  }}
+                >
+                  <Text style={styles.outlineText}>{user.name}</Text>
+                </Button>
+              ))
+            : null}
+          <Text style={styles.fieldLabel}>{t('debts.title')}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <Button
+              variant={direction === 'lent' ? 'default' : 'outline'}
+              onPress={() => setDirection('lent')}
+            >
+              <Text
+                style={
+                  direction === 'lent' ? styles.buttonText : styles.outlineText
+                }
+              >
+                {t('debts.lent')}
+              </Text>
+            </Button>
+            <Button
+              variant={direction === 'borrowed' ? 'default' : 'outline'}
+              onPress={() => setDirection('borrowed')}
+            >
+              <Text
+                style={
+                  direction === 'borrowed'
+                    ? styles.buttonText
+                    : styles.outlineText
+                }
+              >
+                {t('debts.borrowed')}
+              </Text>
+            </Button>
+          </ScrollView>
           <Input
             value={amount}
             onChangeText={setAmount}
             keyboardType="decimal-pad"
-            placeholder="Monto"
+            placeholder={t('debts.amountPlaceholder')}
+          />
+          <Input
+            value={loanDate}
+            onChangeText={setLoanDate}
+            placeholder={t('debts.amountDate')}
+          />
+          <Input
+            value={dueDate}
+            onChangeText={setDueDate}
+            placeholder={t('debts.dueDate')}
+          />
+          <Input
+            value={note}
+            onChangeText={setNote}
+            placeholder={t('debts.descriptionPlaceholder')}
+            multiline
           />
           <DrawerFooter>
             <Button
@@ -194,14 +303,11 @@ export default function DebtsScreen() {
               onPress={() =>
                 createMutation.mutate(undefined, {
                   onError: () =>
-                    Alert.alert(
-                      'No se pudo crear',
-                      'Revisa los datos e intenta nuevamente.',
-                    ),
+                    Alert.alert(t('debts.createError'), t('common.retry')),
                 })
               }
             >
-              <Text style={styles.buttonText}>Guardar</Text>
+              <Text style={styles.buttonText}>{t('debts.save')}</Text>
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -228,4 +334,34 @@ const styles = StyleSheet.create({
   copy: { color: '#64748B', fontSize: 14 },
   amount: { color: '#DE034D', fontSize: 20, fontWeight: '600' },
   buttonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
+  outlineText: { color: '#0F172A', fontSize: 13, fontWeight: '600' },
+  fieldLabel: { color: '#64748B', fontSize: 12, fontWeight: '600' },
 });
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function progressFor(debt: Debt) {
+  if (!debt.expectedTotal || debt.expectedTotal <= 0) return 0;
+  return Math.round(
+    Math.min(
+      100,
+      Math.max(0, ((debt.paidAmount ?? 0) / debt.expectedTotal) * 100),
+    ),
+  );
+}
+
+function lastActivity(debt: Debt) {
+  const payment = debt.payments
+    ?.slice()
+    .sort((a, b) => b.paidAt.localeCompare(a.paidAt))[0];
+  const loan = debt.amounts
+    ?.slice()
+    .sort((a, b) => b.loanDate.localeCompare(a.loanDate))[0];
+  if (!payment && !loan) return null;
+  if (payment && (!loan || payment.paidAt > loan.loanDate)) {
+    return `Abono · ${payment.amount} COP · ${payment.paidAt}`;
+  }
+  return `Préstamo · ${loan?.amount ?? 0} COP · ${loan?.loanDate ?? ''}`;
+}

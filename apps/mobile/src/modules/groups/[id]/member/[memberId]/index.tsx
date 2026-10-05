@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
 
@@ -29,6 +31,9 @@ export default function GroupMemberExpensesScreen() {
     memberId: string;
   }>();
   const router = useRouter();
+  const [paidOnly, setPaidOnly] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const groupQuery = useQuery({
     queryKey: ['group-summary', id],
     enabled: Boolean(id),
@@ -41,14 +46,26 @@ export default function GroupMemberExpensesScreen() {
     },
   });
   const expensesQuery = useQuery({
-    queryKey: ['group-member-expenses', id, memberId],
+    queryKey: [
+      'group-member-expenses',
+      id,
+      memberId,
+      paidOnly,
+      startDate,
+      endDate,
+    ],
     enabled: Boolean(id && memberId),
     queryFn: async () => {
       const response = await groupsClient[':id'].members[
         ':memberId'
       ].expenses.$get({
         param: { id: id ?? '', memberId: memberId ?? '' },
-        query: { limit: '50' },
+        query: {
+          limit: '50',
+          ...(paidOnly ? { paidOnly: 'true' } : {}),
+          ...(startDate ? { startDate } : {}),
+          ...(endDate ? { endDate } : {}),
+        },
       });
       if (!response.ok) throw new Error('member_expenses_load_failed');
       return response.json() as Promise<ExpenseResponse>;
@@ -73,6 +90,11 @@ export default function GroupMemberExpensesScreen() {
           <>
             <Card style={styles.card}>
               <Text style={styles.title}>Resumen de {member.name}</Text>
+              <Text style={styles.copy}>
+                {paidOnly
+                  ? 'Gastos pagados por este participante.'
+                  : 'Gastos relacionados con este participante.'}
+              </Text>
               {Object.entries(summary?.spentByCurrency ?? {}).map(
                 ([currency, value]) => (
                   <Text key={`spent-${currency}`} style={styles.copy}>
@@ -90,6 +112,34 @@ export default function GroupMemberExpensesScreen() {
             </Card>
             <Card style={styles.card}>
               <Text style={styles.title}>Gastos</Text>
+              <Button
+                variant={paidOnly ? 'default' : 'outline'}
+                onPress={() => setPaidOnly((current) => !current)}
+              >
+                <Text style={paidOnly ? styles.buttonText : styles.outlineText}>
+                  Solo gastos pagados
+                </Text>
+              </Button>
+              <Input
+                value={startDate}
+                onChangeText={setStartDate}
+                placeholder="Desde (AAAA-MM-DD)"
+              />
+              <Input
+                value={endDate}
+                onChangeText={setEndDate}
+                placeholder="Hasta (AAAA-MM-DD)"
+              />
+              <Button
+                variant="ghost"
+                onPress={() => {
+                  setPaidOnly(false);
+                  setStartDate('');
+                  setEndDate('');
+                }}
+              >
+                <Text style={styles.outlineText}>Limpiar filtros</Text>
+              </Button>
               {expenses.length === 0 ? (
                 <Text style={styles.copy}>
                   No hay gastos para este participante.
@@ -131,4 +181,6 @@ const styles = StyleSheet.create({
   card: { gap: 12, padding: 20 },
   title: { color: '#0F172A', fontSize: 18, fontWeight: '600' },
   copy: { color: '#64748B', fontSize: 14, lineHeight: 20 },
+  buttonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
+  outlineText: { color: '#0F172A', fontSize: 13, fontWeight: '600' },
 });

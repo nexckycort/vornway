@@ -11,39 +11,45 @@ import {
 } from 'expo-glass-tabs';
 import { useRouter } from 'expo-router';
 import { TabList, TabSlot, Tabs, TabTrigger } from 'expo-router/ui';
+import { useI18n } from '@/lib/i18n';
 
 type TabItem = GlassTabItem & { href: string; iconName: IoniconsIconName };
 
-const ITEMS: TabItem[] = [
-  { name: 'index', href: '/', label: 'Inicio', iconName: 'home-outline' },
-  {
-    name: 'friends',
-    href: '/friends',
-    label: 'Amigos',
-    iconName: 'people-outline',
-  },
-  {
-    name: 'spaces',
-    href: '/spaces',
-    label: 'Espacios',
-    iconName: 'grid-outline',
-  },
-  {
-    name: 'goals',
-    href: '/goals',
-    label: 'Metas',
-    iconName: 'flag-outline',
-  },
-  {
-    name: 'profile',
-    href: '/profile',
-    label: 'Perfil',
-    iconName: 'person-outline',
-  },
-];
-
 export default function AppTabs() {
   const router = useRouter();
+  const { t } = useI18n();
+  const items: TabItem[] = [
+    {
+      name: 'index',
+      href: '/',
+      label: t('bottomBar.home'),
+      iconName: 'home-outline',
+    },
+    {
+      name: 'friends',
+      href: '/friends',
+      label: t('bottomBar.friends'),
+      iconName: 'people-outline',
+    },
+    {
+      name: 'spaces',
+      href: '/spaces',
+      label: t('bottomBar.groups'),
+      iconName: 'grid-outline',
+    },
+    {
+      name: 'goals',
+      href: '/goals',
+      label: t('bottomBar.goals'),
+      iconName: 'flag-outline',
+    },
+    {
+      name: 'profile',
+      href: '/profile',
+      label: t('bottomBar.profile'),
+      iconName: 'person-outline',
+    },
+  ];
 
   return (
     <TabBarMinimizeProvider>
@@ -60,11 +66,11 @@ export default function AppTabs() {
               solidFallback: 'rgba(255, 255, 255, 0.96)',
             }}
             onIndexSelected={(index) => {
-              const item = ITEMS[index];
+              const item = items[index];
               if (item) router.navigate(item.href as never);
             }}
           >
-            {ITEMS.map(({ href, iconName, ...item }, index) => (
+            {items.map(({ href, iconName, ...item }, index) => (
               <TabTrigger
                 key={item.name}
                 name={item.name}

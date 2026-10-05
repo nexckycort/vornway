@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Image,
@@ -14,30 +14,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { authClient, getAuthCallbackURL } from '@/lib/auth-client';
+import { useI18n } from '@/lib/i18n';
 
-const slides = [
-  {
-    image: require('@/assets/images/login/slide-1.webp'),
-    title: 'Organiza tu viaje sin estrés',
-    description:
-      'Desde el itinerario hasta los gastos, todo tu viaje en un solo lugar para que te enfoques en disfrutar.',
-  },
-  {
-    image: require('@/assets/images/login/slide-2.webp'),
-    title: 'Gastos en diferentes monedas',
-    description:
-      'Agrega gastos, divide como quieras y olvídate de las cuentas complicadas, incluso viajando entre países.',
-  },
-  {
-    image: require('@/assets/images/login/slide-3.webp'),
-    title: 'Haz realidad tus metas',
-    description:
-      'Crea metas de ahorro, haz seguimiento y llega preparado a tu próximo destino.',
-  },
+const slideImages = [
+  require('@/assets/images/login/slide-1.webp'),
+  require('@/assets/images/login/slide-2.webp'),
+  require('@/assets/images/login/slide-3.webp'),
 ] as const;
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const carouselRef = useRef<ScrollViewInstance>(null);
@@ -49,12 +37,33 @@ export default function LoginScreen() {
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const destination =
+    typeof redirect === 'string' && redirect.startsWith('/') && redirect !== '/'
+      ? redirect
+      : '/(tabs)';
+  const slides = [
+    {
+      image: slideImages[0],
+      title: t('login.onboarding.travelTitle'),
+      description: t('login.onboarding.travelDescription'),
+    },
+    {
+      image: slideImages[1],
+      title: t('login.onboarding.expensesTitle'),
+      description: t('login.onboarding.expensesDescription'),
+    },
+    {
+      image: slideImages[2],
+      title: t('login.onboarding.goalsTitle'),
+      description: t('login.onboarding.goalsDescription'),
+    },
+  ] as const;
 
   useEffect(() => {
     if (session) {
-      router.replace({ pathname: '/(tabs)' });
+      router.replace(destination as never);
     }
-  }, [router, session]);
+  }, [destination, router, session]);
 
   async function handleGoogleSignIn() {
     setError(null);
@@ -70,10 +79,10 @@ export default function LoginScreen() {
         throw new Error(result.error.message);
       }
 
-      router.replace({ pathname: '/(tabs)' });
+      router.replace(destination as never);
     } catch (signInError) {
       console.error('Error signing in with Google:', signInError);
-      setError('No se pudo iniciar sesión con Google. Intenta de nuevo.');
+      setError(t('login.googleError'));
       setIsLoading(false);
     }
   }
@@ -139,7 +148,7 @@ export default function LoginScreen() {
         throw new Error(result.error.message);
       }
 
-      router.replace({ pathname: '/(tabs)' });
+      router.replace(destination as never);
     } catch (signInError) {
       console.error('Error signing in with email OTP:', signInError);
       setError('Código incorrecto o expirado.');

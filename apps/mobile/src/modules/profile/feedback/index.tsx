@@ -1,4 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -40,15 +44,20 @@ export default function FeedbackScreen() {
   const [images, setImages] = useState<Array<{ uri: string; dataUrl: string }>>(
     [],
   );
-  const feedbackQuery = useQuery({
+  const feedbackQuery = useInfiniteQuery({
     queryKey: ['feedback'],
-    queryFn: async () => {
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }) => {
       const response = await feedbackClient.index.$get({
-        query: { limit: '20' },
+        query: { limit: '20', ...(pageParam ? { cursor: pageParam } : {}) },
       });
       if (!response.ok) throw new Error('feedback_load_failed');
-      return ((await response.json()) as { data: FeedbackItem[] }).data;
+      return (await response.json()) as {
+        data: FeedbackItem[];
+        pagination?: { nextCursor?: string | null };
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.pagination?.nextCursor,
   });
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -142,9 +151,25 @@ export default function FeedbackScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        onMomentumScrollEnd={(event) => {
+          const { layoutMeasurement, contentOffset, contentSize } =
+            event.nativeEvent;
+          if (
+            layoutMeasurement.height + contentOffset.y >=
+              contentSize.height - 160 &&
+            feedbackQuery.hasNextPage &&
+            !feedbackQuery.isFetchingNextPage
+          ) {
+            void feedbackQuery.fetchNextPage();
+          }
+        }}
       >
         <View style={styles.header}>
-          <Button variant="ghost" size="icon" onPress={() => router.back()}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onPress={() => router.replace('/profile' as never)}
+          >
             <Text style={styles.back}>‹</Text>
           </Button>
           <Text style={styles.pageTitle}>Feedback</Text>
@@ -211,12 +236,22 @@ export default function FeedbackScreen() {
           </Button>
           {images.length > 0 ? (
             <ScrollView horizontal contentContainerStyle={styles.imageList}>
-              {images.map((image) => (
-                <Image
-                  key={image.uri}
-                  source={{ uri: image.uri }}
-                  style={styles.preview}
-                />
+              {images.map((image, index) => (
+                <View key={image.uri} style={styles.previewWrap}>
+                  <Image source={{ uri: image.uri }} style={styles.preview} />
+                  <Button
+                    variant="default"
+                    size="icon-sm"
+                    style={styles.removeImage}
+                    onPress={() =>
+                      setImages((current) =>
+                        current.filter((_, imageIndex) => imageIndex !== index),
+                      )
+                    }
+                  >
+                    <Text style={styles.removeImageText}>×</Text>
+                  </Button>
+                </View>
               ))}
             </ScrollView>
           ) : null}
@@ -240,8 +275,18 @@ export default function FeedbackScreen() {
         </Text>
         {feedbackQuery.isLoading ? (
           <Spinner color="#DE034D" />
-        ) : (feedbackQuery.data ?? []).filter((item) => item.type === type)
-            .length === 0 ? (
+        ) : feedbackQuery.isError ? (
+          <Card style={styles.empty}>
+            <Text style={styles.emptyText}>
+              No pudimos cargar tus reportes.
+            </Text>
+            <Button onPress={() => void feedbackQuery.refetch()}>
+              <Text style={styles.submitText}>Reintentar</Text>
+            </Button>
+          </Card>
+        ) : (
+            feedbackQuery.data?.pages.flatMap((page) => page.data) ?? []
+          ).filter((item) => item.type === type).length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
               {type === 'BUG'
@@ -250,7 +295,7 @@ export default function FeedbackScreen() {
             </Text>
           </View>
         ) : (
-          (feedbackQuery.data ?? [])
+          (feedbackQuery.data?.pages.flatMap((page) => page.data) ?? [])
             .filter((item) => item.type === type)
             .map((item) => (
               <Card key={item.id} style={styles.feedbackCard}>
@@ -296,6 +341,7 @@ export default function FeedbackScreen() {
               </Card>
             ))
         )}
+        {feedbackQuery.isFetchingNextPage ? <Spinner color="#DE034D" /> : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -374,6 +420,21 @@ const styles = StyleSheet.create({
   addImagesText: { color: '#475569', fontSize: 14, fontWeight: '500' },
   imageList: { gap: 8 },
   preview: { width: 76, height: 76, borderRadius: 14 },
+  previewWrap: { height: 82, width: 82 },
+  removeImage: {
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+    borderRadius: 10,
+    height: 22,
+    justifyContent: 'center',
+    minHeight: 22,
+    padding: 0,
+    position: 'absolute',
+    right: -2,
+    top: -2,
+    width: 22,
+  },
+  removeImageText: { color: '#FFFFFF', fontSize: 16, lineHeight: 18 },
   submit: {
     minHeight: 48,
     borderRadius: 24,

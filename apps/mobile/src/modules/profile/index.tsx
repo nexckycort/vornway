@@ -2,9 +2,10 @@ import {
   Ionicons,
   type IoniconsIconName,
 } from '@react-native-vector-icons/ionicons';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -23,6 +24,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
+import { languages, useI18n } from '@/lib/i18n';
+import {
+  disablePushNotifications,
+  enablePushNotifications,
+  getPushNotificationStatus,
+  type PushNotificationStatus,
+} from '@/lib/push-notifications';
 
 import type { ProfileSession } from './profile.types';
 import { QrScanner } from './qr-scanner';
@@ -58,17 +66,32 @@ function ProfileRow({ icon, title, subtitle, trailing, onPress }: RowProps) {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { locale, setLocale } = useI18n();
   const { data: session } = authClient.useSession();
   const [username, setUsername] = useState('');
   const [usernameDialog, setUsernameDialog] = useState(false);
   const [sessionsDialog, setSessionsDialog] = useState(false);
+  const [languageDialog, setLanguageDialog] = useState(false);
   const [sessions, setSessions] = useState<ProfileSession[]>([]);
   const [revokingSession, setRevokingSession] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingImage, setIsUpdatingImage] = useState(false);
+  const [notificationStatus, setNotificationStatus] =
+    useState<PushNotificationStatus>('permission-required');
+  const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
   const [imageOverride, setImageOverride] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const sessionsQuery = useQuery({
+    queryKey: ['profile-sessions'],
+    enabled: sessionsDialog,
+    queryFn: async () => {
+      const response = await authClient.listSessions();
+      if (response.error) throw new Error('sessions_load_failed');
+      return (response.data ?? []) as ProfileSession[];
+    },
+  });
 
   const user = (
     session as {
@@ -87,6 +110,44 @@ export default function ProfileScreen() {
     session as { session?: { token?: string | null } } | null
   )?.session?.token;
   const isStatsUser = userEmail.toLowerCase() === 'junior110120@gmail.com';
+
+  useEffect(() => {
+    let active = true;
+    void getPushNotificationStatus()
+      .then((status) => {
+        if (active) setNotificationStatus(status);
+      })
+      .catch(() => {
+        if (active) setNotificationStatus('permission-required');
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function toggleNotifications() {
+    setIsUpdatingNotifications(true);
+    try {
+      const status =
+        notificationStatus === 'enabled'
+          ? await disablePushNotifications()
+          : await enablePushNotifications();
+      setNotificationStatus(status);
+      if (status === 'enabled') {
+        Alert.alert('Notificaciones activadas', 'Recibirás avisos de Vornway.');
+      } else if (status === 'blocked') {
+        Alert.alert(
+          'Notificaciones bloqueadas',
+          'Actívalas desde la configuración del dispositivo.',
+        );
+      }
+    } catch {
+      Alert.alert('No se pudo actualizar', 'Intenta nuevamente.');
+    } finally {
+      setIsUpdatingNotifications(false);
+    }
+  }
 
   async function updatePhoto() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -140,8 +201,6 @@ export default function ProfileScreen() {
 
   async function openSessions() {
     setSessionsDialog(true);
-    const response = await authClient.listSessions();
-    if (!response.error) setSessions((response.data ?? []) as ProfileSession[]);
   }
 
   function revokeRemoteSession(item: ProfileSession) {
@@ -169,6 +228,9 @@ export default function ProfileScreen() {
               setSessions((current) =>
                 current.filter((sessionItem) => sessionItem.id !== item.id),
               );
+              await queryClient.invalidateQueries({
+                queryKey: ['profile-sessions'],
+              });
             })();
           },
         },
@@ -238,9 +300,23 @@ export default function ProfileScreen() {
           <ProfileRow
             icon="notifications-outline"
             title="Notificaciones"
-            subtitle="Configura tus notificaciones"
-            trailing="Ver"
-            onPress={() => router.push('/notifications' as never)}
+            subtitle={
+              notificationStatus === 'enabled'
+                ? 'Activadas'
+                : notificationStatus === 'unsupported'
+                  ? 'No disponibles en este dispositivo'
+                  : notificationStatus === 'blocked'
+                    ? 'Bloqueadas en configuración'
+                    : 'Desactivadas'
+            }
+            trailing={
+              isUpdatingNotifications
+                ? '...'
+                : notificationStatus === 'enabled'
+                  ? 'Desactivar'
+                  : 'Activar'
+            }
+            onPress={() => void toggleNotifications()}
           />
           <ProfileRow
             icon="qr-code-outline"
@@ -251,10 +327,8 @@ export default function ProfileScreen() {
           <ProfileRow
             icon="language-outline"
             title="Idioma"
-            subtitle="Español"
-            onPress={() =>
-              Alert.alert('Idioma', 'Español es el idioma activo.')
-            }
+            subtitle={languages[locale]}
+            onPress={() => setLanguageDialog(true)}
           />
           <ProfileRow
             icon="shield-checkmark-outline"
@@ -373,12 +447,23 @@ export default function ProfileScreen() {
             </DialogDescription>
           </DialogHeader>
           <ScrollView style={styles.sessionsList}>
-            {sessions.length === 0 ? (
+            {sessionsQuery.isLoading ? (
+              <Spinner color="#DE034D" />
+            ) : sessionsQuery.isError ? (
+              <View style={styles.emptySessions}>
+                <Text style={styles.emptySessionsText}>
+                  No se pudieron cargar las sesiones.
+                </Text>
+                <Button onPress={() => void sessionsQuery.refetch()}>
+                  <Text style={styles.saveText}>Reintentar</Text>
+                </Button>
+              </View>
+            ) : (sessionsQuery.data ?? sessions).length === 0 ? (
               <Text style={styles.emptySessions}>
                 No se encontraron sesiones.
               </Text>
             ) : (
-              sessions.map((item) => (
+              (sessionsQuery.data ?? sessions).map((item) => (
                 <View key={item.id} style={styles.sessionItem}>
                   <View style={styles.sessionRow}>
                     <Ionicons
@@ -416,6 +501,37 @@ export default function ProfileScreen() {
               ))
             )}
           </ScrollView>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={languageDialog} onOpenChange={setLanguageDialog}>
+        <DialogContent style={styles.modalCard}>
+          <DialogHeader>
+            <DialogTitle>Idioma / Language</DialogTitle>
+            <DialogDescription>
+              Selecciona el idioma de Vornway.
+            </DialogDescription>
+          </DialogHeader>
+          {(
+            Object.entries(languages) as Array<[keyof typeof languages, string]>
+          ).map(([value, label]) => (
+            <Button
+              key={value}
+              variant={locale === value ? 'default' : 'outline'}
+              onPress={() => {
+                void setLocale(value).then(() => setLanguageDialog(false));
+              }}
+            >
+              <Text
+                style={
+                  locale === value ? styles.saveText : styles.languageOptionText
+                }
+              >
+                {label}
+                {locale === value ? ' ✓' : ''}
+              </Text>
+            </Button>
+          ))}
         </DialogContent>
       </Dialog>
     </SafeAreaView>
@@ -575,8 +691,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#DE034D',
   },
   saveText: { color: '#FFFFFF', fontWeight: '600' },
+  languageOptionText: { color: '#0F172A', fontWeight: '600' },
   sessionsList: { marginTop: 4 },
   emptySessions: { paddingVertical: 24, color: '#64748B', textAlign: 'center' },
+  emptySessionsText: {
+    color: '#64748B',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
   sessionItem: {
     borderRadius: 18,
     backgroundColor: '#F8FAFC',

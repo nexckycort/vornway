@@ -11,7 +11,7 @@ import { authClient } from '@/lib/auth-client';
 
 export default function StatsScreen() {
   const router = useRouter();
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
   const email = (
     session as { user?: { email?: string | null } } | null
   )?.user?.email
@@ -35,19 +35,31 @@ export default function StatsScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Button variant="ghost" size="icon" onPress={() => router.back()}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onPress={() => router.replace('/profile' as never)}
+          >
             <Text style={styles.back}>‹</Text>
           </Button>
           <Text style={styles.title}>Estadísticas</Text>
           <View style={{ width: 24 }} />
         </View>
-        {!allowed ? (
+        {sessionPending ? (
+          <Card style={styles.card}>
+            <Spinner color="#DE034D" />
+            <Text style={styles.copy}>Cargando sesión...</Text>
+          </Card>
+        ) : !allowed ? (
           <Card style={styles.card}>
             <Text style={styles.title}>Sin acceso</Text>
             <Text style={styles.copy}>
               No tienes permisos para ver estas estadísticas.
             </Text>
-            <Button style={styles.button} onPress={() => router.back()}>
+            <Button
+              style={styles.button}
+              onPress={() => router.replace('/profile' as never)}
+            >
               <Text style={styles.buttonText}>Volver al perfil</Text>
             </Button>
           </Card>
@@ -57,15 +69,24 @@ export default function StatsScreen() {
               <Text style={styles.copy}>Resumen general de Vornway.</Text>
               {statsQuery.isLoading ? (
                 <Spinner color="#DE034D" />
+              ) : statsQuery.isError ? (
+                <View style={styles.errorState}>
+                  <Text style={styles.copy}>
+                    No pudimos cargar las estadísticas.
+                  </Text>
+                  <Button onPress={() => void statsQuery.refetch()}>
+                    <Text style={styles.buttonText}>Reintentar</Text>
+                  </Button>
+                </View>
               ) : (
                 <View style={styles.grid}>
                   <Stat
                     label="Usuarios"
-                    value={String(statsQuery.data?.totalUsers ?? 0)}
+                    value={formatNumber(statsQuery.data?.totalUsers ?? 0)}
                   />
                   <Stat
                     label="Espacios"
-                    value={String(statsQuery.data?.totalGroups ?? 0)}
+                    value={formatNumber(statsQuery.data?.totalGroups ?? 0)}
                   />
                 </View>
               )}
@@ -96,6 +117,10 @@ function Stat({ label, value }: { label: string; value: string }) {
       <Text style={styles.statValue}>{value}</Text>
     </View>
   );
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('es-CO').format(value);
 }
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FAFAFA' },
@@ -133,4 +158,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#DE034D',
   },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  errorState: { gap: 10 },
 });

@@ -1,0 +1,14 @@
+pre-commit:
+  parallel: true
+  commands:
+    typecheck-mobile:
+      root: apps/mobile
+      glob: "*.{js,ts,jsx,tsx,prisma}"
+      run: bun typecheck
+      fail_text: "TypeScript type checking failed for mobile"
+    biome-mobile:
+      root: apps/mobile
+      glob: "*.{js,ts,jsx,tsx}"
+      run: bun check {staged_files}
+      stage_fixed: true
+      fail_text: "Biome linting/formatting failed for mobile"

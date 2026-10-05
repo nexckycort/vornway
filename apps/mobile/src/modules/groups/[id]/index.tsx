@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Spinner } from '@/components/ui/spinner';
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const groupQuery = useQuery({
     queryKey: ['group-summary', id],
     enabled: Boolean(id),
@@ -33,6 +34,20 @@ export default function GroupDetailScreen() {
       return response.json();
     },
   });
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async (expenseId: string) => {
+      const response = await groupsClient[':id'].expenses[':expenseId'].$delete(
+        {
+          param: { id: id ?? '', expenseId },
+        },
+      );
+      if (!response.ok) throw new Error('expense_delete_failed');
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['group-expenses', id] });
+      await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
+    },
+  });
   const group =
     groupQuery.data && 'name' in groupQuery.data ? groupQuery.data : null;
   const expenses =
@@ -46,7 +61,9 @@ export default function GroupDetailScreen() {
         onBack={() => router.back()}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        {!groupQuery.isFetched ? <Spinner color="#DE034D" /> : null}
+        {groupQuery.isLoading || expensesQuery.isLoading ? (
+          <Spinner color="#DE034D" />
+        ) : null}
         {group ? (
           <>
             <Card style={styles.card}>
@@ -123,17 +140,44 @@ export default function GroupDetailScreen() {
                 <Text style={styles.copy}>Aún no hay gastos.</Text>
               ) : null}
               {expenses.map((expense) => (
-                <Button
-                  key={expense.id}
-                  variant="ghost"
-                  onPress={() =>
-                    router.push(`/groups/${id}/expense/${expense.id}` as never)
-                  }
-                >
-                  <Text style={styles.copy}>
-                    {expense.description} · {expense.amount} {expense.currency}
-                  </Text>
-                </Button>
+                <View key={expense.id} style={styles.expenseRow}>
+                  <Button
+                    style={styles.expenseButton}
+                    variant="ghost"
+                    onPress={() =>
+                      router.push(
+                        `/groups/${id}/expense/${expense.id}` as never,
+                      )
+                    }
+                  >
+                    <Text style={styles.copy}>
+                      {expense.description} · {expense.amount}{' '}
+                      {expense.currency}
+                    </Text>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={deleteExpenseMutation.isPending}
+                    onPress={() =>
+                      Alert.alert(
+                        'Eliminar gasto',
+                        '¿Quieres eliminar este gasto?',
+                        [
+                          { text: 'Cancelar', style: 'cancel' },
+                          {
+                            text: 'Eliminar',
+                            style: 'destructive',
+                            onPress: () =>
+                              deleteExpenseMutation.mutate(expense.id),
+                          },
+                        ],
+                      )
+                    }
+                  >
+                    <Text style={styles.deleteText}>Eliminar</Text>
+                  </Button>
+                </View>
               ))}
             </Card>
           </>
@@ -151,4 +195,11 @@ const styles = StyleSheet.create({
   copy: { color: '#64748B', fontSize: 14, lineHeight: 20 },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
   outlineText: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
+  expenseRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  expenseButton: { flex: 1, justifyContent: 'flex-start' },
+  deleteText: { color: '#B91C1C', fontSize: 12, fontWeight: '600' },
 });

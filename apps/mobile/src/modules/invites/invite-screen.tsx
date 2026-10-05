@@ -1,7 +1,6 @@
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
-
 import { invitesClient } from '@/api/invites';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -21,39 +20,36 @@ type Preview = {
 export default function InviteScreen() {
   const { inviteCode } = useLocalSearchParams<{ inviteCode: string }>();
   const router = useRouter();
-  const [preview, setPreview] = useState<Preview | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [accepting, setAccepting] = useState(false);
-  useEffect(() => {
-    if (!inviteCode) return;
-    void invitesClient[':inviteCode']
-      .$get({ param: { inviteCode } })
-      .then(async (response) => {
-        if (response.ok)
-          setPreview((await response.json()) as unknown as Preview);
-        setLoading(false);
+  const previewQuery = useQuery({
+    queryKey: ['invite-preview', inviteCode],
+    enabled: Boolean(inviteCode),
+    queryFn: async () => {
+      const response = await invitesClient[':inviteCode'].$get({
+        param: { inviteCode: inviteCode ?? '' },
       });
-  }, [inviteCode]);
-  async function accept(memberId?: string) {
-    if (!inviteCode) return;
-    setAccepting(true);
-    const response = await invitesClient[':inviteCode'].accept.$post({
-      param: { inviteCode },
-      json: memberId ? { memberId } : {},
-    });
-    setAccepting(false);
-    if (!response.ok) {
-      Alert.alert('No se pudo aceptar', 'Intenta nuevamente.');
-      return;
-    }
-    const result = (await response.json()) as { groupId?: string };
-    if (result.groupId) router.replace(`/groups/${result.groupId}` as never);
-    else router.back();
-  }
+      if (!response.ok) throw new Error('invite_load_failed');
+      return (await response.json()) as Preview;
+    },
+  });
+  const acceptMutation = useMutation({
+    mutationFn: async (memberId?: string) => {
+      const response = await invitesClient[':inviteCode'].accept.$post({
+        param: { inviteCode: inviteCode ?? '' },
+        json: memberId ? { memberId } : {},
+      });
+      if (!response.ok) throw new Error('invite_accept_failed');
+      return response.json() as Promise<{ groupId?: string }>;
+    },
+    onSuccess: (result) => {
+      if (result.groupId) router.replace(`/groups/${result.groupId}` as never);
+      else router.back();
+    },
+  });
+  const preview = previewQuery.data;
   return (
     <Screen>
       <ScreenHeader title="Invitación" onBack={() => router.back()} />
-      {loading ? (
+      {previewQuery.isLoading ? (
         <Spinner color="#DE034D" />
       ) : !preview?.group ? (
         <Card style={styles.empty}>
@@ -80,7 +76,15 @@ export default function InviteScreen() {
             </Button>
           ) : (
             <>
-              <Button disabled={accepting} onPress={() => void accept()}>
+              <Button
+                disabled={acceptMutation.isPending}
+                onPress={() =>
+                  acceptMutation.mutate(undefined, {
+                    onError: () =>
+                      Alert.alert('No se pudo aceptar', 'Intenta nuevamente.'),
+                  })
+                }
+              >
                 <Text style={styles.buttonText}>
                   Unirme como nuevo participante
                 </Text>
@@ -89,8 +93,16 @@ export default function InviteScreen() {
                 <Button
                   key={member.id}
                   variant="outline"
-                  disabled={accepting}
-                  onPress={() => void accept(member.id)}
+                  disabled={acceptMutation.isPending}
+                  onPress={() =>
+                    acceptMutation.mutate(member.id, {
+                      onError: () =>
+                        Alert.alert(
+                          'No se pudo aceptar',
+                          'Intenta nuevamente.',
+                        ),
+                    })
+                  }
                 >
                   <Text style={styles.outlineText}>Soy {member.name}</Text>
                 </Button>

@@ -25,6 +25,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
 
 import type { ProfileSession } from './profile.types';
+import { QrScanner } from './qr-scanner';
 
 type RowProps = {
   icon: IoniconsIconName;
@@ -66,6 +67,7 @@ export default function ProfileScreen() {
   const [isUpdatingImage, setIsUpdatingImage] = useState(false);
   const [imageOverride, setImageOverride] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
 
   const user = (
     session as {
@@ -210,6 +212,12 @@ export default function ProfileScreen() {
             }
           />
           <ProfileRow
+            icon="qr-code-outline"
+            title="Escanear invitación"
+            subtitle="Únete a un espacio con un código QR"
+            onPress={() => setQrOpen(true)}
+          />
+          <ProfileRow
             icon="language-outline"
             title="Idioma"
             subtitle="Español"
@@ -277,6 +285,12 @@ export default function ProfileScreen() {
           </Button>
         </Card>
       </ScrollView>
+
+      <QrScanner
+        open={qrOpen}
+        onOpenChange={setQrOpen}
+        onScanned={(code) => router.push(`/i/${code}` as never)}
+      />
 
       <Dialog open={usernameDialog} onOpenChange={setUsernameDialog}>
         <DialogContent style={styles.modalCard}>

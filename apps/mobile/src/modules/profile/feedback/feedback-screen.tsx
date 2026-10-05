@@ -1,6 +1,7 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -29,6 +30,7 @@ const statusLabels: Record<FeedbackStatus, string> = {
 
 export default function FeedbackScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useLocalSearchParams<{ type?: string }>();
   const [type, setType] = useState<FeedbackType>(
     params.type === 'FEATURE_REQUEST' ? 'FEATURE_REQUEST' : 'BUG',
@@ -38,22 +40,51 @@ export default function FeedbackScreen() {
   const [images, setImages] = useState<Array<{ uri: string; dataUrl: string }>>(
     [],
   );
-  const [items, setItems] = useState<FeedbackItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-
-  const loadFeedback = useCallback(async () => {
-    const response = await feedbackClient.index.$get({
-      query: { limit: '20' },
-    });
-    if (response.ok)
-      setItems(((await response.json()) as { data: FeedbackItem[] }).data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    void loadFeedback();
-  }, [loadFeedback]);
+  const feedbackQuery = useQuery({
+    queryKey: ['feedback'],
+    queryFn: async () => {
+      const response = await feedbackClient.index.$get({
+        query: { limit: '20' },
+      });
+      if (!response.ok) throw new Error('feedback_load_failed');
+      return ((await response.json()) as { data: FeedbackItem[] }).data;
+    },
+  });
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      if (!title.trim() || !description.trim()) throw new Error('invalid');
+      const response = await feedbackClient.index.$post({
+        json: {
+          type,
+          title: title.trim(),
+          description: description.trim(),
+          images: images.map((image) => ({ dataUrl: image.dataUrl })),
+        },
+      });
+      if (!response.ok) throw new Error('feedback_submit_failed');
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['feedback'] });
+      setTitle('');
+      setDescription('');
+      setImages([]);
+      Alert.alert(
+        'Enviado',
+        type === 'BUG'
+          ? 'Gracias por reportar el problema.'
+          : 'Gracias por tu sugerencia.',
+      );
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: async (feedbackId: string) => {
+      const response = await feedbackClient[':feedbackId'].$delete({
+        param: { feedbackId },
+      });
+      if (!response.ok) throw new Error('feedback_delete_failed');
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['feedback'] }),
+  });
 
   async function chooseImages() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -77,7 +108,7 @@ export default function FeedbackScreen() {
     );
   }
 
-  async function submit() {
+  function submit() {
     if (!title.trim() || !description.trim()) {
       Alert.alert(
         'Completa los campos',
@@ -85,30 +116,9 @@ export default function FeedbackScreen() {
       );
       return;
     }
-    setSubmitting(true);
-    const response = await feedbackClient.index.$post({
-      json: {
-        type,
-        title: title.trim(),
-        description: description.trim(),
-        images: images.map((image) => ({ dataUrl: image.dataUrl })),
-      },
+    submitMutation.mutate(undefined, {
+      onError: () => Alert.alert('No se pudo enviar', 'Intenta nuevamente.'),
     });
-    setSubmitting(false);
-    if (!response.ok) {
-      Alert.alert('No se pudo enviar', 'Intenta nuevamente.');
-      return;
-    }
-    setTitle('');
-    setDescription('');
-    setImages([]);
-    Alert.alert(
-      'Enviado',
-      type === 'BUG'
-        ? 'Gracias por reportar el problema.'
-        : 'Gracias por tu sugerencia.',
-    );
-    await loadFeedback();
   }
 
   function remove(item: FeedbackItem) {
@@ -117,14 +127,11 @@ export default function FeedbackScreen() {
       {
         text: 'Eliminar',
         style: 'destructive',
-        onPress: async () => {
-          const response = await feedbackClient[':feedbackId'].$delete({
-            param: { feedbackId: item.id },
+        onPress: () => {
+          deleteMutation.mutate(item.id, {
+            onError: () =>
+              Alert.alert('No se pudo eliminar', 'Intenta nuevamente.'),
           });
-          if (response.ok)
-            setItems((current) =>
-              current.filter((entry) => entry.id !== item.id),
-            );
         },
       },
     ]);
@@ -214,11 +221,11 @@ export default function FeedbackScreen() {
             </ScrollView>
           ) : null}
           <Button
-            disabled={submitting}
-            onPress={() => void submit()}
+            disabled={submitMutation.isPending}
+            onPress={submit}
             style={styles.submit}
           >
-            {submitting ? (
+            {submitMutation.isPending ? (
               <Spinner color="#FFFFFF" />
             ) : (
               <Text style={styles.submitText}>
@@ -231,9 +238,10 @@ export default function FeedbackScreen() {
         <Text style={styles.sectionCopy}>
           Consulta el estado de tus solicitudes.
         </Text>
-        {loading ? (
+        {feedbackQuery.isLoading ? (
           <Spinner color="#DE034D" />
-        ) : items.filter((item) => item.type === type).length === 0 ? (
+        ) : (feedbackQuery.data ?? []).filter((item) => item.type === type)
+            .length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
               {type === 'BUG'
@@ -242,7 +250,7 @@ export default function FeedbackScreen() {
             </Text>
           </View>
         ) : (
-          items
+          (feedbackQuery.data ?? [])
             .filter((item) => item.type === type)
             .map((item) => (
               <Card key={item.id} style={styles.feedbackCard}>

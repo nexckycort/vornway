@@ -1,7 +1,7 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
-
 import { notificationsClient } from '@/api/notifications';
 import { Card } from '@/components/ui/card';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
@@ -16,23 +16,31 @@ type Notification = {
 };
 export default function NotificationsScreen() {
   const router = useRouter();
-  const [items, setItems] = useState<Notification[] | null>(null);
-  useEffect(() => {
-    void notificationsClient.index
-      .$get({ query: { limit: '50' } })
-      .then(async (response) => {
-        if (response.ok)
-          setItems(((await response.json()) as { data: Notification[] }).data);
+  const queryClient = useQueryClient();
+  const notificationsQuery = useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const response = await notificationsClient.index.$get({
+        query: { limit: '50' },
       });
-    return () => {
-      void notificationsClient['read-all'].$post();
-    };
-  }, []);
+      if (!response.ok) throw new Error('notifications_load_failed');
+      return ((await response.json()) as { data: Notification[] }).data;
+    },
+  });
+  useEffect(
+    () => () => {
+      void notificationsClient['read-all'].$post().finally(() => {
+        void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      });
+    },
+    [queryClient],
+  );
+  const items = notificationsQuery.data ?? [];
   return (
     <Screen>
       <ScreenHeader title="Notificaciones" onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.content}>
-        {items === null ? (
+        {notificationsQuery.isLoading ? (
           <Spinner color="#DE034D" />
         ) : items.length === 0 ? (
           <Card style={styles.empty}>

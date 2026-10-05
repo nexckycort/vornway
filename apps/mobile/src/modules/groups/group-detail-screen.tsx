@@ -53,6 +53,32 @@ export default function GroupDetailScreen() {
               >
                 <Text style={styles.buttonText}>＋ Agregar gasto</Text>
               </Button>
+              <Button
+                variant="outline"
+                onPress={() =>
+                  router.push(`/groups/${id}/participants` as never)
+                }
+              >
+                <Text style={styles.outlineText}>Participantes</Text>
+              </Button>
+              <Button
+                variant="outline"
+                onPress={() => router.push(`/groups/${id}/reports` as never)}
+              >
+                <Text style={styles.outlineText}>Ver reportes</Text>
+              </Button>
+              <Button
+                variant="ghost"
+                onPress={() => router.push(`/groups/${id}/edit` as never)}
+              >
+                <Text style={styles.outlineText}>Editar espacio</Text>
+              </Button>
+              <Button
+                variant="ghost"
+                onPress={() => router.push(`/groups/${id}/settings` as never)}
+              >
+                <Text style={styles.outlineText}>Configuración</Text>
+              </Button>
             </Card>
             <Card style={styles.card}>
               <Text style={styles.section}>Participantes</Text>
@@ -99,4 +125,5 @@ const styles = StyleSheet.create({
   section: { color: '#0F172A', fontSize: 16, fontWeight: '600' },
   copy: { color: '#64748B', fontSize: 14, lineHeight: 20 },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  outlineText: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
 });

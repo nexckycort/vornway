@@ -6,11 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { authClient } from '@/lib/auth-client';
 
 export default function GroupSettingsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { data: session } = authClient.useSession();
+  const userEmail = (session as { user?: { email?: string | null } } | null)
+    ?.user?.email;
+  const canManageAdvancedDetails =
+    userEmail?.trim().toLowerCase() === 'junior110120@gmail.com';
   const groupQuery = useQuery({
     queryKey: ['group-summary', id],
     enabled: Boolean(id),
@@ -74,25 +80,27 @@ export default function GroupSettingsScreen() {
         <Spinner color="#DE034D" />
       ) : (
         <View style={styles.content}>
-          <Card style={styles.card}>
-            <View style={styles.row}>
-              <View style={styles.copy}>
-                <Text style={styles.title}>Detalles avanzados</Text>
-                <Text style={styles.description}>
-                  Permite registrar categorías y detalles adicionales en los
-                  gastos.
-                </Text>
+          {canManageAdvancedDetails ? (
+            <Card style={styles.card}>
+              <View style={styles.row}>
+                <View style={styles.copy}>
+                  <Text style={styles.title}>Detalles avanzados</Text>
+                  <Text style={styles.description}>
+                    Permite registrar categorías y detalles adicionales en los
+                    gastos.
+                  </Text>
+                </View>
+                <Switch
+                  value={group?.advancedExpenseDetailsEnabled ?? false}
+                  onValueChange={(value) => mutation.mutate(value)}
+                  trackColor={{ false: '#CBD5E1', true: '#F7A0BA' }}
+                  thumbColor={
+                    group?.advancedExpenseDetailsEnabled ? '#DE034D' : '#FFFFFF'
+                  }
+                />
               </View>
-              <Switch
-                value={group?.advancedExpenseDetailsEnabled ?? false}
-                onValueChange={(value) => mutation.mutate(value)}
-                trackColor={{ false: '#CBD5E1', true: '#F7A0BA' }}
-                thumbColor={
-                  group?.advancedExpenseDetailsEnabled ? '#DE034D' : '#FFFFFF'
-                }
-              />
-            </View>
-          </Card>
+            </Card>
+          ) : null}
           <Card style={styles.actions}>
             <Button
               variant="outline"

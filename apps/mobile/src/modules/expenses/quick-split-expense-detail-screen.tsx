@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
@@ -20,24 +21,64 @@ export default function QuickSplitExpenseDetailScreen() {
     expenseId: string;
   }>();
   const router = useRouter();
-  const [expense, setExpense] = useState<Expense | null>(null);
+  const queryClient = useQueryClient();
   const [settlement, setSettlement] = useState('');
-  const [saving, setSaving] = useState(false);
   const [fromParticipantId, setFromParticipantId] = useState('');
   const [toParticipantId, setToParticipantId] = useState('');
-  useEffect(() => {
-    if (!quickSplitId || !expenseId) return;
-    void quickSplitsClient[':id'].expenses[':expenseId']
-      .$get({ param: { id: quickSplitId, expenseId } })
-      .then(async (response) => {
-        if (response.ok) {
-          const nextExpense = (await response.json()) as unknown as Expense;
-          setExpense(nextExpense);
-          setFromParticipantId(nextExpense.participants?.[0]?.id ?? '');
-          setToParticipantId(nextExpense.participants?.[1]?.id ?? '');
-        }
+  const expenseQuery = useQuery({
+    queryKey: ['quick-split-expense', quickSplitId, expenseId],
+    enabled: Boolean(quickSplitId && expenseId),
+    queryFn: async () => {
+      const response = await quickSplitsClient[':id'].expenses[
+        ':expenseId'
+      ].$get({
+        param: { id: quickSplitId ?? '', expenseId: expenseId ?? '' },
       });
-  }, [quickSplitId, expenseId]);
+      if (!response.ok) throw new Error('expense_load_failed');
+      return (await response.json()) as unknown as Expense;
+    },
+  });
+  const expense = expenseQuery.data ?? null;
+  useEffect(() => {
+    if (!expense || fromParticipantId || toParticipantId) return;
+    setFromParticipantId(expense.participants?.[0]?.id ?? '');
+    setToParticipantId(expense.participants?.[1]?.id ?? '');
+  }, [expense, fromParticipantId, toParticipantId]);
+  const settlementMutation = useMutation({
+    mutationFn: async (amount: number) => {
+      if (!quickSplitId || !expenseId || !expense) throw new Error('invalid');
+      const response = await quickSplitsClient[':id'].expenses[
+        ':expenseId'
+      ].settlements.$post({
+        param: { id: quickSplitId, expenseId },
+        json: {
+          amount,
+          currency: expense.currency,
+          fromParticipantId,
+          toParticipantId,
+        },
+      });
+      if (!response.ok) throw new Error('settlement_failed');
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['quick-split-expense', quickSplitId, expenseId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['quick-split-expenses'] }),
+      ]);
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!quickSplitId || !expenseId) throw new Error('invalid');
+      const response = await quickSplitsClient[':id'].expenses[
+        ':expenseId'
+      ].$delete({ param: { id: quickSplitId, expenseId } });
+      if (!response.ok) throw new Error('delete_failed');
+    },
+    onSuccess: () => router.back(),
+  });
   async function settle() {
     const amount = Number(settlement.replace(',', '.'));
     const participants = expense?.participants ?? [];
@@ -52,20 +93,9 @@ export default function QuickSplitExpenseDetailScreen() {
       amount <= 0
     )
       return;
-    setSaving(true);
-    const response = await quickSplitsClient[':id'].expenses[
-      ':expenseId'
-    ].settlements.$post({
-      param: { id: quickSplitId, expenseId },
-      json: {
-        amount,
-        currency: expense?.currency ?? 'COP',
-        fromParticipantId,
-        toParticipantId,
-      },
-    });
-    setSaving(false);
-    if (!response.ok) {
+    try {
+      await settlementMutation.mutateAsync(amount);
+    } catch {
       Alert.alert('No se pudo registrar', 'Intenta nuevamente.');
       return;
     }
@@ -73,12 +103,11 @@ export default function QuickSplitExpenseDetailScreen() {
     Alert.alert('Listo', 'El abono fue registrado.');
   }
   async function remove() {
-    if (!quickSplitId || !expenseId) return;
-    const response = await quickSplitsClient[':id'].expenses[
-      ':expenseId'
-    ].$delete({ param: { id: quickSplitId, expenseId } });
-    if (response.ok) router.back();
-    else Alert.alert('No se pudo eliminar', 'Intenta nuevamente.');
+    try {
+      await deleteMutation.mutateAsync();
+    } catch {
+      Alert.alert('No se pudo eliminar', 'Intenta nuevamente.');
+    }
   }
   return (
     <Screen>
@@ -124,14 +153,21 @@ export default function QuickSplitExpenseDetailScreen() {
             keyboardType="decimal-pad"
             placeholder="Monto del abono"
           />
-          <Button disabled={saving} onPress={() => void settle()}>
-            {saving ? (
+          <Button
+            disabled={settlementMutation.isPending}
+            onPress={() => void settle()}
+          >
+            {settlementMutation.isPending ? (
               <Spinner color="#FFFFFF" />
             ) : (
               <Text style={styles.buttonText}>Registrar abono</Text>
             )}
           </Button>
-          <Button variant="destructive" onPress={() => void remove()}>
+          <Button
+            variant="destructive"
+            disabled={deleteMutation.isPending}
+            onPress={() => void remove()}
+          >
             <Text style={styles.delete}>Eliminar gasto</Text>
           </Button>
         </Card>

@@ -1,1 +1,1 @@
-export { default } from '@/modules/groups/group-categories';
+export { default } from '@/modules/groups/[id]/settings/categories';

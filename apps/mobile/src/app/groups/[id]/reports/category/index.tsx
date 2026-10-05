@@ -1,1 +1,1 @@
-export { default } from '@/modules/groups/group-category-report';
+export { default } from '@/modules/groups/[id]/reports/category';

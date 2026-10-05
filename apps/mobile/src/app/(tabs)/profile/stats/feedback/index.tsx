@@ -1,1 +1,1 @@
-export { default } from '@/modules/profile/stats/admin-feedback';
+export { default } from '@/modules/profile/stats/feedback';

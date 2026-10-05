@@ -1,1 +1,1 @@
-export { default } from '@/modules/debts/debt-detail';
+export { default } from '@/modules/debts/[id]';

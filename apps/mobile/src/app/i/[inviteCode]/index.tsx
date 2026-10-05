@@ -1,1 +1,1 @@
-export { default } from '@/modules/invites/invite';
+export { default } from '@/modules/i/[inviteCode]';

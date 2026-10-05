@@ -1,1 +1,1 @@
-export { default } from '@/modules/goals/goals';
+export { default } from '@/modules/goals';

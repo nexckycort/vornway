@@ -1,1 +1,1 @@
-export { default } from '@/modules/expenses/quick-split-expense-detail';
+export { default } from '@/modules/expenses/friends/[quickSplitId]/[expenseId]';

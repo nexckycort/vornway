@@ -1,1 +1,1 @@
-export { default } from '@/modules/goals/goal-create';
+export { default } from '@/modules/goals/new';

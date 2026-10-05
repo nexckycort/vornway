@@ -1,1 +1,1 @@
-export { default } from '@/modules/converter/converter';
+export { default } from '@/modules/converter';

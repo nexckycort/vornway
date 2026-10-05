@@ -1,1 +1,1 @@
-export { default } from '@/modules/explore/explore';
+export { default } from '@/modules/explore';

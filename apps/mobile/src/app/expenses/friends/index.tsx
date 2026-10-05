@@ -1,1 +1,1 @@
-export { default } from '@/modules/expenses/expenses';
+export { default } from '@/modules/expenses/friends';

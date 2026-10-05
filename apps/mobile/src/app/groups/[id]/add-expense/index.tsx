@@ -1,1 +1,1 @@
-export { default } from '@/modules/groups/group-expense-create';
+export { default } from '@/modules/groups/[id]/add-expense';

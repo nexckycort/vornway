@@ -1,1 +1,1 @@
-export { default } from '@/modules/goals/goal-detail';
+export { default } from '@/modules/goals/[id]';

@@ -1,1 +1,1 @@
-export { default } from '@/modules/groups/group-participants';
+export { default } from '@/modules/groups/[id]/participants';

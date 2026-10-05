@@ -239,13 +239,8 @@ export default function ProfileScreen() {
             icon="notifications-outline"
             title="Notificaciones"
             subtitle="Configura tus notificaciones"
-            trailing="Activar"
-            onPress={() =>
-              Alert.alert(
-                'Notificaciones',
-                'La configuración de notificaciones estará disponible próximamente.',
-              )
-            }
+            trailing="Ver"
+            onPress={() => router.push('/notifications' as never)}
           />
           <ProfileRow
             icon="qr-code-outline"

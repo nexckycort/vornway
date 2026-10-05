@@ -63,6 +63,7 @@ export default function ProfileScreen() {
   const [usernameDialog, setUsernameDialog] = useState(false);
   const [sessionsDialog, setSessionsDialog] = useState(false);
   const [sessions, setSessions] = useState<ProfileSession[]>([]);
+  const [revokingSession, setRevokingSession] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingImage, setIsUpdatingImage] = useState(false);
   const [imageOverride, setImageOverride] = useState<string | null>(null);
@@ -82,6 +83,9 @@ export default function ProfileScreen() {
   const userName = user?.name?.trim() || 'Viajero';
   const userEmail = user?.email?.trim() || 'Sin correo';
   const currentUsername = user?.username?.trim() || '';
+  const currentSessionToken = (
+    session as { session?: { token?: string | null } } | null
+  )?.session?.token;
   const isStatsUser = userEmail.toLowerCase() === 'junior110120@gmail.com';
 
   async function updatePhoto() {
@@ -138,6 +142,38 @@ export default function ProfileScreen() {
     setSessionsDialog(true);
     const response = await authClient.listSessions();
     if (!response.error) setSessions((response.data ?? []) as ProfileSession[]);
+  }
+
+  function revokeRemoteSession(item: ProfileSession) {
+    Alert.alert(
+      'Cerrar sesión remota',
+      'Este dispositivo perderá el acceso a tu cuenta.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cerrar sesión',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              setRevokingSession(item.id);
+              const response = await authClient.revokeSession({
+                token: item.token,
+              });
+              setRevokingSession(null);
+
+              if (response.error) {
+                Alert.alert('No se pudo cerrar', 'Intenta nuevamente.');
+                return;
+              }
+
+              setSessions((current) =>
+                current.filter((sessionItem) => sessionItem.id !== item.id),
+              );
+            })();
+          },
+        },
+      ],
+    );
   }
 
   async function logout() {
@@ -349,19 +385,38 @@ export default function ProfileScreen() {
             ) : (
               sessions.map((item) => (
                 <View key={item.id} style={styles.sessionItem}>
-                  <Ionicons
-                    name="phone-portrait-outline"
-                    size={22}
-                    color="#DE034D"
-                  />
-                  <View style={styles.sessionItemCopy}>
-                    <Text style={styles.sessionDevice}>
-                      {item.userAgent || 'Dispositivo desconocido'}
-                    </Text>
-                    <Text style={styles.sessionDate}>
-                      {new Date(item.createdAt).toLocaleDateString('es-CO')}
-                    </Text>
+                  <View style={styles.sessionRow}>
+                    <Ionicons
+                      name="phone-portrait-outline"
+                      size={22}
+                      color="#DE034D"
+                    />
+                    <View style={styles.sessionItemCopy}>
+                      <Text style={styles.sessionDevice}>
+                        {item.userAgent || 'Dispositivo desconocido'}
+                      </Text>
+                      <Text style={styles.sessionDate}>
+                        {new Date(item.createdAt).toLocaleDateString('es-CO')}
+                      </Text>
+                    </View>
                   </View>
+                  {item.token !== currentSessionToken ? (
+                    <Button
+                      disabled={revokingSession === item.id}
+                      onPress={() => revokeRemoteSession(item)}
+                      variant="outline"
+                      size="sm"
+                      style={styles.revokeButton}
+                    >
+                      <Text style={styles.revokeText}>
+                        {revokingSession === item.id
+                          ? 'Cerrando…'
+                          : 'Cerrar sesión'}
+                      </Text>
+                    </Button>
+                  ) : (
+                    <Text style={styles.currentSession}>Sesión actual</Text>
+                  )}
                 </View>
               ))
             )}
@@ -528,15 +583,26 @@ const styles = StyleSheet.create({
   sessionsList: { marginTop: 4 },
   emptySessions: { paddingVertical: 24, color: '#64748B', textAlign: 'center' },
   sessionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     borderRadius: 18,
     backgroundColor: '#F8FAFC',
     padding: 14,
     marginBottom: 10,
   },
+  sessionRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   sessionItemCopy: { flex: 1, gap: 4 },
   sessionDevice: { color: '#0F172A', fontSize: 13, fontWeight: '600' },
   sessionDate: { color: '#64748B', fontSize: 12 },
+  revokeButton: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    borderColor: '#FECACA',
+  },
+  revokeText: { color: '#B91C1C', fontSize: 12, fontWeight: '600' },
+  currentSession: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    color: '#15803D',
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });

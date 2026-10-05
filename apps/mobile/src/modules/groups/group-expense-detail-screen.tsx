@@ -70,7 +70,22 @@ export default function GroupExpenseDetailScreen() {
           participantIds:
             expense?.participants?.map((participant) => participant.memberId) ??
             [],
-          splitMethod: 'equal',
+          ...(expense?.paidBy?.id ? { paidById: expense.paidBy.id } : {}),
+          ...(expense?.paidByMembers?.length
+            ? {
+                paidByIds: expense.paidByMembers.map(
+                  (member) => member.memberId,
+                ),
+              }
+            : {}),
+          splitMethod: expense?.sharedSplit?.splitMethod ?? 'equal',
+          ...(expense?.sharedSplit ? { sharedSplit: expense.sharedSplit } : {}),
+          ...(expense?.lineItems?.length
+            ? { lineItems: expense.lineItems }
+            : {}),
+          ...(expense?.advancedDetails
+            ? { advancedDetails: expense.advancedDetails }
+            : {}),
           ...(expense?.category?.id ? { categoryId: expense.category.id } : {}),
         },
       });

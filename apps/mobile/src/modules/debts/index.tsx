@@ -25,6 +25,7 @@ type Debt = {
   direction: string;
   status: string;
 };
+type DebtFilter = 'active' | 'all' | 'paid';
 export default function DebtsScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -32,6 +33,7 @@ export default function DebtsScreen() {
   const [name, setName] = useState('');
   const [person, setPerson] = useState('');
   const [amount, setAmount] = useState('');
+  const [filter, setFilter] = useState<DebtFilter>('active');
   const debtsQuery = useQuery({
     queryKey: ['debts'],
     queryFn: async () => {
@@ -75,9 +77,18 @@ export default function DebtsScreen() {
       setAmount('');
     },
   });
-  const active = (debtsQuery.data ?? []).filter(
-    (item) => item.status !== 'paid',
+  const debts = debtsQuery.data ?? [];
+  const visibleDebts = debts.filter((item) =>
+    filter === 'all'
+      ? true
+      : filter === 'paid'
+        ? item.status === 'paid'
+        : item.status !== 'paid',
   );
+  const receivable = debts
+    .filter((item) => item.direction === 'lent' && item.status !== 'paid')
+    .reduce((total, item) => total + item.remainingAmount, 0);
+  const activeCount = debts.filter((item) => item.status !== 'paid').length;
   return (
     <Screen>
       <ScreenHeader
@@ -89,6 +100,40 @@ export default function DebtsScreen() {
         }
       />
       <ScrollView contentContainerStyle={styles.content}>
+        <Card style={styles.summary}>
+          <Text style={styles.summaryLabel}>POR COBRAR</Text>
+          <Text style={styles.summaryAmount}>{receivable} COP</Text>
+          <Text style={styles.copy}>{activeCount} deudas activas</Text>
+        </Card>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filters}
+        >
+          {(
+            [
+              ['active', 'Activas'],
+              ['all', 'Todas'],
+              ['paid', 'Pagadas'],
+            ] as const
+          ).map(([value, label]) => (
+            <Button
+              key={value}
+              size="sm"
+              variant={filter === value ? 'default' : 'outline'}
+              onPress={() => setFilter(value)}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  filter !== value && styles.filterTextOutline,
+                ]}
+              >
+                {label}
+              </Text>
+            </Button>
+          ))}
+        </ScrollView>
         {debtsQuery.isLoading ? (
           <Spinner color="#DE034D" />
         ) : debtsQuery.isError ? (
@@ -98,7 +143,7 @@ export default function DebtsScreen() {
               <Text style={styles.buttonText}>Reintentar</Text>
             </Button>
           </Card>
-        ) : active.length === 0 ? (
+        ) : visibleDebts.length === 0 ? (
           <Card style={styles.empty}>
             <Text style={styles.title}>No tienes deudas activas</Text>
             <Text style={styles.copy}>
@@ -106,7 +151,7 @@ export default function DebtsScreen() {
             </Text>
           </Card>
         ) : (
-          active.map((item) => (
+          visibleDebts.map((item) => (
             <Card key={item.id} style={styles.card}>
               <Button
                 variant="ghost"
@@ -166,6 +211,17 @@ export default function DebtsScreen() {
 }
 const styles = StyleSheet.create({
   content: { gap: 12, padding: 16, paddingBottom: 152 },
+  summary: { gap: 4, padding: 18 },
+  summaryLabel: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+  },
+  summaryAmount: { color: '#0F172A', fontSize: 28, fontWeight: '600' },
+  filters: { gap: 8, paddingVertical: 2 },
+  filterText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
+  filterTextOutline: { color: '#0F172A' },
   card: { gap: 8, padding: 8 },
   empty: { alignItems: 'center', gap: 8, padding: 24 },
   title: { color: '#0F172A', fontSize: 16, fontWeight: '600' },

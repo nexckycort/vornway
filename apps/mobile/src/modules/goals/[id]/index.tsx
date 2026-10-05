@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { goalsClient } from '@/api/goals';
+import { groupsClient } from '@/api/groups';
+import { usersClient } from '@/api/users';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -36,6 +38,7 @@ type Goal = {
   contributionMode?: 'manual' | 'monthly' | 'flexible' | 'suggested';
   progress?: number;
   members?: Member[];
+  group?: { id: string };
   contributions?: Contribution[];
 };
 
@@ -53,6 +56,7 @@ export default function GoalDetailScreen() {
   >('manual');
   const [memberId, setMemberId] = useState('');
   const [contributionAmount, setContributionAmount] = useState('');
+  const [participantSearch, setParticipantSearch] = useState('');
   const goalQuery = useQuery({
     queryKey: ['goal-detail', id],
     enabled: Boolean(id),
@@ -62,6 +66,33 @@ export default function GoalDetailScreen() {
       });
       if (!response.ok) throw new Error('goal_load_failed');
       return (await response.json()) as unknown as Goal;
+    },
+  });
+  const userSearchQuery = useQuery({
+    queryKey: ['goal-member-search', participantSearch.trim()],
+    enabled: participantSearch.trim().length > 1,
+    queryFn: async () => {
+      const response = await usersClient.search.$get({
+        query: { query: participantSearch.trim() },
+      });
+      if (!response.ok) throw new Error('member_search_failed');
+      return response.json() as Promise<{
+        data: Array<{ id: string; name: string; username?: string | null }>;
+      }>;
+    },
+  });
+  const addMemberMutation = useMutation({
+    mutationFn: async (member: { name: string; linkedUserId?: string }) => {
+      if (!goal?.group?.id) throw new Error('group_missing');
+      const response = await groupsClient[':id'].members.$post({
+        param: { id: goal.group.id },
+        json: member,
+      });
+      if (!response.ok) throw new Error('member_add_failed');
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['goal-detail', id] });
+      setParticipantSearch('');
     },
   });
   const updateMutation = useMutation({
@@ -174,6 +205,47 @@ export default function GoalDetailScreen() {
               </Text>
               <Button onPress={openEdit}>
                 <Text style={styles.buttonText}>Editar meta</Text>
+              </Button>
+            </Card>
+            <Card style={styles.card}>
+              <Text style={styles.section}>Participantes</Text>
+              <Input
+                value={participantSearch}
+                onChangeText={setParticipantSearch}
+                placeholder="Buscar usuario o escribir nombre"
+              />
+              {userSearchQuery.data?.data?.map((candidate) => (
+                <Button
+                  key={candidate.id}
+                  variant="outline"
+                  disabled={addMemberMutation.isPending}
+                  onPress={() =>
+                    addMemberMutation.mutate({
+                      name: candidate.name,
+                      linkedUserId: candidate.id,
+                    })
+                  }
+                >
+                  <Text style={styles.outlineText}>
+                    {candidate.name}
+                    {candidate.username ? ` · @${candidate.username}` : ''}
+                  </Text>
+                </Button>
+              ))}
+              {goal.members?.map((member) => (
+                <Text key={member.id} style={styles.copy}>
+                  {member.name}
+                </Text>
+              ))}
+              <Button
+                disabled={
+                  addMemberMutation.isPending || !participantSearch.trim()
+                }
+                onPress={() =>
+                  addMemberMutation.mutate({ name: participantSearch.trim() })
+                }
+              >
+                <Text style={styles.buttonText}>Agregar participante</Text>
               </Button>
             </Card>
             <Card style={styles.card}>

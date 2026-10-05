@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, ScrollView, Share, StyleSheet, Text } from 'react-native';
 import { groupsClient } from '@/api/groups';
 import { usersClient } from '@/api/users';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,8 @@ import { Spinner } from '@/components/ui/spinner';
 type Member = {
   id: string;
   name: string;
+  role?: string;
+  userId?: string | null;
   user?: { name?: string | null } | null;
 };
 type SearchUser = {
@@ -74,10 +76,35 @@ export default function GroupParticipantsScreen() {
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
   });
+  const unlinkMutation = useMutation({
+    mutationFn: async (memberId: string) => {
+      const response = await groupsClient[':id'].members[':memberId'][
+        'account-link'
+      ].$delete({ param: { id: id ?? '', memberId } });
+      if (!response.ok) throw new Error('No se pudo desvincular');
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
+  });
+  const transferMutation = useMutation({
+    mutationFn: async (memberId: string) => {
+      const response = await groupsClient[':id'].owner.$patch({
+        param: { id: id ?? '' },
+        json: { memberId },
+      });
+      if (!response.ok) throw new Error('No se pudo transferir la propiedad');
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
+  });
   const members =
     membersQuery.data && 'members' in membersQuery.data
       ? (membersQuery.data.members as Member[])
       : [];
+  const inviteCode =
+    membersQuery.data && 'inviteCode' in membersQuery.data
+      ? membersQuery.data.inviteCode
+      : null;
   function addManual() {
     if (!name.trim() || addMutation.isPending) return;
     addMutation.mutate(
@@ -95,6 +122,18 @@ export default function GroupParticipantsScreen() {
       <ScreenHeader title="Participantes" onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.content}>
         {membersQuery.isLoading ? <Spinner color="#DE034D" /> : null}
+        {inviteCode ? (
+          <Button
+            variant="outline"
+            onPress={() =>
+              void Share.share({
+                message: `Únete a este espacio de Vornway: ${inviteCode}`,
+              })
+            }
+          >
+            <Text style={styles.outlineText}>Compartir invitación</Text>
+          </Button>
+        ) : null}
         <Card style={styles.form}>
           <Input
             value={name}
@@ -127,6 +166,38 @@ export default function GroupParticipantsScreen() {
         {members.map((member) => (
           <Card key={member.id} style={styles.row}>
             <Text style={styles.name}>{member.user?.name || member.name}</Text>
+            {member.role !== 'admin' && member.userId ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={unlinkMutation.isPending}
+                onPress={() => unlinkMutation.mutate(member.id)}
+              >
+                <Text style={styles.outlineText}>Desvincular</Text>
+              </Button>
+            ) : null}
+            {member.role !== 'admin' ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={transferMutation.isPending}
+                onPress={() =>
+                  Alert.alert(
+                    'Transferir propiedad',
+                    `¿Quieres transferir la propiedad a ${member.name}?`,
+                    [
+                      { text: 'Cancelar', style: 'cancel' },
+                      {
+                        text: 'Transferir',
+                        onPress: () => transferMutation.mutate(member.id),
+                      },
+                    ],
+                  )
+                }
+              >
+                <Text style={styles.outlineText}>Transferir</Text>
+              </Button>
+            ) : null}
             <Button
               variant="ghost"
               size="sm"

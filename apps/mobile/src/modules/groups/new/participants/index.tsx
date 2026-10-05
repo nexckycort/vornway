@@ -1,4 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
@@ -21,6 +23,7 @@ export default function GroupCreateParticipantsScreen() {
   const router = useRouter();
   const [input, setInput] = useState('');
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const searchQuery = useQuery({
     queryKey: ['group-create-user-search', input.trim()],
     enabled: input.trim().length > 1,
@@ -42,6 +45,9 @@ export default function GroupCreateParticipantsScreen() {
           name: name.trim(),
           type,
           ...(description?.trim() ? { description: description.trim() } : {}),
+          ...(imageDataUrl
+            ? { image: { dataUrl: imageDataUrl, fileName: 'group-image.jpg' } }
+            : {}),
           participants,
         },
       });
@@ -66,6 +72,21 @@ export default function GroupCreateParticipantsScreen() {
     setParticipants((current) => [...current, participant]);
     setInput('');
   }
+  async function chooseImage() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      base64: true,
+      quality: 0.8,
+    });
+    const asset = result.canceled ? undefined : result.assets[0];
+    if (asset?.base64) {
+      setImageDataUrl(
+        `data:${asset.mimeType ?? 'image/jpeg'};base64,${asset.base64}`,
+      );
+    }
+  }
   return (
     <Screen>
       <ScreenHeader title="Participantes" onBack={() => router.back()} />
@@ -75,6 +96,16 @@ export default function GroupCreateParticipantsScreen() {
           <Text style={styles.copy}>
             Agrega personas manualmente o vincula usuarios de Vornway.
           </Text>
+          {imageDataUrl ? (
+            <Image
+              source={{ uri: imageDataUrl }}
+              style={styles.image}
+              contentFit="cover"
+            />
+          ) : null}
+          <Button variant="outline" onPress={() => void chooseImage()}>
+            <Text style={styles.outlineText}>Agregar imagen del espacio</Text>
+          </Button>
           <Input
             value={input}
             onChangeText={setInput}
@@ -142,4 +173,5 @@ const styles = StyleSheet.create({
   copy: { color: '#64748B', fontSize: 14, lineHeight: 20 },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
   outlineText: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
+  image: { borderRadius: 16, height: 120, width: 120 },
 });

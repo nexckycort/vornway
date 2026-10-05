@@ -1,19 +1,31 @@
+import {
+  Ionicons,
+  type IoniconsIconName,
+} from '@react-native-vector-icons/ionicons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n';
 
 export function HomeSection({
   title,
   children,
+  onViewAll,
 }: {
   title: string;
   children: React.ReactNode;
+  onViewAll?: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{title}</Text>
-        <Text style={styles.viewAll}>Ver todo</Text>
+        {onViewAll ? (
+          <Button variant="ghost" size="sm" onPress={onViewAll}>
+            <Text style={styles.viewAll}>{t('common.viewAll')}</Text>
+          </Button>
+        ) : null}
       </View>
       {children}
     </View>
@@ -27,7 +39,7 @@ export function ActionCard({
   onPress,
 }: {
   title: string;
-  icon: string;
+  icon: IoniconsIconName;
   primary?: boolean;
   onPress: () => void;
 }) {
@@ -36,9 +48,13 @@ export function ActionCard({
       onPress={onPress}
       style={[styles.action, primary && styles.actionPrimary]}
     >
-      <Text style={[styles.actionIcon, primary && styles.actionIconPrimary]}>
-        {icon}
-      </Text>
+      <View style={[styles.actionIcon, primary && styles.actionIconPrimary]}>
+        <Ionicons
+          name={icon}
+          size={21}
+          color={primary ? '#DE034D' : '#DE034D'}
+        />
+      </View>
       <Text style={[styles.actionText, primary && styles.actionTextPrimary]}>
         {title}
       </Text>
@@ -77,8 +93,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   actionPrimary: { backgroundColor: '#DE034D' },
-  actionIcon: { color: '#DE034D', fontSize: 24, fontWeight: '600' },
-  actionIconPrimary: { color: '#FFFFFF' },
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF0F2',
+  },
+  actionIconPrimary: { backgroundColor: '#FFFFFF' },
   actionText: { color: '#242424', fontSize: 15, fontWeight: '600' },
   actionTextPrimary: { color: '#FFFFFF' },
   pressed: { opacity: 0.82 },

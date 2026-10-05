@@ -2,18 +2,25 @@ export type HomeTrip = {
   id: string;
   name: string;
   imageUrl: string | null;
+  isPersonal?: boolean;
   members: Array<{ id: string; name: string; image: string | null }>;
-  balances: string[];
+  balanceLabel?: string;
+  balanceItems?: Array<{ person: string; amount: string }>;
+  balanceOverflowLabel?: string;
+  dates?: string;
+  emptyLabel?: string;
 };
 
 export type HomeExpense = {
   id: string;
+  quickSplitId: string;
   description: string;
   quickSplitName: string;
   amount: string;
   paidBy: string;
   participantCount: number;
   balance: string;
+  createdAtLabel: string;
 };
 
 export type HomeGoal = {

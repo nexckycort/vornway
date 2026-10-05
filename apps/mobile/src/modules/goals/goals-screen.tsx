@@ -17,7 +17,7 @@ type Goal = {
   description?: string | null;
   currency: string;
   targetAmount: number;
-  currentAmount?: number;
+  savedAmount: number;
   progress?: number;
 };
 export default function GoalsScreen() {
@@ -80,13 +80,13 @@ export default function GoalsScreen() {
         ) : (
           goals.map((goal) => {
             const progress =
-              goal.progress ?? (goal.currentAmount ?? 0) / goal.targetAmount;
+              goal.progress ?? goal.savedAmount / goal.targetAmount;
             return (
               <Card key={goal.id} style={styles.card}>
                 <Text style={styles.title}>{goal.title}</Text>
                 <Text style={styles.copy}>
                   {goal.description ||
-                    `${goal.currentAmount ?? 0} de ${goal.targetAmount} ${goal.currency}`}
+                    `${goal.savedAmount} de ${goal.targetAmount} ${goal.currency}`}
                 </Text>
                 <Progress value={progress * 100} />
                 <Button

@@ -23,13 +23,19 @@ export default function QuickSplitExpenseDetailScreen() {
   const [expense, setExpense] = useState<Expense | null>(null);
   const [settlement, setSettlement] = useState('');
   const [saving, setSaving] = useState(false);
+  const [fromParticipantId, setFromParticipantId] = useState('');
+  const [toParticipantId, setToParticipantId] = useState('');
   useEffect(() => {
     if (!quickSplitId || !expenseId) return;
     void quickSplitsClient[':id'].expenses[':expenseId']
       .$get({ param: { id: quickSplitId, expenseId } })
       .then(async (response) => {
-        if (response.ok)
-          setExpense((await response.json()) as unknown as Expense);
+        if (response.ok) {
+          const nextExpense = (await response.json()) as unknown as Expense;
+          setExpense(nextExpense);
+          setFromParticipantId(nextExpense.participants?.[0]?.id ?? '');
+          setToParticipantId(nextExpense.participants?.[1]?.id ?? '');
+        }
       });
   }, [quickSplitId, expenseId]);
   async function settle() {
@@ -39,6 +45,9 @@ export default function QuickSplitExpenseDetailScreen() {
       !quickSplitId ||
       !expenseId ||
       participants.length < 2 ||
+      !fromParticipantId ||
+      !toParticipantId ||
+      fromParticipantId === toParticipantId ||
       !Number.isFinite(amount) ||
       amount <= 0
     )
@@ -51,8 +60,8 @@ export default function QuickSplitExpenseDetailScreen() {
       json: {
         amount,
         currency: expense?.currency ?? 'COP',
-        fromParticipantId: participants[0]?.id ?? '',
-        toParticipantId: participants[1]?.id ?? '',
+        fromParticipantId,
+        toParticipantId,
       },
     });
     setSaving(false);
@@ -85,6 +94,30 @@ export default function QuickSplitExpenseDetailScreen() {
               {participant.name}: {participant.balance ?? 0}
             </Text>
           ))}
+          <Text style={styles.label}>Quién paga</Text>
+          {expense.participants?.map((participant) => (
+            <Button
+              key={`from-${participant.id}`}
+              variant={
+                fromParticipantId === participant.id ? 'default' : 'outline'
+              }
+              onPress={() => setFromParticipantId(participant.id)}
+            >
+              <Text style={styles.buttonText}>{participant.name}</Text>
+            </Button>
+          ))}
+          <Text style={styles.label}>Quién recibe</Text>
+          {expense.participants?.map((participant) => (
+            <Button
+              key={`to-${participant.id}`}
+              variant={
+                toParticipantId === participant.id ? 'default' : 'outline'
+              }
+              onPress={() => setToParticipantId(participant.id)}
+            >
+              <Text style={styles.buttonText}>{participant.name}</Text>
+            </Button>
+          ))}
           <Input
             value={settlement}
             onChangeText={setSettlement}
@@ -113,6 +146,7 @@ const styles = StyleSheet.create({
   title: { color: '#0F172A', fontSize: 22, fontWeight: '600' },
   amount: { color: '#DE034D', fontSize: 28, fontWeight: '600' },
   copy: { color: '#64748B', fontSize: 14 },
+  label: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
   delete: { color: '#B91C1C', fontSize: 14, fontWeight: '600' },
 });

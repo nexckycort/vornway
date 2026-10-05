@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { goalsClient } from '@/api/goals';
@@ -22,7 +22,7 @@ import { Spinner } from '@/components/ui/spinner';
 type Member = { id: string; name: string };
 type Contribution = {
   id: string;
-  memberName?: string;
+  member?: { name: string };
   amount: number;
   currency: string;
 };
@@ -30,7 +30,7 @@ type Goal = {
   title: string;
   description?: string | null;
   targetAmount: number;
-  currentAmount?: number;
+  savedAmount: number;
   currency: string;
   progress?: number;
   members?: Member[];
@@ -96,9 +96,23 @@ export default function GoalDetailScreen() {
       setContributionAmount('');
     },
   });
+  const deleteContributionMutation = useMutation({
+    mutationFn: async (contributionId: string) => {
+      const response = await goalsClient[':id'].contributions[
+        ':contributionId'
+      ].$delete({
+        param: { id: id ?? '', contributionId },
+      });
+      if (!response.ok) throw new Error('goal_contribution_delete_failed');
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['goal-detail', id] });
+      await queryClient.invalidateQueries({ queryKey: ['goals-list'] });
+    },
+  });
   const goal = goalQuery.data;
   const progress = goal
-    ? (goal.progress ?? (goal.currentAmount ?? 0) / goal.targetAmount)
+    ? (goal.progress ?? goal.savedAmount / goal.targetAmount)
     : 0;
   function openEdit() {
     if (!goal) return;
@@ -146,7 +160,7 @@ export default function GoalDetailScreen() {
               </Text>
               <Progress value={progress * 100} />
               <Text style={styles.copy}>
-                {goal.currentAmount ?? 0} de {goal.targetAmount} {goal.currency}
+                {goal.savedAmount} de {goal.targetAmount} {goal.currency}
               </Text>
               <Button onPress={openEdit}>
                 <Text style={styles.buttonText}>Editar meta</Text>
@@ -155,10 +169,20 @@ export default function GoalDetailScreen() {
             <Card style={styles.card}>
               <Text style={styles.section}>Contribuciones</Text>
               {goal.contributions?.map((item) => (
-                <Text key={item.id} style={styles.copy}>
-                  {item.memberName ?? 'Participante'} · {item.amount}{' '}
-                  {item.currency}
-                </Text>
+                <React.Fragment key={item.id}>
+                  <Text style={styles.copy}>
+                    {item.member?.name ?? 'Participante'} · {item.amount}{' '}
+                    {goal.currency}
+                  </Text>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={deleteContributionMutation.isPending}
+                    onPress={() => deleteContributionMutation.mutate(item.id)}
+                  >
+                    <Text style={styles.delete}>Eliminar</Text>
+                  </Button>
+                </React.Fragment>
               ))}
               <Button
                 variant="outline"
@@ -240,4 +264,5 @@ const styles = StyleSheet.create({
   copy: { color: '#64748B', fontSize: 14, lineHeight: 20 },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
   outlineText: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
+  delete: { color: '#B91C1C', fontSize: 13 },
 });

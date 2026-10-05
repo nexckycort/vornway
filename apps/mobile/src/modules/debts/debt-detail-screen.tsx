@@ -1,7 +1,7 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
-
 import { debtsClient } from '@/api/debts';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -14,57 +14,64 @@ type Debt = {
   name: string;
   counterpartyName: string;
   remainingAmount: number;
-  principalAmount: number;
   currency: string;
   direction: string;
-  status: string;
   description?: string | null;
 };
 export default function DebtDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const [debt, setDebt] = useState<Debt | null>(null);
+  const queryClient = useQueryClient();
   const [payment, setPayment] = useState('');
-  const [saving, setSaving] = useState(false);
-  useEffect(() => {
-    if (!id) return;
-    void debtsClient[':id'].$get({ param: { id } }).then(async (response) => {
-      if (response.ok) setDebt((await response.json()) as unknown as Debt);
-    });
-  }, [id]);
-  async function addPayment() {
-    const amount = Number(payment.replace(',', '.'));
-    if (!id || !Number.isFinite(amount) || amount <= 0) return;
-    setSaving(true);
-    const response = await debtsClient[':id'].payments.$post({
-      param: { id },
-      json: { amount, paidAt: new Date().toISOString() },
-    });
-    setSaving(false);
-    if (!response.ok) {
-      Alert.alert('No se pudo registrar', 'Intenta nuevamente.');
-      return;
-    }
-    setPayment('');
-    const next = await debtsClient[':id'].$get({ param: { id } });
-    if (next.ok) setDebt((await next.json()) as unknown as Debt);
-  }
-  async function remove() {
-    if (!id) return;
-    const response = await debtsClient[':id'].$delete({ param: { id } });
-    if (!response.ok) {
-      Alert.alert('No se pudo eliminar', 'Intenta nuevamente.');
-      return;
-    }
-    router.back();
-  }
+  const debtQuery = useQuery({
+    queryKey: ['debt', id],
+    enabled: Boolean(id),
+    queryFn: async () => {
+      const response = await debtsClient[':id'].$get({
+        param: { id: id ?? '' },
+      });
+      if (!response.ok) throw new Error('debt_load_failed');
+      return (await response.json()) as Debt;
+    },
+  });
+  const paymentMutation = useMutation({
+    mutationFn: async () => {
+      const amount = Number(payment.replace(',', '.'));
+      if (!Number.isFinite(amount) || amount <= 0) throw new Error('invalid');
+      const response = await debtsClient[':id'].payments.$post({
+        param: { id: id ?? '' },
+        json: { amount, paidAt: new Date().toISOString() },
+      });
+      if (!response.ok) throw new Error('payment_failed');
+    },
+    onSuccess: async () => {
+      setPayment('');
+      await queryClient.invalidateQueries({ queryKey: ['debt', id] });
+      await queryClient.invalidateQueries({ queryKey: ['debts'] });
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const response = await debtsClient[':id'].$delete({
+        param: { id: id ?? '' },
+      });
+      if (!response.ok) throw new Error('delete_failed');
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['debts'] });
+      router.back();
+    },
+  });
+  const debt = debtQuery.data;
   return (
     <Screen>
       <ScreenHeader
         title={debt?.name ?? 'Deuda'}
         onBack={() => router.back()}
       />
-      {debt ? (
+      {!debt ? (
+        <Spinner color="#DE034D" />
+      ) : (
         <Card style={styles.card}>
           <Text style={styles.title}>{debt.name}</Text>
           <Text style={styles.copy}>
@@ -84,19 +91,30 @@ export default function DebtDetailScreen() {
             keyboardType="decimal-pad"
             placeholder="Monto abonado"
           />
-          <Button disabled={saving} onPress={() => void addPayment()}>
-            {saving ? (
-              <Spinner color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>Registrar abono</Text>
-            )}
+          <Button
+            disabled={paymentMutation.isPending}
+            onPress={() =>
+              paymentMutation.mutate(undefined, {
+                onError: () =>
+                  Alert.alert('No se pudo registrar', 'Intenta nuevamente.'),
+              })
+            }
+          >
+            <Text style={styles.buttonText}>Registrar abono</Text>
           </Button>
-          <Button variant="destructive" onPress={() => void remove()}>
+          <Button
+            variant="destructive"
+            disabled={deleteMutation.isPending}
+            onPress={() =>
+              deleteMutation.mutate(undefined, {
+                onError: () =>
+                  Alert.alert('No se pudo eliminar', 'Intenta nuevamente.'),
+              })
+            }
+          >
             <Text style={styles.delete}>Eliminar deuda</Text>
           </Button>
         </Card>
-      ) : (
-        <Spinner color="#DE034D" />
       )}
     </Screen>
   );

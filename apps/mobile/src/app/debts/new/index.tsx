@@ -1,1 +1,1 @@
-export { default } from '@/modules/debts/debt-create-screen';
+export { default } from '@/modules/debts/debt-create';

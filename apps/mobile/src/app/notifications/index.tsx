@@ -1,1 +1,1 @@
-export { default } from '@/modules/notifications/notifications-screen';
+export { default } from '@/modules/notifications/notifications';

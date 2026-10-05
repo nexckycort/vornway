@@ -1,1 +1,1 @@
-export { default } from '@/modules/converter/converter-screen';
+export { default } from '@/modules/converter/converter';

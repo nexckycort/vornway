@@ -1,1 +1,1 @@
-export { default } from '@/modules/invites/invite-screen';
+export { default } from '@/modules/invites/invite';

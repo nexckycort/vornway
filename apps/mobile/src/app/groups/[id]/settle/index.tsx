@@ -1,1 +1,1 @@
-export { default } from '@/modules/groups/group-settle-screen';
+export { default } from '@/modules/groups/group-settle';

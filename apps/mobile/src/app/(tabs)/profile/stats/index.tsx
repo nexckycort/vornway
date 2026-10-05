@@ -1,1 +1,1 @@
-export { default } from '@/modules/profile/stats/stats-screen';
+export { default } from '@/modules/profile/stats';

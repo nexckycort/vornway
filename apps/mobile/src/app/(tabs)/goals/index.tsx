@@ -1,1 +1,1 @@
-export { default } from '@/modules/goals/goals-screen';
+export { default } from '@/modules/goals/goals';

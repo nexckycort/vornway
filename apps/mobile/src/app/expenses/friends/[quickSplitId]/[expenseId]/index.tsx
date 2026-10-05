@@ -1,1 +1,1 @@
-export { default } from '@/modules/expenses/quick-split-expense-detail-screen';
+export { default } from '@/modules/expenses/quick-split-expense-detail';

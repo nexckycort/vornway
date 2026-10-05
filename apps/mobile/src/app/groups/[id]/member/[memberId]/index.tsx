@@ -1,1 +1,1 @@
-export { default } from '@/modules/groups/group-member-expenses-screen';
+export { default } from '@/modules/groups/group-member-expenses';

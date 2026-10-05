@@ -1,1 +1,1 @@
-export { default } from '@/modules/expenses/expenses-screen';
+export { default } from '@/modules/expenses/expenses';

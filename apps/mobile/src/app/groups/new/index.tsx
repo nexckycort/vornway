@@ -1,1 +1,1 @@
-export { default } from '@/modules/groups/group-create-screen';
+export { default } from '@/modules/groups/group-create';

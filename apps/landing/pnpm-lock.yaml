@@ -6,27 +6,24 @@ settings:
 
 catalogs:
   default:
-    wrangler:
-      specifier: ^4.115.0
-      version: 4.115.0
-  tooling:
     '@biomejs/biome':
       specifier: ^2.5.4
       version: 2.5.4
-  types:
     '@types/bun':
       specifier: latest
       version: 1.4.2
-    typescript:
-      specifier: ^7.0.2
-      version: 7.0.2
-  ui:
     tailwindcss:
       specifier: ^4.3.3
       version: 4.3.3
     tw-animate-css:
       specifier: ^1.4.0
       version: 1.4.0
+    typescript:
+      specifier: ^7.0.2
+      version: 7.0.2
+    wrangler:
+      specifier: ^4.115.0
+      version: 4.115.0
 
 importers:
 
@@ -36,10 +33,10 @@ importers:
         specifier: 7.1.0
         version: 7.1.0(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@26.1.1)(jiti@2.7.0)(yaml@2.9.0)
       tailwindcss:
-        specifier: catalog:ui
+        specifier: 'catalog:'
         version: 4.3.3
       tw-animate-css:
-        specifier: catalog:ui
+        specifier: 'catalog:'
         version: 1.4.0
     devDependencies:
       '@astrojs/check':
@@ -49,16 +46,16 @@ importers:
         specifier: 3.7.3
         version: 3.7.3
       '@biomejs/biome':
-        specifier: catalog:tooling
+        specifier: 'catalog:'
         version: 2.5.4
       '@tailwindcss/vite':
         specifier: ^4.1.18
         version: 4.3.2(vite@8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
       '@types/bun':
-        specifier: catalog:types
+        specifier: 'catalog:'
         version: 1.4.2
       typescript:
-        specifier: catalog:types
+        specifier: 'catalog:'
         version: 7.0.2
       wrangler:
         specifier: 'catalog:'

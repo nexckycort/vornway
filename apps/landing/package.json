@@ -14,16 +14,16 @@
   },
   "dependencies": {
     "astro": "7.1.0",
-    "tailwindcss": "catalog:ui",
-    "tw-animate-css": "catalog:ui"
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.9",
     "@astrojs/sitemap": "3.7.3",
-    "@biomejs/biome": "catalog:tooling",
+    "@biomejs/biome": "catalog:",
     "@tailwindcss/vite": "^4.1.18",
-    "@types/bun": "catalog:types",
-    "typescript": "catalog:types",
+    "@types/bun": "catalog:",
+    "typescript": "catalog:",
     "wrangler": "catalog:"
   }
 }

@@ -12,13 +12,13 @@
     "portless:setup": "bash scripts/setup-portless.sh"
   },
   "devDependencies": {
-    "@biomejs/biome": "catalog:tooling",
-    "@types/bun": "catalog:types",
-    "@types/node": "catalog:types",
-    "bun-types": "catalog:types",
+    "@biomejs/biome": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:",
+    "bun-types": "catalog:",
     "lefthook": "^2.0.12",
     "mprocs": "^0.9.6",
-    "typescript": "catalog:types"
+    "typescript": "catalog:"
   },
   "devEngines": {
     "runtime": [

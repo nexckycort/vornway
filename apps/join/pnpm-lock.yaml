@@ -6,23 +6,21 @@ settings:
 
 catalogs:
   default:
-    hono:
-      specifier: ^4.12.33
-      version: 4.12.33
-  prisma:
     '@prisma/adapter-pg':
       specifier: ^7.9.1
       version: 7.9.1
     '@prisma/client':
       specifier: ^7.9.1
       version: 7.9.1
-    prisma:
-      specifier: ^7.9.1
-      version: 7.9.1
-  types:
     '@types/bun':
       specifier: latest
       version: 1.4.2
+    hono:
+      specifier: ^4.12.33
+      version: 4.12.33
+    prisma:
+      specifier: ^7.9.1
+      version: 7.9.1
     typescript:
       specifier: ^7.0.2
       version: 7.0.2
@@ -32,23 +30,23 @@ importers:
   .:
     dependencies:
       '@prisma/adapter-pg':
-        specifier: catalog:prisma
+        specifier: 'catalog:'
         version: 7.9.1
       '@prisma/client':
-        specifier: catalog:prisma
+        specifier: 'catalog:'
         version: 7.9.1(prisma@7.9.1(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@7.0.2))(typescript@7.0.2)
       hono:
         specifier: 'catalog:'
         version: 4.12.33
     devDependencies:
       '@types/bun':
-        specifier: catalog:types
+        specifier: 'catalog:'
         version: 1.4.2
       prisma:
-        specifier: catalog:prisma
+        specifier: 'catalog:'
         version: 7.9.1(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@7.0.2)
       typescript:
-        specifier: catalog:types
+        specifier: 'catalog:'
         version: 7.0.2
 
 packages:

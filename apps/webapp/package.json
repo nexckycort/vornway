@@ -24,7 +24,7 @@
     "@tanstack/db": "^0.6.5",
     "@tanstack/query-core": "^5.100.11",
     "@tanstack/query-db-collection": "^1.0.36",
-    "@tanstack/react-query": "catalog:query",
+    "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "^1.168.25",
     "@vornway/api": "workspace:*",
     "better-auth": "^1.6.9",
@@ -41,12 +41,12 @@
     "recharts": "3.8.0",
     "shadcn": "^4.6.0",
     "sonner": "^2.0.7",
-    "tailwindcss": "catalog:ui",
-    "tw-animate-css": "catalog:ui",
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:",
     "vaul": "^1.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "catalog:tooling",
+    "@biomejs/biome": "catalog:",
     "@inlang/cli": "^3.0.0",
     "@inlang/paraglide-js": "^2.18.1",
     "@rsbuild/core": "^2.1.1",
@@ -56,7 +56,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "portless": "catalog:",
-    "typescript": "catalog:types",
+    "typescript": "catalog:",
     "wrangler": "catalog:"
   }
 }

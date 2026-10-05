@@ -163,11 +163,10 @@ settings:
   excludeLinksFromLockfile: false
 
 catalogs:
-  tooling:
+  default:
     '@biomejs/biome':
       specifier: ^2.5.4
       version: 2.5.4
-  types:
     '@types/bun':
       specifier: latest
       version: 1.4.2
@@ -186,19 +185,19 @@ importers:
   .:
     devDependencies:
       '@biomejs/biome':
-        specifier: catalog:tooling
+        specifier: 'catalog:'
         version: 2.5.4
       '@types/bun':
-        specifier: catalog:types
+        specifier: 'catalog:'
         version: 1.4.2
       '@types/node':
-        specifier: catalog:types
+        specifier: 'catalog:'
         version: 24.13.3
       bun:
         specifier: runtime:^1.4
         version: runtime:1.4.2
       bun-types:
-        specifier: catalog:types
+        specifier: 'catalog:'
         version: 1.4.2
       lefthook:
         specifier: ^2.0.12
@@ -207,7 +206,7 @@ importers:
         specifier: ^0.9.6
         version: 0.9.6
       typescript:
-        specifier: catalog:types
+        specifier: 'catalog:'
         version: 7.0.2
 
 packages:

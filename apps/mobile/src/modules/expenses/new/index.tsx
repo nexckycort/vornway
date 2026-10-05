@@ -1,230 +1,209 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
-import { quickSplitsClient } from '@/api/quick-splits';
+import { useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+
+import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
-import { Spinner } from '@/components/ui/spinner';
 
-type SplitMethod = 'equal' | 'percentage' | 'exact';
+type Group = {
+  id: string;
+  name: string;
+  imageUrl?: string | null;
+  updatedAt?: string;
+  participantCount?: number;
+  members?: Array<{
+    id: string;
+    name: string;
+    userId?: string | null;
+    image?: string | null;
+  }>;
+};
 
-export default function ExpenseCreateScreen() {
+export default function ExpenseEntryScreen() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const [groupName, setGroupName] = useState('');
-  const [participants, setParticipants] = useState('');
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
-  const [shareValues, setShareValues] = useState<Record<string, string>>({});
-  const [payerIndex, setPayerIndex] = useState('0');
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const names = participants
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean);
-      const parsedAmount = Number(amount.replace(',', '.'));
-      if (
-        !groupName.trim() ||
-        names.length === 0 ||
-        !description.trim() ||
-        !Number.isFinite(parsedAmount) ||
-        parsedAmount <= 0
-      )
-        throw new Error('invalid');
-      const groupResponse = await quickSplitsClient.index.$post({
-        json: {
-          name: groupName.trim(),
-          participants: names.map((name) => ({ name })),
-        },
+  const [search, setSearch] = useState('');
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
+  const groupsQuery = useQuery({
+    queryKey: ['expense-entry-groups'],
+    queryFn: async () => {
+      const response = await groupsClient.index.$get({
+        query: { limit: '50', filter: 'all' },
       });
-      if (!groupResponse.ok) throw new Error('group_failed');
-      const group = await groupResponse.json();
-      const firstParticipant = group.participants[0];
-      if (!firstParticipant) throw new Error('participant_failed');
-      const enteredShares = names.map(
-        (_, index) =>
-          Number((shareValues[String(index)] ?? '').replace(',', '.')) || 0,
-      );
-      const rawShareTotal = enteredShares.reduce(
-        (sum, value) => sum + value,
-        0,
-      );
-      const expectedShareTotal =
-        splitMethod === 'percentage' ? 100 : parsedAmount;
-      if (
-        splitMethod !== 'equal' &&
-        Math.abs(rawShareTotal - expectedShareTotal) > 0.01
-      )
-        throw new Error('invalid_split');
-      const payer = group.participants[Number(payerIndex)] ?? firstParticipant;
-      const exactShares = Object.fromEntries(
-        group.participants.map((participant, index) => [
-          participant.id,
-          splitMethod === 'percentage'
-            ? (parsedAmount * enteredShares[index]) / 100
-            : enteredShares[index],
-        ]),
-      );
-      const expenseResponse = await quickSplitsClient[':id'].expenses.$post({
-        param: { id: group.id },
-        json: {
-          description: description.trim(),
-          amount: parsedAmount,
-          currency: 'COP',
-          paidByParticipantId: payer.id,
-          splitMethod,
-          ...(splitMethod === 'percentage'
-            ? {
-                percentageShares: Object.fromEntries(
-                  group.participants.map((participant, index) => [
-                    participant.id,
-                    enteredShares[index],
-                  ]),
-                ),
-              }
-            : {}),
-          ...(splitMethod === 'exact' ? { exactShares } : {}),
-        },
-      });
-      if (!expenseResponse.ok) throw new Error('expense_failed');
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ['quick-split-expenses'],
-      });
-      router.back();
+      if (!response.ok) throw new Error('groups_load_failed');
+      return (await response.json()) as unknown as { data: Group[] };
     },
   });
+  const groups = groupsQuery.data?.data ?? [];
+  const friends = useMemo(() => {
+    const result = new Map<
+      string,
+      { id: string; name: string; image?: string | null; groups: number }
+    >();
+    for (const group of groups) {
+      for (const member of group.members ?? []) {
+        const key = member.userId
+          ? `user:${member.userId}`
+          : `manual:${member.name.trim().toLowerCase()}`;
+        const previous = result.get(key);
+        result.set(key, {
+          id: previous?.id ?? member.id,
+          name: previous?.name ?? member.name,
+          image: previous?.image ?? member.image,
+          groups: (previous?.groups ?? 0) + 1,
+        });
+      }
+    }
+    return [...result.values()];
+  }, [groups]);
+  const normalizedSearch = search.trim().toLowerCase();
+  const visibleGroups = groups.filter((group) =>
+    group.name.toLowerCase().includes(normalizedSearch),
+  );
+  const visibleFriends = friends.filter((friend) =>
+    friend.name.toLowerCase().includes(normalizedSearch),
+  );
+
+  function toggleFriend(id: string) {
+    setSelectedFriendIds((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
+    );
+  }
+
+  function continueWithFriends() {
+    const selected = friends.filter((friend) =>
+      selectedFriendIds.includes(friend.id),
+    );
+    router.push({
+      pathname: '/expenses/quick-split',
+      params: {
+        participants: selected.map((friend) => friend.name).join(', '),
+      },
+    } as never);
+  }
+
   return (
     <Screen>
-      <ScreenHeader
-        title="Nuevo gasto compartido"
-        onBack={() => router.back()}
-      />
+      <ScreenHeader title="Nuevo gasto" onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Card style={styles.card}>
-          <Label>Nombre del grupo</Label>
-          <Input
-            value={groupName}
-            onChangeText={setGroupName}
-            placeholder="Cena con amigos"
-          />
-          <Label>Participantes</Label>
-          <Input
-            value={participants}
-            onChangeText={setParticipants}
-            placeholder="Ana, Carlos, Luisa"
-          />
-          <Text style={styles.hint}>Sepáralos con comas.</Text>
-          <Label>Descripción del gasto</Label>
-          <Input
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Cena"
-          />
-          <Label>Monto</Label>
-          <Input
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="decimal-pad"
-            placeholder="0"
-          />
-          <Label>Quién pagó</Label>
-          {namesFromInput(participants).map((participant, index) => (
-            <Button
-              key={`payer-${participant}`}
-              variant={payerIndex === String(index) ? 'default' : 'outline'}
-              onPress={() => setPayerIndex(String(index))}
-            >
-              <Text
-                style={
-                  payerIndex === String(index)
-                    ? styles.buttonText
-                    : styles.outlineText
-                }
-              >
-                {participant}
-              </Text>
-            </Button>
-          ))}
-          <Label>Método de reparto</Label>
-          {(['equal', 'percentage', 'exact'] as const).map((method) => (
-            <Button
-              key={method}
-              variant={splitMethod === method ? 'default' : 'outline'}
-              onPress={() => setSplitMethod(method)}
-            >
-              <Text
-                style={
-                  splitMethod === method
-                    ? styles.buttonText
-                    : styles.outlineText
-                }
-              >
-                {method === 'equal'
-                  ? 'Partes iguales'
-                  : method === 'percentage'
-                    ? 'Porcentaje'
-                    : 'Montos exactos'}
-              </Text>
-            </Button>
-          ))}
-          {splitMethod !== 'equal'
-            ? namesFromInput(participants).map((participant, index) => (
-                <Input
-                  key={`share-${participant}`}
-                  value={shareValues[String(index)] ?? ''}
-                  onChangeText={(value) =>
-                    setShareValues((current) => ({
-                      ...current,
-                      [String(index)]: value,
-                    }))
-                  }
-                  keyboardType="decimal-pad"
-                  placeholder={`${participant} ${splitMethod === 'percentage' ? '%' : 'monto'}`}
-                />
-              ))
-            : null}
+        <Text style={styles.heading}>¿Con quién compartiste?</Text>
+        <Text style={styles.description}>
+          Elige un espacio existente o selecciona amigos para crear un gasto
+          rápido.
+        </Text>
+        <Input
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Buscar espacios o amigos"
+          style={styles.search}
+        />
+        <Text style={styles.sectionLabel}>ESPACIOS</Text>
+        {groupsQuery.isLoading ? <ActivityIndicator color="#DE034D" /> : null}
+        {visibleGroups.map((group) => (
           <Button
-            disabled={mutation.isPending}
+            key={group.id}
+            variant="outline"
+            style={styles.groupCard}
             onPress={() =>
-              mutation.mutate(undefined, {
-                onError: () =>
-                  Alert.alert(
-                    'No se pudo crear',
-                    'Completa los datos e intenta nuevamente.',
-                  ),
-              })
+              router.push(`/groups/${group.id}/add-expense` as never)
             }
           >
-            {mutation.isPending ? (
-              <Spinner color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>Crear gasto</Text>
-            )}
+            <View style={styles.groupCopy}>
+              <Text style={styles.groupName}>{group.name}</Text>
+              <Text style={styles.meta}>
+                {group.participantCount ?? group.members?.length ?? 0}{' '}
+                participantes
+              </Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
           </Button>
-        </Card>
+        ))}
+        {!groupsQuery.isLoading && visibleGroups.length === 0 ? (
+          <Text style={styles.empty}>No hay espacios que coincidan.</Text>
+        ) : null}
+        <Text style={styles.sectionLabel}>AMIGOS</Text>
+        {visibleFriends.map((friend) => {
+          const selected = selectedFriendIds.includes(friend.id);
+          return (
+            <Button
+              key={friend.id}
+              variant="outline"
+              style={styles.friendRow}
+              onPress={() => toggleFriend(friend.id)}
+            >
+              <View style={styles.friendCopy}>
+                <Text style={styles.friendName}>{friend.name}</Text>
+                <Text style={styles.meta}>
+                  {friend.groups} espacios compartidos
+                </Text>
+              </View>
+              <Checkbox
+                value={selected}
+                onValueChange={() => toggleFriend(friend.id)}
+              />
+            </Button>
+          );
+        })}
+        {!groupsQuery.isLoading && visibleFriends.length === 0 ? (
+          <Text style={styles.empty}>
+            Aún no tienes amigos en espacios compartidos.
+          </Text>
+        ) : null}
+        <Button
+          disabled={selectedFriendIds.length === 0}
+          onPress={continueWithFriends}
+        >
+          <Text style={styles.primaryText}>Continuar</Text>
+        </Button>
       </ScrollView>
     </Screen>
   );
 }
-const styles = StyleSheet.create({
-  content: { paddingBottom: 152 },
-  card: { gap: 12, margin: 16, padding: 18 },
-  hint: { color: '#64748B', fontSize: 12 },
-  buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
-  outlineText: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
-});
 
-function namesFromInput(value: string) {
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
+const styles = StyleSheet.create({
+  content: { gap: 12, padding: 16, paddingBottom: 152 },
+  heading: { color: '#0F172A', fontSize: 24, fontWeight: '600' },
+  description: { color: '#64748B', fontSize: 14, lineHeight: 20 },
+  search: { backgroundColor: '#FFFFFF', borderRadius: 24, height: 44 },
+  sectionLabel: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    marginTop: 10,
+  },
+  groupCard: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 68,
+    padding: 14,
+  },
+  groupCopy: { flex: 1, gap: 4 },
+  groupName: { color: '#0F172A', fontSize: 16, fontWeight: '600' },
+  friendRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 62,
+    padding: 14,
+  },
+  friendCopy: { flex: 1, gap: 4 },
+  friendName: { color: '#0F172A', fontSize: 15, fontWeight: '600' },
+  meta: { color: '#64748B', fontSize: 12 },
+  chevron: { color: '#DE034D', fontSize: 26 },
+  empty: { color: '#64748B', fontSize: 13, paddingVertical: 8 },
+  primaryText: { color: '#FFFFFF', fontWeight: '600' },
+});

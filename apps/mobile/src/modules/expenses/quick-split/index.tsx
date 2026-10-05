@@ -1,1 +1,1 @@
-export { default } from '../new';
+export { default } from './form';

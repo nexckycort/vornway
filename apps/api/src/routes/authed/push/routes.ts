@@ -3,9 +3,15 @@ import { Hono } from 'hono';
 import { pushNotifications } from '#/infrastructure/push/push-notifications';
 import type { AppContext } from '#/shared/types/app';
 import {
+  nativePushSubscriptionSchema,
   pushSubscriptionSchema,
+  revokeNativePushSubscriptionSchema,
   revokePushSubscriptionSchema,
 } from './push.validators';
+
+function nativeEndpoint(token: string) {
+  return `https://exp.host/--/api/v2/push/send?token=${encodeURIComponent(token)}`;
+}
 
 export const pushRoutes = new Hono<AppContext>()
   .post(
@@ -63,7 +69,37 @@ export const pushRoutes = new Hono<AppContext>()
     }
 
     return c.json({ success: true });
-  });
+  })
+  .post(
+    '/native-subscriptions',
+    zValidator('json', nativePushSubscriptionSchema),
+    async (c) => {
+      const { id: userId } = c.get('user');
+      const payload = c.req.valid('json');
+      const subscription = await pushNotifications.storeSubscription({
+        userId,
+        endpoint: nativeEndpoint(payload.token),
+        p256dh: payload.token,
+        auth: 'expo',
+        userAgent: `expo:${payload.platform ?? 'native'}`,
+      });
+
+      return c.json(subscription, 201);
+    },
+  )
+  .delete(
+    '/native-subscriptions',
+    zValidator('json', revokeNativePushSubscriptionSchema),
+    async (c) => {
+      const { id: userId } = c.get('user');
+      const { token } = c.req.valid('json');
+      await pushNotifications.revokeSubscription({
+        userId,
+        endpoint: nativeEndpoint(token),
+      });
+      return c.json({ success: true });
+    },
+  );
 
 export default pushRoutes;
 export type PushRpc = typeof pushRoutes;

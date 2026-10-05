@@ -15,6 +15,7 @@ type PushSubscriptionRecord = {
   endpoint: string;
   p256dh: string;
   auth: string;
+  userAgent: string | null;
   revokedAt: Date | null;
 };
 
@@ -94,6 +95,29 @@ function createDefaultSender(): Sender {
 
   return {
     send: async (subscription, payload) => {
+      if (subscription.userAgent?.startsWith('expo:')) {
+        const response = await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            to: subscription.p256dh,
+            title: payload.title,
+            body: payload.body,
+            sound: 'default',
+            data: {
+              url: payload.url,
+              type: payload.type,
+              groupId: payload.groupId,
+              expenseId: payload.expenseId,
+            },
+          }),
+        });
+        if (!response.ok) {
+          throw new Error(`Expo push request failed: ${response.status}`);
+        }
+        return;
+      }
+
       ensureVapidConfigured();
       await webpush.sendNotification(
         {
@@ -186,6 +210,7 @@ export function createPushNotifications(
           endpoint: true,
           p256dh: true,
           auth: true,
+          userAgent: true,
           revokedAt: true,
         },
       });

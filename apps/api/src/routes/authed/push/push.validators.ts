@@ -11,3 +11,12 @@ export const pushSubscriptionSchema = z.object({
 export const revokePushSubscriptionSchema = z.object({
   endpoint: z.string().url(),
 });
+
+export const nativePushSubscriptionSchema = z.object({
+  token: z.string().min(1),
+  platform: z.enum(['ios', 'android']).optional(),
+});
+
+export const revokeNativePushSubscriptionSchema = z.object({
+  token: z.string().min(1),
+});

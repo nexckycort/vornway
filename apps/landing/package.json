@@ -3,14 +3,14 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "bunx --bun astro dev",
-    "build": "bunx --bun astro build",
+    "dev": "bun x --bun astro dev",
+    "build": "bun x --bun astro build",
     "clean": "rm -rf node_modules && rm -rf dist && rm -rf .astro",
     "check": "biome check --write",
-    "preview": "bunx --bun astro preview",
-    "astro": "bunx --bun astro",
-    "deploy": "bunx --bun astro build && bunx --bun wrangler pages deploy",
-    "typecheck": "bunx --bun astro check"
+    "preview": "bun x --bun astro preview",
+    "astro": "bun x --bun astro",
+    "deploy": "bun x --bun astro build && bun x --bun wrangler pages deploy",
+    "typecheck": "bun x --bun astro check"
   },
   "dependencies": {
     "astro": "7.1.0",

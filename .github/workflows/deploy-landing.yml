@@ -16,32 +16,32 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      pnpm_config_verify_deps_before_run: false
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Set up pnpm and bun
+        uses: pnpm/setup@v2
         with:
-          bun-version: latest
-          registry-url: 'https://registry.npmjs.org'
+          cache: true
+          install: false
+          runtime: bun@latest
+      - run: bun --version
 
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-
-      - name: Install packages
-        run: bun install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter '@vornway/landing...'
 
       - name: Build
-        run: bun run --filter @vornway/landing build
+        run: pnpm --filter @vornway/landing run build
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           workingDirectory: "apps/landing"
-          packageManager: bun
+          packageManager: pnpm
           apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy

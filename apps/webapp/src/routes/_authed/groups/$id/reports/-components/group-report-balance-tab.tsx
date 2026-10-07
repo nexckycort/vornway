@@ -98,12 +98,12 @@ export function GroupReportBalanceTab({
                       {amount > 0 ? (
                         <HugeiconsIcon
                           icon={ArrowUpRightIcon}
-                          className="size-4 shrink-0 text-rose-600"
+                          className="size-4 shrink-0 text-emerald-600"
                         />
                       ) : (
                         <HugeiconsIcon
                           icon={ArrowDownLeftIcon}
-                          className="size-4 shrink-0 text-emerald-600"
+                          className="size-4 shrink-0 text-rose-600"
                         />
                       )}
                       <p className="min-w-0 flex-1 text-sm text-[#334155]">
@@ -118,8 +118,8 @@ export function GroupReportBalanceTab({
                       <span
                         className={
                           amount > 0
-                            ? 'text-sm font-semibold text-rose-600'
-                            : 'text-sm font-semibold text-emerald-600'
+                            ? 'text-sm font-semibold text-emerald-600'
+                            : 'text-sm font-semibold text-rose-600'
                         }
                       >
                         {amount > 0 ? '+' : ''}

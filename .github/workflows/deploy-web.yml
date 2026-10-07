@@ -37,10 +37,10 @@ jobs:
       - run: bun --version
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --filter @vornway/api --filter @vornway/mobile
+        run: pnpm install --frozen-lockfile --filter '@vornway/web...'
 
       - name: Build
-        run: bun run --filter @vornway/web build
+        run: pnpm --filter @vornway/web run build
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

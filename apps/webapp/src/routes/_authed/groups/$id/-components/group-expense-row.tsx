@@ -359,8 +359,8 @@ export function GroupExpenseRow({
                     <p
                       className={`mt-0.5 text-xs font-medium ${
                         userBalance && userBalance > 0
-                          ? 'text-red-500'
-                          : 'text-teal-600'
+                          ? 'text-teal-600'
+                          : 'text-red-500'
                       }`}
                     >
                       {balanceLabel}

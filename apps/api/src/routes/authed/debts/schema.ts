@@ -22,7 +22,9 @@ export const createDebtSchema = z.object({
   dueDate: z.coerce.date().nullable().optional(),
   description: z.string().trim().max(400).optional(),
 });
-export const updateDebtSchema = createDebtSchema.partial();
+export const updateDebtSchema = createDebtSchema.partial().extend({
+  counterpartyId: z.string().min(1).nullable().optional(),
+});
 export const createPaymentSchema = z.object({
   amount: z.number().positive(),
   accountId: z.string().min(1).optional(),

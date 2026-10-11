@@ -16,6 +16,7 @@ import {
 } from '#/components/ui/drawer';
 import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
+import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
 
 export const Route = createFileRoute('/_authed/debts/$id/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -38,6 +39,7 @@ const financesSummaryEndpoint = financesClient.summary.$get;
 type DebtDetail = {
   id: string;
   name: string;
+  counterpartyId: string | null;
   counterpartyName: string;
   direction: 'lent' | 'borrowed';
   principalAmount: number;
@@ -126,8 +128,11 @@ function RouteComponent() {
   const [note, setNote] = useState('');
   const [accountId, setAccountId] = useState('');
   const [debtName, setDebtName] = useState('');
+  const [counterpartyName, setCounterpartyName] = useState('');
+  const [counterpartyId, setCounterpartyId] = useState<string>();
   const [debtDescription, setDebtDescription] = useState('');
   const [debtDueDate, setDebtDueDate] = useState('');
+  const counterpartySearch = useUserSearchQuery(counterpartyName);
 
   const detailQuery = useQuery({
     queryKey: ['debt', id],
@@ -519,6 +524,8 @@ function RouteComponent() {
               onClick={() => {
                 setMenuOpen(false);
                 setDebtName(detail.name);
+                setCounterpartyName(detail.counterpartyName);
+                setCounterpartyId(detail.counterpartyId ?? undefined);
                 setDebtDescription(detail.description ?? '');
                 setDebtDueDate(detail.dueDate?.slice(0, 10) ?? '');
                 window.setTimeout(() => setSheetMode('edit-debt'), 180);
@@ -664,6 +671,38 @@ function RouteComponent() {
                   className={debtInputClass}
                 />
               </Field>
+              <Field label={m['debts.personPlaceholder']()}>
+                <div className="relative">
+                  <input
+                    value={counterpartyName}
+                    onChange={(event) => {
+                      setCounterpartyName(event.target.value);
+                      setCounterpartyId(undefined);
+                    }}
+                    className={debtInputClass}
+                  />
+                  {counterpartySearch.data?.data?.length && !counterpartyId ? (
+                    <div className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-10 rounded-2xl border border-black/10 bg-white p-2 shadow-xl">
+                      {counterpartySearch.data.data.map((user) => (
+                        <button
+                          key={user.id}
+                          type="button"
+                          onClick={() => {
+                            setCounterpartyId(user.id);
+                            setCounterpartyName(user.name);
+                          }}
+                          className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left hover:bg-gray-50"
+                        >
+                          <span className="font-medium">{user.name}</span>
+                          <span className="max-w-[55%] truncate text-xs text-gray-500">
+                            {user.username ?? user.email}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </Field>
               <Field label={m['debts.dueDate']()}>
                 <input
                   type="date"
@@ -753,7 +792,8 @@ function RouteComponent() {
               onClick={() => {
                 if (sheetMode === 'edit-debt')
                   updateDebtMutation.mutate({
-                    counterpartyName: detail.counterpartyName,
+                    counterpartyName: counterpartyName.trim(),
+                    counterpartyId: counterpartyId ?? null,
                     direction: detail.direction,
                     currency: detail.currency,
                     name: debtName.trim(),

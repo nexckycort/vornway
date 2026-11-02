@@ -6,7 +6,7 @@ await Bun.build({
   },
   minify: true,
   sourcemap: 'linked',
-  bytecode: true,
+  format: 'esm',
   define: {
     'process.env.APP_VERSION': JSON.stringify(Bun.randomUUIDv7()),
   },

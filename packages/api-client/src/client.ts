@@ -7,6 +7,9 @@ import type {
 } from '@tanstack/react-query';
 import { Api } from '@vornway/contracts/api';
 import type { Cursor } from '@vornway/contracts/schema';
+
+export type { Cursor };
+
 import { Cause, Data, Effect, Exit, Option } from 'effect';
 import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import {
@@ -15,7 +18,7 @@ import {
   type HttpApiEndpoint,
   type HttpApiGroup,
 } from 'effect/http-api';
-import type { Simplify } from 'effect/Types';
+import type { DeepMutable, Simplify } from 'effect/Types';
 
 type Groups = typeof Api extends HttpApi.HttpApi<string, infer G> ? G : never;
 
@@ -76,10 +79,18 @@ export type ApiRequest<
   >
 >;
 
+// Decoded responses are handed to the app, which owns them: plain arrays and objects, not `readonly`.
 export type ApiSuccess<
   G extends GroupId,
   E extends EndpointId<G>,
-> = Effect.Success<Call<G, E>>;
+> = DeepMutable<Effect.Success<Call<G, E>>>;
+
+export type ApiPayload<
+  G extends GroupId,
+  E extends EndpointId<G>,
+> = 'payload' extends keyof ApiRequest<G, E>
+  ? Exclude<ApiRequest<G, E>['payload'], undefined>
+  : never;
 
 export type ApiError<G extends GroupId, E extends EndpointId<G>> =
   | Effect.Error<Call<G, E>>
@@ -89,6 +100,35 @@ export type ApiError<G extends GroupId, E extends EndpointId<G>> =
 export class ApiDefect extends Data.TaggedError('ApiDefect')<{
   readonly cause: unknown;
 }> {}
+
+const transportTags = new Set(['ApiDefect', 'HttpClientError', 'SchemaError']);
+
+// Declared API errors carry the user-facing text in `error` or `message`; transport failures never do.
+export const apiErrorMessage = (error: unknown, fallback: string): string => {
+  if (typeof error !== 'object' || error === null) return fallback;
+  const { _tag, error: detail, message } = error as Record<string, unknown>;
+  if (typeof _tag === 'string' && transportTags.has(_tag)) return fallback;
+  if (typeof detail === 'string' && detail !== '') return detail;
+  if (typeof message === 'string' && message !== '') return message;
+  return fallback;
+};
+
+// `rejected`: the request can never succeed as sent (the server refused it, or it failed schema validation). `server`: the server failed or is unavailable (5xx). `network`: no response.
+export type ApiErrorKind = 'rejected' | 'server' | 'network';
+
+export const apiErrorKind = (error: unknown): ApiErrorKind => {
+  if (typeof error !== 'object' || error === null) return 'network';
+  const { _tag } = error as { _tag?: unknown };
+  if (
+    typeof _tag !== 'string' ||
+    _tag === 'ApiDefect' ||
+    _tag === 'HttpClientError'
+  )
+    return 'network';
+  return _tag === 'InternalError' || _tag === 'AuthUnavailable'
+    ? 'server'
+    : 'rejected';
+};
 
 type RequestArgs<G extends GroupId, E extends EndpointId<G>> =
   Partial<ApiRequest<G, E>> extends ApiRequest<G, E>

@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url';
 import { paraglideRspackPlugin } from '@inlang/paraglide-js';
 import { defineConfig } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
@@ -21,13 +20,6 @@ export default defineConfig({
   html: {
     template: './public/index.html',
   },
-  // Injected workspace packages are copies the dev server never reloads, so build from their sources with one effect.
-  resolve: {
-    alias: {
-      '@vornway/api-client': '../../packages/api-client/src',
-      '@vornway/contracts': '../../packages/contracts/src',
-    },
-  },
   ...(import.meta.env.DEV && {
     server: {
       open: {
@@ -37,12 +29,6 @@ export default defineConfig({
   }),
   tools: {
     rspack: {
-      resolve: {
-        modules: [
-          fileURLToPath(new URL('node_modules', import.meta.url)),
-          'node_modules',
-        ],
-      },
       plugins: [
         tanstackRouter({
           target: 'react',

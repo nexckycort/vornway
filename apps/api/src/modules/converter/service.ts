@@ -4,7 +4,7 @@ import { CURRENCIES } from '@vornway/contracts/modules/converter/contract';
 import { Context, Effect, Layer } from 'effect';
 import { HttpClient } from 'effect/http';
 import { Database } from '#/infrastructure/database/database';
-import { makeInternalFailure } from '../shared/internal-failure';
+import { makeInternalFailure } from '#/infrastructure/http/errors';
 import { fetchRateSnapshot } from './providers';
 import { lastEffectiveDate, latestRates, pairRates } from './rates';
 

@@ -102,7 +102,7 @@ export class FinanceAccounts extends Context.Service<
           ],
           { concurrency: 'unbounded' },
         );
-        return withCursor(toPage(rows, limit, total));
+        return toPage(rows, limit, total);
       });
 
       const get = Effect.fn('FinanceAccounts.get')(function* (
@@ -416,23 +416,6 @@ export class FinanceAccounts extends Context.Service<
     }),
   );
 }
-
-const withCursor = <
-  Row,
-  Pagination extends { nextCursor: string | null },
->(page: {
-  data: readonly Row[];
-  pagination: Pagination;
-}) => ({
-  data: page.data,
-  pagination: {
-    ...page.pagination,
-    nextCursor:
-      page.pagination.nextCursor === null
-        ? null
-        : Cursor.make(page.pagination.nextCursor),
-  },
-});
 
 const toAccountType = (type: typeof CreateAccountPayload.Type.type) => {
   const accountTypes = {

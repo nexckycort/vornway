@@ -1,4 +1,4 @@
-import type { PageQuery } from '@vornway/contracts/schema';
+import { Cursor, type PageQuery } from '@vornway/contracts/schema';
 
 const DEFAULT_LIMIT = 20;
 
@@ -28,7 +28,7 @@ export const toPage = <Row extends { readonly id: string }>(
     pagination: {
       limit,
       total,
-      nextCursor: rows.length > limit && last ? last.id : null,
+      nextCursor: rows.length > limit && last ? Cursor.make(last.id) : null,
     },
   };
 };

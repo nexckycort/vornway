@@ -30,7 +30,7 @@ describe('toPage', () => {
   it('points at the last returned row when more remain', () => {
     expect(toPage(rows(4), 3, 10)).toEqual({
       data: rows(3),
-      pagination: { limit: 3, total: 10, nextCursor: 'row-3' },
+      pagination: { limit: 3, total: 10, nextCursor: Cursor.make('row-3') },
     });
   });
 

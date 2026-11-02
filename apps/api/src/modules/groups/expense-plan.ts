@@ -6,7 +6,7 @@ import {
 import type { ExpensePayload } from '@vornway/contracts/modules/groups/expense-schemas';
 import { Effect } from 'effect';
 import { Database } from '#/infrastructure/database/database';
-import { makeInternalFailure } from '#/modules/shared/internal-failure';
+import { makeInternalFailure } from '#/infrastructure/http/errors';
 import {
   normalizeExpenseTags,
   sanitizeAdvancedDetails,

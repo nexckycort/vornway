@@ -24,9 +24,9 @@ import type {
 } from '@vornway/contracts/modules/groups/schemas';
 import { Context, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
+import { makeInternalFailure } from '#/infrastructure/http/errors';
 import { getVersionedGroupImageUrl } from '#/infrastructure/storage/image-urls';
 import { Storage } from '#/infrastructure/storage/storage';
-import { makeInternalFailure } from '#/modules/shared/internal-failure';
 import { buildGroupCsv, groupExportSelect } from './csv';
 import { type ListQuery, makeGroupLister } from './group-list';
 import {

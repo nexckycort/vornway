@@ -1,9 +1,9 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { InternalError } from '@vornway/contracts/errors';
-import { Cause, Context, Data, Effect, Layer, Redacted } from 'effect';
+import type { InternalError } from '@vornway/contracts/errors';
+import { Context, Data, Effect, Layer, Redacted } from 'effect';
 import { env } from '#/config/env';
 import { Prisma, PrismaClient } from '#/generated/prisma/client';
-import { ErrorCapture } from '#/infrastructure/http/errors';
+import { makeInternalFailure } from '#/infrastructure/http/errors';
 
 export class DatabaseError extends Data.TaggedError('DatabaseError')<{
   readonly cause: unknown;
@@ -64,14 +64,11 @@ export class Database extends Context.Service<
     Database,
     Effect.gen(function* () {
       const client = yield* DatabaseClient;
-      const errors = yield* ErrorCapture;
+      const failInternal = yield* makeInternalFailure;
 
-      const internal = Effect.fn('Database.internal')(function* (
-        error: DatabaseError,
-      ) {
-        const traceId = yield* errors.capture(Cause.fail(error));
-        return yield* new InternalError({ traceId });
-      });
+      const internal = Effect.fn('Database.internal')((error: DatabaseError) =>
+        failInternal(error),
+      );
       const attempt = <A>(operation: (client: PrismaClient) => Promise<A>) =>
         Effect.tryPromise({
           try: () => operation(client),

@@ -2,8 +2,8 @@ import type { GroupListItem } from '@vornway/contracts/modules/groups/schemas';
 import type { PageQuery } from '@vornway/contracts/schema';
 import { Effect } from 'effect';
 import { Database } from '#/infrastructure/database/database';
-import { pageArgs } from '#/infrastructure/database/pagination';
-import { pageResult, visibleGroup } from './helpers';
+import { pageArgs, toPage } from '#/infrastructure/database/pagination';
+import { visibleGroup } from './helpers';
 import {
   type CurrentUserIdentity,
   type GroupListFilter,
@@ -113,7 +113,7 @@ export const makeGroupLister = Effect.gen(function* () {
         ],
         { concurrency: 2 },
       );
-      return pageResult(
+      return toPage(
         rows.map((row) => toGroupListItem(row, userId, currentUser)),
         limit,
         total,
@@ -127,7 +127,7 @@ export const makeGroupLister = Effect.gen(function* () {
       ],
       { concurrency: 2 },
     );
-    return pageResult(collected, limit, total);
+    return toPage(collected, limit, total);
   });
 
   return list;

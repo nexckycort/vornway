@@ -1,9 +1,9 @@
 import type { InternalError } from '@vornway/contracts/errors';
 import type { NotificationsPage } from '@vornway/contracts/modules/notifications/contract';
-import { Cursor } from '@vornway/contracts/schema';
+import type { Cursor } from '@vornway/contracts/schema';
 import { Context, Effect, Layer } from 'effect';
+import { makeInternalFailure } from '#/infrastructure/http/errors';
 import { NotificationInbox } from '#/infrastructure/notifications/inbox';
-import { makeInternalFailure } from '../shared/internal-failure';
 
 const DEFAULT_LIMIT = 20;
 
@@ -24,23 +24,13 @@ export class Notifications extends Context.Service<
       const internalFailure = yield* makeInternalFailure;
 
       const list = Effect.fn('Notifications.list')(function* (userId, query) {
-        const result = yield* inbox
+        return yield* inbox
           .listForUser({
             userId,
             limit: query.limit ?? DEFAULT_LIMIT,
             cursor: query.cursor ?? null,
           })
           .pipe(Effect.catchTag('NotificationInboxError', internalFailure));
-        return {
-          ...result,
-          pagination: {
-            ...result.pagination,
-            nextCursor:
-              result.pagination.nextCursor === null
-                ? null
-                : Cursor.make(result.pagination.nextCursor),
-          },
-        };
       });
 
       const markAllRead = Effect.fn('Notifications.markAllRead')(

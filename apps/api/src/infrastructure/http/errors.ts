@@ -33,6 +33,15 @@ export class ErrorCapture extends Context.Service<
   );
 }
 
+export const makeInternalFailure = Effect.gen(function* () {
+  const errors = yield* ErrorCapture;
+  return (error: unknown) =>
+    Effect.gen(function* () {
+      const traceId = yield* errors.capture(Cause.fail(error));
+      return yield* new InternalError({ traceId });
+    });
+});
+
 export const ErrorBoundaryLive = Layer.effect(
   ErrorBoundary,
   Effect.gen(function* () {

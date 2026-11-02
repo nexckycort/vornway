@@ -14,7 +14,6 @@ import {
   QuickSplitSettlementAmountInvalid,
   QuickSplitSettlementParticipantsInvalid,
 } from '@vornway/contracts/modules/quick-splits/contract';
-import { Cursor } from '@vornway/contracts/schema';
 import { Context, Effect, Layer } from 'effect';
 import { Database, DatabaseError } from '#/infrastructure/database/database';
 import { toPage } from '#/infrastructure/database/pagination';
@@ -301,14 +300,8 @@ const make = Effect.gen(function* () {
     });
     const page = toPage(rows, limit, total);
     return {
+      ...page,
       data: page.data.map((row) => toFeedItem(row, userId)),
-      pagination: {
-        ...page.pagination,
-        nextCursor:
-          page.pagination.nextCursor === null
-            ? null
-            : Cursor.make(page.pagination.nextCursor),
-      },
     };
   });
 

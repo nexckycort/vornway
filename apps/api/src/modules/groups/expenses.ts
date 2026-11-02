@@ -14,7 +14,7 @@ import type { PageQuery } from '@vornway/contracts/schema';
 import { Context, Effect, Layer } from 'effect';
 import type { Prisma } from '#/generated/prisma/client';
 import { Database } from '#/infrastructure/database/database';
-import { pageArgs } from '#/infrastructure/database/pagination';
+import { pageArgs, toPage } from '#/infrastructure/database/pagination';
 import { type MoneyRow, memberExpenseSql, sumByCurrency } from './expense-sql';
 import {
   expenseDetailSelect,
@@ -23,7 +23,7 @@ import {
   toExpenseListItem,
   toMemberExpenseListItem,
 } from './expense-views';
-import { activeExpenses, pageResult, required, visibleGroup } from './helpers';
+import { activeExpenses, required, visibleGroup } from './helpers';
 
 const listOrder = [
   { date: 'desc' },
@@ -105,7 +105,7 @@ export class GroupExpenses extends Context.Service<
           ],
           { concurrency: 2 },
         );
-        const page = pageResult(rows, limit, total);
+        const page = toPage(rows, limit, total);
         return {
           data: page.data.map((row) =>
             toExpenseListItem(row, group.type, currentMemberId),
@@ -207,7 +207,7 @@ export class GroupExpenses extends Context.Service<
           { concurrency: 4 },
         );
 
-        const page = pageResult(rows, limit, total);
+        const page = toPage(rows, limit, total);
         return {
           data: page.data.map((row) =>
             toMemberExpenseListItem(row, group.type, currentMemberId),

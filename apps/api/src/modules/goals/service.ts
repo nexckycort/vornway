@@ -7,7 +7,6 @@ import {
   GoalNameRequired,
   GoalNotFound,
 } from '@vornway/contracts/modules/goals/contract';
-import { Cursor } from '@vornway/contracts/schema';
 import { Context, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { pageArgs, toPage } from '#/infrastructure/database/pagination';
@@ -48,16 +47,7 @@ const make = Effect.gen(function* () {
       { concurrency: 2 },
     );
     const page = toPage(rows, limit, total);
-    return {
-      data: page.data.map(summarizeGoal),
-      pagination: {
-        ...page.pagination,
-        nextCursor:
-          page.pagination.nextCursor === null
-            ? null
-            : Cursor.make(page.pagination.nextCursor),
-      },
-    };
+    return { ...page, data: page.data.map(summarizeGoal) };
   });
 
   const get = Effect.fn('Goals.get')(function* (

@@ -5,7 +5,7 @@ import {
 } from '@vornway/contracts/modules/maps/contract';
 import { Context, Effect, Layer } from 'effect';
 import { HttpClient, HttpClientRequest } from 'effect/http';
-import { makeInternalFailure } from '../shared/internal-failure';
+import { makeInternalFailure } from '#/infrastructure/http/errors';
 import { buildGoogleMapsEmbedUrl, isGoogleMapsUrl } from './embed-url';
 
 const USER_AGENT =

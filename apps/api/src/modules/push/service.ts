@@ -1,8 +1,8 @@
 import type { InternalError } from '@vornway/contracts/errors';
 import type { StoredPushSubscription as StoredPushSubscriptionSchema } from '@vornway/contracts/modules/push/contract';
 import { Context, Effect, Layer } from 'effect';
+import { makeInternalFailure } from '#/infrastructure/http/errors';
 import { Push } from '#/infrastructure/push/push';
-import { makeInternalFailure } from '../shared/internal-failure';
 
 const nativeEndpoint = (token: string) =>
   `https://exp.host/--/api/v2/push/send?token=${encodeURIComponent(token)}`;

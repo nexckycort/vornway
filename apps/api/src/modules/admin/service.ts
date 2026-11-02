@@ -9,8 +9,7 @@ import {
 import type { FeedbackPageQuery } from '@vornway/contracts/modules/feedback/contract';
 import { Context, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
-import { pageArgs } from '#/infrastructure/database/pagination';
-import { toCursorPage } from '../shared/page';
+import { pageArgs, toPage } from '#/infrastructure/database/pagination';
 import { adminFeedbackInclude, presentAdminFeedback } from './presenter';
 
 export class Admin extends Context.Service<
@@ -59,7 +58,7 @@ export class Admin extends Context.Service<
           ],
           { concurrency: 'unbounded' },
         );
-        const page = toCursorPage(rows, limit, total);
+        const page = toPage(rows, limit, total);
         return { ...page, data: page.data.map(presentAdminFeedback) };
       });
 

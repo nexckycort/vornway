@@ -1,7 +1,5 @@
-import { Cursor } from '@vornway/contracts/schema';
 import { Effect, Option, Schema } from 'effect';
 import type { Prisma } from '#/generated/prisma/client';
-import { toPage } from '#/infrastructure/database/pagination';
 
 export const normalizeAmount = (value: number) => Number(value.toFixed(2));
 
@@ -164,24 +162,6 @@ export const readSplitMethod = (
 
 export const isSettlement = (notes: string | null) =>
   Boolean(notes?.includes('[SETTLEMENT:'));
-
-export const pageResult = <Row extends { readonly id: string }>(
-  rows: readonly Row[],
-  limit: number,
-  total: number,
-) => {
-  const page = toPage(rows, limit, total);
-  return {
-    data: page.data,
-    pagination: {
-      ...page.pagination,
-      nextCursor:
-        page.pagination.nextCursor === null
-          ? null
-          : Cursor.make(page.pagination.nextCursor),
-    },
-  };
-};
 
 export const readTotals = (totals: unknown): Record<string, number> =>
   Option.getOrElse(

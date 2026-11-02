@@ -62,7 +62,7 @@ describe('pageArgs and toPage', () => {
       expect(first.pagination).toEqual({
         limit: 2,
         total: 5,
-        nextCursor: 'n4',
+        nextCursor: Cursor.make('n4'),
       });
       expect(third.pagination.nextCursor).toBeNull();
     }),

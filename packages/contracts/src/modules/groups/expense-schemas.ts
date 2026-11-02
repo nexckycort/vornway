@@ -99,12 +99,17 @@ export const ExpensePayload = Schema.Struct({
   advancedDetails: Schema.optionalKey(ExpenseAdvancedDetails),
 }).check(
   Schema.makeFilter((data) => {
+    // Map.groupBy needs Safari 17.4+, and this filter runs in installed PWAs.
     const itemTotals = [
-      ...Map.groupBy(data.lineItems ?? [], (item) => item.memberId),
-    ].map(
-      ([memberId, items]) =>
-        [memberId, items.reduce((sum, item) => sum + item.amount, 0)] as const,
-    );
+      ...(data.lineItems ?? []).reduce(
+        (totals, item) =>
+          totals.set(
+            item.memberId,
+            (totals.get(item.memberId) ?? 0) + item.amount,
+          ),
+        new Map<string, number>(),
+      ),
+    ];
     const lineItemsMatch =
       itemTotals.length === 0 ||
       ((data.splitMethod ?? 'equal') === 'exact' &&

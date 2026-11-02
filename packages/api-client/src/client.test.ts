@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { afterAll, describe, expect, it } from 'bun:test';
 import {
   ApiDefect,
   apiErrorKind,
@@ -35,6 +35,48 @@ describe('makeApiClient', () => {
     expect(getNextPageParam({ pagination: { nextCursor: null } })).toBe(
       undefined,
     );
+  });
+});
+
+describe('request payloads', () => {
+  const bodies: unknown[] = [];
+  const server = Bun.serve({
+    hostname: '127.0.0.1',
+    port: 0,
+    fetch: async (request) => {
+      bodies.push(await request.json());
+      return Response.json({ _tag: 'GroupNotFound' }, { status: 404 });
+    },
+  });
+  afterAll(() => server.stop(true));
+  const api = makeApiClient({ baseUrl: server.url.origin });
+
+  it('drops undefined keys like JSON does instead of failing validation', async () => {
+    await api.groups.createExpense
+      .request({
+        params: { id: 'g1' },
+        payload: {
+          description: 'Taxi',
+          amount: 10,
+          currency: 'COP',
+          paidByIds: ['m1'],
+          payers: undefined,
+          exactShares: undefined,
+          sharedSplit: undefined,
+          advancedDetails: { notes: undefined },
+        },
+      })
+      .catch(() => undefined);
+
+    expect(bodies).toEqual([
+      {
+        description: 'Taxi',
+        amount: 10,
+        currency: 'COP',
+        paidByIds: ['m1'],
+        advancedDetails: {},
+      },
+    ]);
   });
 });
 

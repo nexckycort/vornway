@@ -265,7 +265,7 @@ export const makeApiClient = ({
       ...(schemas.query !== undefined && { query: {} }),
       ...(schemas.headers !== undefined && { headers: {} }),
       ...(schemas.payload.size > 0 && { payload: {} }),
-      ...input,
+      ...withoutUndefined(input),
     });
     const request = async (input: object, signal?: AbortSignal) => {
       const exit = await Effect.runPromiseExit(method(input), { signal });
@@ -330,4 +330,21 @@ export const makeApiClient = ({
       },
     ]),
   ) as unknown as ApiClient;
+};
+
+// Matches JSON, which drops undefined keys: `optionalKey` schemas reject a present undefined.
+const withoutUndefined = <A>(value: A): A => {
+  if (Array.isArray(value)) return value.map(withoutUndefined) as A;
+  if (!isPlainObject(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter((entry) => entry[1] !== undefined)
+      .map(([key, item]) => [key, withoutUndefined(item)]),
+  ) as A;
+};
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> => {
+  if (typeof value !== 'object' || value === null) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 };

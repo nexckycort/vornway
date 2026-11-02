@@ -93,21 +93,19 @@ export class NotificationInbox extends Context.Service<
 
           const last = rows.at(-1);
           return {
-            data: rows.map(
-              (row): NotificationInboxItem => ({
-                id: row.id,
-                type: row.type,
-                title: row.title,
-                body: row.body,
-                url: row.url,
-                groupId: row.groupId,
-                expenseId: row.expenseId,
-                actorName: row.actorName,
-                actorImage: resolveUserImageUrl(row.actorImage, null),
-                readAt: row.readAt?.toISOString() ?? null,
-                createdAt: row.createdAt.toISOString(),
-              }),
-            ),
+            data: rows.map((row): NotificationInboxItem => ({
+              id: row.id,
+              type: row.type,
+              title: row.title,
+              body: row.body,
+              url: row.url,
+              groupId: row.groupId,
+              expenseId: row.expenseId,
+              actorName: row.actorName,
+              actorImage: resolveUserImageUrl(row.actorImage, null),
+              readAt: row.readAt?.toISOString() ?? null,
+              createdAt: row.createdAt.toISOString(),
+            })),
             pagination: {
               limit: take,
               total,

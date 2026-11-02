@@ -13,6 +13,6 @@ export type FeedbackItem = {
   description: string;
   status: FeedbackStatus;
   priority: string | null;
-  metadata: { attachments?: Array<{ url: string }> };
+  metadata: { attachments?: { url: string }[] };
   createdAt: string;
 };

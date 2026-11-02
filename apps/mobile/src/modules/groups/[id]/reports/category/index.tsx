@@ -110,11 +110,11 @@ export default function GroupCategoryReportScreen() {
       });
       if (!response.ok) throw new Error('shares_load_failed');
       return (await response.json()) as {
-        memberShares: Array<{
+        memberShares: {
           memberId: string;
           name: string;
           categorySharesByCurrency?: Record<string, Record<string, number>>;
-        }>;
+        }[];
       };
     },
   });

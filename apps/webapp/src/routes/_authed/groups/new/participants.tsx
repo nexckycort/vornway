@@ -26,13 +26,13 @@ import {
   syncPendingGroupsQueue,
 } from '#/lib/offline-group-query-collection';
 import { m } from '#/paraglide/messages.js';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import {
   buildCreateGroupPayload,
   type CreateGroupFormValues,
   useCreateGroupMutation,
 } from '#/routes/_authed/groups/-hooks/use-create-group';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
-import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import {
   clearGroupDraft,
   type GroupCreateDraft,

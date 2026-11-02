@@ -4,8 +4,8 @@ type BalanceExpense = {
   amount: number;
   currency: string;
   paidById: string;
-  payers: ReadonlyArray<{ memberId: string; amount: number }>;
-  participants: ReadonlyArray<{ memberId: string; share: number }>;
+  payers: readonly { memberId: string; amount: number }[];
+  participants: readonly { memberId: string; share: number }[];
 };
 
 type PairBalance = {
@@ -20,7 +20,7 @@ export const payerEntries = (expense: BalanceExpense) =>
     : [{ memberId: expense.paidById, amount: expense.amount }];
 
 export const pairwiseBalances = (
-  expenses: ReadonlyArray<BalanceExpense>,
+  expenses: readonly BalanceExpense[],
   memberId: string,
 ) => {
   const credits = new Map<string, PairBalance>();

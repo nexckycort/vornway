@@ -39,7 +39,7 @@ export const makeGroupNotifier = Effect.gen(function* () {
 });
 
 export const expensePushRecipients = (input: {
-  members: ReadonlyArray<{ id: string; userId: string | null }>;
+  members: readonly { id: string; userId: string | null }[];
   paidByIds: readonly string[];
   participantIds: readonly string[];
   creatorUserId: string;

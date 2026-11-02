@@ -10,9 +10,8 @@
     }
   },
   "scripts": {
-    "check": "biome check --write",
-    "check:effect": "bun ../../scripts/check-single-effect.ts",
-    "sync:contracts": "pnpm install --frozen-lockfile --offline --ignore-scripts",
+    "fmt:fix": "bun fmt",
+    "lint:fix": "bun lint --fix",
     "typecheck": "tsrs --noEmit",
     "test": "bun test"
   },
@@ -20,18 +19,17 @@
     "@tanstack/react-query": "catalog:",
     "@vornway/contracts": "workspace:*"
   },
-  "peerDependencies": {
-    "effect": "4.0.5"
-  },
   "devDependencies": {
-    "@biomejs/biome": "catalog:",
     "@types/bun": "catalog:",
-    "typescript": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "typescript": "catalog:"
   },
   "dependenciesMeta": {
     "@vornway/contracts": {
       "injected": true
     }
+  },
+  "peerDependencies": {
+    "effect": "4.0.5"
   }
 }

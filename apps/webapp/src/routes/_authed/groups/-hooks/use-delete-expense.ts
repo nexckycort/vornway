@@ -1,5 +1,8 @@
-import type { InfiniteData } from '@tanstack/react-query';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  type InfiniteData,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { api, withErrorMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
 
@@ -9,7 +12,7 @@ type DeleteExpenseInput = {
 };
 
 type GroupExpensesInfiniteData = InfiniteData<{
-  data: Array<{ id: string }>;
+  data: { id: string }[];
   pagination: {
     limit: number;
     total: number;

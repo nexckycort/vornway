@@ -10,7 +10,7 @@ import { m } from '#/paraglide/messages.js';
 export type GoalType = 'trip' | 'gift' | 'saving' | 'event' | 'custom';
 export type ContributionMode = 'manual' | 'monthly' | 'flexible' | 'suggested';
 
-export const goalTypes: Array<{
+export const goalTypes: {
   id: GoalType;
   label: () => string;
   description: () => string;
@@ -18,7 +18,7 @@ export const goalTypes: Array<{
   accent: string;
   soft: string;
   icon: typeof PlaneIcon;
-}> = [
+}[] = [
   {
     id: 'trip',
     label: () => m['goals.typeTrip'](),
@@ -66,11 +66,11 @@ export const goalTypes: Array<{
   },
 ];
 
-export const contributionModes: Array<{
+export const contributionModes: {
   id: ContributionMode;
   label: () => string;
   description: () => string;
-}> = [
+}[] = [
   {
     id: 'manual',
     label: () => m['goals.modeManual'](),

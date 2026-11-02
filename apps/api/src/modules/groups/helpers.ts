@@ -51,12 +51,12 @@ export const reportExpenses = (input: {
 });
 
 export const calculateTotalsByCurrency = (
-  expenses: ReadonlyArray<{
+  expenses: readonly {
     amount: number;
     currency: string;
     notes?: string | null;
     participants: ReadonlyArray<unknown>;
-  }>,
+  }[],
   options?: { includeParticipantlessExpenses?: boolean },
 ) =>
   expenses
@@ -101,7 +101,7 @@ export const createSplitShares = (input: {
 export const createPayerShares = (input: {
   amount: number;
   payerIds: readonly string[];
-  payers?: ReadonlyArray<{ memberId: string; amount: number }>;
+  payers?: readonly { memberId: string; amount: number }[];
 }): { payerIds: string[]; shares: Record<string, number> } => {
   const payerIds = Array.from(
     new Set(input.payerIds.map((memberId) => memberId.trim()).filter(Boolean)),
@@ -143,7 +143,7 @@ export const createPayerShares = (input: {
 
 export const readSplitMethod = (
   metadata: unknown,
-  participants: ReadonlyArray<{ share: number }>,
+  participants: readonly { share: number }[],
 ): 'equal' | 'percentage' | 'exact' => {
   const stored =
     metadata && typeof metadata === 'object' && 'splitMethod' in metadata

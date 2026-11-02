@@ -5,12 +5,12 @@ import { useEffect, useMemo, useRef } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { m } from '#/paraglide/messages.js';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import {
   type GroupMemberExpenseItem,
   useGroupMemberExpensesInfiniteQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-member-expenses-query';
-import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import { CategoryIcon } from '../../-components/category-icon';
 import {
   formatMoney,

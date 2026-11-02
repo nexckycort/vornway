@@ -1,5 +1,5 @@
-import type { CreateGoalContributionPayload } from '@vornway/contracts/modules/goals/contract';
 import {
+  type CreateGoalContributionPayload,
   GoalAccessDenied,
   GoalContributionCreateForbidden,
   GoalContributionDeleteForbidden,

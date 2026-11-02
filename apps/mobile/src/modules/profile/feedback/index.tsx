@@ -8,7 +8,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { feedbackClient } from '@/api/feedback';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
-
 import type {
   FeedbackItem,
   FeedbackStatus,
@@ -41,9 +39,7 @@ export default function FeedbackScreen() {
   );
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [images, setImages] = useState<Array<{ uri: string; dataUrl: string }>>(
-    [],
-  );
+  const [images, setImages] = useState<{ uri: string; dataUrl: string }[]>([]);
   const feedbackQuery = useInfiniteQuery({
     queryKey: ['feedback'],
     initialPageParam: null as string | null,

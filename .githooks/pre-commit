@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Runs the staged-file checks in order; any failure aborts the commit.
+#
+# - check-staged-size: rejects files over the token limit.
+# - lint-format-staged: lints and formats the staged files of each touched project.
+# - typecheck-staged: type-checks each touched project, after lint/format fixed it.
+
+set -euo pipefail
+
+hooks_dir=$(dirname "${BASH_SOURCE[0]}")
+
+"$hooks_dir/check-staged-size"
+"$hooks_dir/lint-format-staged"
+"$hooks_dir/typecheck-staged"

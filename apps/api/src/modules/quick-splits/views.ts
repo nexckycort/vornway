@@ -1,10 +1,10 @@
-import type {
-  CreatedQuickSplit,
-  QuickSplitExpenseDetail,
-  QuickSplitExpenseFeedItem,
-  QuickSplitExpenseResult,
+import {
+  type CreatedQuickSplit,
+  type QuickSplitExpenseDetail,
+  type QuickSplitExpenseFeedItem,
+  type QuickSplitExpenseResult,
+  QuickSplitExpenseMetadata,
 } from '@vornway/contracts/modules/quick-splits/contract';
-import { QuickSplitExpenseMetadata } from '@vornway/contracts/modules/quick-splits/contract';
 import { Option, Schema } from 'effect';
 import { resolveUserImageUrl } from '#/infrastructure/storage/image-urls';
 import { normalizeAmount, sameCurrency } from './shares';

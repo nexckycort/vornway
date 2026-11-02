@@ -167,7 +167,7 @@ function RouteComponent() {
               }),
           createdAt: group.createdAt,
         };
-      }) as Array<Trip & { createdAt: string }>,
+      }) as (Trip & { createdAt: string })[],
     [groups, t.home],
   );
 
@@ -175,7 +175,7 @@ function RouteComponent() {
     () => buildTripSections(groupTrips),
     [groupTrips],
   );
-  const filters: Array<{ value: GroupListFilter; label: string }> = [
+  const filters: { value: GroupListFilter; label: string }[] = [
     { value: 'all', label: t.all },
     { value: 'theyOweYou', label: t.theyOweYou },
     { value: 'youOweThem', label: t.youOweThem },
@@ -391,15 +391,15 @@ function filterCachedGroups(
 }
 
 function mapMembersToAvatars(
-  members: Array<{ name: string; image: string | null }>,
+  members: { name: string; image: string | null }[],
 ) {
   const visibleMembers =
     members.length <= 2
       ? members
-      : ([members[0], members[members.length - 1]].filter(Boolean) as Array<{
+      : ([members[0], members[members.length - 1]].filter(Boolean) as {
           name: string;
           image: string | null;
-        }>);
+        }[]);
 
   return visibleMembers.map((member) => ({
     name: member.name,
@@ -407,7 +407,7 @@ function mapMembersToAvatars(
   }));
 }
 
-function buildTripSections(trips: Array<Trip & { createdAt: string }>) {
+function buildTripSections(trips: (Trip & { createdAt: string })[]) {
   const t = getGroupsMessages();
   const sections = {
     recent: [] as Trip[],

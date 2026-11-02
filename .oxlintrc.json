@@ -1,0 +1,67 @@
+{
+  "ignorePatterns": [
+    "dist",
+    "node_modules",
+    "pnpm-lock.yaml",
+    "*.tsbuildinfo",
+    "apps/mobile/android/**",
+    "apps/mobile/ios/**",
+    ".repos/**",
+    "**/routeTree.gen.ts",
+    "apps/webapp/src/paraglide/**"
+  ],
+  "plugins": ["eslint", "oxc", "react", "unicorn", "typescript"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "rules": {
+    "eslint/no-debugger": "error",
+    "eslint/no-duplicate-imports": "error",
+    "eslint/no-shadow": "warn",
+
+    "typescript/array-type": ["warn", { "default": "array" }],
+    "typescript/consistent-type-assertions": [
+      "warn",
+      { "assertionStyle": "as", "objectLiteralTypeAssertions": "allow" }
+    ],
+    "typescript/no-empty-object-type": "error",
+    "typescript/no-extra-non-null-assertion": "error",
+    "typescript/no-wrapper-object-types": "error",
+
+    "oxc/no-map-spread": "off",
+    "react-in-jsx-scope": "off",
+    "react-hooks/exhaustive-deps": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["apps/*/src/**", "packages/*/src/**"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/packages/**", "**/apps/**"],
+                "message": "Import workspace packages by name (@vornway/...), not by relative path."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/*.test.ts"],
+      "rules": {
+        "eslint/no-restricted-properties": "off",
+        "eslint/no-restricted-globals": "off"
+      }
+    }
+  ],
+  "options": {
+    "reportUnusedDisableDirectives": "error",
+    "typeAware": false,
+    "typeCheck": false
+  }
+}

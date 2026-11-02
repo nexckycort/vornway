@@ -1,12 +1,13 @@
 {
   "name": "@vornway/landing",
-  "type": "module",
   "version": "0.0.1",
+  "type": "module",
   "scripts": {
     "dev": "bun x --bun astro dev",
     "build": "bun x --bun astro build",
     "clean": "rm -rf node_modules && rm -rf dist && rm -rf .astro",
-    "check": "biome check --write",
+    "fmt:fix": "bun fmt",
+    "lint:fix": "bun lint --fix",
     "preview": "bun x --bun astro preview",
     "astro": "bun x --bun astro",
     "deploy": "bun x --bun astro build && bun x --bun wrangler pages deploy",
@@ -20,7 +21,6 @@
   "devDependencies": {
     "@astrojs/check": "0.9.9",
     "@astrojs/sitemap": "3.7.3",
-    "@biomejs/biome": "catalog:",
     "@tailwindcss/vite": "^4.1.18",
     "@types/bun": "catalog:",
     "typescript": "catalog:",

@@ -1,6 +1,8 @@
 import type { InternalError } from '@vornway/contracts/errors';
-import type { CurrencyConverter as CurrencyConverterSchema } from '@vornway/contracts/modules/converter/contract';
-import { CURRENCIES } from '@vornway/contracts/modules/converter/contract';
+import {
+  type CurrencyConverter as CurrencyConverterSchema,
+  CURRENCIES,
+} from '@vornway/contracts/modules/converter/contract';
 import { Context, Effect, Layer } from 'effect';
 import { HttpClient } from 'effect/http';
 import { Database } from '#/infrastructure/database/database';

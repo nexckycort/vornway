@@ -29,8 +29,8 @@ type Expense = {
     icon?: string | null;
   } | null;
   paidBy?: { id: string };
-  paidByMembers?: Array<{ memberId: string; amount: number }>;
-  participants?: Array<{ memberId: string; share: number }>;
+  paidByMembers?: { memberId: string; amount: number }[];
+  participants?: { memberId: string; share: number }[];
   isSettlement?: boolean;
 };
 type ExpenseResponse = {

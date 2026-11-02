@@ -27,7 +27,7 @@ type Expense = {
   quickSplitName?: string;
   paidBy?: { name: string; userId?: string | null };
   currentUserBalance?: number;
-  participants?: Array<{ id: string; name: string }>;
+  participants?: { id: string; name: string }[];
 };
 type ExpenseFilter = 'all' | 'settled' | 'owed' | 'owe';
 export default function ExpensesScreen() {

@@ -55,18 +55,16 @@ const frankfurterSnapshot = (client: HttpClient.HttpClient) =>
     },
     { concurrency: 'unbounded' },
   ).pipe(
-    Effect.map(
-      ({ usd, cop }): RateSnapshot => ({
-        eurToUsd: usd.rate,
-        eurToCop: cop.rate,
-        effectiveDate: new Date(`${usd.date}T00:00:00.000Z`),
-        metadata: {
-          provider: 'frankfurter',
-          fetchedAt: new Date().toISOString(),
-          response: { usd: usd.raw, cop: cop.raw },
-        },
-      }),
-    ),
+    Effect.map(({ usd, cop }): RateSnapshot => ({
+      eurToUsd: usd.rate,
+      eurToCop: cop.rate,
+      effectiveDate: new Date(`${usd.date}T00:00:00.000Z`),
+      metadata: {
+        provider: 'frankfurter',
+        fetchedAt: new Date().toISOString(),
+        response: { usd: usd.raw, cop: cop.raw },
+      },
+    })),
   );
 
 const openExchangeSnapshot = Effect.fnUntraced(

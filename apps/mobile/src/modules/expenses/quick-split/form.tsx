@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
-
 import { useUsernameRequirement } from '../../username/use-username-requirement';
 
 type SplitMethod = 'equal' | 'percentage' | 'exact';
@@ -27,14 +26,14 @@ type ExistingQuickSplitExpense = {
   splitMethod: SplitMethod;
   metadata?: {
     category?: string;
-    items?: Array<{ name: string; amount: number }>;
+    items?: { name: string; amount: number }[];
   } | null;
-  participants: Array<{
+  participants: {
     id: string;
     name: string;
     userId?: string | null;
     share?: number;
-  }>;
+  }[];
 };
 
 export default function ExpenseCreateScreen() {
@@ -73,7 +72,7 @@ export default function ExpenseCreateScreen() {
   const [debouncedFriendSearch, setDebouncedFriendSearch] = useState('');
   const [category, setCategory] = useState('');
   const [sharedItems, setSharedItems] = useState<
-    Array<{ name: string; amount: string }>
+    { name: string; amount: string }[]
   >([]);
   const expenseQuery = useQuery({
     queryKey: ['quick-split-expense', params.quickSplitId, params.expenseId],

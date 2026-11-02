@@ -250,7 +250,7 @@ describe('group expense lists', () => {
         const categorized = yield* read(`?categoryId=${food}`);
         const uncategorized = yield* read('?uncategorized=true');
 
-        expect([...everything.data.map((i) => i.id)].sort()).toEqual(
+        expect(everything.data.map((i) => i.id).sort()).toEqual(
           [paidByAna, paidByBruno].sort(),
         );
         expect(everything.pagination).toEqual({

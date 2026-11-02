@@ -1,5 +1,4 @@
 import { type ReactNode, useEffect, useState } from 'react';
-
 import {
   Carousel,
   type CarouselApi,

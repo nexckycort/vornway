@@ -17,11 +17,11 @@ export type CategoryVisual = {
   color?: string | null;
 };
 
-export const categoryIconOptions: Array<{
+export const categoryIconOptions: {
   id: string;
   icon: IconSvgElement;
   label: string;
-}> = [
+}[] = [
   { id: 'food', icon: KitchenUtensilsIcon, label: 'Comida' },
   { id: 'transport', icon: CarIcon, label: 'Transporte' },
   { id: 'hotel', icon: BedIcon, label: 'Alojamiento' },

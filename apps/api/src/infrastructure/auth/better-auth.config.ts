@@ -2,7 +2,6 @@ import { expo } from '@better-auth/expo';
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { anonymous, emailOTP } from 'better-auth/plugins';
-
 import type { PrismaClient } from '#/generated/prisma/client';
 
 const ONE_YEAR_IN_SECONDS = 60 * 60 * 24 * 365;

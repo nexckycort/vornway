@@ -1,6 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
 import { Alert, Text } from 'react-native';
-
 import { usersClient } from '@/api/users';
 import { Button } from '@/components/ui/button';
 import {

@@ -9,7 +9,8 @@
   "scripts": {
     "build": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && rsbuild build",
     "clean": "rm -rf node_modules && rm -rf dist",
-    "check": "biome check --write",
+    "fmt:fix": "bun fmt",
+    "lint:fix": "bun lint --fix",
     "dev": "portless app rsbuild",
     "deploy": "wrangler pages deploy --branch=main",
     "typecheck": "tsrs --noEmit",
@@ -48,7 +49,6 @@
     "vaul": "^1.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "catalog:",
     "@inlang/cli": "^3.0.0",
     "@inlang/paraglide-js": "^2.18.1",
     "@rsbuild/core": "^2.1.1",
@@ -57,6 +57,7 @@
     "@tanstack/router-plugin": "^1.167.28",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "eslint-plugin-react-doctor": "catalog:",
     "portless": "catalog:",
     "typescript": "catalog:",
     "wrangler": "catalog:"

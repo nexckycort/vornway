@@ -5,10 +5,7 @@ export {
   InvalidRequest,
   RequestValidation,
 } from './errors.ts';
-export {
-  AdminApi,
-  AdminFeedbackNotFound,
-} from './modules/admin/contract.ts';
+export { AdminApi, AdminFeedbackNotFound } from './modules/admin/contract.ts';
 export {
   AdminOnly,
   AuthUnavailable,
@@ -136,10 +133,7 @@ export {
   OtpSent,
   VerifiedLogin,
 } from './modules/login/contract.ts';
-export {
-  GoogleMapsOnly,
-  MapsApi,
-} from './modules/maps/contract.ts';
+export { GoogleMapsOnly, MapsApi } from './modules/maps/contract.ts';
 export { NotificationsApi } from './modules/notifications/contract.ts';
 export { PushApi } from './modules/push/contract.ts';
 export {

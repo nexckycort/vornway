@@ -3,9 +3,9 @@ export type HomeTrip = {
   name: string;
   imageUrl: string | null;
   isPersonal?: boolean;
-  members: Array<{ id: string; name: string; image: string | null }>;
+  members: { id: string; name: string; image: string | null }[];
   balanceLabel?: string;
-  balanceItems?: Array<{ person: string; amount: string }>;
+  balanceItems?: { person: string; amount: string }[];
   balanceOverflowLabel?: string;
   dates?: string;
   emptyLabel?: string;

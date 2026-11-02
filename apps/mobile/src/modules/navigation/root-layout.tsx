@@ -13,7 +13,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-
 import { AnimatedSplashOverlay } from '@/components/ui/animated-splash';
 import { authClient } from '@/lib/auth-client';
 import { LocaleProvider } from '@/lib/i18n';

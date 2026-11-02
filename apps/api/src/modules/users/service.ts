@@ -1,10 +1,8 @@
 import type { InternalError } from '@vornway/contracts/errors';
-import type {
-  UpdatedUsername,
-  UserImage,
-  UserSearchResult,
-} from '@vornway/contracts/modules/users/contract';
 import {
+  type UpdatedUsername,
+  type UserImage,
+  type UserSearchResult,
   UserImageRejected,
   UserNotFound,
   UsernameAlreadyTaken,

@@ -1,9 +1,7 @@
-import type {
-  CreateGoalPayload,
-  GoalsQuery,
-  UpdateGoalPayload,
-} from '@vornway/contracts/modules/goals/contract';
 import {
+  type CreateGoalPayload,
+  type GoalsQuery,
+  type UpdateGoalPayload,
   GoalNameRequired,
   GoalNotFound,
 } from '@vornway/contracts/modules/goals/contract';

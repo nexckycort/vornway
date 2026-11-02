@@ -1,6 +1,5 @@
 import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-
 import { Button } from '#/components/ui/button';
 import { useAuth } from '#/contexts/auth/use-auth';
 import { m } from '#/paraglide/messages.js';

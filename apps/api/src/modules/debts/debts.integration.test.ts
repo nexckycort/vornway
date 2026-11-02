@@ -1,7 +1,6 @@
 import { describe, expect } from 'bun:test';
 import { Effect } from 'effect';
-import type { Device } from '../../../testkit/app';
-import { makeTestApp } from '../../../testkit/app';
+import { type Device, makeTestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
 import { signIn } from '../../../testkit/login';
 import { asList } from '../finances/testing';

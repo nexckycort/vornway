@@ -7,7 +7,6 @@ import { Card } from '@/components/ui/card';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
 import { useI18n } from '@/lib/i18n';
-
 import { useUsernameRequirement } from '../../username/use-username-requirement';
 
 type Preview = {
@@ -20,7 +19,7 @@ type Preview = {
     memberCount?: number;
   };
   alreadyMember?: boolean;
-  unregisteredMembers?: Array<{ id: string; name: string }>;
+  unregisteredMembers?: { id: string; name: string }[];
 };
 export default function InviteScreen() {
   const { inviteCode } = useLocalSearchParams<{ inviteCode: string }>();

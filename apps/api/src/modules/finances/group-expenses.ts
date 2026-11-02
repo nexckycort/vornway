@@ -3,8 +3,8 @@ import { money } from './money';
 export const groupExpenseShare = (
   expense: {
     amount: number;
-    participants: ReadonlyArray<{ memberId: string; share: number }>;
-    payers: ReadonlyArray<{ memberId: string; amount: number }>;
+    participants: readonly { memberId: string; share: number }[];
+    payers: readonly { memberId: string; amount: number }[];
   },
   groupType: string,
   memberId: string,

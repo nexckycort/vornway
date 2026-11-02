@@ -1,6 +1,5 @@
 import * as Network from 'expo-network';
 import * as SecureStore from 'expo-secure-store';
-
 import { groupsClient } from '@/api/groups';
 
 type ExpensePayload = Record<string, unknown>;

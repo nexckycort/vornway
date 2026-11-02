@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Runs `bun run typecheck` in every workspace under apps/ and packages/ that has
+# staged files. tsc can't check single files, so it checks the whole project.
+#
+# - Only the touched project is checked, not the ones that depend on it.
+# - Bypass in an emergency with `git commit --no-verify`.
+
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+failed=0
+for pkg in apps/*/package.json packages/*/package.json; do
+  dir=${pkg%/package.json}
+
+  git diff --cached --quiet --diff-filter=ACM -- "$dir" && continue
+  grep -q '"typecheck"' "$pkg" || continue
+
+  echo "typecheck: $dir"
+  (cd "$dir" && bun run typecheck) || failed=1
+done
+
+if ((failed)); then
+  echo >&2 "pre-commit: type errors in the touched projects. Fix them and commit again."
+  exit 1
+fi

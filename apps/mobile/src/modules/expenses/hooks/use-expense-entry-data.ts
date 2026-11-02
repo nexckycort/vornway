@@ -1,6 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
-
 import { groupsClient } from '@/api/groups';
 import { authClient } from '@/lib/auth-client';
 

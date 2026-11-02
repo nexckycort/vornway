@@ -43,7 +43,7 @@ export default function GoalCreateScreen() {
   const [debouncedParticipantSearch, setDebouncedParticipantSearch] =
     useState('');
   const [linkedParticipants, setLinkedParticipants] = useState<
-    Array<{ name: string; userId: string; email?: string | null }>
+    { name: string; userId: string; email?: string | null }[]
   >([]);
   const [goalType, setGoalType] = useState<
     'saving' | 'trip' | 'gift' | 'event' | 'custom'
@@ -79,13 +79,13 @@ export default function GoalCreateScreen() {
       });
       if (!response.ok) throw new Error('participant_search_failed');
       return response.json() as Promise<{
-        data: Array<{
+        data: {
           id: string;
           name: string;
           username?: string | null;
           email?: string | null;
           isCurrentUser?: boolean;
-        }>;
+        }[];
       }>;
     },
   });

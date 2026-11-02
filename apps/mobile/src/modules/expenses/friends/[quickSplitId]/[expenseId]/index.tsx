@@ -25,22 +25,22 @@ type Expense = {
   splitMethod?: 'equal' | 'percentage' | 'exact';
   metadata?: {
     category?: string;
-    items?: Array<{ name: string; amount: number }>;
+    items?: { name: string; amount: number }[];
   } | null;
-  participants?: Array<{
+  participants?: {
     id: string;
     name: string;
     balance?: number;
     share?: number;
-  }>;
-  settlements?: Array<{
+  }[];
+  settlements?: {
     id: string;
     from: { id: string; name: string };
     to: { id: string; name: string };
     amount: number;
     currency: string;
     createdAt: string;
-  }>;
+  }[];
 };
 export default function QuickSplitExpenseDetailScreen() {
   const { quickSplitId, expenseId, from } = useLocalSearchParams<{
@@ -64,7 +64,7 @@ export default function QuickSplitExpenseDetailScreen() {
   const [editShares, setEditShares] = useState<Record<string, string>>({});
   const [editCategory, setEditCategory] = useState('');
   const [editItems, setEditItems] = useState<
-    Array<{ name: string; amount: string }>
+    { name: string; amount: string }[]
   >([]);
   const expenseQuery = useQuery({
     queryKey: ['quick-split-expense', quickSplitId, expenseId],

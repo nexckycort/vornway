@@ -33,8 +33,10 @@ import {
 import { useAuth } from '#/contexts/auth/use-auth';
 import { formatCurrency } from '#/lib/i18n';
 import { useDeleteQuickSplitExpenseMutation } from '#/routes/_authed/expenses/-hooks/use-delete-quick-split-expense';
-import type { QuickSplitExpenseDetail } from '#/routes/_authed/expenses/-hooks/use-quick-split-expense-query';
-import { useQuickSplitExpenseQuery } from '#/routes/_authed/expenses/-hooks/use-quick-split-expense-query';
+import {
+  type QuickSplitExpenseDetail,
+  useQuickSplitExpenseQuery,
+} from '#/routes/_authed/expenses/-hooks/use-quick-split-expense-query';
 import { useSettleQuickSplitDebt } from '#/routes/_authed/expenses/-hooks/use-settle-quick-split-debt';
 import { getQuickSplitMessages } from '#/routes/_authed/expenses/-messages';
 
@@ -99,7 +101,7 @@ function RouteComponent() {
 
   const fallbackExpense = useMemo(() => {
     const cachedExpenses = queryClient.getQueryData<{
-      pages?: Array<{
+      pages?: {
         data?: Array<{
           id: string;
           quickSplitId: string;
@@ -115,7 +117,7 @@ function RouteComponent() {
           };
           createdAt: string;
         }>;
-      }>;
+      }[];
     }>(['quick-split-expenses']);
     const items =
       cachedExpenses?.pages?.flatMap((page) => page.data ?? []) ?? [];
@@ -520,10 +522,10 @@ function SettlementParticipantSelect({
 }: {
   ariaLabel: string;
   expense: QuickSplitExpenseDetail | undefined;
-  participants: Array<{
+  participants: {
     id: string;
     name: string;
-  }>;
+  }[];
   selectedId: string;
   onValueChange: (participantId: string) => void;
 }) {

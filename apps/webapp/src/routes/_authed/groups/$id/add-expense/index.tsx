@@ -44,6 +44,7 @@ import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { compressImageFileToDataUrl } from '#/lib/image-compression';
 import { enqueueExpenseOffline } from '#/lib/offline-expense-query-collection';
 import { m } from '#/paraglide/messages.js';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import {
   useCreateCategoryMutation,
   useCreateExpenseMutation,
@@ -53,7 +54,6 @@ import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import {
   CategoryIcon,
   categoryIconOptions,
@@ -68,10 +68,10 @@ type ExpenseSharedSplit = {
   amount: number;
   splitMethod: Exclude<SplitMethod, 'equal'>;
   splitValues?: Record<string, number>;
-  items?: Array<{
+  items?: {
     name: string;
     amount: number;
-  }>;
+  }[];
 };
 
 type SharedExpenseItem = {
@@ -87,7 +87,7 @@ type ExpenseLineItem = {
   amount: string;
 };
 
-const splitMethods: Array<{ value: SplitMethod; label: string }> = [
+const splitMethods: { value: SplitMethod; label: string }[] = [
   { value: 'equal', label: m['groups.expense.splitEqual']() },
   { value: 'percentage', label: m['groups.expense.splitPercentage']() },
   { value: 'exact', label: m['groups.expense.splitExact']() },
@@ -106,11 +106,11 @@ const currencyMeta: Record<
 };
 
 const currencyOptions = ['COP', 'EUR', 'USD', 'GBP', 'MXN', 'BRL'] as const;
-const advancedDetailsTypeOptions: Array<{
+const advancedDetailsTypeOptions: {
   value: AdvancedDetailsType;
   label: string;
   description: string;
-}> = [
+}[] = [
   {
     value: 'stay',
     label: m['groups.expense.advancedTypeStay'](),
@@ -703,8 +703,8 @@ function RouteComponent() {
       );
       setAdvancedDetails({
         ...emptyAdvancedDetails,
-        ...((expense as { advancedDetails?: ExpenseAdvancedDetails | null })
-          .advancedDetails ?? {}),
+        ...(expense as { advancedDetails?: ExpenseAdvancedDetails | null })
+          .advancedDetails,
       });
       hasInitializedFormRef.current = true;
       return;

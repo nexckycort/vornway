@@ -37,19 +37,19 @@ type ExistingExpense = {
   category?: { id: string } | null;
   tags?: string[];
   paidBy?: { id: string };
-  paidByMembers?: Array<{ memberId: string; amount: number }>;
-  participants?: Array<{ memberId: string; share: number }>;
+  paidByMembers?: { memberId: string; amount: number }[];
+  participants?: { memberId: string; share: number }[];
   splitMethod?: SplitMethod;
-  lineItems?: Array<{
+  lineItems?: {
     memberId: string;
     description: string;
     amount: number;
-  }>;
+  }[];
   sharedSplit?: {
     amount: number;
     splitMethod: 'percentage' | 'exact';
     splitValues?: Record<string, number>;
-    items?: Array<{ name: string; amount: number }>;
+    items?: { name: string; amount: number }[];
   } | null;
   advancedDetails?: {
     type: AdvancedExpenseType;
@@ -167,8 +167,8 @@ export default function GroupExpenseCreateScreen() {
   });
   const advancedDetailsEnabled = Boolean(
     groupQuery.data &&
-      'advancedExpenseDetailsEnabled' in groupQuery.data &&
-      groupQuery.data.advancedExpenseDetailsEnabled,
+    'advancedExpenseDetailsEnabled' in groupQuery.data &&
+    groupQuery.data.advancedExpenseDetailsEnabled,
   );
   useEffect(() => {
     const expense = expenseQuery.data;

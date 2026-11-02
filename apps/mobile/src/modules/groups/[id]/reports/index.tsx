@@ -17,32 +17,32 @@ type Totals = {
   currentUserSpentByCurrency?: Record<string, number>;
   categoriesByCurrency: Record<
     string,
-    Array<{
+    {
       key: string;
       id?: string | null;
       name: string;
       amount: number;
       fill?: string;
-    }>
+    }[]
   >;
   tagsByCurrency?: Record<
     string,
-    Array<{ key: string; name: string; amount: number }>
+    { key: string; name: string; amount: number }[]
   >;
 };
 type Balances = {
-  memberBalances: Array<{
+  memberBalances: {
     memberId: string;
     name: string;
     balances: Record<string, number>;
-  }>;
+  }[];
 };
 type Shares = {
-  memberShares: Array<{
+  memberShares: {
     memberId: string;
     name: string;
     shares: Record<string, number>;
-  }>;
+  }[];
 };
 
 export default function GroupReportsScreen() {

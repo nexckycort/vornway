@@ -9,7 +9,6 @@ import {
   Text,
   View,
 } from 'react-native';
-
 import { goalsClient } from '@/api/goals';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -18,7 +17,6 @@ import { Progress } from '@/components/ui/progress';
 import { Screen } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
 import { useI18n } from '@/lib/i18n';
-
 import { formatGoalAmount } from './format';
 
 type Goal = {

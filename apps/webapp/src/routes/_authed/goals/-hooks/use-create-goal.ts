@@ -17,10 +17,10 @@ export type CreateGoalFormValues = {
   installmentCount: string;
   installmentAmount: string;
   suggestedContributionAmount: string;
-  participants: Array<{
+  participants: {
     name: string;
     userId?: string;
-  }>;
+  }[];
 };
 
 function createGoal(values: CreateGoalFormValues) {

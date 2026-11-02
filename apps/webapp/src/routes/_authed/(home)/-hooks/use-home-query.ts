@@ -32,10 +32,10 @@ export type Trip = {
   dates: string;
   imageUrl: string | null;
   isPersonal?: boolean;
-  avatars: Array<{
+  avatars: {
     name: string;
     image: string | null;
-  }>;
+  }[];
   extraPeople: number;
 } & (
   | {
@@ -107,10 +107,10 @@ function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
         ? group.members
         : ([group.members[0], group.members[group.members.length - 1]].filter(
             Boolean,
-          ) as Array<{
+          ) as {
             name: string;
             image: string | null;
-          }>);
+          }[]);
     const extraPeople = Math.max(0, group.members.length - avatars.length);
 
     if (isPersonal) {

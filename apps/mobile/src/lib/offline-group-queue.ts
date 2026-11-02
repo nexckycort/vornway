@@ -1,13 +1,12 @@
 import * as Network from 'expo-network';
 import * as SecureStore from 'expo-secure-store';
-
 import { groupsClient } from '@/api/groups';
 
 export type OfflineGroupPayload = {
   name: string;
   type: 'espacio' | 'personal';
   description?: string;
-  participants: Array<{ name: string; userId?: string }>;
+  participants: { name: string; userId?: string }[];
 };
 
 export type PendingGroup = {

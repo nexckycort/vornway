@@ -6,8 +6,15 @@
 
 .repos/** linguist-generated
 .agents/skills/** linguist-generated
+# Files not written by hand (or by agents). Marked as generated so GitHub
+# collapses their diffs and `.githooks/pre-commit` skips the token limit.
+
+# Lockfiles
+pnpm-lock.yaml linguist-generated=true
+bun.lock linguist-generated=true
 
 # Codegen
 *.gen.ts linguist-generated=true
 *.generated.* linguist-generated=true
 expo-env.d.ts linguist-generated=true
+apps/api/db/migrations/** linguist-generated=true

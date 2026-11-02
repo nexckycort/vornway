@@ -78,9 +78,7 @@ export function getInitials(name: string): string {
   return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
 }
 
-export function sumByCurrency(
-  items: Array<{ currency: string; amount: number }>,
-) {
+export function sumByCurrency(items: { currency: string; amount: number }[]) {
   return items.reduce<Record<string, number>>((acc, item) => {
     acc[item.currency] = (acc[item.currency] ?? 0) + item.amount;
     return acc;
@@ -88,7 +86,7 @@ export function sumByCurrency(
 }
 
 export function groupExpensesByDate(expenses: ExpenseItem[]) {
-  const groups: Array<{ label: string; items: ExpenseItem[] }> = [];
+  const groups: { label: string; items: ExpenseItem[] }[] = [];
 
   for (const expense of expenses) {
     const label = getExpenseDateGroupLabel(expense.date);

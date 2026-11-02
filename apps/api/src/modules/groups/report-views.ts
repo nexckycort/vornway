@@ -41,23 +41,23 @@ const addTo = (
 };
 
 export const buildTotalsReport = (input: {
-  totals: ReadonlyArray<{
+  totals: readonly {
     currency: string;
     _sum: { amount: number | null };
     _count: { _all: number };
-  }>;
-  categoryTotals: ReadonlyArray<{
+  }[];
+  categoryTotals: readonly {
     currency: string;
     categoryId: string | null;
     _sum: { amount: number | null };
-  }>;
-  categories: ReadonlyArray<Category>;
+  }[];
+  categories: readonly Category[];
   currentMemberShares: readonly ReportMoneyRow[];
-  tagExpenses: ReadonlyArray<{
+  tagExpenses: readonly {
     amount: number;
     currency: string;
     metadata: unknown;
-  }>;
+  }[];
   personal: boolean;
 }): Omit<typeof ReportsTotals.Type, 'range' | 'startDate' | 'endDate'> => {
   const categoryById = new Map(

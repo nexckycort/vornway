@@ -1,6 +1,5 @@
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-
 import {
   Avatar,
   AvatarFallback,
@@ -9,7 +8,6 @@ import {
   AvatarImage,
 } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
-
 import type { HomeTrip } from '../home.types';
 import { homeCardStyles } from './home-card';
 

@@ -1,10 +1,8 @@
-import type {
-  CreateQuickSplit,
-  QuickSplitExpenseInput,
-  QuickSplitExpensesQuery,
-  QuickSplitSettlementInput,
-} from '@vornway/contracts/modules/quick-splits/contract';
 import {
+  type CreateQuickSplit,
+  type QuickSplitExpenseInput,
+  type QuickSplitExpensesQuery,
+  type QuickSplitSettlementInput,
   QuickSplitExpenseNotFound,
   QuickSplitExpensePayerInvalid,
   QuickSplitExpenseSharesInvalid,

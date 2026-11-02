@@ -1,5 +1,4 @@
 import * as SecureStore from 'expo-secure-store';
-
 import type { HomeData } from '@/modules/home/home.types';
 
 const STORAGE_KEY = 'vornway:cache:home-summary';

@@ -7,7 +7,7 @@ import { cacheHomeData, readCachedHomeData } from '@/lib/home-cache';
 import type { HomeData } from '../home.types';
 
 type HomeResponse = {
-  groups: Array<{
+  groups: {
     id: string;
     name: string;
     createdAt: string;
@@ -24,8 +24,8 @@ type HomeResponse = {
       label: string;
     }>;
     totalsByCurrency: Record<string, number>;
-  }>;
-  goals: Array<{
+  }[];
+  goals: {
     id: string;
     title: string;
     currency: string;
@@ -33,8 +33,8 @@ type HomeResponse = {
     savedAmount: number;
     progress: number;
     group: { name: string };
-  }>;
-  recentDebts: Array<{
+  }[];
+  recentDebts: {
     id: string;
     counterpartyName: string;
     direction: 'lent' | 'borrowed';
@@ -42,10 +42,10 @@ type HomeResponse = {
     remainingAmount: number;
     status: 'active' | 'paid' | 'overdue';
     updatedAt: string;
-  }>;
+  }[];
 };
 type ExpensesResponse = {
-  data: Array<{
+  data: {
     id: string;
     quickSplitId: string;
     description: string;
@@ -56,7 +56,7 @@ type ExpensesResponse = {
     paidBy: { name: string };
     currentUserBalance: number;
     createdAt: string;
-  }>;
+  }[];
 };
 type NotificationsResponse = { unreadCount: number };
 

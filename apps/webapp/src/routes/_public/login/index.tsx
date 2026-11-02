@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-
 import { Button } from '#/components/ui/button';
 import { Spinner } from '#/components/ui/spinner';
 import { useAuth } from '#/contexts/auth/use-auth';

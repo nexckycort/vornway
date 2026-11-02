@@ -239,43 +239,39 @@ export class FinanceMovements extends Context.Service<
           },
         );
 
-        const debtPaymentMovements = debtPayments.map(
-          (payment): Movement => ({
-            source: 'debt-payment',
-            id: payment.id,
-            debtId: payment.debt.id,
-            debtName: payment.debt.name,
-            counterpartyName: payment.debt.counterpartyName,
-            description: payment.debt.name,
-            amount: payment.amount,
-            currency: payment.debt.currency,
-            occurredAt: payment.paidAt.toISOString(),
-            type:
-              debtViewerDirection(payment.debt, userId) === 'lent'
-                ? 'INCOME'
-                : 'EXPENSE',
-          }),
-        );
+        const debtPaymentMovements = debtPayments.map((payment): Movement => ({
+          source: 'debt-payment',
+          id: payment.id,
+          debtId: payment.debt.id,
+          debtName: payment.debt.name,
+          counterpartyName: payment.debt.counterpartyName,
+          description: payment.debt.name,
+          amount: payment.amount,
+          currency: payment.debt.currency,
+          occurredAt: payment.paidAt.toISOString(),
+          type:
+            debtViewerDirection(payment.debt, userId) === 'lent'
+              ? 'INCOME'
+              : 'EXPENSE',
+        }));
 
-        const debtLoanMovements = debtLoans.map(
-          (loan): Movement => ({
-            source: 'debt-loan',
-            id: loan.id,
-            debtId: loan.debt.id,
-            debtName: loan.debt.name,
-            counterpartyName: loan.debt.counterpartyName,
-            description: loan.debt.name,
-            amount: loan.amount,
-            currency: loan.debt.currency,
-            occurredAt: loan.loanDate.toISOString(),
-            type:
-              debtViewerDirection(loan.debt, userId) === 'lent'
-                ? 'EXPENSE'
-                : 'INCOME',
-            accountId: loan.accountId,
-            accountName: loan.account?.name ?? null,
-          }),
-        );
+        const debtLoanMovements = debtLoans.map((loan): Movement => ({
+          source: 'debt-loan',
+          id: loan.id,
+          debtId: loan.debt.id,
+          debtName: loan.debt.name,
+          counterpartyName: loan.debt.counterpartyName,
+          description: loan.debt.name,
+          amount: loan.amount,
+          currency: loan.debt.currency,
+          occurredAt: loan.loanDate.toISOString(),
+          type:
+            debtViewerDirection(loan.debt, userId) === 'lent'
+              ? 'EXPENSE'
+              : 'INCOME',
+          accountId: loan.accountId,
+          accountName: loan.account?.name ?? null,
+        }));
 
         const movements = [
           ...transactionMovements,

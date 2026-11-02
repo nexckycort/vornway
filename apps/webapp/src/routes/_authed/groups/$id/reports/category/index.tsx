@@ -28,6 +28,13 @@ import {
 } from '#/components/ui/dropdown-menu';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { formatCurrency, formatLongDate } from '#/lib/i18n';
+import { CategoryIcon } from '#/routes/_authed/groups/$id/-components/category-icon';
+import {
+  getExpenseEmoji,
+  getInitials,
+} from '#/routes/_authed/groups/$id/-components/group-detail.utils';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
+import type { ExpenseItem } from '#/routes/_authed/groups/$id/-types/group-detail.types';
 import {
   useGroupExpensesInfiniteQuery,
   useGroupReportsCategoryCountQuery,
@@ -36,13 +43,6 @@ import {
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useGroupMemberExpensesByMembersQuery } from '#/routes/_authed/groups/-hooks/use-group-member-expenses-query';
-import { CategoryIcon } from '#/routes/_authed/groups/$id/-components/category-icon';
-import {
-  getExpenseEmoji,
-  getInitials,
-} from '#/routes/_authed/groups/$id/-components/group-detail.utils';
-import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
-import type { ExpenseItem } from '#/routes/_authed/groups/$id/-types/group-detail.types';
 import { CategoryDetailSkeleton } from './-components/category-detail-skeleton';
 
 type ReportDateFilterMode = 'all' | 'day' | 'range';

@@ -1,5 +1,4 @@
 import { type RefObject, useMemo } from 'react';
-
 import { Skeleton } from '#/components/ui/skeleton';
 import { getGroupDetailMessages } from '../-messages';
 import type { ExpenseItem } from '../-types/group-detail.types';

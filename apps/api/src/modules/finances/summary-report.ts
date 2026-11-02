@@ -20,19 +20,19 @@ export const buildSummary = (input: {
   userId: string;
   currency: string;
   monthKey: string;
-  transactions: ReadonlyArray<{
+  transactions: readonly {
     type: string;
     amount: number;
     currency: string;
     categoryId: string | null;
     category: { name: string } | null;
     tags: ReadonlyArray<TransactionLink>;
-  }>;
+  }[];
   accounts: Parameters<typeof accountTotals>[0];
   groupExpenses: ReturnType<typeof groupExpenseTotals>;
   debts: ReturnType<typeof debtTotals>;
-  debtPayments: ReadonlyArray<DebtMovement>;
-  debtLoans: ReadonlyArray<DebtMovement>;
+  debtPayments: readonly DebtMovement[];
+  debtLoans: readonly DebtMovement[];
   goals: ReturnType<typeof goalTotals>;
 }) => {
   const incomeByCurrency: Record<string, number> = {};

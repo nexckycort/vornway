@@ -27,9 +27,9 @@ type GroupDetailHeaderProps = {
   groupName: string;
   description: string | null;
   imageUrl: string | null;
-  totalsEntries: Array<[string, number]>;
+  totalsEntries: [string, number][];
   primaryTotal: [string, number] | undefined;
-  balanceEntries: Array<[string, number]>;
+  balanceEntries: [string, number][];
   onOpenQr: () => void;
   onBack: () => void;
   onOpenSettings: () => void;
@@ -67,7 +67,7 @@ export function GroupDetailHeader({
     ]),
   );
 
-  const getEntryAmount = (entries: Array<[string, number]>, currency: string) =>
+  const getEntryAmount = (entries: [string, number][], currency: string) =>
     entries.find(([entryCurrency]) => entryCurrency === currency)?.[1] ?? 0;
 
   const hasMultipleCurrencies = balanceCurrencies.length > 1;

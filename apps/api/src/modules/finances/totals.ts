@@ -12,13 +12,13 @@ export const debtViewerDirection = (
 };
 
 export const debtTotals = (
-  debts: ReadonlyArray<{
+  debts: readonly {
     ownerId: string;
     direction: string;
     currency: string;
     expectedTotal: number;
     payments: ReadonlyArray<{ amount: number }>;
-  }>,
+  }[],
   userId: string,
 ) => {
   const owedByYou: Record<string, number> = {};
@@ -43,11 +43,11 @@ export const debtTotals = (
 };
 
 export const goalTotals = (
-  goals: ReadonlyArray<{
+  goals: readonly {
     currency: string;
     targetAmount: number;
     contributions: ReadonlyArray<{ amount: number }>;
-  }>,
+  }[],
 ) => {
   const target: Record<string, number> = {};
   const saved: Record<string, number> = {};
@@ -67,7 +67,7 @@ export const goalTotals = (
 };
 
 export const accountTotals = (
-  accounts: ReadonlyArray<{
+  accounts: readonly {
     accountType: string;
     currency: string;
     currentBalance: number;
@@ -77,7 +77,7 @@ export const accountTotals = (
     usedCredit: number;
     status: string;
     archivedAt: Date | null;
-  }>,
+  }[],
 ) => {
   const totalByCurrency: Record<string, number> = {};
   const availableByCurrency: Record<string, number> = {};
@@ -134,7 +134,7 @@ type CategoryRef = {
 };
 
 export const groupExpenseTotals = (
-  groups: ReadonlyArray<{
+  groups: readonly {
     id: string;
     name: string;
     type: string;
@@ -150,7 +150,7 @@ export const groupExpenseTotals = (
       payers: ReadonlyArray<{ memberId: string; amount: number }>;
       participants: ReadonlyArray<{ memberId: string; share: number }>;
     }>;
-  }>,
+  }[],
 ) => {
   const totals: Record<string, number> = {};
 

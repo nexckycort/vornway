@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { adminClient } from '@/api/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,7 @@ type Item = {
   type: string;
   status: string;
   priority: string | null;
-  metadata?: { attachments?: Array<{ url: string }> };
+  metadata?: { attachments?: { url: string }[] };
   createdAt?: string;
   user: { name: string; email: string };
 };

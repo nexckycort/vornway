@@ -36,9 +36,9 @@ import {
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
 import { CategoryIcon } from './-components/category-icon';
-import { formatMoney } from './-components/group-detail.utils';
 import { GroupDetailHeader } from './-components/group-detail-header';
 import { GroupDetailSkeleton } from './-components/group-detail-skeleton';
+import { formatMoney } from './-components/group-detail.utils';
 import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
 import { GroupParticipantsStrip } from './-components/group-participants-strip';
 import { getGroupDetailMessages } from './-messages';
@@ -103,10 +103,10 @@ function RouteComponent() {
     );
     const localExpenses: ExpenseItem[] = pendingExpenses.map((expense) => {
       const expensePayload = expense.payload as typeof expense.payload & {
-        payers?: Array<{
+        payers?: {
           memberId: string;
           amount: number;
-        }>;
+        }[];
       };
       const primaryPayerId =
         expensePayload.paidByIds?.[0] ?? expensePayload.paidById ?? '';

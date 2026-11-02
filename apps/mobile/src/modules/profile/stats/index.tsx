@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { adminClient } from '@/api/admin';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

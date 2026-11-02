@@ -8,7 +8,6 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { usersClient } from '@/api/users';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -31,7 +30,6 @@ import {
   getPushNotificationStatus,
   type PushNotificationStatus,
 } from '@/lib/push-notifications';
-
 import type { ProfileSession } from './profile.types';
 import { QrScanner } from './qr-scanner';
 
@@ -513,7 +511,7 @@ export default function ProfileScreen() {
             </DialogDescription>
           </DialogHeader>
           {(
-            Object.entries(languages) as Array<[keyof typeof languages, string]>
+            Object.entries(languages) as [keyof typeof languages, string][]
           ).map(([value, label]) => (
             <Button
               key={value}

@@ -1,5 +1,4 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-
 import { DATABASE_URL } from './env';
 import { PrismaClient } from './generated/prisma/client';
 

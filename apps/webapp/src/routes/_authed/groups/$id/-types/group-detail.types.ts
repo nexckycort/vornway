@@ -20,29 +20,29 @@ export type ExpenseItem = {
     id: string;
     name: string;
   };
-  paidByMembers: Array<{
+  paidByMembers: {
     memberId: string;
     name: string;
     amount: number;
-  }>;
+  }[];
   participantCount: number;
   currentUserBalance: number | null;
   attachmentUrl: string | null;
   tags?: string[];
-  lineItems?: Array<{
+  lineItems?: {
     memberId: string;
     description: string;
     amount: number;
-  }>;
+  }[];
   advancedDetails?: ExpenseAdvancedDetails | null;
   sharedSplit?: {
     amount: number;
     splitMethod: 'percentage' | 'exact';
     splitValues?: Record<string, number>;
-    items?: Array<{
+    items?: {
       name: string;
       amount: number;
-    }>;
+    }[];
   } | null;
   syncStatus?: 'pending';
 };
@@ -93,31 +93,31 @@ export type GroupSummary = {
   advancedExpenseDetailsEnabled: boolean;
   participantCount: number;
   totals: Record<string, number>;
-  categories: Array<{
+  categories: {
     id: string;
     name: string;
     icon: string | null;
     color: string | null;
     expenseCount: number;
-  }>;
+  }[];
   members: GroupMemberIdentity[];
-  directDebts: Array<{
+  directDebts: {
     currency: string;
     amount: number;
-  }>;
-  directCredits: Array<{
+  }[];
+  directCredits: {
     currency: string;
     amount: number;
-  }>;
+  }[];
   memberBalances: GroupMemberBalance[];
-  settlementDebts: Array<{
+  settlementDebts: {
     fromMemberId: string;
     fromName: string;
     toMemberId: string;
     toName: string;
     currency: string;
     amount: number;
-  }>;
+  }[];
   myMembership: {
     id: string;
     name: string;

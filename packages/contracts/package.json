@@ -26,16 +26,16 @@
     }
   },
   "scripts": {
-    "check": "biome check --write",
+    "fmt:fix": "bun fmt",
+    "lint:fix": "bun lint --fix",
     "typecheck": "tsrs --noEmit",
     "test": "bun test"
   },
-  "peerDependencies": {
-    "effect": "4.0.5"
-  },
   "devDependencies": {
-    "@biomejs/biome": "catalog:",
     "@types/bun": "catalog:",
     "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "effect": "4.0.5"
   }
 }

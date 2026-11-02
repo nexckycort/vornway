@@ -1,5 +1,4 @@
 import { Platform } from 'react-native';
-
 import { authClient } from '@/lib/auth-client';
 
 export const fetchWithCredentials: typeof fetch = (input, init) => {

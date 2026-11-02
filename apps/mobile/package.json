@@ -1,16 +1,16 @@
 {
   "name": "@vornway/mobile",
-  "main": "expo-router/entry",
   "version": "1.0.0",
   "private": true,
+  "main": "expo-router/entry",
   "scripts": {
-    "check": "biome check --write",
+    "fmt:fix": "bun fmt",
+    "lint:fix": "bun lint --fix",
     "clean": "rm -rf node_modules && rm -rf dist",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -52,6 +52,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.3.0",
+    "eslint-plugin-react-doctor": "catalog:",
     "typescript": "catalog:"
   }
 }

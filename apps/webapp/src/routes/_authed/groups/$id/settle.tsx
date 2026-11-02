@@ -9,6 +9,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { m } from '#/paraglide/messages.js';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import {
   useSettleDebtMutation,
   useUpdateExpenseMutation,
@@ -17,7 +18,6 @@ import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 export const Route = createFileRoute('/_authed/groups/$id/settle')({
   validateSearch: (search: Record<string, unknown>) => ({
     settlementExpenseId:
@@ -138,18 +138,18 @@ function RouteComponent() {
   const myMembershipId = groupQuery.data?.myMembership?.id ?? null;
   const myMembershipName =
     groupQuery.data?.myMembership?.name ?? m['common.user.you']();
-  const directDebts = (groupQuery.data?.directDebts ?? []) as Array<{
+  const directDebts = (groupQuery.data?.directDebts ?? []) as {
     toMemberId: string;
     toName: string;
     currency: string;
     amount: number;
-  }>;
-  const directCredits = (groupQuery.data?.directCredits ?? []) as Array<{
+  }[];
+  const directCredits = (groupQuery.data?.directCredits ?? []) as {
     fromMemberId: string;
     fromName: string;
     currency: string;
     amount: number;
-  }>;
+  }[];
 
   const options = useMemo<SettlementOption[]>(() => {
     if (!myMembershipId) return [];
@@ -260,7 +260,7 @@ function RouteComponent() {
     if (step === 2 && !hasStepTwoHistoryRef.current) {
       window.history.pushState(
         {
-          ...(window.history.state ?? {}),
+          ...window.history.state,
           settleStepTwo: true,
         },
         '',
@@ -661,7 +661,7 @@ function DebtSection({
   className = '',
 }: {
   title: string;
-  items: Array<{
+  items: {
     key: string;
     fromMemberId: string;
     fromName: string;
@@ -669,7 +669,7 @@ function DebtSection({
     toName: string;
     currency: string;
     amount: number;
-  }>;
+  }[];
   membersById: Map<
     string,
     {

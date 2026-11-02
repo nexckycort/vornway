@@ -13,8 +13,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '#/components/ui/button';
 import {
@@ -86,7 +85,7 @@ function buildTimeline(startDate: string | Date, endDate: string | Date) {
 
   const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
   const last = new Date(end.getFullYear(), end.getMonth(), 1);
-  const months: Array<{ key: string; label: string; date: Date }> = [];
+  const months: { key: string; label: string; date: Date }[] = [];
 
   while (cursor <= last && months.length < 18) {
     months.push({

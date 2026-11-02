@@ -1,8 +1,11 @@
 import { createCollection } from '@tanstack/db';
 import { QueryClient } from '@tanstack/query-core';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
-import type { ApiPayload } from '@vornway/api-client';
-import { apiErrorKind, apiErrorMessage } from '@vornway/api-client';
+import {
+  type ApiPayload,
+  apiErrorKind,
+  apiErrorMessage,
+} from '@vornway/api-client';
 import { api } from '#/api/client';
 import { GROUPS_LIST_REFRESH_EVENT } from '#/lib/groups-list-query-collection';
 import { m } from '#/paraglide/messages.js';
@@ -211,14 +214,14 @@ export const pendingGroupsCollection = createCollection(
     getKey: (item) => item.id,
     onInsert: async ({ transaction }) => {
       const additions = (
-        transaction.mutations as Array<{ modified: PendingGroup }>
+        transaction.mutations as { modified: PendingGroup }[]
       ).map((mutation) => mutation.modified);
       writePendingGroups([...readPendingGroups(), ...additions]);
       return { refetch: false };
     },
     onDelete: async ({ transaction }) => {
       const deletions = new Set(
-        (transaction.mutations as Array<{ key: string }>).map((mutation) =>
+        (transaction.mutations as { key: string }[]).map((mutation) =>
           String(mutation.key),
         ),
       );
@@ -351,6 +354,8 @@ export async function createGroupOfflineFirst(
     return await postGroupToApi(payload);
   } catch (error) {
     if (apiErrorKind(error) !== 'rejected') return enqueueGroupOffline(payload);
-    throw new Error(apiErrorMessage(error, m['system.createGroupFailed']()));
+    throw new Error(apiErrorMessage(error, m['system.createGroupFailed']()), {
+      cause: error,
+    });
   }
 }

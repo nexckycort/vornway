@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-
 import { goalsClient } from '@/api/goals';
 import { groupsClient } from '@/api/groups';
 import { usersClient } from '@/api/users';
@@ -20,7 +19,6 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
-
 import { formatGoalAmount } from '../format';
 
 type Member = { id: string; name: string };
@@ -57,12 +55,12 @@ type Goal = {
     contributorsThisMonth: number;
     pendingMembersThisMonth: number;
   };
-  memberStats?: Array<{
+  memberStats?: {
     memberId: string;
     totalAmount: number;
     contributionCount: number;
     contributedThisMonth: boolean;
-  }>;
+  }[];
   myMembership?: { role: string } | null;
 };
 
@@ -74,7 +72,7 @@ function buildTimeline(startDate?: string, endDate?: string) {
 
   const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
   const last = new Date(end.getFullYear(), end.getMonth(), 1);
-  const items: Array<{ key: string; label: string; date: Date }> = [];
+  const items: { key: string; label: string; date: Date }[] = [];
   while (cursor <= last && items.length < 18) {
     items.push({
       key: `${cursor.getFullYear()}-${cursor.getMonth()}`,
@@ -132,12 +130,12 @@ export default function GoalDetailScreen() {
       });
       if (!response.ok) throw new Error('member_search_failed');
       return response.json() as Promise<{
-        data: Array<{
+        data: {
           id: string;
           name: string;
           username?: string | null;
           isCurrentUser?: boolean;
-        }>;
+        }[];
       }>;
     },
   });

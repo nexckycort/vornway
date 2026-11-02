@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Rejects staged files larger than MAX_TOKENS (tokens ≈ bytes / 4).
+#
+# - Only checks what's staged: sizes come from the index, not the working tree.
+# - Skips deletions, binary files and anything marked `linguist-generated` in
+#   .gitattributes (lockfiles, codegen). Add new generated paths there.
+# - Bypass in an emergency with `git commit --no-verify`.
+
+set -euo pipefail
+
+MAX_TOKENS=5000
+MAX_BYTES=$((MAX_TOKENS * 4))
+
+# Text files that are added, copied or modified. Binary files show `-` counts.
+candidates=()
+while IFS= read -r -d '' record; do
+  [[ $record == -$'\t'-$'\t'* ]] && continue
+  candidates+=("${record#*$'\t'*$'\t'}")
+done < <(git diff --cached --numstat --no-renames --diff-filter=ACM -z)
+
+((${#candidates[@]})) || exit 0
+
+# Drop files marked as generated (reads .gitattributes from the index).
+declare -A generated=()
+while IFS= read -r -d '' path && IFS= read -r -d '' _attr && IFS= read -r -d '' value; do
+  [[ $value == set || $value == true ]] && generated[$path]=1
+done < <(printf '%s\0' "${candidates[@]}" | git check-attr --cached --stdin -z linguist-generated)
+
+offenders=()
+for path in "${candidates[@]}"; do
+  [[ -n ${generated[$path]:-} ]] && continue
+  bytes=$(git cat-file -s ":$path")
+  if ((bytes > MAX_BYTES)); then
+    offenders+=("$(printf '%6d tokens  %s' $(((bytes + 3) / 4)) "$path")")
+  fi
+done
+
+((${#offenders[@]})) || exit 0
+
+cat >&2 <<EOF
+pre-commit: ${#offenders[@]} staged file(s) exceed ${MAX_TOKENS} tokens (bytes / 4, max ${MAX_BYTES} bytes):
+
+$(printf '  %s\n' "${offenders[@]}")
+
+Split each file into smaller modules before committing:
+
+  1. Find the seams. Group the code by responsibility: components, hooks,
+     helpers, types/schemas, constants, services/layers, HTTP handlers.
+  2. Move each group into its own file next to the original, named after
+     what it holds (kebab-case), e.g.:
+       toast.tsx  ->  toast/toast.tsx, toast/use-toast.ts, toast/toast-types.ts
+       service.ts ->  service.ts, service-errors.ts, service-helpers.ts
+  3. Keep the original path as the public entry point: export the main item
+     from it, or turn it into a folder with an index.ts that re-exports the
+     pieces, so existing imports keep working.
+  4. Update imports, then run \`pnpm tc\` and \`pnpm lint:fix\` to confirm
+     nothing broke.
+  5. Aim for each new file to stay well under ${MAX_TOKENS} tokens (~$((MAX_BYTES / 1000)) KB);
+     don't just move the excess into one more oversized file.
+  6. Stage the new files and the trimmed original, then commit again.
+
+If the file is generated (lockfile, codegen, migration), don't split it:
+mark it in .gitattributes with \`linguist-generated=true\` instead.
+EOF
+exit 1

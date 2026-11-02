@@ -19,12 +19,12 @@ import {
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import { useDeleteExpenseMutation } from '#/routes/_authed/groups/-hooks/use-delete-expense';
 import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import { CategoryIcon } from '../-components/category-icon';
 import { getExpenseEmoji } from '../-components/group-detail.utils';
 import type { ExpenseItem, GroupSummary } from '../-types/group-detail.types';
@@ -211,7 +211,7 @@ function RouteComponent() {
 
   const fallbackExpense = useMemo(() => {
     const cachedExpenses = queryClient.getQueryData<{
-      pages?: Array<{ data?: ExpenseItem[] }>;
+      pages?: { data?: ExpenseItem[] }[];
     }>(['group-expenses', id]);
     const items =
       cachedExpenses?.pages?.flatMap((page) => page.data ?? []) ?? [];

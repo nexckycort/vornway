@@ -1,15 +1,14 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
-
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import {
   useGroupReportsSharesQuery,
   useGroupReportsTotalsQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import { GroupReportBalanceTab } from './-components/group-report-balance-tab';
 import { GroupReportTotalsTab } from './-components/group-report-totals-tab';
 
@@ -26,16 +25,16 @@ export const Route = createFileRoute('/_authed/groups/$id/reports/')({
 type ReportDateFilterMode = 'all' | 'day' | 'range';
 
 type GroupSummaryCounterpartyFields = {
-  directDebts: Array<{
+  directDebts: {
     toMemberId: string;
     currency: string;
     amount: number;
-  }>;
-  directCredits: Array<{
+  }[];
+  directCredits: {
     fromMemberId: string;
     currency: string;
     amount: number;
-  }>;
+  }[];
 };
 
 function toDayBoundaryIso(
@@ -205,10 +204,10 @@ function RouteComponent() {
       }, {}),
     [categoryBreakdown],
   );
-  const totalsRangeOptions: Array<{
+  const totalsRangeOptions: {
     label: string;
     value: ReportDateFilterMode;
-  }> = [
+  }[] = [
     { label: t.reports.rangeAll, value: 'all' },
     { label: t.reports.day, value: 'day' },
     { label: t.reports.range, value: 'range' },

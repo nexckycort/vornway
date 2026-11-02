@@ -3,7 +3,6 @@ import {
   type IoniconsIconName,
 } from '@react-native-vector-icons/ionicons';
 import { StyleSheet, Text, View } from 'react-native';
-
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 

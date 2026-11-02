@@ -1,6 +1,5 @@
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
-
 // @ts-check
 import { defineConfig } from 'astro/config';
 

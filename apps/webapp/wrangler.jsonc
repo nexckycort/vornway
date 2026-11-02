@@ -5,5 +5,5 @@
 {
   "name": "vornway-web",
   "compatibility_date": "2026-01-20",
-  "pages_build_output_dir": "./dist"
+  "pages_build_output_dir": "./dist",
 }

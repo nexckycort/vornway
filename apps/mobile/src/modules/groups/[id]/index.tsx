@@ -62,7 +62,6 @@ import {
   getPendingExpenses,
   syncPendingExpenses,
 } from '@/lib/offline-expense-queue';
-
 import {
   GroupDetailHeader,
   type GroupDetailHeaderData,
@@ -136,7 +135,7 @@ export default function GroupDetailScreen() {
           await cacheGroupExpenses(id ?? '', page.data);
           queryClient.setQueryData(
             ['cached-group-expenses', id],
-            (current: Array<{ id: string }> = []) => {
+            (current: { id: string }[] = []) => {
               const merged = new Map(
                 current.map((expense) => [expense.id, expense]),
               );

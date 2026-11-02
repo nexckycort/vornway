@@ -8,14 +8,15 @@ Vornway HTTP backend: Effect (`effect/http-api`, Bun), Better Auth and Prisma/Po
 docker compose up -d postgres   # from the repo root: Postgres on 127.0.0.1:5433
 bun install
 bun run dev
-bun check
+bun lint:fix
+bun fmt:fix
 bun typecheck
 bun run test
 bun run sync:contracts          # after adding files to packages/contracts
 bun run check:effect            # one copy of effect across the workspace
 ```
 
-`bun check`, `bun typecheck` and `bun run test` must pass before a change is considered done.
+`bun lint:fix`, `bun fmt:fix`, `bun typecheck` and `bun run test` must pass before a change is considered done.
 
 `PORT` (default 3000) and `HOST` (default `0.0.0.0`) choose where `src/main.ts` listens; the other variables are in `.env.example`. `bun build.ts` compiles the server to `dist/api`, which is what the `Dockerfile` ships.
 

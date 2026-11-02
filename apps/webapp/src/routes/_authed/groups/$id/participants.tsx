@@ -22,6 +22,7 @@ import {
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { shareOrCopy } from '#/lib/native-share';
 import { m } from '#/paraglide/messages.js';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import {
   useAddMemberMutation,
   useRemoveMemberMutation,
@@ -30,7 +31,6 @@ import {
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useGroupMemberSearchQuery } from '#/routes/_authed/groups/-hooks/use-group-member-search-query';
-import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 
 export const Route = createFileRoute('/_authed/groups/$id/participants')({
   component: RouteComponent,

@@ -1,6 +1,5 @@
 import '#/lib/pwa-install-global';
 import './index.css';
-
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import React from 'react';
@@ -30,7 +29,6 @@ import {
   resolveNotificationUrl,
   syncServiceWorkerLocale,
 } from './lib/service-worker-messages';
-
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
 

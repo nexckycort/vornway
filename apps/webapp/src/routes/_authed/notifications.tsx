@@ -24,7 +24,7 @@ export const Route = createFileRoute('/_authed/notifications')({
 
 type NotificationGroup = {
   label: string;
-  items: Array<{
+  items: {
     id: string;
     title: string;
     body: string;
@@ -34,7 +34,7 @@ type NotificationGroup = {
     actorName: string | null;
     actorImage: string | null;
     type: string;
-  }>;
+  }[];
 };
 
 type NotificationsSummaryCache = {

@@ -39,12 +39,12 @@ export default function DebtCreateScreen() {
       });
       if (!response.ok) throw new Error('counterparty_search_failed');
       return response.json() as Promise<{
-        data: Array<{
+        data: {
           id: string;
           name: string;
           username?: string | null;
           email?: string | null;
-        }>;
+        }[];
       }>;
     },
   });

@@ -23,7 +23,6 @@ import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
 import { useI18n } from '@/lib/i18n';
-
 import { formatDebtAmount } from '../format';
 
 type Debt = {
@@ -39,18 +38,18 @@ type Debt = {
   description?: string | null;
   status?: string;
   dueDate?: string | null;
-  amounts?: Array<{
+  amounts?: {
     id: string;
     amount: number;
     loanDate: string;
     note?: string | null;
-  }>;
-  payments?: Array<{
+  }[];
+  payments?: {
     id: string;
     amount: number;
     paidAt: string;
     note?: string | null;
-  }>;
+  }[];
 };
 type Activity =
   | {

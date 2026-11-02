@@ -1,5 +1,3 @@
-import { Button, buttonVariants } from '#/components/ui/button.tsx';
-import { cn } from '#/lib/utils.ts';
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -13,6 +11,8 @@ import {
   getDefaultClassNames,
   type Locale,
 } from 'react-day-picker';
+import { Button, buttonVariants } from '#/components/ui/button.tsx';
+import { cn } from '#/lib/utils.ts';
 
 function Calendar({
   className,

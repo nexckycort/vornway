@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Lints and formats the staged files of every workspace under apps/ and
+# packages/, running `bun lint --staged --fix` and `bun fmt --staged` from
+# inside each one so it picks up that project's own config. Lint runs first so
+# the formatter has the last word.
+#
+# - Both commands re-stage what they fix and refuse files that also have
+#   unstaged edits, so partial staging is never mixed into the commit.
+# - Bypass in an emergency with `git commit --no-verify`.
+
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+failed=0
+for pkg in apps/*/package.json packages/*/package.json; do
+  dir=${pkg%/package.json}
+
+  git diff --cached --quiet --diff-filter=ACM -- "$dir" && continue
+
+  echo "lint: $dir"
+  (cd "$dir" && bun lint --staged --fix) || failed=1
+
+  echo "fmt: $dir"
+  (cd "$dir" && bun fmt --staged) || failed=1
+done
+
+if ((failed)); then
+  echo >&2 "pre-commit: lint/format problems remain in staged files. Fix them and commit again."
+  exit 1
+fi

@@ -2,7 +2,7 @@
 
 ## Task Completion Requirements
 
-- `bun check` and `bun typecheck` must pass in every touched project before considering a task completed.
+- `bun lint:fix`, `bun fmt:fix` and `bun typecheck` must pass in every touched project before considering a task completed.
 - Run `bun run test` in the touched project before finishing a change.
 
 ## Project Snapshot

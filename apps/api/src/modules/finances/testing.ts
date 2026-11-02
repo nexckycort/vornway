@@ -1,6 +1,5 @@
 import { Effect } from 'effect';
-import type { Device } from '../../../testkit/app';
-import { makeTestApp } from '../../../testkit/app';
+import { type Device, makeTestApp } from '../../../testkit/app';
 import { signIn } from '../../../testkit/login';
 
 export const twoUsers = Effect.gen(function* () {

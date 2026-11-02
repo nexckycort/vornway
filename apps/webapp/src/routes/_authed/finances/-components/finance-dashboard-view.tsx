@@ -1,5 +1,4 @@
-import type { NavigateOptions } from '@tanstack/react-router';
-import { useNavigate } from '@tanstack/react-router';
+import { type NavigateOptions, useNavigate } from '@tanstack/react-router';
 import type { RefObject } from 'react';
 import { getGroupFlowEntryState } from '#/lib/group-flow-navigation';
 import {

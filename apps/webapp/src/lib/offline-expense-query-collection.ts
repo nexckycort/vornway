@@ -1,8 +1,11 @@
 import { createCollection } from '@tanstack/db';
 import { QueryClient } from '@tanstack/query-core';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
-import type { ApiPayload } from '@vornway/api-client';
-import { apiErrorKind, apiErrorMessage } from '@vornway/api-client';
+import {
+  type ApiPayload,
+  apiErrorKind,
+  apiErrorMessage,
+} from '@vornway/api-client';
 import { api } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
 
@@ -157,14 +160,14 @@ export const pendingExpensesCollection = createCollection(
     onInsert: async ({ transaction }) => {
       const current = readPendingExpenses();
       const additions = (
-        transaction.mutations as Array<{ modified: PendingExpense }>
+        transaction.mutations as { modified: PendingExpense }[]
       ).map((mutation) => mutation.modified);
       writePendingExpenses([...current, ...additions]);
       return { refetch: false };
     },
     onDelete: async ({ transaction }) => {
       const deletions = new Set(
-        (transaction.mutations as Array<{ key: string }>).map((mutation) =>
+        (transaction.mutations as { key: string }[]).map((mutation) =>
           String(mutation.key),
         ),
       );
@@ -291,7 +294,9 @@ export async function createExpenseOfflineFirst(
       const localId = enqueuePendingExpense(groupId, payloadWithId);
       return { id: localId, queued: true };
     }
-    throw new Error(apiErrorMessage(error, m['system.createExpenseFailed']()));
+    throw new Error(apiErrorMessage(error, m['system.createExpenseFailed']()), {
+      cause: error,
+    });
   }
 }
 

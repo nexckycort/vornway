@@ -1,9 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useI18n } from '@/lib/i18n';
-
 import type { HomeDebt, HomeExpense, HomeGoal } from '../home.types';
 import { homeCardStyles } from './home-card';
 

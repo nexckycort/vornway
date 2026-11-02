@@ -11,18 +11,18 @@ import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
 
 type Group = {
-  directDebts?: Array<{
+  directDebts?: {
     toMemberId: string;
     toName: string;
     amount: number;
     currency: string;
-  }>;
-  directCredits?: Array<{
+  }[];
+  directCredits?: {
     fromMemberId: string;
     fromName: string;
     amount: number;
     currency: string;
-  }>;
+  }[];
   myMembership?: { id: string; name: string };
 };
 type Option = {

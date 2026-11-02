@@ -1,6 +1,4 @@
-import type { Context } from 'hono';
-import { Hono } from 'hono';
-
+import { type Context, Hono } from 'hono';
 import { db } from './connection';
 
 type InviteGroup = {

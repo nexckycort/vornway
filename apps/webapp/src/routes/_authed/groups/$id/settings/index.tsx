@@ -30,6 +30,7 @@ import {
   useGroupFlowNavigation,
 } from '#/lib/group-flow-navigation';
 import { copyText as copyToClipboard, shareOrCopy } from '#/lib/native-share';
+import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 import {
   useDeleteGroupMutation,
   useExportGroupCsvMutation,
@@ -37,7 +38,6 @@ import {
   useUpdateGroupSettingsMutation,
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
-import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
 export const Route = createFileRoute('/_authed/groups/$id/settings/')({
   component: RouteComponent,
 });

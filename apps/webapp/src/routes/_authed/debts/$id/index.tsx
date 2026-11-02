@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import type { ApiPayload } from '@vornway/api-client';
-import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { api, failWithMessage } from '#/api/client';
 import { Button } from '#/components/ui/button';
@@ -585,13 +584,13 @@ function RouteComponent() {
       <Drawer
         open={Boolean(
           sheetMode &&
-            [
-              'payment',
-              'loan',
-              'edit-payment',
-              'edit-loan',
-              'edit-debt',
-            ].includes(sheetMode),
+          [
+            'payment',
+            'loan',
+            'edit-payment',
+            'edit-loan',
+            'edit-debt',
+          ].includes(sheetMode),
         )}
         onOpenChange={(open) => !open && closeSheet()}
       >

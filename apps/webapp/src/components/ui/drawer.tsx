@@ -27,7 +27,7 @@ function Drawer({
 
       window.history.pushState(
         {
-          ...(window.history.state ?? {}),
+          ...window.history.state,
           drawer: true,
         },
         '',

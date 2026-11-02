@@ -7,10 +7,10 @@ import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import { getProfileMessages } from '#/routes/_authed/profile/-messages';
 import type { FeedbackType } from '../-hooks/use-feedback-page';
 
-const feedbackTypeOptions: Array<{
+const feedbackTypeOptions: {
   value: FeedbackType;
   icon: IconSvgElement;
-}> = [
+}[] = [
   {
     value: 'BUG',
     icon: AlertCircleIcon,

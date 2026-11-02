@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-
 import { toggleLocalExpensePin } from '#/lib/expense-pins';
 
 type ToggleExpensePinInput = {

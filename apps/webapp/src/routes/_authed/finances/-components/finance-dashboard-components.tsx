@@ -3,15 +3,16 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { type RefObject, useState } from 'react';
 import { formatCurrency, formatShortDate } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
-import type {
-  FinanceCategory,
-  FinanceDebtLoanMovement,
-  FinanceDebtPaymentMovement,
-  FinanceGroupExpenseMovement,
-  FinanceMovement,
-  FinanceMovementTransaction,
+import {
+  type FinanceCategory,
+  type FinanceDebtLoanMovement,
+  type FinanceDebtPaymentMovement,
+  type FinanceGroupExpenseMovement,
+  type FinanceMovement,
+  type FinanceMovementTransaction,
+  categoryColors,
+  moneyLabel,
 } from './finance-model';
-import { categoryColors, moneyLabel } from './finance-model';
 
 export function FigmaCategoriesSlide({
   categories,

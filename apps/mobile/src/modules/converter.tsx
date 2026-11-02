@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
-
 import { converterClient } from '@/api/converter';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -19,13 +18,13 @@ import { useI18n } from '@/lib/i18n';
 
 type ConverterData = {
   currencies: string[];
-  rates: Array<{
+  rates: {
     baseCurrency: string;
     quoteCurrency: string;
     rate: number;
     effectiveDate?: string;
     createdAt?: string;
-  }>;
+  }[];
   disclaimer?: string;
   lastUpdatedAt?: string | null;
 };

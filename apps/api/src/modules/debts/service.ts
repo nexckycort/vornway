@@ -145,7 +145,7 @@ export class Debts extends Context.Service<
       ) {
         yield* requireCounterparty(userId, input.counterpartyId);
         const currency = input.currency.toUpperCase();
-        const amounts: ReadonlyArray<typeof DebtAmountPayload.Type> =
+        const amounts: readonly (typeof DebtAmountPayload.Type)[] =
           input.amounts ?? [
             { amount: input.principalAmount, loanDate: new Date() },
           ];

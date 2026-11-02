@@ -4,19 +4,19 @@
   "author": "Nestor Cortina <nexckycort@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "postinstall": "lefthook install",
+    "prepare": "git config core.hooksPath .githooks",
     "clean:apps": "bun run -r --parallel --filter='./apps/*' clean",
     "clean:packages": "bun run -r --parallel --filter='./packages/*' clean",
     "clean": "bun run clean:apps & bun run clean:packages & rm -rf node_modules",
     "dev": "mprocs -c mprocs/dev.yaml",
-    "portless:setup": "bash scripts/setup-portless.sh"
+    "portless:setup": "bash scripts/setup-portless.sh",
+    "fmt:fix": "pnpm -r run fmt:fix",
+    "lint:fix": "pnpm -r run lint:fix"
   },
   "devDependencies": {
-    "@biomejs/biome": "catalog:",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "bun-types": "catalog:",
-    "lefthook": "^2.0.12",
     "mprocs": "^0.9.6",
     "portless": "catalog:",
     "tsrs": "0.20.1-ts7.1.0-beta",

@@ -79,13 +79,13 @@ export default function GroupCreateParticipantsScreen() {
       });
       if (!response.ok) throw new Error('search_failed');
       return response.json() as Promise<{
-        data: Array<{
+        data: {
           id: string;
           name: string;
           username?: string | null;
           email?: string | null;
           isCurrentUser?: boolean;
-        }>;
+        }[];
       }>;
     },
   });

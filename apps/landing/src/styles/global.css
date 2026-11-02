@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 :root {
   --bg: #0f0f10;
@@ -48,7 +48,7 @@ html {
 body {
   margin: 0;
   font-family:
-    "Inter", "SF Pro Display", "SF Pro Text", "Avenir Next", "Segoe UI",
+    'Inter', 'SF Pro Display', 'SF Pro Text', 'Avenir Next', 'Segoe UI',
     sans-serif;
   color: var(--text);
   background: var(--page-bg);
@@ -464,7 +464,7 @@ select {
 }
 
 .hero-stat:not(:last-child)::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 0.35rem;
   right: 0;
@@ -962,7 +962,7 @@ select {
 
 .dashboard-shell::before,
 .goal-stack::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 5% auto auto 10%;
   width: 80%;
@@ -1437,7 +1437,7 @@ select {
 }
 
 .steps-showcase::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 10%;
   right: 10%;
@@ -1642,7 +1642,7 @@ select {
 }
 
 .ai-layer-section::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 4rem auto auto -10%;
   width: min(34rem, 62vw);
@@ -1653,7 +1653,7 @@ select {
 }
 
 .ai-layer-section::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: auto -8% 1.5rem auto;
   width: min(30rem, 56vw);
@@ -1920,7 +1920,7 @@ select {
 }
 
 .manifesto-card::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background:
@@ -1940,7 +1940,7 @@ select {
 }
 
 .manifesto-card::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: auto 2rem 2rem;
   height: 1px;
@@ -2145,7 +2145,7 @@ select {
 }
 
 .manifesto-card-contrast .manifesto-artboard::before {
-  content: "";
+  content: '';
   position: absolute;
   left: -34%;
   bottom: 12%;
@@ -2164,7 +2164,7 @@ select {
 }
 
 .manifesto-card-craft .manifesto-artboard::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 25% 19%;
   border: 1.1rem solid rgba(255, 255, 255, 0.18);
@@ -2582,7 +2582,7 @@ select {
 }
 
 .pre-footer-banner-shell::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: auto -8% -58% auto;
   width: 26rem;
@@ -3785,7 +3785,7 @@ body {
 }
 
 .page-shell::before {
-  content: "";
+  content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
@@ -4541,8 +4541,8 @@ body {
 body {
   color: #1e1e1e;
   font-feature-settings:
-    "liga" 1,
-    "kern" 1;
+    'liga' 1,
+    'kern' 1;
   letter-spacing: -0.012em;
   text-rendering: optimizeLegibility;
 }

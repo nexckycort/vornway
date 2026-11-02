@@ -11,7 +11,6 @@ import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/lib/auth-client';
 import { useI18n } from '@/lib/i18n';
-
 import { ActionCard, HomeSection } from './components/home-card';
 import { DebtCard, ExpenseCard, GoalCard } from './components/summary-cards';
 import { TripCard } from './components/trip-card';

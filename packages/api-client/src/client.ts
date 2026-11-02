@@ -51,9 +51,9 @@ type OmittableParts<R> = Simplify<
   {
     readonly [K in keyof R as IsOmittable<R[K]> extends true ? never : K]: R[K];
   } & {
-    readonly [K in keyof R as IsOmittable<R[K]> extends true
-      ? K
-      : never]?: R[K];
+    readonly [
+      K in keyof R as IsOmittable<R[K]> extends true ? K : never
+    ]?: R[K];
   }
 >;
 

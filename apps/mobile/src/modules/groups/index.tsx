@@ -12,7 +12,6 @@ import {
   Text,
   View,
 } from 'react-native';
-
 import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -31,14 +30,14 @@ type Group = {
   type?: string;
   imageUrl?: string | null;
   createdAt?: string;
-  members?: Array<{ id: string; name: string; image: string | null }>;
-  participantBalances?: Array<{
+  members?: { id: string; name: string; image: string | null }[];
+  participantBalances?: {
     memberName?: string;
     currency?: string;
     label: string;
     direction?: 'theyOweYou' | 'youOweThem';
     amount?: number;
-  }>;
+  }[];
   hasExpenses?: boolean;
 };
 type GroupPage = {

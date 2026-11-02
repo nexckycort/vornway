@@ -30,7 +30,7 @@ export const expectedTotalFor = (
   return money(principalAmount + interest);
 };
 
-export const sumAmounts = (items: ReadonlyArray<{ amount: number }>) =>
+export const sumAmounts = (items: readonly { amount: number }[]) =>
   money(items.reduce((total, item) => total + item.amount, 0));
 
 type DebtWithRelations = Prisma.DebtGetPayload<{ include: typeof debtInclude }>;

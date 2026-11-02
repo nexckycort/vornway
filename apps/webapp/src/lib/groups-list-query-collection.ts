@@ -241,7 +241,7 @@ function buildGroupSummaryFromListItem(group: GroupListItem): GroupSummary {
     categories: [],
     members,
     directDebts: group.participantBalances.reduce<
-      Array<{ currency: string; amount: number }>
+      { currency: string; amount: number }[]
     >((acc, balance) => {
       if (balance.direction !== 'youOweThem') return acc;
       acc.push({
@@ -251,7 +251,7 @@ function buildGroupSummaryFromListItem(group: GroupListItem): GroupSummary {
       return acc;
     }, []),
     directCredits: group.participantBalances.reduce<
-      Array<{ currency: string; amount: number }>
+      { currency: string; amount: number }[]
     >((acc, balance) => {
       if (balance.direction !== 'theyOweYou') return acc;
       acc.push({

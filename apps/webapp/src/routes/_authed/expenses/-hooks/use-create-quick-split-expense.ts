@@ -8,11 +8,11 @@ export type UpsertQuickSplitExpenseValues = {
   expenseId?: string;
   name: string;
   description: string;
-  participants: Array<{
+  participants: {
     clientId: string;
     name: string;
     userId?: string;
-  }>;
+  }[];
   amount: number;
   currency: string;
   paidByParticipantId: string;
@@ -21,7 +21,7 @@ export type UpsertQuickSplitExpenseValues = {
   exactShares?: Record<string, number>;
   metadata?: {
     category?: string;
-    items?: Array<{ name: string; amount: number }>;
+    items?: { name: string; amount: number }[];
   };
 };
 

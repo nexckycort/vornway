@@ -128,7 +128,7 @@ function RouteComponent() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [sharedExpenseItems, setSharedExpenseItems] = useState<
-    Array<{ name: string; amount: string }>
+    { name: string; amount: string }[]
   >([]);
   const [friendInput, setFriendInput] = useState('');
   const [debouncedFriendInput, setDebouncedFriendInput] = useState('');

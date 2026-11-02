@@ -15,10 +15,10 @@ export type CreateGroupFormValues = {
     dataUrl: string;
     fileName?: string;
   } | null;
-  participants?: Array<{
+  participants?: {
     name: string;
     userId?: string;
-  }>;
+  }[];
 };
 
 export type CreatedGroupPayload = {

@@ -1,0 +1,28 @@
+{
+  "printWidth": 80,
+  "tabWidth": 2,
+  "useTabs": false,
+
+  "semi": true,
+  "singleQuote": true,
+  "jsxSingleQuote": false,
+  "trailingComma": "all",
+
+  "endOfLine": "lf",
+  "insertFinalNewline": true,
+
+  "sortImports": {
+    "newlinesBetween": false
+  },
+
+  "ignorePatterns": [
+    ".agents/**",
+    "dist/",
+    "pnpm-lock.yaml",
+    "apps/mobile/assets/**",
+    "apps/api/db/migrations/**",
+    ".repos/**",
+    "**/routeTree.gen.ts",
+    "apps/webapp/src/paraglide/**"
+  ]
+}

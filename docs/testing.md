@@ -1,6 +1,6 @@
 # Testing
 
-Tests use `bun:test` and sit next to the code they test. Each touched project has `bun run test`, `bun check` and `bun typecheck`; run them from `apps/api`, `packages/contracts` or `packages/api-client`.
+Tests use `bun:test` and sit next to the code they test. Each touched project has `bun run test`, `bun lint:fix`, `bun fmt:fix` and `bun typecheck`; run them from `apps/api`, `packages/contracts` or `packages/api-client`.
 
 - `*.test.ts`: unit, pure logic, no I/O (`pagination.test.ts`, the contract tests).
 - `*.integration.test.ts`: the real system in process (real Better Auth, real Postgres, the real router), faking only what leaves the server: email, storage and push.

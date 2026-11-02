@@ -209,7 +209,7 @@ export function parseTagsInput(value: string) {
   return Array.from(new Set(tags)).slice(0, 10);
 }
 
-export function tagsToInput(tags: Array<{ name: string }>) {
+export function tagsToInput(tags: { name: string }[]) {
   return tags.map((tag) => `#${tag.name}`).join(' ');
 }
 

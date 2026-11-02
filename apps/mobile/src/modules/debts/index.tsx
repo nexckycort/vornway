@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
 import { useI18n } from '@/lib/i18n';
-
 import { formatDebtAmount } from './format';
 
 type Debt = {
@@ -30,8 +29,8 @@ type Debt = {
   status: string;
   expectedTotal?: number;
   paidAmount?: number;
-  amounts?: Array<{ amount: number; loanDate: string }>;
-  payments?: Array<{ amount: number; paidAt: string }>;
+  amounts?: { amount: number; loanDate: string }[];
+  payments?: { amount: number; paidAt: string }[];
 };
 type DebtFilter = 'active' | 'all' | 'paid';
 export default function DebtsScreen() {

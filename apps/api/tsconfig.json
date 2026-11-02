@@ -8,5 +8,5 @@
     },
     "allowImportingTsExtensions": true
   },
-  "exclude": ["node_modules", "dist", "src/hc"]
+  "exclude": ["node_modules", "dist"]
 }

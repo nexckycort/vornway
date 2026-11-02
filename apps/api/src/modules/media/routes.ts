@@ -17,7 +17,7 @@ export const MediaRoutes = HttpRouter.use((router) =>
       Effect.gen(function* () {
         const params = yield* HttpRouter.params;
         const path = params['*'];
-        if (!path) return notFound;
+        if (!path || path.split('/').some(isDotOrEmpty)) return notFound;
 
         const object = yield* storage.getObject(`groups/${path}`);
         if (!object || object.bytes.byteLength === 0) return notFound;
@@ -36,3 +36,6 @@ export const MediaRoutes = HttpRouter.use((router) =>
     );
   }),
 );
+
+const isDotOrEmpty = (segment: string) =>
+  segment === '' || segment === '.' || segment === '..';

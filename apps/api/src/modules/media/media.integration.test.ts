@@ -70,6 +70,32 @@ describe('media', () => {
     }),
   );
 
+  testEffect('refuses paths that climb out of groups/', () =>
+    Effect.gen(function* () {
+      const app = yield* makeTestApp();
+      for (const key of [
+        'groups/../users/u1/avatar.webp',
+        'groups/g1/../users/u1/avatar.webp',
+        'groups/g1//cover.webp',
+      ]) {
+        app.storage.objects.set(key, {
+          bytes: COVER,
+          contentType: 'image/webp',
+        });
+      }
+
+      const responses = yield* Effect.all([
+        app.fetch('/api/media/groups/%2e%2e/users/u1/avatar.webp'),
+        app.fetch('/api/media/groups/g1/..%2Fusers/u1/avatar.webp'),
+        app.fetch('/api/media/groups/g1//cover.webp'),
+      ]);
+
+      expect(responses.map((response) => response.status)).toEqual([
+        404, 404, 404,
+      ]);
+    }),
+  );
+
   testEffect('only serves files under groups/', () =>
     Effect.gen(function* () {
       const app = yield* makeTestApp();

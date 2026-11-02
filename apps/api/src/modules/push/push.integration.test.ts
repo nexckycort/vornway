@@ -1,84 +1,13 @@
 import { describe, expect } from 'bun:test';
-import { Effect, Layer, Logger } from 'effect';
-import { ErrorCapture } from '#/infrastructure/http/errors';
-import { Push, PushError } from '#/infrastructure/push/push';
-import { makeTestApp, type TestApp } from '../../../testkit/app';
+import { Effect } from 'effect';
+import { makeTestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
 import { signIn } from '../../../testkit/login';
-import { PushSubscriptions } from './service';
 
 const ENDPOINT = 'https://push.example.com/subscriptions/ana';
 const KEYS = { p256dh: 'p256dh-key', auth: 'auth-key' };
 const EXPO_TOKEN = 'ExponentPushToken[abc]';
 const EXPO_ENDPOINT = `https://exp.host/--/api/v2/push/send?token=${encodeURIComponent(EXPO_TOKEN)}`;
-
-// The device helper can't send a body on DELETE, and the revoke routes take one.
-const sessionCookie = (app: TestApp, email: string) =>
-  Effect.gen(function* () {
-    const headers = {
-      'content-type': 'application/json',
-      'expo-origin': 'vornway://',
-    };
-    yield* app.fetch('/api/auth/email-otp/send-verification-otp', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ email, type: 'sign-in' }),
-    });
-    const signedIn = yield* app.fetch('/api/auth/sign-in/email-otp', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ email, otp: app.email.otpFor(email) }),
-    });
-    return signedIn.headers
-      .getSetCookie()
-      .map((cookie) => cookie.split(';')[0])
-      .join('; ');
-  });
-
-const revokeWithBody = (
-  app: TestApp,
-  cookie: string,
-  path: string,
-  body: object,
-) =>
-  Effect.gen(function* () {
-    const response = yield* app.fetch(path, {
-      method: 'DELETE',
-      headers: {
-        'content-type': 'application/json',
-        'expo-origin': 'vornway://',
-        cookie,
-      },
-      body: JSON.stringify(body),
-    });
-    return {
-      status: response.status,
-      body: yield* Effect.promise(() => response.json()),
-    };
-  });
-
-const recordingPush = (options: { readonly failing: boolean }) => {
-  const revoked: { readonly userId: string; readonly endpoint: string }[] = [];
-  const layer = Layer.succeed(
-    Push,
-    Push.of({
-      storeSubscription: (input) =>
-        options.failing
-          ? Effect.fail(new PushError({ cause: 'unavailable' }))
-          : Effect.succeed({
-              id: input.endpoint,
-              endpoint: input.endpoint,
-              revokedAt: null,
-            }),
-      revokeSubscription: (input) =>
-        Effect.sync(() => {
-          revoked.push(input);
-        }),
-      sendToUsers: () => Effect.fail(new PushError({ cause: 'unavailable' })),
-    }),
-  );
-  return { revoked, layer };
-};
 
 describe('push', () => {
   testEffect('requires a session', () =>
@@ -141,16 +70,10 @@ describe('push', () => {
         endpoint: ENDPOINT,
         keys: KEYS,
       });
-      const cookie = yield* sessionCookie(app, 'ana@vornway.test');
 
-      const removed = yield* revokeWithBody(
-        app,
-        cookie,
-        '/api/push/subscriptions',
-        {
-          endpoint: ENDPOINT,
-        },
-      );
+      const removed = yield* ana.device.delete('/api/push/subscriptions', {
+        endpoint: ENDPOINT,
+      });
 
       expect(removed.status).toBe(200);
       expect(removed.body).toEqual({ success: true });
@@ -180,14 +103,9 @@ describe('push', () => {
           userAgent: 'expo:ios',
         });
 
-        const cookie = yield* sessionCookie(app, 'ana@vornway.test');
-        const removed = yield* revokeWithBody(
-          app,
-          cookie,
+        const removed = yield* ana.device.delete(
           '/api/push/native-subscriptions',
-          {
-            token: EXPO_TOKEN,
-          },
+          { token: EXPO_TOKEN },
         );
         expect(removed.body).toEqual({ success: true });
         expect(app.push.subscriptions.has(EXPO_ENDPOINT)).toBe(false);
@@ -215,80 +133,57 @@ describe('push', () => {
     }),
   );
 
-  describe('service', () => {
-    const run = <A, E>(
-      program: Effect.Effect<A, E, PushSubscriptions>,
-      push: ReturnType<typeof recordingPush>,
-    ) =>
-      program.pipe(
-        Effect.provide(
-          PushSubscriptions.layer.pipe(
-            Layer.provide(push.layer),
-            Layer.provide(ErrorCapture.layerLog),
-            Layer.provideMerge(
-              process.env.TEST_LOGS ? Layer.empty : Logger.layer([]),
-            ),
-          ),
-        ),
-      );
+  testEffect("does not let a user remove another user's subscription", () =>
+    Effect.gen(function* () {
+      const app = yield* makeTestApp();
+      const ana = yield* signIn(app, 'ana@vornway.test');
+      const bruno = yield* signIn(app, 'bruno@vornway.test');
+      yield* ana.device.post('/api/push/subscriptions', {
+        endpoint: ENDPOINT,
+        keys: KEYS,
+      });
 
-    testEffect(
-      "revokes through the signed-in user, so one user cannot remove another user's subscription",
-      () =>
-        Effect.gen(function* () {
-          const push = recordingPush({ failing: false });
+      const attempt = yield* bruno.device.delete('/api/push/subscriptions', {
+        endpoint: ENDPOINT,
+      });
 
-          yield* run(
-            Effect.flatMap(PushSubscriptions, (subscriptions) =>
-              subscriptions.unsubscribeWeb('user-ana', ENDPOINT),
-            ),
-            push,
-          );
+      expect(attempt.status).toBe(200);
+      expect(app.push.revoked).toEqual([
+        { userId: bruno.id, endpoint: ENDPOINT },
+      ]);
+      expect(app.push.subscriptions.get(ENDPOINT)?.userId).toBe(ana.id);
+    }),
+  );
 
-          expect(push.revoked).toEqual([
-            { userId: 'user-ana', endpoint: ENDPOINT },
-          ]);
-        }),
-    );
-
-    testEffect(
-      'answers an internal error when the subscription cannot be stored',
-      () =>
-        Effect.gen(function* () {
-          const push = recordingPush({ failing: true });
-
-          const error = yield* run(
-            Effect.flatMap(PushSubscriptions, (subscriptions) =>
-              subscriptions.subscribeWeb(
-                'user-ana',
-                { endpoint: ENDPOINT, keys: KEYS },
-                undefined,
-              ),
-            ).pipe(Effect.flip),
-            push,
-          );
-
-          expect(error._tag).toBe('InternalError');
-        }),
-    );
-
-    testEffect('does not fail the test notification when delivery fails', () =>
+  testEffect(
+    'answers an internal error when the subscription cannot be stored',
+    () =>
       Effect.gen(function* () {
-        const push = recordingPush({ failing: false });
+        const app = yield* makeTestApp();
+        const ana = yield* signIn(app, 'ana@vornway.test');
+        app.push.unavailable = true;
 
-        const result = yield* run(
-          Effect.flatMap(PushSubscriptions, (subscriptions) =>
-            subscriptions.sendTest({
-              id: 'user-ana',
-              name: 'Ana',
-              email: 'ana@vornway.test',
-            }),
-          ),
-          push,
-        );
+        const result = yield* ana.device.post('/api/push/subscriptions', {
+          endpoint: ENDPOINT,
+          keys: KEYS,
+        });
 
-        expect(result).toBeUndefined();
+        expect(result.status).toBe(500);
+        expect(result.body._tag).toBe('InternalError');
       }),
-    );
-  });
+  );
+
+  testEffect('does not fail the test notification when delivery fails', () =>
+    Effect.gen(function* () {
+      const app = yield* makeTestApp();
+      const ana = yield* signIn(app, 'ana@vornway.test');
+      app.push.unavailable = true;
+
+      const result = yield* ana.device.post('/api/push/test');
+
+      expect(result.status).toBe(200);
+      expect(result.body).toEqual({ success: true });
+      expect(app.push.sent).toEqual([]);
+    }),
+  );
 });

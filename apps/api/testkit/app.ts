@@ -4,7 +4,6 @@ import { AppRoutesNoDeps } from '#/app';
 import { Auth } from '#/infrastructure/auth/auth';
 import { Database, DatabaseClient } from '#/infrastructure/database/database';
 import { ErrorCapture } from '#/infrastructure/http/errors';
-import { fallbackRoutes } from '#/infrastructure/http/legacy';
 import { NotificationInbox } from '#/infrastructure/notifications/inbox';
 import { TEST_ORIGIN, testConfig } from './config';
 import { testDatabase } from './database';
@@ -21,7 +20,6 @@ type Fetch = (path: string, init?: RequestInit) => Effect.Effect<Response>;
 export const makeTestApp = Effect.fn(function* (
   options: {
     readonly http?: OutboundHandler;
-    readonly legacy?: (request: Request) => Response | Promise<Response>;
     readonly extraRoutes?: Layer.Layer<
       never,
       never,
@@ -36,11 +34,7 @@ export const makeTestApp = Effect.fn(function* (
   const http = makeHttp(options.http);
 
   const { handler, dispose } = HttpRouter.toWebHandler(
-    Layer.mergeAll(
-      AppRoutesNoDeps,
-      options.extraRoutes ?? Layer.empty,
-      options.legacy ? fallbackRoutes(options.legacy) : Layer.empty,
-    ).pipe(
+    Layer.mergeAll(AppRoutesNoDeps, options.extraRoutes ?? Layer.empty).pipe(
       Layer.provide(Auth.layer),
       Layer.provide([
         Database.layer,

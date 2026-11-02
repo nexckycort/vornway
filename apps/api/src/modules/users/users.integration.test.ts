@@ -234,20 +234,4 @@ describe('users', () => {
       }),
     );
   });
-
-  testEffect('serves the routes ahead of the legacy fallback', () =>
-    Effect.gen(function* () {
-      const app = yield* makeTestApp();
-
-      const root = yield* app.fetch('/');
-      const unknown = yield* app.fetch('/api/users/unknown');
-
-      expect(root.status).toBe(200);
-      expect(yield* Effect.promise(() => root.json())).toEqual({
-        service: 'vornway-api',
-        status: 'ok',
-      });
-      expect(unknown.status).not.toBe(200);
-    }),
-  );
 });

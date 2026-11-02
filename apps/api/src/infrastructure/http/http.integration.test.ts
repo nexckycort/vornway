@@ -2,11 +2,21 @@ import { describe, expect } from 'bun:test';
 import { Effect } from 'effect';
 import { makeTestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
-import { signIn } from '../../../testkit/login';
 
 const json = (response: Response) => Effect.promise(() => response.json());
 
 describe('HTTP edge', () => {
+  testEffect('answers 404 for a route nothing serves', () =>
+    Effect.gen(function* () {
+      const app = yield* makeTestApp();
+
+      const unknown = yield* app.fetch('/api/anything/else');
+      const unknownPost = yield* app.fetch('/oauth/nope', { method: 'POST' });
+
+      expect([unknown.status, unknownPost.status]).toEqual([404, 404]);
+    }),
+  );
+
   testEffect('answers the health and version probes', () =>
     Effect.gen(function* () {
       const app = yield* makeTestApp();
@@ -77,54 +87,4 @@ describe('HTTP edge', () => {
       expect(refused.headers.get('access-control-allow-origin')).toBeNull();
     }),
   );
-
-  describe('legacy fallback', () => {
-    const legacy = () => new Response('legacy', { status: 200 });
-
-    testEffect('only receives routes the Effect API does not serve', () =>
-      Effect.gen(function* () {
-        const app = yield* makeTestApp({ legacy });
-        const ana = yield* signIn(app, 'ana@vornway.test');
-        const text = (response: Response) =>
-          Effect.promise(() => response.text());
-
-        expect(yield* text(yield* app.fetch('/api/anything/else'))).toBe(
-          'legacy',
-        );
-
-        const served = [
-          '/',
-          '/version',
-          '/docs',
-          '/openapi.json',
-          '/api/auth/get-session',
-          '/api/users/search?query=ana',
-        ];
-        for (const path of served) {
-          expect(yield* text(yield* app.fetch(path))).not.toBe('legacy');
-        }
-        expect(
-          (yield* ana.device.get('/api/users/search?query=ana')).status,
-        ).toBe(200);
-      }),
-    );
-
-    testEffect('answers a failing legacy route with a generic 500', () =>
-      Effect.gen(function* () {
-        const app = yield* makeTestApp({
-          legacy: () => {
-            throw new Error('legacy exploded');
-          },
-        });
-
-        const response = yield* app.fetch('/api/login/mcp');
-
-        expect(response.status).toBe(500);
-        expect(yield* json(response)).toEqual({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Error interno del servidor',
-        });
-      }),
-    );
-  });
 });

@@ -17,7 +17,6 @@ import {
   RequestValidationLive,
 } from '#/infrastructure/http/errors';
 import { HealthRoutes } from '#/infrastructure/http/health';
-import { LegacyRoutes } from '#/infrastructure/http/legacy';
 import { RequestIdMiddleware } from '#/infrastructure/http/request-id';
 import { SecureHeadersMiddleware } from '#/infrastructure/http/secure-headers';
 import { NotificationInbox } from '#/infrastructure/notifications/inbox';
@@ -86,7 +85,7 @@ export const AppRoutesNoDeps = Layer.mergeAll(
   CorsMiddleware,
 );
 
-export const AppRoutes = Layer.mergeAll(AppRoutesNoDeps, LegacyRoutes).pipe(
+export const AppRoutes = AppRoutesNoDeps.pipe(
   Layer.provide(Auth.layer),
   Layer.provide([
     Database.layer,

@@ -125,6 +125,18 @@ export {
   InvitesApi,
 } from './modules/invites/contract.ts';
 export {
+  GoogleSessionMissing,
+  InvalidEmailDomain,
+  LoginApi,
+  LoginUser,
+  LoginUserAlreadyExists,
+  LoginUserNotFound,
+  McpToken,
+  OtpRejected,
+  OtpSent,
+  VerifiedLogin,
+} from './modules/login/contract.ts';
+export {
   GoogleMapsOnly,
   MapsApi,
 } from './modules/maps/contract.ts';

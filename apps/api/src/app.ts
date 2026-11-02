@@ -32,6 +32,7 @@ import { GoalsHandlers } from '#/modules/goals/http';
 import { GroupsHandlers } from '#/modules/groups/http';
 import { HomeHandlers } from '#/modules/home/http';
 import { InvitesHandlers } from '#/modules/invites/http';
+import { LoginHandlers } from '#/modules/login/http';
 import { MapsHandlers } from '#/modules/maps/http';
 import { NotificationsHandlers } from '#/modules/notifications/http';
 import { PushHandlers } from '#/modules/push/http';
@@ -52,6 +53,7 @@ const ApiRoutes = HttpApiBuilder.layer(Api, {
     GoalsHandlers,
     GroupsHandlers,
     InvitesHandlers,
+    LoginHandlers,
     MapsHandlers,
     NotificationsHandlers,
     PushHandlers,

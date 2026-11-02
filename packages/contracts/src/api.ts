@@ -9,6 +9,7 @@ import { GoalsApi } from './modules/goals/contract.ts';
 import { GroupsApi } from './modules/groups/contract.ts';
 import { HomeApi } from './modules/home/contract.ts';
 import { InvitesApi } from './modules/invites/contract.ts';
+import { LoginApi } from './modules/login/contract.ts';
 import { MapsApi } from './modules/maps/contract.ts';
 import { NotificationsApi } from './modules/notifications/contract.ts';
 import { PushApi } from './modules/push/contract.ts';
@@ -25,6 +26,7 @@ export const Api = HttpApi.make('VornwayApi')
   .add(GroupsApi)
   .add(HomeApi)
   .add(InvitesApi)
+  .add(LoginApi)
   .add(MapsApi)
   .add(NotificationsApi)
   .add(PushApi)

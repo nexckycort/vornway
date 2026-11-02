@@ -15,7 +15,6 @@ import mapsRoutes from './maps/routes';
 import notificationsRoutes from './notifications/routes';
 import pushRoutes from './push/routes';
 import quickSplitsRoutes from './quick-splits/routes';
-import usersRoutes from './users/routes';
 
 const app = new Hono()
   .basePath('/api')
@@ -29,7 +28,6 @@ const app = new Hono()
   .route('/notifications', notificationsRoutes)
   .route('/push', pushRoutes)
   .route('/quick-splits', quickSplitsRoutes)
-  .route('/users', usersRoutes)
   .route('/groups', groupsRoutes)
   .route('/finances', financesRoutes)
   .route('/debts', debtsRoutes)

@@ -1,5 +1,6 @@
+import type { PrismaClient } from '#/generated/prisma/client';
 import { db } from '#/infrastructure/database/connection';
-import { resolveUserImageUrl } from '#/infrastructure/storage/user-images';
+import { resolveUserImageUrl } from '#/infrastructure/storage/image-urls';
 import type {
   ListNotificationsResult,
   NotificationInbox,
@@ -34,7 +35,9 @@ function mapNotificationRow(row: {
   };
 }
 
-export function createNotificationInbox(): NotificationInbox {
+export function createNotificationInbox(
+  database: PrismaClient = db,
+): NotificationInbox {
   return {
     createForUsers: async (input) => {
       const uniqueUserIds = Array.from(
@@ -45,7 +48,7 @@ export function createNotificationInbox(): NotificationInbox {
         return;
       }
 
-      await db.notification.createMany({
+      await database.notification.createMany({
         data: uniqueUserIds.map((userId) => ({
           userId,
           type: input.type,
@@ -66,7 +69,7 @@ export function createNotificationInbox(): NotificationInbox {
       const where = { userId };
 
       const [rows, total, unreadCount] = await Promise.all([
-        db.notification.findMany({
+        database.notification.findMany({
           where,
           orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           ...(cursor
@@ -77,8 +80,8 @@ export function createNotificationInbox(): NotificationInbox {
             : {}),
           take: safeLimit,
         }),
-        db.notification.count({ where }),
-        db.notification.count({
+        database.notification.count({ where }),
+        database.notification.count({
           where: {
             userId,
             readAt: null,
@@ -100,7 +103,7 @@ export function createNotificationInbox(): NotificationInbox {
       } satisfies ListNotificationsResult;
     },
     markAllAsRead: async (userId) => {
-      await db.notification.updateMany({
+      await database.notification.updateMany({
         where: {
           userId,
           readAt: null,

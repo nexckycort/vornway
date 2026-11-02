@@ -1,4 +1,4 @@
-import type { auth } from '../../infrastructure/auth/better-auth.config';
+import type { auth } from '../../infrastructure/auth/legacy-auth';
 
 export type AppContext = {
   Variables: {

@@ -1,47 +1,19 @@
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 
-import { env } from '#/config/env';
+import { env } from '#/config/legacy-env';
 import { S3 } from '#/infrastructure/storage/r2';
+import { GROUP_IMAGE_ASSET_BASE_URL } from './image-urls';
+
+export {
+  GROUP_IMAGE_ASSET_BASE_URL,
+  getVersionedGroupImageUrl,
+  resolveGroupImageUrl,
+} from './image-urls';
 
 const MAX_GROUP_IMAGE_BYTES = 10 * 1024 * 1024;
-export const GROUP_IMAGE_ASSET_BASE_URL = 'https://assets.vornway.com';
 export const GROUP_IMAGE_ASSET_FOLDER = 'groups';
 export const GROUP_IMAGE_ASSET_FILENAME = 'cover.webp';
 const GROUP_IMAGE_ASSET_PREFIX = `/${GROUP_IMAGE_ASSET_FOLDER}/`;
-
-export function resolveGroupImageUrl(
-  imagePathOrUrl: string | null | undefined,
-) {
-  if (!imagePathOrUrl) return null;
-  if (imagePathOrUrl.startsWith('https://')) return imagePathOrUrl;
-  if (imagePathOrUrl.startsWith('/')) {
-    return `${GROUP_IMAGE_ASSET_BASE_URL}${imagePathOrUrl}`;
-  }
-
-  return `${GROUP_IMAGE_ASSET_BASE_URL}/${imagePathOrUrl}`;
-}
-
-export function getVersionedGroupImageUrl(
-  imageUrl: string | null | undefined,
-  updatedAt: Date | string | null | undefined,
-) {
-  const resolvedImageUrl = resolveGroupImageUrl(imageUrl);
-  if (!resolvedImageUrl) return null;
-
-  const version =
-    updatedAt instanceof Date
-      ? updatedAt.getTime()
-      : typeof updatedAt === 'string'
-        ? Date.parse(updatedAt)
-        : null;
-
-  if (!version || Number.isNaN(version)) {
-    return resolvedImageUrl;
-  }
-
-  const separator = resolvedImageUrl.includes('?') ? '&' : '?';
-  return `${resolvedImageUrl}${separator}v=${version}`;
-}
 
 function parseDataUrl(dataUrl: string) {
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);

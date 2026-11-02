@@ -1,4 +1,4 @@
-import { auth } from '#/infrastructure/auth/better-auth.config';
+import { auth } from '#/infrastructure/auth/legacy-auth';
 import { db } from '#/infrastructure/database/connection';
 import type {
   LoginUser,

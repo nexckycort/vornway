@@ -1,6 +1,6 @@
 import webpush from 'web-push';
 
-import { env } from '#/config/env';
+import { env } from '#/config/legacy-env';
 import { db } from '#/infrastructure/database/connection';
 import type {
   PushNotificationPayload,
@@ -52,6 +52,7 @@ type DbLike = {
         endpoint: true;
         p256dh: true;
         auth: true;
+        userAgent: true;
         revokedAt: true;
       };
     }) => Promise<PushSubscriptionRecord[]>;

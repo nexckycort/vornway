@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { env } from '#/config/env';
+import { env } from '#/config/legacy-env';
 
 export type OAuthClient = {
   client_id: string;

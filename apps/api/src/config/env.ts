@@ -1,29 +1,25 @@
-import * as z from 'zod';
+import { Config } from 'effect';
 
-const serverEnvSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production']).default('production'),
-
-  BETTER_AUTH_URL: z.string().min(1),
-  BETTER_AUTH_SECRET: z.string().min(1),
-
-  DATABASE_URL: z.string().min(1),
-
-  RESEND_API_KEY: z.string().min(1),
-
-  GOOGLE_CLIENT_ID: z.string().min(1),
-  GOOGLE_CLIENT_SECRET: z.string().min(1),
-
-  VAPID_PUBLIC_KEY: z.string().min(1),
-  VAPID_PRIVATE_KEY: z.string().min(1),
-  VAPID_SUBJECT: z.string().min(1),
-
-  CLOUDFLARE_ACCOUNT_ID: z.string().min(1),
-  CLOUDFLARE_ACCESS_KEY_ID: z.string().min(1),
-  CLOUDFLARE_SECRET_ACCESS_KEY: z.string().min(1),
-  CLOUDFLARE_BUCKET_NAME: z.string().min(1),
-
-  MCP_TOKEN_SECRET: z.string().min(1).optional(),
-  MCP_OAUTH_CLIENTS: z.string().optional(),
-});
-
-export const env = serverEnvSchema.parse(process.env);
+export const env = {
+  host: Config.String('HOST').pipe(Config.withDefault('0.0.0.0')),
+  port: Config.Port('PORT').pipe(Config.withDefault(3000)),
+  nodeEnv: Config.Literals(
+    ['development', 'test', 'production'],
+    'NODE_ENV',
+  ).pipe(Config.withDefault('production')),
+  databaseUrl: Config.Redacted('DATABASE_URL'),
+  authUrl: Config.String('BETTER_AUTH_URL'),
+  authSecret: Config.Redacted('BETTER_AUTH_SECRET'),
+  resendApiKey: Config.Redacted('RESEND_API_KEY'),
+  googleClientId: Config.String('GOOGLE_CLIENT_ID'),
+  googleClientSecret: Config.Redacted('GOOGLE_CLIENT_SECRET'),
+  vapidPublicKey: Config.String('VAPID_PUBLIC_KEY'),
+  vapidPrivateKey: Config.Redacted('VAPID_PRIVATE_KEY'),
+  vapidSubject: Config.String('VAPID_SUBJECT'),
+  cloudflareAccountId: Config.String('CLOUDFLARE_ACCOUNT_ID'),
+  cloudflareAccessKeyId: Config.String('CLOUDFLARE_ACCESS_KEY_ID'),
+  cloudflareSecretAccessKey: Config.Redacted('CLOUDFLARE_SECRET_ACCESS_KEY'),
+  cloudflareBucketName: Config.String('CLOUDFLARE_BUCKET_NAME'),
+  mcpTokenSecret: Config.option(Config.Redacted('MCP_TOKEN_SECRET')),
+  mcpOauthClients: Config.option(Config.String('MCP_OAUTH_CLIENTS')),
+};

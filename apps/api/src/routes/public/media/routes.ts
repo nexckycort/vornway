@@ -1,7 +1,7 @@
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { Hono } from 'hono';
 
-import { env } from '#/config/env';
+import { env } from '#/config/legacy-env';
 import { S3 } from '#/infrastructure/storage/r2';
 
 export const mediaRoutes = new Hono().get('/groups/*', async (c) => {

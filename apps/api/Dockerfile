@@ -6,10 +6,14 @@ WORKDIR /app
 FROM ghcr.io/pnpm/pnpm:12.9.1 AS install
 
 # Copy workspace config plus the api package manifest and local lockfile
-RUN mkdir -p /temp/dev/apps/api
+RUN mkdir -p /temp/dev/apps/api /temp/dev/packages/contracts
 COPY pnpm-workspace.yaml /temp/dev/
 COPY apps/api/package.json /temp/dev/apps/api/package.json
 COPY apps/api/pnpm-lock.yaml /temp/dev/apps/api/pnpm-lock.yaml
+# The api consumes the contracts package injected, so pnpm needs its files
+COPY packages/contracts/package.json /temp/dev/packages/contracts/package.json
+COPY packages/contracts/pnpm-lock.yaml /temp/dev/packages/contracts/pnpm-lock.yaml
+COPY packages/contracts/src /temp/dev/packages/contracts/src
 
 RUN cd /temp/dev/apps/api && pnpm install --ignore-scripts --frozen-lockfile
 

@@ -1,6 +1,6 @@
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 
-import { env } from '#/config/env';
+import { env } from '#/config/legacy-env';
 import { GROUP_IMAGE_ASSET_BASE_URL } from '#/infrastructure/storage/group-images';
 import { S3 } from '#/infrastructure/storage/r2';
 

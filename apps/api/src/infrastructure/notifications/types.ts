@@ -24,18 +24,20 @@ export type ListNotificationsResult = {
   unreadCount: number;
 };
 
+export type NotificationInput = {
+  userIds: string[];
+  type: NotificationType | string;
+  title: string;
+  body: string;
+  url: string;
+  groupId?: string | null;
+  expenseId?: string | null;
+  actorName?: string | null;
+  actorImage?: string | null;
+};
+
 export type NotificationInbox = {
-  createForUsers: (input: {
-    userIds: string[];
-    type: NotificationType | string;
-    title: string;
-    body: string;
-    url: string;
-    groupId?: string | null;
-    expenseId?: string | null;
-    actorName?: string | null;
-    actorImage?: string | null;
-  }) => Promise<void>;
+  createForUsers: (input: NotificationInput) => Promise<void>;
   listForUser: (input: {
     userId: string;
     limit: number;

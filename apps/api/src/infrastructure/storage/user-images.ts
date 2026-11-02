@@ -1,44 +1,15 @@
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 
-import { env } from '#/config/env';
+import { env } from '#/config/legacy-env';
 import { S3 } from '#/infrastructure/storage/r2';
+import { USER_IMAGE_ASSET_BASE_URL } from './image-urls';
+
+export { resolveUserImageUrl, USER_IMAGE_ASSET_BASE_URL } from './image-urls';
 
 const MAX_USER_IMAGE_BYTES = 10 * 1024 * 1024;
-export const USER_IMAGE_ASSET_BASE_URL = 'https://assets.vornway.com';
 export const USER_IMAGE_ASSET_FOLDER = 'users';
 export const USER_IMAGE_ASSET_FILENAME = 'avatar.webp';
 const USER_IMAGE_ASSET_PREFIX = `/${USER_IMAGE_ASSET_FOLDER}/`;
-
-export function resolveUserImageUrl(
-  imagePathOrUrl: string | null | undefined,
-  updatedAt?: Date | string | null,
-) {
-  if (!imagePathOrUrl) return null;
-  if (
-    imagePathOrUrl.startsWith('https://') ||
-    imagePathOrUrl.startsWith('data:')
-  ) {
-    return imagePathOrUrl;
-  }
-
-  const resolved = imagePathOrUrl.startsWith('/')
-    ? `${USER_IMAGE_ASSET_BASE_URL}${imagePathOrUrl}`
-    : `${USER_IMAGE_ASSET_BASE_URL}/${imagePathOrUrl}`;
-
-  const version =
-    updatedAt instanceof Date
-      ? updatedAt.getTime()
-      : typeof updatedAt === 'string'
-        ? Date.parse(updatedAt)
-        : null;
-
-  if (!version || Number.isNaN(version)) {
-    return resolved;
-  }
-
-  const separator = resolved.includes('?') ? '&' : '?';
-  return `${resolved}${separator}v=${version}`;
-}
 
 function parseDataUrl(dataUrl: string) {
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);

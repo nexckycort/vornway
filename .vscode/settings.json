@@ -1,30 +1,30 @@
 {
-  "js/ts.tsdk.path": "./node_modules/typescript/lib",
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "js/ts.experimental.useTsgo": true,
+  "js/ts.tsdk.path": "./node_modules/tsrs/tsdk",
   "js/ts.tsdk.promptToUseWorkspaceVersion": true,
   "editor.codeActionsOnSave": {
-    "source.organizeImports": "explicit"
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit",
+    "source.sortMembers": "explicit"
   },
+  "js/ts.preferences.autoImportFileExcludePatterns": [
+    "lucide-react-native",
+    ".repos/**"
+  ],
   "editor.formatOnSave": true,
   "files.readonlyInclude": {
     "**/routeTree.gen.ts": true
   },
+  "files.exclude": {
+    ".repos/**": true
+  },
   "files.watcherExclude": {
+    ".repos/**": true,
     "**/routeTree.gen.ts": true
   },
   "search.exclude": {
+    ".repos/**": true,
     "**/routeTree.gen.ts": true
-  },
-  "[javascript]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[typescript]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[css]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "git.addAICoAuthor": "off"
+  }
 }

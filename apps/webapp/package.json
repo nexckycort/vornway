@@ -12,11 +12,9 @@
     "check": "biome check --write",
     "dev": "portless app rsbuild",
     "deploy": "wrangler pages deploy --branch=main",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsrs --noEmit",
     "preview": "rsbuild preview",
-    "machine-translate": "inlang machine translate --project project.inlang",
-    "check:effect": "bun ../../scripts/check-single-effect.ts",
-    "sync:contracts": "pnpm install --frozen-lockfile --offline --ignore-scripts"
+    "machine-translate": "inlang machine translate --project project.inlang"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

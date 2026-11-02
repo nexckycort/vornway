@@ -1,0 +1,13 @@
+# git autocrlf=true converts LF to CRLF on Windows, causing issues with oxfmt
+* text=auto eol=lf
+# Batch files need CRLF for cmd.exe to parse them reliably.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+.repos/** linguist-generated
+.agents/skills/** linguist-generated
+
+# Codegen
+*.gen.ts linguist-generated=true
+*.generated.* linguist-generated=true
+expo-env.d.ts linguist-generated=true

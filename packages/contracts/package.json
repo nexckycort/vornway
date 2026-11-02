@@ -27,7 +27,7 @@
   },
   "scripts": {
     "check": "biome check --write",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsrs --noEmit",
     "test": "bun test"
   },
   "peerDependencies": {

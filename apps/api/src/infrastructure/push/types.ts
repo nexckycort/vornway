@@ -21,17 +21,3 @@ export type StoredPushSubscription = {
   endpoint: string;
   revokedAt: Date | null;
 };
-
-export type PushNotifications = {
-  storeSubscription: (
-    input: PushSubscriptionInput,
-  ) => Promise<StoredPushSubscription>;
-  revokeSubscription: (input: {
-    userId: string;
-    endpoint: string;
-  }) => Promise<void>;
-  sendToUsers: (
-    userIds: string[],
-    payload: PushNotificationPayload,
-  ) => Promise<void>;
-};

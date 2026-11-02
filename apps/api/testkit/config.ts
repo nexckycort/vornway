@@ -12,6 +12,13 @@ export const testConfig = (overrides: Record<string, string> = {}) =>
       RESEND_API_KEY: 're_unused',
       GOOGLE_CLIENT_ID: 'unused',
       GOOGLE_CLIENT_SECRET: 'unused',
+      VAPID_PUBLIC_KEY: 'unused',
+      VAPID_PRIVATE_KEY: 'unused',
+      VAPID_SUBJECT: 'mailto:test@vornway.test',
+      CLOUDFLARE_ACCOUNT_ID: 'unused',
+      CLOUDFLARE_ACCESS_KEY_ID: 'unused',
+      CLOUDFLARE_SECRET_ACCESS_KEY: 'unused',
+      CLOUDFLARE_BUCKET_NAME: 'unused',
       ...overrides,
     }),
   );

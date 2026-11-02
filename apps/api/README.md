@@ -1,92 +1,41 @@
 # Vornway API
 
-Vornway HTTP/RPC backend. The application stack is Hono, Zod, and Prisma.
+Vornway HTTP backend. The stack is Effect (`effect/http-api`, Bun), Better Auth and Prisma/Postgres, being migrated from Hono + Zod: modules not yet ported are still served by the legacy Hono app behind a fallback route.
 
 ## Commands
 
 ```sh
+docker compose up -d postgres   # from the repo root: Postgres on 127.0.0.1:5433
 bun install
 bun run dev
 bun check
 bun typecheck
-bun test
-bun build:rpc
+bun run test
+bun build:rpc                   # declarations of the legacy `hc` clients
+bun run sync:contracts          # after adding files to packages/contracts
+bun run check:effect            # one copy of effect across the workspace
 ```
 
-`bun check` and `bun typecheck` must pass before a change is considered done.
+`bun check`, `bun typecheck` and `bun run test` must pass before a change is considered done.
+
+`PORT` (default 3000) and `HOST` (default `0.0.0.0`) choose where `src/main.ts` listens; the other variables are in `.env.example`.
 
 ## Architecture
 
-The API is organized by vertical capabilities under `src/routes`.
-
 ```text
 src/
-├── app/                  # Hono composition, MCP, error handler
-├── infrastructure/       # DB, auth, email, storage, push, notifications
-├── routes/
-│   ├── authed/           # session-protected routes
-│   ├── public/           # public routes
-│   └── mcp/              # MCP tools and context
-└── shared/               # cross-cutting types/errors/middlewares
+├── main.ts               # BunHttpServer + AppRoutes
+├── app.ts                # the only place layers are wired
+├── config/env.ts         # Effect Config for every variable
+├── modules/<feature>/    # ported features: http.ts, service.ts, tests
+├── infrastructure/       # database, auth, email, storage, push, notifications, http edge
+└── routes, app, shared   # legacy Hono code, shrinking as modules are ported
 ```
 
-There is no `src/modules`. Do not create `service.ts` or `repository.ts` by default.
+The contract lives in `packages/contracts` and is shared with the apps through `packages/api-client`. Read `docs/effect-services.md`, `docs/contracts.md`, `docs/testing.md` and `docs/porting-a-module.md` (at the repo root) before changing the server.
 
-Conventions:
+## Legacy Hono code
 
-- `*.routes.ts`: Hono HTTP boundary.
-- `*.validators.ts` or `schema.ts`: Zod contracts.
-- `*.query.ts`: one concrete read operation.
-- `*.command.ts`: one concrete write operation.
-- `*.operations.ts`: temporary grouping only when splitting further would reduce clarity.
-- `*.storage.ts`: storage adapter owned by one resource.
-- `*.errors.ts`: typed module errors.
+Everything under `src/routes`, `src/app`, `src/shared` and `src/config/legacy-env.ts` is the old Hono/Zod implementation. It keeps answering the routes that have no Effect handler yet (`src/infrastructure/http/legacy.ts` mounts it last, so it never shadows a ported route), and `src/hc/*` still exports its RPC types for the webapp and mobile clients. Don't add features there: port the module instead.
 
-If an integration is shared by multiple modules, it belongs in `src/infrastructure`.
-Current examples: DB, shared images, push delivery, and notifications inbox.
-
-## Error contract
-
-Routes that keep the legacy contract respond with:
-
-```json
-{ "error": "Visible message" }
-```
-
-The global typed-error handler uses:
-
-```json
-{ "code": "ERROR_CODE", "message": "Visible message" }
-```
-
-Do not compare `error.message` in routes to choose an HTTP status. Operations
-must throw `AppError` or module-specific typed errors with `code` and `status`.
-
-## RPC
-
-Each route module exports its RPC type:
-
-```ts
-export type UsersRpc = typeof usersRoutes;
-```
-
-After changing routes or contracts:
-
-```sh
-bun build:rpc
-```
-
-If the frontend uses the affected contract, also run:
-
-```sh
-cd ../webapp
-bun typecheck
-```
-
-## Environment variables
-
-Push notifications require:
-
-- `VAPID_PUBLIC_KEY`
-- `VAPID_PRIVATE_KEY`
-- `VAPID_SUBJECT`
+Push notifications require `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`.

@@ -11,6 +11,8 @@
   },
   "scripts": {
     "check": "biome check --write",
+    "check:effect": "bun ../../scripts/check-single-effect.ts",
+    "sync:contracts": "pnpm install --frozen-lockfile --offline --ignore-scripts",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   },
@@ -26,5 +28,10 @@
     "@types/bun": "catalog:",
     "typescript": "catalog:",
     "effect": "catalog:"
+  },
+  "dependenciesMeta": {
+    "@vornway/contracts": {
+      "injected": true
+    }
   }
 }

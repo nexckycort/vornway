@@ -45,3 +45,10 @@ export const Page = <S extends Schema.Top>(item: S) =>
       nextCursor: Schema.NullOr(Cursor),
     }),
   });
+
+export const TrimmedString = Schema.String.pipe(
+  Schema.decode({
+    decode: SchemaGetter.transform((value) => value.trim()),
+    encode: SchemaGetter.transform((value) => value.trim()),
+  }),
+);

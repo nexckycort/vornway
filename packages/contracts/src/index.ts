@@ -6,13 +6,23 @@ export {
   RequestValidation,
 } from './errors.ts';
 export {
+  AdminOnly,
+  AuthUnavailable,
+  CurrentUser,
+  Forbidden,
+  SessionAuth,
+  SessionUser,
+  Unauthorized,
+} from './modules/auth/contract.ts';
+export {
   UpdatedUsername,
   UserImage,
+  UserImageRejected,
   UserNotFound,
   Username,
   UsernameAlreadyTaken,
-  UserSearchApi,
   UserSearchResult,
+  UsersApi,
 } from './modules/users/contract.ts';
 export {
   Cursor,
@@ -20,4 +30,5 @@ export {
   literalsWithFallback,
   Page,
   PageQuery,
+  TrimmedString,
 } from './schema.ts';

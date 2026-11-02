@@ -137,7 +137,9 @@ export type ApiInfiniteQueryOptions<
 };
 
 type Paginated<G extends GroupId, E extends EndpointId<G>> =
-  ApiSuccess<G, E> extends { readonly nextCursor: Cursor | null }
+  ApiSuccess<G, E> extends {
+    readonly pagination: { readonly nextCursor: Cursor | null };
+  }
     ? {
         readonly infiniteQueryOptions: (
           ...args: RequestArgs<G, E>
@@ -201,10 +203,13 @@ export const makeApiClient = ({
         ),
       ),
     }),
-  }).pipe(Effect.provide(FetchHttpClient.layer), Effect.runSync) as Record<
-    string,
-    Record<string, Method>
-  >;
+  }).pipe(
+    Effect.provide(FetchHttpClient.layer),
+    Effect.provideService(FetchHttpClient.RequestInit, {
+      credentials: 'include',
+    }),
+    Effect.runSync,
+  ) as Record<string, Record<string, Method>>;
 
   const endpointClient = (
     group: string,
@@ -258,8 +263,9 @@ export const makeApiClient = ({
                 : { ...filled, query: { ...filled.query, cursor: pageParam } },
               signal,
             ),
-          getNextPageParam: (last: { nextCursor: Cursor | null }) =>
-            last.nextCursor ?? undefined,
+          getNextPageParam: (last: {
+            pagination: { nextCursor: Cursor | null };
+          }) => last.pagination.nextCursor ?? undefined,
         };
       },
       mutationOptions: () => ({

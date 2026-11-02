@@ -20,9 +20,9 @@
       "types": "./src/schema.ts",
       "import": "./src/schema.ts"
     },
-    "./modules/users/contract": {
-      "types": "./src/modules/users/contract.ts",
-      "import": "./src/modules/users/contract.ts"
+    "./modules/*": {
+      "types": "./src/modules/*.ts",
+      "import": "./src/modules/*.ts"
     }
   },
   "scripts": {

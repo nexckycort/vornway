@@ -5,6 +5,7 @@ import { testEffect } from '../../../testkit/effect';
 import { signIn } from '../../../testkit/login';
 
 const REPORT = { type: 'BUG', title: 'Crash', description: 'It crashes' };
+const PNG = 'data:image/png;base64,iVBORw0KGgo=';
 
 const insertReport = (
   app: TestApp,
@@ -93,8 +94,49 @@ describe('feedback', () => {
       }),
     );
 
+    testEffect('stores the uploaded images as resolved attachments', () =>
+      Effect.gen(function* () {
+        const app = yield* makeTestApp();
+        const ana = yield* signIn(app, 'ana@vornway.test');
+
+        const created = yield* ana.device.post('/api/feedback', {
+          ...REPORT,
+          metadata: { platform: 'ios' },
+          images: [{ dataUrl: PNG }, { dataUrl: PNG }],
+        });
+        const keys = [1, 2].map(
+          (index) =>
+            `feedback/${ana.id}/${created.body.id}/attachment-${index}.webp`,
+        );
+
+        expect(created.status).toBe(201);
+        expect(created.body.metadata).toEqual({
+          platform: 'ios',
+          attachments: keys.map((key) => ({
+            url: `https://assets.vornway.com/${key}`,
+          })),
+        });
+        expect(
+          app.storage.uploads.map((upload) => upload.key).toSorted(),
+        ).toEqual(keys);
+        expect(
+          yield* app.db.query(
+            'select metadata from user_feedback where "user_id" = $1',
+            [ana.id],
+          ),
+        ).toEqual([
+          {
+            metadata: {
+              platform: 'ios',
+              attachments: keys.map((key) => ({ url: `/${key}` })),
+            },
+          },
+        ]);
+      }),
+    );
+
     testEffect(
-      'answers the legacy error body when an image is not a data URL',
+      'answers the legacy error body when an image is not a data URL, without keeping the report',
       () =>
         Effect.gen(function* () {
           const app = yield* makeTestApp();
@@ -111,6 +153,31 @@ describe('feedback', () => {
             code: 'FEEDBACK_CREATE_FAILED',
             message: 'No se pudo crear el reporte',
           });
+          expect(yield* app.db.query('select id from user_feedback')).toEqual(
+            [],
+          );
+        }),
+    );
+
+    testEffect(
+      'removes the images already uploaded when another one fails',
+      () =>
+        Effect.gen(function* () {
+          const app = yield* makeTestApp();
+          const ana = yield* signIn(app, 'ana@vornway.test');
+
+          const refused = yield* ana.device.post('/api/feedback', {
+            ...REPORT,
+            images: [{ dataUrl: PNG }, { dataUrl: 'not-an-image' }],
+          });
+
+          expect(refused.status).toBe(400);
+          expect(yield* app.db.query('select id from user_feedback')).toEqual(
+            [],
+          );
+          expect(app.storage.deleted).toEqual(
+            app.storage.uploads.map((upload) => `/${upload.key}`),
+          );
         }),
     );
   });
@@ -209,6 +276,26 @@ describe('feedback', () => {
         expect(removed.status).toBe(200);
         expect(removed.body).toEqual({ success: true });
         expect(yield* app.db.query('select id from user_feedback')).toEqual([]);
+      }),
+    );
+
+    testEffect('deletes the images of a removed report', () =>
+      Effect.gen(function* () {
+        const app = yield* makeTestApp();
+        const ana = yield* signIn(app, 'ana@vornway.test');
+        const report = yield* ana.device.post('/api/feedback', {
+          ...REPORT,
+          images: [{ dataUrl: PNG }],
+        });
+
+        const removed = yield* ana.device.delete(
+          `/api/feedback/${report.body.id}`,
+        );
+
+        expect(removed.status).toBe(200);
+        expect(app.storage.deleted).toEqual([
+          `https://assets.vornway.com/feedback/${ana.id}/${report.body.id}/attachment-1.webp`,
+        ]);
       }),
     );
 

@@ -2,7 +2,6 @@ import { Api } from '@vornway/contracts/api';
 import { CurrentUser } from '@vornway/contracts/modules/auth/contract';
 import { Effect, Layer } from 'effect';
 import { HttpApiBuilder } from 'effect/http-api';
-import { FeedbackAttachments } from './attachments';
 import { Feedback } from './service';
 
 export const FeedbackHandlers = HttpApiBuilder.group(
@@ -26,4 +25,4 @@ export const FeedbackHandlers = HttpApiBuilder.group(
           ),
         );
     }),
-).pipe(Layer.provide(Feedback.layer), Layer.provide(FeedbackAttachments.layer));
+).pipe(Layer.provide(Feedback.layer));

@@ -4,7 +4,7 @@ import type {
   MemberExpenseListItem,
 } from '@vornway/contracts/modules/groups/expense-schemas';
 import type { Prisma } from '#/generated/prisma/client';
-import { resolveGroupImageUrl } from '#/infrastructure/storage/image-urls';
+import { resolveAssetUrl } from '#/infrastructure/storage/image-urls';
 import {
   readAdvancedDetails,
   readExpenseTags,
@@ -107,7 +107,7 @@ export const toExpenseListItem = (
     id: row.id,
     description: row.description,
     amount: row.amount,
-    attachmentUrl: resolveGroupImageUrl(row.attachment),
+    attachmentUrl: resolveAssetUrl(row.attachment),
     currency: row.currency,
     date: row.date.toISOString(),
     isDeleted: row.status === 'DELETED' || Boolean(row.deletedAt),
@@ -154,7 +154,7 @@ export const toExpenseDetail = (
   description: expense.description,
   amount: expense.amount,
   accountId: expense.accountId,
-  attachmentUrl: resolveGroupImageUrl(expense.attachment),
+  attachmentUrl: resolveAssetUrl(expense.attachment),
   currency: expense.currency,
   date: expense.date.toISOString(),
   isDeleted: expense.status === 'DELETED' || Boolean(expense.deletedAt),

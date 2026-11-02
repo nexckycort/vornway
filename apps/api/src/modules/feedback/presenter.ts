@@ -1,6 +1,6 @@
 import { Option, Schema } from 'effect';
 import type { Prisma } from '#/generated/prisma/client';
-import { resolveFeedbackAttachmentUrl } from './attachment-url';
+import { resolveAssetUrl } from '#/infrastructure/storage/image-urls';
 
 export const feedbackSelect = {
   id: true,
@@ -33,7 +33,7 @@ export const resolvedAttachments = (value: unknown) =>
     ? value.flatMap((entry) => {
         const stored = Schema.decodeUnknownOption(StoredAttachment)(entry);
         if (Option.isNone(stored)) return [];
-        const url = resolveFeedbackAttachmentUrl(stored.value.url);
+        const url = resolveAssetUrl(stored.value.url);
         return url ? [{ url }] : [];
       })
     : [];

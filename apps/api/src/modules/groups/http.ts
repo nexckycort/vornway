@@ -2,7 +2,6 @@ import { Api } from '@vornway/contracts/api';
 import { CurrentUser } from '@vornway/contracts/modules/auth/contract';
 import { Effect, Layer } from 'effect';
 import { HttpApiBuilder, HttpApiSchema } from 'effect/http-api';
-import { ExpenseAttachments } from './attachments';
 import { GroupCategories } from './categories';
 import { GroupExpenseWrites } from './expense-writes';
 import { GroupExpenses } from './expenses';
@@ -176,7 +175,7 @@ export const GroupsHandlers = HttpApiBuilder.group(Api, 'groups', (handlers) =>
     GroupCategories.layer,
     GroupReports.layer,
     GroupExpenses.layer,
-    GroupExpenseWrites.layer.pipe(Layer.provide(ExpenseAttachments.layer)),
+    GroupExpenseWrites.layer,
     GroupMembers.layer,
   ]),
 );

@@ -8,12 +8,19 @@ import { fallbackRoutes } from '#/infrastructure/http/legacy';
 import { NotificationInbox } from '#/infrastructure/notifications/inbox';
 import { TEST_ORIGIN, testConfig } from './config';
 import { testDatabase } from './database';
-import { makeEmailInbox, makePush, makeStorage } from './fakes';
+import {
+  makeEmailInbox,
+  makeHttp,
+  makePush,
+  makeStorage,
+  type OutboundHandler,
+} from './fakes';
 
 type Fetch = (path: string, init?: RequestInit) => Effect.Effect<Response>;
 
 export const makeTestApp = Effect.fn(function* (
   options: {
+    readonly http?: OutboundHandler;
     readonly legacy?: (request: Request) => Response | Promise<Response>;
     readonly extraRoutes?: Layer.Layer<
       never,
@@ -26,6 +33,7 @@ export const makeTestApp = Effect.fn(function* (
   const email = makeEmailInbox();
   const storage = makeStorage();
   const push = makePush();
+  const http = makeHttp(options.http);
 
   const { handler, dispose } = HttpRouter.toWebHandler(
     Layer.mergeAll(
@@ -40,6 +48,7 @@ export const makeTestApp = Effect.fn(function* (
         email.layer,
         storage.layer,
         push.layer,
+        http.layer,
         HttpServer.layerServices,
       ]),
       Layer.provide([DatabaseClient.layer, ErrorCapture.layerLog]),
@@ -62,6 +71,7 @@ export const makeTestApp = Effect.fn(function* (
     email,
     storage,
     push,
+    http,
     fetch,
     device: () => makeDevice(fetch),
   };
@@ -111,6 +121,6 @@ const makeDevice = (fetch: Fetch) => {
     post: (path: string, json: object = {}) => call('POST', path, json),
     put: (path: string, json: object = {}) => call('PUT', path, json),
     patch: (path: string, json: object = {}) => call('PATCH', path, json),
-    delete: (path: string) => call('DELETE', path),
+    delete: (path: string, json?: object) => call('DELETE', path, json),
   };
 };

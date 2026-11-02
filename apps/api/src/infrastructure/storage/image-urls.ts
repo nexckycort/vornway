@@ -1,56 +1,60 @@
-export const USER_IMAGE_ASSET_BASE_URL = 'https://assets.vornway.com';
-export const GROUP_IMAGE_ASSET_BASE_URL = 'https://assets.vornway.com';
+export const ASSET_BASE_URL = 'https://assets.vornway.com';
+
+export function resolveAssetUrl(imagePathOrUrl: string | null | undefined) {
+  if (!imagePathOrUrl) return null;
+  if (imagePathOrUrl.startsWith('https://')) return imagePathOrUrl;
+  if (imagePathOrUrl.startsWith('/')) {
+    return `${ASSET_BASE_URL}${imagePathOrUrl}`;
+  }
+
+  return `${ASSET_BASE_URL}/${imagePathOrUrl}`;
+}
 
 export function resolveUserImageUrl(
   imagePathOrUrl: string | null | undefined,
   updatedAt?: Date | string | null,
 ) {
-  if (!imagePathOrUrl) return null;
   if (
-    imagePathOrUrl.startsWith('https://') ||
-    imagePathOrUrl.startsWith('data:')
+    imagePathOrUrl?.startsWith('https://') ||
+    imagePathOrUrl?.startsWith('data:')
   ) {
     return imagePathOrUrl;
   }
 
-  const resolved = imagePathOrUrl.startsWith('/')
-    ? `${USER_IMAGE_ASSET_BASE_URL}${imagePathOrUrl}`
-    : `${USER_IMAGE_ASSET_BASE_URL}/${imagePathOrUrl}`;
-
-  const version =
-    updatedAt instanceof Date
-      ? updatedAt.getTime()
-      : typeof updatedAt === 'string'
-        ? Date.parse(updatedAt)
-        : null;
-
-  if (!version || Number.isNaN(version)) {
-    return resolved;
-  }
-
-  const separator = resolved.includes('?') ? '&' : '?';
-  return `${resolved}${separator}v=${version}`;
-}
-
-export function resolveGroupImageUrl(
-  imagePathOrUrl: string | null | undefined,
-) {
-  if (!imagePathOrUrl) return null;
-  if (imagePathOrUrl.startsWith('https://')) return imagePathOrUrl;
-  if (imagePathOrUrl.startsWith('/')) {
-    return `${GROUP_IMAGE_ASSET_BASE_URL}${imagePathOrUrl}`;
-  }
-
-  return `${GROUP_IMAGE_ASSET_BASE_URL}/${imagePathOrUrl}`;
+  const resolved = resolveAssetUrl(imagePathOrUrl);
+  return resolved && withVersion(resolved, updatedAt);
 }
 
 export function getVersionedGroupImageUrl(
   imageUrl: string | null | undefined,
   updatedAt: Date | string | null | undefined,
 ) {
-  const resolvedImageUrl = resolveGroupImageUrl(imageUrl);
-  if (!resolvedImageUrl) return null;
+  const resolved = resolveAssetUrl(imageUrl);
+  return resolved && withVersion(resolved, updatedAt);
+}
 
+export const storageKey = (
+  folder: string,
+  imagePathOrUrl: string | null | undefined,
+) => {
+  if (!imagePathOrUrl) return null;
+  const prefix = `/${folder}/`;
+  if (imagePathOrUrl.startsWith('/')) {
+    return imagePathOrUrl.startsWith(prefix) ? imagePathOrUrl.slice(1) : null;
+  }
+  if (!URL.canParse(imagePathOrUrl)) return null;
+
+  const { pathname } = new URL(imagePathOrUrl);
+  const mediaPrefix = `/api/media${prefix}`;
+  if (pathname.startsWith(mediaPrefix))
+    return pathname.slice('/api/media/'.length);
+  return imagePathOrUrl.startsWith(ASSET_BASE_URL) &&
+    pathname.startsWith(prefix)
+    ? pathname.slice(1)
+    : null;
+};
+
+function withVersion(url: string, updatedAt: Date | string | null | undefined) {
   const version =
     updatedAt instanceof Date
       ? updatedAt.getTime()
@@ -58,10 +62,6 @@ export function getVersionedGroupImageUrl(
         ? Date.parse(updatedAt)
         : null;
 
-  if (!version || Number.isNaN(version)) {
-    return resolvedImageUrl;
-  }
-
-  const separator = resolvedImageUrl.includes('?') ? '&' : '?';
-  return `${resolvedImageUrl}${separator}v=${version}`;
+  if (!version || Number.isNaN(version)) return url;
+  return `${url}${url.includes('?') ? '&' : '?'}v=${version}`;
 }

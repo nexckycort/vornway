@@ -16,8 +16,8 @@ import type {
 } from '@vornway/contracts/modules/groups/expense-schemas';
 import { Context, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
-import { makeInternalFailure } from '#/modules/shared/internal-failure';
-import { ExpenseAttachments } from './attachments';
+import { makeInternalFailure } from '#/infrastructure/http/errors';
+import { Storage } from '#/infrastructure/storage/storage';
 import { makeExpenseNotifier } from './expense-notifier';
 import { type ExpenseInput, makeExpensePlanner } from './expense-plan';
 import {
@@ -84,7 +84,7 @@ export class GroupExpenseWrites extends Context.Service<
     GroupExpenseWrites,
     Effect.gen(function* () {
       const database = yield* Database;
-      const attachments = yield* ExpenseAttachments;
+      const storage = yield* Storage;
       const plan = yield* makeExpensePlanner;
       const notifyCreated = yield* makeExpenseNotifier;
       const failInternal = yield* makeInternalFailure;
@@ -109,9 +109,9 @@ export class GroupExpenseWrites extends Context.Service<
         expenseId: string,
         dataUrl: string,
       ) =>
-        attachments
-          .upload({ groupId, expenseId, dataUrl })
-          .pipe(Effect.catchTag('AttachmentError', failInternal));
+        storage
+          .uploadExpenseAttachment({ groupId, expenseId, dataUrl })
+          .pipe(Effect.catchTag('StorageError', failInternal));
 
       const create = Effect.fn('GroupExpenseWrites.create')(function* (
         userId: string,
@@ -231,8 +231,8 @@ export class GroupExpenseWrites extends Context.Service<
             updated.previousAttachment &&
             updated.previousAttachment !== attachment
           ) {
-            yield* attachments
-              .remove(updated.previousAttachment)
+            yield* storage
+              .deleteExpenseAttachment(updated.previousAttachment)
               .pipe(Effect.ignore({ log: true }));
           }
         }
@@ -280,8 +280,8 @@ export class GroupExpenseWrites extends Context.Service<
           }),
         );
         if (expense.attachment) {
-          yield* attachments
-            .remove(expense.attachment)
+          yield* storage
+            .deleteExpenseAttachment(expense.attachment)
             .pipe(Effect.ignore({ log: true }));
         }
         return { id: expense.id };

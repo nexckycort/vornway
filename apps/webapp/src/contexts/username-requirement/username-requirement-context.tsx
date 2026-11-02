@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 import { toast } from 'sonner';
-import { usersClient } from '#/api/users';
+import { api, withErrorMessage } from '#/api/client';
 import { Button } from '#/components/ui/button';
 import {
   Dialog,
@@ -58,26 +58,11 @@ export function UsernameRequirementProvider({
   }, [normalizedExistingUsername]);
 
   const updateUsernameMutation = useMutation({
-    mutationFn: async (value: string) => {
-      const response = await usersClient.me.username.$patch({
-        json: { username: value },
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as {
-          message?: string;
-          error?: string;
-        } | null;
-
-        throw new Error(
-          payload?.message ??
-            payload?.error ??
-            m['profile.usernameSaveFailed'](),
-        );
-      }
-
-      return await response.json();
-    },
+    mutationFn: (value: string) =>
+      withErrorMessage(
+        api.users.username.request({ payload: { username: value } }),
+        m['profile.usernameSaveFailed'](),
+      ),
     onSuccess: async () => {
       await auth.refresh();
       toast.success(m['profile.usernameConfigured']());

@@ -6,8 +6,10 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import type { Cursor } from '@vornway/api-client';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { api, failWithMessage } from '#/api/client';
 import { Button } from '#/components/ui/button';
 import {
   Drawer,
@@ -20,18 +22,13 @@ import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 import { ScreenShell } from '../-components/finance-layout';
 import {
-  accountsEndpoint,
   accountTypeOptions,
-  closeAccountEndpoint,
-  createAccountEndpoint,
   currency,
   currentMonthKey,
-  deleteAccountEndpoint,
   type FinanceAccountInput,
   type FinanceAccountUpdateInput,
   getAccountTypeLabel,
   parseMoney,
-  updateAccountEndpoint,
 } from '../-components/finance-model';
 
 export const Route = createFileRoute('/_authed/finances/accounts/')({
@@ -67,16 +64,17 @@ function RouteComponent() {
 
   const accountsQuery = useInfiniteQuery({
     queryKey: ['finances-accounts'],
-    initialPageParam: undefined as string | undefined,
+    initialPageParam: undefined as Cursor | undefined,
     queryFn: async ({ pageParam }) => {
-      const response = await accountsEndpoint({
-        query: {
-          limit: '20',
-          ...(pageParam ? { cursor: pageParam } : {}),
-        },
-      });
-      if (!response.ok) throw new Error(m['finances.loadError']());
-      return response.json();
+      return failWithMessage(
+        api.finances.accounts.request({
+          query: {
+            limit: 20,
+            ...(pageParam ? { cursor: pageParam } : {}),
+          },
+        }),
+        m['finances.loadError'](),
+      );
     },
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
   });
@@ -88,14 +86,15 @@ function RouteComponent() {
 
   const accountMutation = useMutation({
     mutationFn: async (input: FinanceAccountInput) => {
-      const response = editingAccountId
-        ? await updateAccountEndpoint({
-            param: { id: editingAccountId },
-            json: input satisfies FinanceAccountUpdateInput,
-          })
-        : await createAccountEndpoint({ json: input });
-      if (!response.ok) throw new Error(m['finances.accountSaveFailed']());
-      return response.json();
+      return failWithMessage(
+        editingAccountId
+          ? api.finances.updateAccount.request({
+              params: { id: editingAccountId },
+              payload: input satisfies FinanceAccountUpdateInput,
+            })
+          : api.finances.createAccount.request({ payload: input }),
+        m['finances.accountSaveFailed'](),
+      );
     },
     onSuccess: async () => {
       await invalidateAccountQueries();
@@ -113,9 +112,10 @@ function RouteComponent() {
   });
   const closeAccountMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await closeAccountEndpoint({ param: { id } });
-      if (!response.ok) throw new Error(m['finances.accountCloseFailed']());
-      return response.json();
+      return failWithMessage(
+        api.finances.closeAccount.request({ params: { id } }),
+        m['finances.accountCloseFailed'](),
+      );
     },
     onSuccess: async () => {
       await invalidateAccountQueries();
@@ -133,9 +133,10 @@ function RouteComponent() {
   });
   const deleteAccountMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await deleteAccountEndpoint({ param: { id } });
-      if (!response.ok) throw new Error(m['finances.accountDeleteFailed']());
-      return response.json();
+      return failWithMessage(
+        api.finances.deleteAccount.request({ params: { id } }),
+        m['finances.accountDeleteFailed'](),
+      );
     },
     onSuccess: async () => {
       await invalidateAccountQueries();

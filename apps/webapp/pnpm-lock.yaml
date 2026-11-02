@@ -12,6 +12,9 @@ catalogs:
     '@tanstack/react-query':
       specifier: ^5.100.9
       version: 5.101.2
+    effect:
+      specifier: 4.0.5
+      version: 4.0.5
     portless:
       specifier: ^0.15.5
       version: 0.15.5
@@ -59,9 +62,12 @@ importers:
       '@tanstack/react-router':
         specifier: ^1.168.25
         version: 1.170.18(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@vornway/api':
+      '@vornway/api-client':
         specifier: workspace:*
-        version: link:../api
+        version: file:../../packages/api-client(effect@4.0.5)(react@19.2.7)
+      '@vornway/contracts':
+        specifier: workspace:*
+        version: file:../../packages/contracts(effect@4.0.5)
       better-auth:
         specifier: ^1.6.9
         version: 1.6.23(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -74,6 +80,9 @@ importers:
       date-fns:
         specifier: ^4.4.0
         version: 4.4.0
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.5
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.2.7)
@@ -113,6 +122,11 @@ importers:
       vaul:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+    dependenciesMeta:
+      '@vornway/api-client':
+        injected: true
+      '@vornway/contracts':
+        injected: true
     devDependencies:
       '@biomejs/biome':
         specifier: 'catalog:'
@@ -1638,6 +1652,16 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@vornway/api-client@file:../../packages/api-client':
+    resolution: {directory: ../../packages/api-client, type: directory}
+    peerDependencies:
+      effect: 4.0.5
+
+  '@vornway/contracts@file:../../packages/contracts':
+    resolution: {directory: ../../packages/contracts, type: directory}
+    peerDependencies:
+      effect: 4.0.5
+
   accepts@2.0.0:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
     engines: {node: '>= 0.6'}
@@ -2076,6 +2100,9 @@ packages:
 
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
+
+  effect@4.0.5:
+    resolution: {integrity: sha512-BY4/28NlpOd99yzmV741xbVGmp+1U7tks4oB7F/Png64bTa5tm5eCA6W0RiXsnuLDDoJpjfVSo4Dnq4BZb/89Q==}
 
   electron-to-chromium@1.5.392:
     resolution: {integrity: sha512-1yQq3VQCZRwsnYc67Oc+1fge6Lwtn0hzi6zmEVkB61Zx21kTbwJAW4dFLadl5Rc1tKhG/kSpYXnfiAhu0f0a1g==}
@@ -4693,6 +4720,18 @@ snapshots:
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
 
+  '@vornway/api-client@file:../../packages/api-client(effect@4.0.5)(react@19.2.7)':
+    dependencies:
+      '@tanstack/react-query': 5.101.2(react@19.2.7)
+      '@vornway/contracts': file:../../packages/contracts(effect@4.0.5)
+      effect: 4.0.5
+    transitivePeerDependencies:
+      - react
+
+  '@vornway/contracts@file:../../packages/contracts(effect@4.0.5)':
+    dependencies:
+      effect: 4.0.5
+
   accepts@2.0.0:
     dependencies:
       mime-types: 3.0.2
@@ -5037,6 +5076,8 @@ snapshots:
       gopd: 1.2.0
 
   ee-first@1.1.1: {}
+
+  effect@4.0.5: {}
 
   electron-to-chromium@1.5.392: {}
 

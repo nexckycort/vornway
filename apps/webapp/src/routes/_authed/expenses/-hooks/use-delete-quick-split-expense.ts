@@ -1,34 +1,22 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { quickSplitsClient } from '#/api/quick-splits';
+import { api, withErrorMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
-
-const deleteQuickSplitExpenseEndpoint =
-  quickSplitsClient[':id'].expenses[':expenseId'].$delete;
 
 type DeleteQuickSplitExpenseInput = {
   quickSplitId: string;
   expenseId: string;
 };
 
-async function deleteQuickSplitExpense({
+function deleteQuickSplitExpense({
   quickSplitId,
   expenseId,
 }: DeleteQuickSplitExpenseInput) {
-  const response = await deleteQuickSplitExpenseEndpoint({
-    param: {
-      id: quickSplitId,
-      expenseId,
-    },
-  });
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as {
-      message?: string;
-    } | null;
-    throw new Error(payload?.message ?? m['system.deleteExpenseFailed']());
-  }
-
-  return response.json() as Promise<{ id: string }>;
+  return withErrorMessage(
+    api.quickSplits.deleteExpense.request({
+      params: { id: quickSplitId, expenseId },
+    }),
+    m['system.deleteExpenseFailed'](),
+  );
 }
 
 export function useDeleteQuickSplitExpenseMutation() {

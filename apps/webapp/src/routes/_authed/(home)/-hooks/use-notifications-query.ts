@@ -1,33 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
-import { notificationsClient } from '#/api/notifications';
-import type { InferResponseType } from '#/api/types';
+import { api, failWithMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
-
-const notificationsEndpoint = notificationsClient.index.$get;
-const notificationsMarkReadEndpoint = notificationsClient['read-all'].$post;
-
-type NotificationsResponse = InferResponseType<typeof notificationsEndpoint>;
 
 export function useNotificationsQuery() {
   return useQuery({
     queryKey: ['notifications'],
-    queryFn: async () => {
-      const response = await notificationsEndpoint({
-        query: { limit: '40' },
-      });
-
-      if (!response.ok) {
-        throw new Error(m['notifications.loadFailed']());
-      }
-
-      return (await response.json()) as unknown as NotificationsResponse;
-    },
+    queryFn: () =>
+      failWithMessage(
+        api.notifications.list.request({ query: { limit: 40 } }),
+        m['notifications.loadFailed'](),
+      ),
   });
 }
 
 export async function markNotificationsAsRead() {
-  const response = await notificationsMarkReadEndpoint();
-  if (!response.ok) {
-    throw new Error(m['notifications.loadFailed']());
-  }
+  await failWithMessage(
+    api.notifications.readAll.request(),
+    m['notifications.loadFailed'](),
+  );
 }

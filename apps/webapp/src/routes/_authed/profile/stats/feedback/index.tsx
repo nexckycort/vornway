@@ -8,9 +8,10 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import type { ApiSuccess } from '@vornway/api-client';
 import { type ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { adminClient } from '#/api/admin';
+import { api, withErrorMessage } from '#/api/client';
 import { Button } from '#/components/ui/button';
 import {
   Dialog,
@@ -22,40 +23,11 @@ import {
 import { useAuth } from '#/contexts/auth/use-auth';
 import { m } from '#/paraglide/messages.js';
 import { getProfileMessages } from '#/routes/_authed/profile/-messages';
+import { feedbackAttachments } from '#/routes/_authed/profile/feedback/-hooks/use-feedback-page';
 
 type FeedbackStatus = 'OPEN' | 'IN_REVIEW' | 'PLANNED' | 'DONE' | 'REJECTED';
 
-type AdminFeedbackItem = {
-  id: string;
-  userId: string;
-  type: 'BUG' | 'FEATURE_REQUEST';
-  title: string;
-  description: string;
-  status: FeedbackStatus;
-  priority: string | null;
-  metadata: {
-    attachments?: Array<{
-      url: string;
-    }>;
-  };
-  createdAt: string;
-  updatedAt: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    image: string | null;
-  };
-};
-
-type AdminFeedbackResponse = {
-  data: AdminFeedbackItem[];
-  pagination: {
-    limit: number;
-    total: number;
-    nextCursor: string | null;
-  };
-};
+type AdminFeedbackItem = ApiSuccess<'admin', 'feedback'>['data'][number];
 
 const ALLOWED_EMAIL = 'junior110120@gmail.com';
 const statusOptions: FeedbackStatus[] = [
@@ -84,45 +56,31 @@ function RouteComponent() {
   const feedbackQuery = useQuery({
     queryKey: ['admin-feedback'],
     enabled: isAllowed,
-    queryFn: async () => {
-      const response = await adminClient.feedback.$get({
-        query: { limit: '50' },
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-        throw new Error(payload?.error ?? m['system.loadFeedbackFailed']());
-      }
-
-      return (await response.json()) as AdminFeedbackResponse;
-    },
+    queryFn: () =>
+      withErrorMessage(
+        api.admin.feedback.request({ query: { limit: 50 } }),
+        m['system.loadFeedbackFailed'](),
+      ),
   });
 
   const updateFeedbackMutation = useMutation({
-    mutationFn: async (input: {
+    mutationFn: (input: {
       feedbackId: string;
       status?: FeedbackStatus;
       priority?: string | null;
-    }) => {
-      const response = await adminClient.feedback[':feedbackId'].$patch({
-        param: { feedbackId: input.feedbackId },
-        json: {
-          ...(input.status ? { status: input.status } : {}),
-          ...(input.priority !== undefined ? { priority: input.priority } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-        throw new Error(payload?.error ?? m['system.updateFeedbackFailed']());
-      }
-
-      return (await response.json()) as AdminFeedbackItem;
-    },
+    }) =>
+      withErrorMessage(
+        api.admin.updateFeedback.request({
+          params: { feedbackId: input.feedbackId },
+          payload: {
+            ...(input.status ? { status: input.status } : {}),
+            ...(input.priority !== undefined
+              ? { priority: input.priority }
+              : {}),
+          },
+        }),
+        m['system.updateFeedbackFailed'](),
+      ),
     onSuccess: async (updated) => {
       await queryClient.invalidateQueries({ queryKey: ['admin-feedback'] });
       setSelectedFeedback(updated);
@@ -277,9 +235,9 @@ function RouteComponent() {
                   ) : null}
                 </div>
 
-                {item.metadata.attachments?.length ? (
+                {feedbackAttachments(item.metadata).length > 0 ? (
                   <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-                    {item.metadata.attachments.map((attachment) => (
+                    {feedbackAttachments(item.metadata).map((attachment) => (
                       <img
                         key={attachment.url}
                         src={attachment.url}
@@ -437,7 +395,7 @@ function MiniStatCard({
   );
 }
 
-function AdminStatusBadge({ status }: { status: FeedbackStatus }) {
+function AdminStatusBadge({ status }: { status: AdminFeedbackItem['status'] }) {
   const meta = getAdminStatusMeta(status);
 
   return (
@@ -453,7 +411,7 @@ function AdminStatusBadge({ status }: { status: FeedbackStatus }) {
   );
 }
 
-function getAdminStatusMeta(status: FeedbackStatus) {
+function getAdminStatusMeta(status: AdminFeedbackItem['status']) {
   switch (status) {
     case 'IN_REVIEW':
       return {
@@ -472,7 +430,7 @@ function getAdminStatusMeta(status: FeedbackStatus) {
   }
 }
 
-function formatDate(value: string) {
+function formatDate(value: Date) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
 

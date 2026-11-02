@@ -2,7 +2,10 @@ import { Delete02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { m } from '#/paraglide/messages.js';
 import { getProfileMessages } from '#/routes/_authed/profile/-messages';
-import type { FeedbackItem, FeedbackStatus } from '../-hooks/use-feedback-page';
+import {
+  type FeedbackItem,
+  feedbackAttachments,
+} from '../-hooks/use-feedback-page';
 
 type FeedbackListProps = {
   items: FeedbackItem[];
@@ -82,6 +85,7 @@ function FeedbackCard({
   onRequestDelete: (item: FeedbackItem) => void;
 }) {
   const t = getProfileMessages();
+  const attachments = feedbackAttachments(item.metadata);
 
   return (
     <article className="rounded-[24px] border border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
@@ -113,9 +117,9 @@ function FeedbackCard({
         {item.description}
       </p>
 
-      {item.metadata.attachments?.length ? (
+      {attachments.length > 0 ? (
         <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-          {item.metadata.attachments.map((attachment) => (
+          {attachments.map((attachment) => (
             <img
               key={attachment.url}
               src={attachment.url}
@@ -133,7 +137,7 @@ function FeedbackCard({
   );
 }
 
-function StatusBadge({ status }: { status: FeedbackStatus }) {
+function StatusBadge({ status }: { status: FeedbackItem['status'] }) {
   const meta = getStatusMeta(status);
 
   return (
@@ -149,7 +153,7 @@ function StatusBadge({ status }: { status: FeedbackStatus }) {
   );
 }
 
-function getStatusMeta(status: FeedbackStatus) {
+function getStatusMeta(status: FeedbackItem['status']) {
   switch (status) {
     case 'IN_REVIEW':
       return {
@@ -184,7 +188,7 @@ function getStatusMeta(status: FeedbackStatus) {
   }
 }
 
-function formatDate(value: string) {
+function formatDate(value: Date) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
 

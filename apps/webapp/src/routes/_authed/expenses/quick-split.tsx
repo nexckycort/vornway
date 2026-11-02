@@ -207,7 +207,11 @@ function RouteComponent() {
           userId: participant.userId ?? undefined,
         })),
     );
-    setSplitMethod(expenseQuery.data.splitMethod);
+    setSplitMethod(
+      expenseQuery.data.splitMethod === 'unknown'
+        ? 'equal'
+        : expenseQuery.data.splitMethod,
+    );
     setParticipantValues(
       Object.fromEntries(
         expenseQuery.data.participants.map((participant) => [

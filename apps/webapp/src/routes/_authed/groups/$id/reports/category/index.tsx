@@ -387,22 +387,8 @@ function RouteComponent() {
   const filteredExpenses = isParticipantFilterActive
     ? selectedParticipantExpenses
     : baseFilteredExpenses;
-  const historyExpenseCount = useMemo(() => {
-    if (typeof categoryCountQuery.data?.expenseCount === 'number') {
-      return categoryCountQuery.data.expenseCount;
-    }
-
-    if (!isParticipantFilterActive) {
-      return category?.expenseCount ?? expenseCount ?? 0;
-    }
-
-    return expenseCount ?? category?.expenseCount ?? 0;
-  }, [
-    category?.expenseCount,
-    categoryCountQuery.data?.expenseCount,
-    expenseCount,
-    isParticipantFilterActive,
-  ]);
+  const historyExpenseCount =
+    categoryCountQuery.data?.expenseCount ?? expenseCount ?? 0;
 
   const visibleParticipantShares = isParticipantFilterActive
     ? selectedParticipants

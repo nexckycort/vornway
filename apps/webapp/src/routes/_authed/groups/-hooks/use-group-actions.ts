@@ -1,105 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { groupsClient } from '#/api/groups';
-import type { InferRequestType, InferResponseType } from '#/api/types';
+import type { ApiPayload } from '@vornway/api-client';
+import { api, withErrorMessage } from '#/api/client';
 import { removeCachedGroupListItem } from '#/lib/groups-list-query-collection';
 import { createExpenseOfflineFirst } from '#/lib/offline-expense-query-collection';
 import { removeLocalGroupFallback } from '#/lib/offline-group-query-collection';
 import { m } from '#/paraglide/messages.js';
-
-const createExpenseEndpoint = groupsClient[':id'].expenses.$post;
-const updateExpenseEndpoint = groupsClient[':id'].expenses[':expenseId'].$put;
-const updateGroupEndpoint = groupsClient[':id'].$patch;
-const transferGroupOwnerEndpoint = groupsClient[':id'].owner.$patch;
-const updateGroupSettingsEndpoint = groupsClient[':id'].settings.$patch;
-const deleteGroupEndpoint = groupsClient[':id'].$delete;
-const exportGroupCsvEndpoint = groupsClient[':id'].export.$get;
-const settleDebtEndpoint = groupsClient[':id'].settlements.$post;
-const addMemberEndpoint = groupsClient[':id'].members.$post;
-const createCategoryEndpoint = groupsClient[':id'].categories.$post;
-const updateCategoryEndpoint =
-  groupsClient[':id'].categories[':categoryId'].$patch;
-const deleteCategoryEndpoint =
-  groupsClient[':id'].categories[':categoryId'].$delete;
-const moveCategoryExpensesEndpoint =
-  groupsClient[':id'].categories[':categoryId']['move-expenses'].$post;
-const removeMemberEndpoint = groupsClient[':id'].members[':memberId'].$delete;
-const unlinkMemberEndpoint =
-  groupsClient[':id'].members[':memberId']['account-link'].$delete;
-
-type CreateExpenseRequest = InferRequestType<typeof createExpenseEndpoint>;
-type UpdateExpenseRequest = InferRequestType<typeof updateExpenseEndpoint>;
-type UpdateExpenseResponse = InferResponseType<typeof updateExpenseEndpoint>;
-type UpdateGroupRequest = InferRequestType<typeof updateGroupEndpoint>;
-type UpdateGroupResponse = InferResponseType<typeof updateGroupEndpoint>;
-type TransferGroupOwnerRequest = InferRequestType<
-  typeof transferGroupOwnerEndpoint
->;
-type TransferGroupOwnerResponse = InferResponseType<
-  typeof transferGroupOwnerEndpoint
->;
-type UpdateGroupSettingsRequest = InferRequestType<
-  typeof updateGroupSettingsEndpoint
->;
-type UpdateGroupSettingsResponse = InferResponseType<
-  typeof updateGroupSettingsEndpoint
->;
-type DeleteGroupResponse = InferResponseType<typeof deleteGroupEndpoint>;
-type SettleDebtRequest = InferRequestType<typeof settleDebtEndpoint>;
-type SettleDebtResponse = InferResponseType<typeof settleDebtEndpoint>;
-type AddMemberRequest = InferRequestType<typeof addMemberEndpoint>;
-type AddMemberResponse = InferResponseType<typeof addMemberEndpoint>;
-type CreateCategoryRequest = InferRequestType<typeof createCategoryEndpoint>;
-type CreateCategoryResponse = InferResponseType<typeof createCategoryEndpoint>;
-type CreateCategorySuccess = Extract<CreateCategoryResponse, { id: string }>;
-type UpdateCategoryRequest = InferRequestType<typeof updateCategoryEndpoint>;
-type UpdateCategoryResponse = InferResponseType<typeof updateCategoryEndpoint>;
-type UpdateCategorySuccess = Extract<UpdateCategoryResponse, { id: string }>;
-type DeleteCategoryResponse = InferResponseType<typeof deleteCategoryEndpoint>;
-type MoveCategoryExpensesRequest = InferRequestType<
-  typeof moveCategoryExpensesEndpoint
->;
-type MoveCategoryExpensesResponse = InferResponseType<
-  typeof moveCategoryExpensesEndpoint
->;
-type RemoveMemberResponse = InferResponseType<typeof removeMemberEndpoint>;
-type UnlinkMemberResponse = InferResponseType<typeof unlinkMemberEndpoint>;
-
-type UpdateGroupImageRequest = {
-  dataUrl: string;
-  fileName?: string;
-};
-
-type UpdateGroupImageResponse = {
-  imageUrl: string | null;
-};
-
-const updateGroupImageEndpoint = groupsClient[':id'] as unknown as {
-  image: {
-    $patch: (args: {
-      param: { id: string };
-      json: UpdateGroupImageRequest;
-    }) => Promise<{
-      ok: boolean;
-      json: () => Promise<unknown>;
-    }>;
-  };
-};
-
-function getApiErrorMessage(error: unknown, fallback: string) {
-  if (typeof error === 'string') return error;
-  if (!error || typeof error !== 'object') return fallback;
-
-  const candidate = error as {
-    message?: unknown;
-    error?: unknown;
-  };
-
-  if (typeof candidate.message === 'string') {
-    return candidate.message;
-  }
-
-  return getApiErrorMessage(candidate.error, fallback);
-}
 
 function invalidateFinanceQueries(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -115,10 +20,22 @@ function invalidateFinanceQueries(
   ]);
 }
 
+function invalidateGroupQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  groupId: string,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
+    queryClient.invalidateQueries({ queryKey: ['group-expenses', groupId] }),
+    queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+    queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+  ]);
+}
+
 function slugifyFileName(value: string) {
   return value
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
@@ -129,31 +46,12 @@ export function useUpdateGroupImageMutation(groupId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (json: UpdateGroupImageRequest) => {
-      const response = await updateGroupImageEndpoint.image.$patch({
-        param: { id: groupId },
-        json,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: unknown };
-        throw new Error(
-          getApiErrorMessage(payload.error, m['profile.photoUpdateFailed']()),
-        );
-      }
-
-      return (await response.json()) as UpdateGroupImageResponse;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
-        }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-    },
+    mutationFn: (payload: ApiPayload<'groups', 'updateImage'>) =>
+      withErrorMessage(
+        api.groups.updateImage.request({ params: { id: groupId }, payload }),
+        m['profile.photoUpdateFailed'](),
+      ),
+    onSuccess: () => invalidateGroupQueries(queryClient, groupId),
   });
 }
 
@@ -161,29 +59,12 @@ export function useUpdateGroupMutation(groupId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (json: UpdateGroupRequest['json']) => {
-      const response = await updateGroupEndpoint({
-        param: { id: groupId },
-        json,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? m['groups.settings.loadError']());
-      }
-
-      return (await response.json()) as UpdateGroupResponse;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
-        }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-    },
+    mutationFn: (payload: ApiPayload<'groups', 'update'>) =>
+      withErrorMessage(
+        api.groups.update.request({ params: { id: groupId }, payload }),
+        m['groups.settings.loadError'](),
+      ),
+    onSuccess: () => invalidateGroupQueries(queryClient, groupId),
   });
 }
 
@@ -191,32 +72,16 @@ export function useTransferGroupOwnerMutation(groupId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (json: TransferGroupOwnerRequest['json']) => {
-      const response = await transferGroupOwnerEndpoint({
-        param: { id: groupId },
-        json,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(
-          payload.error ?? m['groups.participants.transferFailed'](),
-        );
-      }
-
-      return (await response.json()) as TransferGroupOwnerResponse;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
-        }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+    mutationFn: (payload: ApiPayload<'groups', 'transferOwner'>) =>
+      withErrorMessage(
+        api.groups.transferOwner.request({ params: { id: groupId }, payload }),
+        m['groups.participants.transferFailed'](),
+      ),
+    onSuccess: () =>
+      Promise.all([
+        invalidateGroupQueries(queryClient, groupId),
         invalidateFinanceQueries(queryClient),
-      ]);
-    },
+      ]),
   });
 }
 
@@ -224,30 +89,19 @@ export function useUpdateGroupSettingsMutation(groupId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (json: UpdateGroupSettingsRequest['json']) => {
-      const response = await updateGroupSettingsEndpoint({
-        param: { id: groupId },
-        json,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? m['groups.settings.loadError']());
-      }
-
-      return (await response.json()) as UpdateGroupSettingsResponse;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
+    mutationFn: (payload: ApiPayload<'groups', 'updateSettings'>) =>
+      withErrorMessage(
+        api.groups.updateSettings.request({
+          params: { id: groupId },
+          payload,
         }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+        m['groups.settings.loadError'](),
+      ),
+    onSuccess: () =>
+      Promise.all([
+        invalidateGroupQueries(queryClient, groupId),
         invalidateFinanceQueries(queryClient),
-      ]);
-    },
+      ]),
   });
 }
 
@@ -255,18 +109,11 @@ export function useDeleteGroupMutation(groupId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
-      const response = await deleteGroupEndpoint({
-        param: { id: groupId },
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? m['groups.settings.deleteFailed']());
-      }
-
-      return (await response.json()) as DeleteGroupResponse;
-    },
+    mutationFn: () =>
+      withErrorMessage(
+        api.groups.remove.request({ params: { id: groupId } }),
+        m['groups.settings.deleteFailed'](),
+      ),
     onSuccess: async () => {
       removeCachedGroupListItem(groupId);
       removeLocalGroupFallback(groupId);
@@ -283,31 +130,18 @@ export function useDeleteGroupMutation(groupId: string) {
 
 export function useExportGroupCsvMutation(groupId: string, groupName: string) {
   return useMutation({
-    mutationFn: async () => {
-      const response = await exportGroupCsvEndpoint({
-        param: { id: groupId },
-      });
-
-      if (!response.ok) {
-        let payload: unknown = null;
-        try {
-          payload = await response.json();
-        } catch {
-          payload = null;
-        }
-
-        throw new Error(
-          getApiErrorMessage(payload, m['groups.settings.loadError']()),
-        );
-      }
-
-      return response.blob();
-    },
-    onSuccess: (blob) => {
+    mutationFn: () =>
+      withErrorMessage(
+        api.groups.exportCsv.request({ params: { id: groupId } }),
+        m['groups.settings.loadError'](),
+      ),
+    onSuccess: (csv) => {
       if (typeof document === 'undefined') return;
 
       const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(
+        new Blob([csv.body], { type: 'text/csv;charset=utf-8' }),
+      );
       const safeName =
         slugifyFileName(groupName) ||
         slugifyFileName(m['groups.participants.createdGroupFallback']());
@@ -325,19 +159,12 @@ export function useCreateExpenseMutation(groupId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (json: CreateExpenseRequest['json']) => {
-      const result = await createExpenseOfflineFirst(groupId, json);
+    mutationFn: async (payload: ApiPayload<'groups', 'createExpense'>) => {
+      const result = await createExpenseOfflineFirst(groupId, payload);
       return { id: result.id };
     },
     onSuccess: () => {
-      void Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
-        }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
+      void invalidateGroupQueries(queryClient, groupId);
     },
   });
 }
@@ -346,31 +173,15 @@ export function useUpdateExpenseMutation(groupId: string, expenseId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (json: UpdateExpenseRequest['json']) => {
-      const response = await updateExpenseEndpoint({
-        param: { id: groupId, expenseId },
-        json,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(
-          payload.error ?? m['groups.detail.deleteExpenseFailed'](),
-        );
-      }
-
-      return (await response.json()) as UpdateExpenseResponse;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
+    mutationFn: (payload: ApiPayload<'groups', 'updateExpense'>) =>
+      withErrorMessage(
+        api.groups.updateExpense.request({
+          params: { id: groupId, expenseId },
+          payload,
         }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-    },
+        m['groups.detail.deleteExpenseFailed'](),
+      ),
+    onSuccess: () => invalidateGroupQueries(queryClient, groupId),
   });
 }
 
@@ -378,29 +189,12 @@ export function useSettleDebtMutation(groupId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (json: SettleDebtRequest['json']) => {
-      const response = await settleDebtEndpoint({
-        param: { id: groupId },
-        json,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? m['groups.settle.settleFailed']());
-      }
-
-      return (await response.json()) as SettleDebtResponse;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
-        }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-    },
+    mutationFn: (payload: ApiPayload<'groups', 'settleDebt'>) =>
+      withErrorMessage(
+        api.groups.settleDebt.request({ params: { id: groupId }, payload }),
+        m['groups.settle.settleFailed'](),
+      ),
+    onSuccess: () => invalidateGroupQueries(queryClient, groupId),
   });
 }
 
@@ -408,31 +202,12 @@ export function useAddMemberMutation(groupId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (json: AddMemberRequest['json']) => {
-      const response = await addMemberEndpoint({
-        param: { id: groupId },
-        json,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(
-          payload.error ?? m['groups.detail.removeMemberFailed'](),
-        );
-      }
-
-      return (await response.json()) as AddMemberResponse;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
-        }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-    },
+    mutationFn: (payload: ApiPayload<'groups', 'addMember'>) =>
+      withErrorMessage(
+        api.groups.addMember.request({ params: { id: groupId }, payload }),
+        m['groups.detail.removeMemberFailed'](),
+      ),
+    onSuccess: () => invalidateGroupQueries(queryClient, groupId),
   });
 }
 
@@ -440,31 +215,15 @@ export function useCreateCategoryMutation(groupId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (json: CreateCategoryRequest['json']) => {
-      const response = await createCategoryEndpoint({
-        param: { id: groupId },
-        json,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(
-          payload.error ?? m['groups.settings.categoriesLoadError'](),
-        );
-      }
-
-      return (await response.json()) as CreateCategorySuccess;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
+    mutationFn: (payload: ApiPayload<'groups', 'createCategory'>) =>
+      withErrorMessage(
+        api.groups.createCategory.request({
+          params: { id: groupId },
+          payload,
         }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-    },
+        m['groups.settings.categoriesLoadError'](),
+      ),
+    onSuccess: () => invalidateGroupQueries(queryClient, groupId),
   });
 }
 
@@ -472,31 +231,15 @@ export function useUpdateCategoryMutation(groupId: string, categoryId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (json: UpdateCategoryRequest['json']) => {
-      const response = await updateCategoryEndpoint({
-        param: { id: groupId, categoryId },
-        json,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(
-          payload.error ?? m['groups.settings.categoriesLoadError'](),
-        );
-      }
-
-      return (await response.json()) as UpdateCategorySuccess;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
+    mutationFn: (payload: ApiPayload<'groups', 'updateCategory'>) =>
+      withErrorMessage(
+        api.groups.updateCategory.request({
+          params: { id: groupId, categoryId },
+          payload,
         }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-    },
+        m['groups.settings.categoriesLoadError'](),
+      ),
+    onSuccess: () => invalidateGroupQueries(queryClient, groupId),
   });
 }
 
@@ -504,30 +247,14 @@ export function useDeleteCategoryMutation(groupId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (categoryId: string) => {
-      const response = await deleteCategoryEndpoint({
-        param: { id: groupId, categoryId },
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(
-          payload.error ?? m['groups.settings.categoriesLoadError'](),
-        );
-      }
-
-      return (await response.json()) as DeleteCategoryResponse;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
+    mutationFn: (categoryId: string) =>
+      withErrorMessage(
+        api.groups.removeCategory.request({
+          params: { id: groupId, categoryId },
         }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-    },
+        m['groups.settings.categoriesLoadError'](),
+      ),
+    onSuccess: () => invalidateGroupQueries(queryClient, groupId),
   });
 }
 
@@ -538,31 +265,15 @@ export function useMoveCategoryExpensesMutation(
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (json: MoveCategoryExpensesRequest['json']) => {
-      const response = await moveCategoryExpensesEndpoint({
-        param: { id: groupId, categoryId },
-        json,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(
-          payload.error ?? m['groups.settings.moveExpensesTitle'](),
-        );
-      }
-
-      return (await response.json()) as MoveCategoryExpensesResponse;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
+    mutationFn: (payload: ApiPayload<'groups', 'moveCategoryExpenses'>) =>
+      withErrorMessage(
+        api.groups.moveCategoryExpenses.request({
+          params: { id: groupId, categoryId },
+          payload,
         }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-    },
+        m['groups.settings.moveExpensesTitle'](),
+      ),
+    onSuccess: () => invalidateGroupQueries(queryClient, groupId),
   });
 }
 
@@ -570,30 +281,12 @@ export function useRemoveMemberMutation(groupId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ memberId }: { memberId: string }) => {
-      const response = await removeMemberEndpoint({
-        param: { id: groupId, memberId },
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(
-          payload.error ?? m['groups.detail.removeMemberFailed'](),
-        );
-      }
-
-      return (await response.json()) as RemoveMemberResponse;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
-        }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-    },
+    mutationFn: ({ memberId }: { memberId: string }) =>
+      withErrorMessage(
+        api.groups.removeMember.request({ params: { id: groupId, memberId } }),
+        m['groups.detail.removeMemberFailed'](),
+      ),
+    onSuccess: () => invalidateGroupQueries(queryClient, groupId),
   });
 }
 
@@ -601,27 +294,11 @@ export function useUnlinkMemberMutation(groupId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ memberId }: { memberId: string }) => {
-      const response = await unlinkMemberEndpoint({
-        param: { id: groupId, memberId },
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? m['groups.settings.leaveFailed']());
-      }
-
-      return (await response.json()) as UnlinkMemberResponse;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', groupId] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expenses', groupId],
-        }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-    },
+    mutationFn: ({ memberId }: { memberId: string }) =>
+      withErrorMessage(
+        api.groups.unlinkMember.request({ params: { id: groupId, memberId } }),
+        m['groups.settings.leaveFailed'](),
+      ),
+    onSuccess: () => invalidateGroupQueries(queryClient, groupId),
   });
 }

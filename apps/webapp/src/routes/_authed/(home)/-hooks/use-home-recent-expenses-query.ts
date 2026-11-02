@@ -1,36 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
-import { quickSplitsClient } from '#/api/quick-splits';
-import type { InferResponseType } from '#/api/types';
+import type { ApiSuccess } from '@vornway/api-client';
+import { api, failWithMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
 
-const recentQuickSplitExpensesEndpoint = quickSplitsClient.expenses.$get;
-
-type RecentQuickSplitExpensesResponse = InferResponseType<
-  typeof recentQuickSplitExpensesEndpoint,
-  200
->;
-
-export type HomeRecentExpense =
-  RecentQuickSplitExpensesResponse['data'][number];
+export type HomeRecentExpense = ApiSuccess<
+  'quickSplits',
+  'listExpenses'
+>['data'][number];
 
 export function useHomeRecentExpensesQuery() {
   return useQuery<HomeRecentExpense[]>({
     queryKey: ['home-recent-quick-split-expenses'],
     queryFn: async () => {
-      const response = await recentQuickSplitExpensesEndpoint({
-        query: {
-          limit: '3',
-        },
-      });
+      const page = await failWithMessage(
+        api.quickSplits.listExpenses.request({ query: { limit: 3 } }),
+        m['system.loadFriendsExpensesFailed'](),
+      );
 
-      if (!response.ok) {
-        throw new Error(m['system.loadFriendsExpensesFailed']());
-      }
-
-      const payload =
-        (await response.json()) as RecentQuickSplitExpensesResponse;
-
-      return payload.data;
+      return page.data;
     },
     initialData: [],
   });

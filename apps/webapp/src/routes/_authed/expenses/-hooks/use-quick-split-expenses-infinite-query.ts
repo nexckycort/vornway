@@ -1,36 +1,27 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { quickSplitsClient } from '#/api/quick-splits';
-import type { InferResponseType } from '#/api/types';
+import type { ApiSuccess, Cursor } from '@vornway/api-client';
+import { api, failWithMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
 
-const quickSplitExpensesEndpoint = quickSplitsClient.expenses.$get;
-
-type QuickSplitExpensesResponse = InferResponseType<
-  typeof quickSplitExpensesEndpoint,
-  200
->;
-
-export type QuickSplitExpenseListItem =
-  QuickSplitExpensesResponse['data'][number];
+export type QuickSplitExpenseListItem = ApiSuccess<
+  'quickSplits',
+  'listExpenses'
+>['data'][number];
 
 export function useQuickSplitExpensesInfiniteQuery() {
   return useInfiniteQuery({
     queryKey: ['quick-split-expenses'],
-    initialPageParam: undefined as string | undefined,
-    queryFn: async ({ pageParam }) => {
-      const response = await quickSplitExpensesEndpoint({
-        query: {
-          limit: '12',
-          ...(pageParam ? { cursor: pageParam } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(m['system.loadFriendsExpensesFailed']());
-      }
-
-      return (await response.json()) as QuickSplitExpensesResponse;
-    },
+    initialPageParam: undefined as Cursor | undefined,
+    queryFn: ({ pageParam }) =>
+      failWithMessage(
+        api.quickSplits.listExpenses.request({
+          query: {
+            limit: 12,
+            ...(pageParam ? { cursor: pageParam } : {}),
+          },
+        }),
+        m['system.loadFriendsExpensesFailed'](),
+      ),
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
     staleTime: 30_000,
   });

@@ -52,7 +52,7 @@ type CategoryBreakdownEntry = {
   id: string | null;
   name: string;
   icon: string | null;
-  expenseCount: number;
+  expenseCount?: number;
   amount: number;
   fill: string;
 };

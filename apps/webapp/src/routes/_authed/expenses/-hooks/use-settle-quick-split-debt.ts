@@ -1,12 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { ApiRequest } from '@vornway/api-client';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { quickSplitsClient } from '#/api/quick-splits';
+import { api, withErrorMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
 import type { QuickSplitExpenseDetail } from './use-quick-split-expense-query';
-
-const settleQuickSplitDebtEndpoint =
-  quickSplitsClient[':id'].expenses[':expenseId'].settlements.$post;
 
 type SettleQuickSplitExpenseInput = {
   quickSplitId: string;
@@ -151,21 +149,11 @@ export function useSettleQuickSplitDebt(input: SettleQuickSplitExpenseInput) {
     amount > 0;
 
   const mutation = useMutation({
-    mutationFn: async ({
-      param,
-      json,
-    }: Parameters<typeof settleQuickSplitDebtEndpoint>[0]) => {
-      const response = await settleQuickSplitDebtEndpoint({ param, json });
-
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as {
-          message?: string;
-        } | null;
-        throw new Error(payload?.message ?? m['system.settleExpenseFailed']());
-      }
-
-      return response.json();
-    },
+    mutationFn: (request: ApiRequest<'quickSplits', 'settleDebt'>) =>
+      withErrorMessage(
+        api.quickSplits.settleDebt.request(request),
+        m['system.settleExpenseFailed'](),
+      ),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
@@ -219,11 +207,11 @@ export function useSettleQuickSplitDebt(input: SettleQuickSplitExpenseInput) {
       }
 
       await mutation.mutateAsync({
-        param: {
+        params: {
           id: input.quickSplitId,
           expenseId: input.expenseId,
         },
-        json: {
+        payload: {
           fromParticipantId: fromParticipant.id,
           toParticipantId: toParticipant.id,
           amount,

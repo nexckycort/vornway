@@ -1,15 +1,12 @@
 import { createCollection } from '@tanstack/db';
 import { QueryClient } from '@tanstack/query-core';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
-import { groupsClient } from '#/api/groups';
-import type { InferRequestType } from '#/api/types';
+import type { ApiPayload } from '@vornway/api-client';
+import { apiErrorKind, apiErrorMessage } from '@vornway/api-client';
+import { api } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
 
-const createExpenseEndpoint = groupsClient[':id'].expenses.$post;
-
-type CreateExpensePayload = InferRequestType<
-  typeof createExpenseEndpoint
->['json'];
+type CreateExpensePayload = ApiPayload<'groups', 'createExpense'>;
 
 type PendingExpense = {
   id: string;
@@ -186,9 +183,9 @@ async function postExpenseToApi(
   groupId: string,
   payload: CreateExpensePayload,
 ) {
-  const request = createExpenseEndpoint({
-    param: { id: groupId },
-    json: withExpenseId(payload),
+  const request = api.groups.createExpense.request({
+    params: { id: groupId },
+    payload: withExpenseId(payload),
   });
 
   const timeout = new Promise<never>((_, reject) => {
@@ -214,19 +211,13 @@ export async function syncPendingExpensesQueue() {
   try {
     for (const item of pending) {
       try {
-        const response = await postExpenseToApi(item.groupId, item.payload);
-
-        if (response.ok) {
-          removePendingExpense(item.id);
-          continue;
-        }
-
-        // 4xx tends to be non-retriable for queued payloads
-        if (response.status >= 400 && response.status < 500) {
-          removePendingExpense(item.id);
-        }
-      } catch {
-        break;
+        await postExpenseToApi(item.groupId, item.payload);
+        removePendingExpense(item.id);
+      } catch (error) {
+        const kind = apiErrorKind(error);
+        if (kind === 'network') break;
+        // A refused payload will never be accepted, so it leaves the queue.
+        if (kind === 'rejected') removePendingExpense(item.id);
       }
     }
   } finally {
@@ -277,13 +268,14 @@ export async function createExpenseOfflineFirst(
   const payloadWithId = withExpenseId(payload);
 
   if (typeof window === 'undefined') {
-    const response = await postExpenseToApi(groupId, payloadWithId);
-    if (!response.ok) {
-      throw new Error(m['system.createExpenseFailed']());
-    }
-
-    const data = (await response.json()) as { id: string };
-    return { id: data.id, queued: false };
+    const created = await postExpenseToApi(groupId, payloadWithId).catch(
+      (error: unknown) => {
+        throw new Error(
+          apiErrorMessage(error, m['system.createExpenseFailed']()),
+        );
+      },
+    );
+    return { id: created.id, queued: false };
   }
 
   if (!navigator.onLine) {
@@ -292,23 +284,14 @@ export async function createExpenseOfflineFirst(
   }
 
   try {
-    const response = await postExpenseToApi(groupId, payloadWithId);
-
-    if (response.ok) {
-      const data = (await response.json()) as { id: string };
-      return { id: data.id, queued: false };
-    }
-
-    if (response.status >= 500) {
+    const created = await postExpenseToApi(groupId, payloadWithId);
+    return { id: created.id, queued: false };
+  } catch (error) {
+    if (apiErrorKind(error) !== 'rejected') {
       const localId = enqueuePendingExpense(groupId, payloadWithId);
       return { id: localId, queued: true };
     }
-
-    const payloadError = (await response.json()) as { error?: string };
-    throw new Error(payloadError.error ?? m['system.createExpenseFailed']());
-  } catch {
-    const localId = enqueuePendingExpense(groupId, payloadWithId);
-    return { id: localId, queued: true };
+    throw new Error(apiErrorMessage(error, m['system.createExpenseFailed']()));
   }
 }
 

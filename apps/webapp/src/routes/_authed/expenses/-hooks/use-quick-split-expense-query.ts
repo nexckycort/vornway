@@ -1,54 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { quickSplitsClient } from '#/api/quick-splits';
+import type { ApiSuccess } from '@vornway/api-client';
+import { api, withErrorMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
 
-export type QuickSplitExpenseDetail = {
-  id: string;
-  quickSplitId: string;
-  quickSplitName: string;
-  description: string;
-  amount: number;
-  currency: string;
-  splitMethod: 'equal' | 'percentage' | 'exact';
-  createdAt: string;
-  metadata?: {
-    category?: string;
-    items?: Array<{ name: string; amount: number }>;
-  } | null;
-  paidBy: {
-    id: string;
-    userId: string | null;
-    name: string;
-    image: string | null;
-  };
-  participants: Array<{
-    id: string;
-    userId: string | null;
-    name: string;
-    image: string | null;
-    share: number;
-    role: string;
-  }>;
-  settlements: Array<{
-    id: string;
-    from: {
-      id: string;
-      userId: string | null;
-      name: string;
-    };
-    to: {
-      id: string;
-      userId: string | null;
-      name: string;
-    };
-    amount: number;
-    currency: string;
-    createdAt: string;
-  }>;
-};
-
-const quickSplitExpenseEndpoint =
-  quickSplitsClient[':id'].expenses[':expenseId'].$get;
+export type QuickSplitExpenseDetail = ApiSuccess<
+  'quickSplits',
+  'expenseDetail'
+>;
 
 export function useQuickSplitExpenseQuery(
   quickSplitId: string | undefined,
@@ -62,19 +20,12 @@ export function useQuickSplitExpenseQuery(
         throw new Error(m['system.expenseNotFound']());
       }
 
-      const response = await quickSplitExpenseEndpoint({
-        param: {
-          id: quickSplitId,
-          expenseId,
-        },
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { message?: string };
-        throw new Error(payload.message ?? m['system.loadExpenseFailed']());
-      }
-
-      return (await response.json()) as QuickSplitExpenseDetail;
+      return withErrorMessage(
+        api.quickSplits.expenseDetail.request({
+          params: { id: quickSplitId, expenseId },
+        }),
+        m['system.loadExpenseFailed'](),
+      );
     },
   });
 }

@@ -1,4 +1,4 @@
-import { pushClient } from '#/api/push';
+import { api } from '#/api/client';
 import { VAPID_PUBLIC_KEY } from '#/config/env';
 
 type PushPermissionStatus =
@@ -74,30 +74,26 @@ async function syncSubscriptionWithBackend(subscription: PushSubscription) {
       auth: string;
     };
   };
-  const endpoint = pushClient.subscriptions.$post;
 
-  const response = await endpoint({
-    json: {
-      endpoint: subscriptionData.endpoint,
-      keys: {
-        p256dh: subscriptionData.keys.p256dh,
-        auth: subscriptionData.keys.auth,
+  await api.push.subscribe
+    .request({
+      payload: {
+        endpoint: subscriptionData.endpoint,
+        keys: {
+          p256dh: subscriptionData.keys.p256dh,
+          auth: subscriptionData.keys.auth,
+        },
       },
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(m['system.pushRegisterFailed']());
-  }
+    })
+    .catch(() => {
+      throw new Error(m['system.pushRegisterFailed']());
+    });
 }
 
 async function sendPushTestNotification() {
-  const endpoint = pushClient.test.$post;
-  const response = await endpoint({});
-
-  if (!response.ok) {
+  await api.push.test.request().catch(() => {
     throw new Error(m['system.pushTestFailed']());
-  }
+  });
 }
 
 async function revokePushSubscription(subscription: PushSubscription) {
@@ -105,13 +101,11 @@ async function revokePushSubscription(subscription: PushSubscription) {
     endpoint: string;
   };
 
-  const response = await pushClient.subscriptions.$delete({
-    json: { endpoint: subscriptionData.endpoint },
-  });
-
-  if (!response.ok) {
-    throw new Error(m['system.pushDisableFailed']());
-  }
+  await api.push.unsubscribe
+    .request({ payload: { endpoint: subscriptionData.endpoint } })
+    .catch(() => {
+      throw new Error(m['system.pushDisableFailed']());
+    });
 }
 
 export async function enablePushNotifications(): Promise<PushPermissionStatus> {

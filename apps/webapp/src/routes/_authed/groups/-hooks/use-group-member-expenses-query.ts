@@ -1,34 +1,14 @@
 import { useInfiniteQuery, useQueries } from '@tanstack/react-query';
-import { groupsClient } from '#/api/groups';
-
-import type { InferResponseType } from '#/api/types';
+import type { ApiSuccess, Cursor } from '@vornway/api-client';
+import { api, failWithMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
 
 const PAGE_LIMIT = 20;
 const MULTI_MEMBER_LIMIT = 100;
-const groupMemberExpensesEndpoint =
-  groupsClient[':id'].members[':memberId'].expenses.$get;
 
-type GroupMemberExpensesPageResponse = InferResponseType<
-  typeof groupMemberExpensesEndpoint
->;
+type GroupMemberExpensesPage = ApiSuccess<'groups', 'listMemberExpenses'>;
 
-export type GroupMemberExpenseItem = Extract<
-  GroupMemberExpensesPageResponse,
-  { data: unknown[]; pagination: { nextCursor: string | null } }
->['data'][number];
-
-type GroupMemberExpensesPageBase = Extract<
-  GroupMemberExpensesPageResponse,
-  { data: unknown[]; pagination: { nextCursor: string | null } }
->;
-
-type GroupMemberExpensesPageSuccess = GroupMemberExpensesPageBase & {
-  summary: {
-    spentByCurrency: Record<string, number>;
-    grossPaidByCurrency: Record<string, number>;
-  };
-};
+export type GroupMemberExpenseItem = GroupMemberExpensesPage['data'][number];
 
 type GroupMemberExpensesFilter = {
   categoryId?: string;
@@ -56,30 +36,23 @@ export function useGroupMemberExpensesInfiniteQuery(
       filter?.endDate ?? null,
     ],
     enabled: Boolean(memberId) && (filter?.enabled ?? true),
-    initialPageParam: null as string | null,
+    initialPageParam: null as Cursor | null,
     queryFn: async ({ pageParam }) => {
       if (!memberId) {
         throw new Error(m['groups.detail.memberMissing']());
       }
 
-      const response = await groupMemberExpensesEndpoint({
-        param: { id: groupId, memberId },
-        query: {
-          limit: String(PAGE_LIMIT),
-          ...(filter?.categoryId ? { categoryId: filter.categoryId } : {}),
-          ...(filter?.uncategorized ? { uncategorized: 'true' } : {}),
-          ...(filter?.paidOnly ? { paidOnly: 'true' } : {}),
-          ...(filter?.startDate ? { startDate: filter.startDate } : {}),
-          ...(filter?.endDate ? { endDate: filter.endDate } : {}),
-          ...(pageParam ? { cursor: pageParam } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(m['system.loadMemberExpensesFailed']());
-      }
-
-      return (await response.json()) as GroupMemberExpensesPageSuccess;
+      return failWithMessage(
+        api.groups.listMemberExpenses.request({
+          params: { id: groupId, memberId },
+          query: {
+            limit: PAGE_LIMIT,
+            ...memberExpensesFilterQuery(filter),
+            ...(pageParam ? { cursor: pageParam } : {}),
+          },
+        }),
+        m['system.loadMemberExpensesFailed'](),
+      );
     },
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor,
   });
@@ -105,25 +78,27 @@ export function useGroupMemberExpensesByMembersQuery(
         filter?.endDate ?? null,
       ],
       enabled: filter?.enabled ?? true,
-      queryFn: async () => {
-        const response = await groupMemberExpensesEndpoint({
-          param: { id: groupId, memberId },
-          query: {
-            limit: String(MULTI_MEMBER_LIMIT),
-            ...(filter?.categoryId ? { categoryId: filter.categoryId } : {}),
-            ...(filter?.uncategorized ? { uncategorized: 'true' } : {}),
-            ...(filter?.paidOnly ? { paidOnly: 'true' } : {}),
-            ...(filter?.startDate ? { startDate: filter.startDate } : {}),
-            ...(filter?.endDate ? { endDate: filter.endDate } : {}),
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(m['system.loadMemberExpensesFailed']());
-        }
-
-        return (await response.json()) as GroupMemberExpensesPageSuccess;
-      },
+      queryFn: () =>
+        failWithMessage(
+          api.groups.listMemberExpenses.request({
+            params: { id: groupId, memberId },
+            query: {
+              limit: MULTI_MEMBER_LIMIT,
+              ...memberExpensesFilterQuery(filter),
+            },
+          }),
+          m['system.loadMemberExpensesFailed'](),
+        ),
     })),
   });
+}
+
+function memberExpensesFilterQuery(filter?: GroupMemberExpensesFilter) {
+  return {
+    ...(filter?.categoryId ? { categoryId: filter.categoryId } : {}),
+    ...(filter?.uncategorized ? { uncategorized: true } : {}),
+    ...(filter?.paidOnly ? { paidOnly: true } : {}),
+    ...(filter?.startDate ? { startDate: filter.startDate } : {}),
+    ...(filter?.endDate ? { endDate: filter.endDate } : {}),
+  };
 }

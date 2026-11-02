@@ -1,24 +1,16 @@
 import { describe, expect } from 'bun:test';
-import { Effect, Layer, Logger } from 'effect';
-import { HttpClient, HttpClientResponse } from 'effect/http';
-import { ErrorCapture } from '#/infrastructure/http/errors';
+import { Effect } from 'effect';
 import { makeTestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
 import { signIn } from '../../../testkit/login';
-import { Maps } from './service';
 
 const SHORT_LINK = 'https://maps.app.goo.gl/abc';
 const PLACE = 'https://www.google.com/maps/place/Paris+France';
 
-const redirectingClient = (requested: string[]) =>
-  HttpClient.make((request) => {
-    requested.push(request.url);
-    const response =
-      request.url === SHORT_LINK
-        ? new Response(null, { status: 302, headers: { location: PLACE } })
-        : new Response('<html></html>', { status: 200 });
-    return Effect.succeed(HttpClientResponse.fromWeb(request, response));
-  });
+const redirectShortLink = (request: { readonly url: string }) =>
+  request.url === SHORT_LINK
+    ? new Response(null, { status: 302, headers: { location: PLACE } })
+    : new Response('<html></html>', { status: 200 });
 
 describe('maps', () => {
   testEffect('requires a session', () =>
@@ -46,6 +38,7 @@ describe('maps', () => {
           url: 'https://example.com/place',
         });
 
+        expect(app.http.requests).toEqual([]);
         expect(result.status).toBe(400);
         expect(result.body).toEqual({
           _tag: 'GoogleMapsOnly',
@@ -72,28 +65,41 @@ describe('maps', () => {
     'follows the redirects of a short link to the place it names',
     () =>
       Effect.gen(function* () {
-        const requested: string[] = [];
-        const layer = Maps.layer.pipe(
-          Layer.provide(
-            Layer.succeed(HttpClient.HttpClient, redirectingClient(requested)),
-          ),
-          Layer.provide(ErrorCapture.layerLog),
-          Layer.provideMerge(
-            process.env.TEST_LOGS ? Layer.empty : Logger.layer([]),
-          ),
-        );
+        const app = yield* makeTestApp({ http: redirectShortLink });
+        const ana = yield* signIn(app, 'ana@vornway.test');
 
-        const result = yield* Effect.gen(function* () {
-          const maps = yield* Maps;
-          return yield* maps.resolve(SHORT_LINK);
-        }).pipe(Effect.provide(layer));
+        const result = yield* ana.device.post('/api/maps/resolve', {
+          url: SHORT_LINK,
+        });
 
-        expect(requested).toEqual([SHORT_LINK, PLACE]);
-        expect(result).toEqual({
+        expect(app.http.requests.map((request) => request.url)).toEqual([
+          SHORT_LINK,
+          PLACE,
+        ]);
+        expect(result.status).toBe(200);
+        expect(result.body).toEqual({
           originalUrl: SHORT_LINK,
           resolvedUrl: PLACE,
           embedUrl: 'https://www.google.com/maps?q=Paris%20France&output=embed',
         });
       }),
+  );
+
+  testEffect('answers an internal error when the link cannot be followed', () =>
+    Effect.gen(function* () {
+      const app = yield* makeTestApp({
+        http: () => {
+          throw new Error('connection refused');
+        },
+      });
+      const ana = yield* signIn(app, 'ana@vornway.test');
+
+      const result = yield* ana.device.post('/api/maps/resolve', {
+        url: SHORT_LINK,
+      });
+
+      expect(result.status).toBe(500);
+      expect(result.body._tag).toBe('InternalError');
+    }),
   );
 });

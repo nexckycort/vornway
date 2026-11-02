@@ -1,5 +1,6 @@
 import { Api } from '@vornway/contracts/api';
 import { Layer } from 'effect';
+import { FetchHttpClient } from 'effect/http';
 import { HttpApiBuilder, HttpApiScalar } from 'effect/http-api';
 import { Auth } from '#/infrastructure/auth/auth';
 import {
@@ -84,5 +85,9 @@ export const AppRoutes = Layer.mergeAll(AppRoutesNoDeps, LegacyRoutes).pipe(
     Push.layer,
     Storage.layer,
   ]),
-  Layer.provide([DatabaseClient.layer, ErrorCapture.layerLog]),
+  Layer.provide([
+    DatabaseClient.layer,
+    ErrorCapture.layerLog,
+    FetchHttpClient.layer,
+  ]),
 );

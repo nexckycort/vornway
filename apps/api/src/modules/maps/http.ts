@@ -1,6 +1,5 @@
 import { Api } from '@vornway/contracts/api';
 import { Effect, Layer } from 'effect';
-import { FetchHttpClient } from 'effect/http';
 import { HttpApiBuilder } from 'effect/http-api';
 import { Maps } from './service';
 
@@ -11,4 +10,4 @@ export const MapsHandlers = HttpApiBuilder.group(Api, 'maps', (handlers) =>
       maps.resolve(payload.url),
     );
   }),
-).pipe(Layer.provide(Maps.layer), Layer.provide(FetchHttpClient.layer));
+).pipe(Layer.provide(Maps.layer));

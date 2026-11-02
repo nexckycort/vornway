@@ -1,6 +1,5 @@
 import { Api } from '@vornway/contracts/api';
 import { Effect, Layer } from 'effect';
-import { FetchHttpClient } from 'effect/http';
 import { HttpApiBuilder } from 'effect/http-api';
 import { Converter } from './service';
 
@@ -12,4 +11,4 @@ export const ConverterHandlers = HttpApiBuilder.group(
       const converter = yield* Converter;
       return handlers.handle('rates', () => converter.rates());
     }),
-).pipe(Layer.provide(Converter.layer), Layer.provide(FetchHttpClient.layer));
+).pipe(Layer.provide(Converter.layer));

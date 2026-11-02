@@ -34,7 +34,11 @@ import { HomeHandlers } from '#/modules/home/http';
 import { InvitesHandlers } from '#/modules/invites/http';
 import { LoginHandlers } from '#/modules/login/http';
 import { MapsHandlers } from '#/modules/maps/http';
+import { McpRoutes } from '#/modules/mcp/routes';
+import { MediaRoutes } from '#/modules/media/routes';
 import { NotificationsHandlers } from '#/modules/notifications/http';
+import { MetadataRoutes } from '#/modules/oauth/metadata';
+import { OAuthRoutes } from '#/modules/oauth/routes';
 import { PushHandlers } from '#/modules/push/http';
 import { QuickSplitsHandlers } from '#/modules/quick-splits/http';
 import { UsersHandlers } from '#/modules/users/http';
@@ -72,6 +76,10 @@ export const AppRoutesNoDeps = Layer.mergeAll(
   ApiRoutes,
   BetterAuthRoutes,
   HealthRoutes,
+  McpRoutes,
+  MediaRoutes,
+  MetadataRoutes,
+  OAuthRoutes,
   HttpApiScalar.layer(Api, { path: '/docs' }),
   RequestIdMiddleware,
   SecureHeadersMiddleware,

@@ -20,8 +20,14 @@ testEffect('...', () =>
 );
 ```
 
-- `makeTestApp()`: builds `AppRoutesNoDeps` with a fresh `Database`/Better Auth on the test database and no port. Returns `fetch(path, init)`, `device()`, `db.query(sql, params)` (rows as plain objects, for asserting persisted state) and the fakes: `email` (`otpFor(address)`), `storage` (`uploads`, `deleted`) and `push` (`subscriptions`, `sent`). Options: `legacy` (a handler standing in for the Hono fallback) and `extraRoutes` (a test-only `HttpApi`, how `AdminOnly` and `ErrorBoundary` are tested).
-- `signIn(app, email)`: real email-OTP sign-in through `/api/auth/*`; returns `{ device, id, email }`. A `device` keeps its own cookies and has `get/post/put/patch/delete`, answering `{ status, body }`. Use one per simulated user.
+- `makeTestApp()`: builds `AppRoutesNoDeps` with a fresh `Database`/Better Auth on the test database and no port. Returns `fetch(path, init)` (the raw `Response`, for HTML, redirects and form posts), `device()`, `db.query(sql, params)` (rows as plain objects, for asserting persisted state) and the fakes:
+  - `email`: `messages`, `otpFor(address)`;
+  - `storage`: `uploads`, `deleted`, and `objects` (a map to seed what `getObject` serves);
+  - `push`: `subscriptions`, `revoked`, `sent`, and `unavailable = true` to make every call fail. Revoking only removes the caller's own subscription, like the real service;
+  - `http`: `requests`, everything that went through `HttpClient`.
+
+  Options: `http` (`(request) => Response`, answers outbound requests; the default answers 503, so an unexpected call fails visibly) and `extraRoutes` (a test-only `HttpApi`, how `AdminOnly` and `ErrorBoundary` are tested).
+- `signIn(app, email)`: real email-OTP sign-in through `/api/auth/*`; returns `{ device, id, email }`. A `device` keeps its own cookies and has `get/post/put/patch/delete`, answering `{ status, body }`; `post/put/patch/delete` take an optional JSON body. Use one per simulated user.
 - `testEffect(name, body)`: `bun:test` counterpart of `it.effect`; the body runs in a scope, so the app closes with the test.
 - Logs are silent; set `TEST_LOGS=1` to see them.
 
@@ -33,7 +39,7 @@ Tests need Postgres. `docker compose up -d postgres` (repo root) listens on `127
 
 `testkit/database.ts` runs `prisma migrate deploy` once into a template database named after a hash of `db/migrations`, copies it into a throwaway database per run, and `TRUNCATE`s every table before each `makeTestApp()`. The throwaway database is dropped after the run; templates are kept and rebuilt only when a migration changes (drop old `vornway_template_*` databases by hand when you like).
 
-`bunfig.toml` preloads `testkit/setup.ts`, which closes the database after the run and fills in dummy values for the environment variables the not-yet-ported Hono modules parse when they are imported.
+`bunfig.toml` preloads `testkit/setup.ts`, which closes the database after the run. Configuration comes from `testkit/config.ts` (dummy values for every variable `src/config/env.ts` reads, `TEST_ORIGIN` as the base URL).
 
 ## Contracts and the client
 

@@ -34,7 +34,8 @@ HttpApiEndpoint.get('list', '/api/groups', {
 - The cursor is opaque: clients pass back `nextCursor` as-is and stop when it's `null`. The Prisma helper's cursor is a row id, and an unknown id just yields an empty page; `InvalidCursor` (400) is for endpoints whose cursor can be malformed.
 - On the server, `pageArgs` and `toPage` (`src/infrastructure/database/pagination.ts`) adapt Prisma cursor queries to the shared response shape: take `limit + 1`, `cursor` plus `skip: 1` when a cursor is given, order by `createdAt desc, id desc`, default limit 20. The cursor is the id of the last row, as the old routes returned it. Keep `pagination.limit`, `pagination.total`, and `pagination.nextCursor` because existing webapp callers read `pagination.total`.
 - In the app, `api.<group>.<list>.infiniteQueryOptions()` feeds `useInfiniteQuery`. It only exists on endpoints whose response has `pagination.nextCursor`.
-- Error bodies keep the `code`/`message` (or `error`) fields the old Hono routes answered, next to `_tag`: installed apps show `message` to the user.
+- Error bodies keep the `code`/`message` (or `error`) fields the apps already read, next to `_tag`: installed apps show `message` to the user.
+- Public endpoints (no `SessionAuth`, like `login`) are in the contract too; protocol endpoints with HTML, redirects or form bodies (OAuth, MCP, media, Better Auth) are not.
 
 ## Errors every endpoint can return
 

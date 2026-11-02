@@ -88,7 +88,6 @@ describe('HTTP edge', () => {
         const text = (response: Response) =>
           Effect.promise(() => response.text());
 
-        expect(yield* text(yield* app.fetch('/api/groups'))).toBe('legacy');
         expect(yield* text(yield* app.fetch('/api/anything/else'))).toBe(
           'legacy',
         );
@@ -118,7 +117,7 @@ describe('HTTP edge', () => {
           },
         });
 
-        const response = yield* app.fetch('/api/groups');
+        const response = yield* app.fetch('/api/login/mcp');
 
         expect(response.status).toBe(500);
         expect(yield* json(response)).toEqual({

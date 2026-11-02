@@ -22,6 +22,19 @@ import { SecureHeadersMiddleware } from '#/infrastructure/http/secure-headers';
 import { NotificationInbox } from '#/infrastructure/notifications/inbox';
 import { Push } from '#/infrastructure/push/push';
 import { Storage } from '#/infrastructure/storage/storage';
+import { AdminHandlers } from '#/modules/admin/http';
+import { ConverterHandlers } from '#/modules/converter/http';
+import { DebtsHandlers } from '#/modules/debts/http';
+import { FeedbackHandlers } from '#/modules/feedback/http';
+import { FinancesHandlers } from '#/modules/finances/http';
+import { GoalsHandlers } from '#/modules/goals/http';
+import { GroupsHandlers } from '#/modules/groups/http';
+import { HomeHandlers } from '#/modules/home/http';
+import { InvitesHandlers } from '#/modules/invites/http';
+import { MapsHandlers } from '#/modules/maps/http';
+import { NotificationsHandlers } from '#/modules/notifications/http';
+import { PushHandlers } from '#/modules/push/http';
+import { QuickSplitsHandlers } from '#/modules/quick-splits/http';
 import { UsersHandlers } from '#/modules/users/http';
 
 const ApiRoutes = HttpApiBuilder.layer(Api, {
@@ -29,6 +42,19 @@ const ApiRoutes = HttpApiBuilder.layer(Api, {
 }).pipe(
   Layer.provide([
     // One handler layer per module, in alphabetical order.
+    AdminHandlers,
+    ConverterHandlers,
+    FeedbackHandlers,
+    HomeHandlers,
+    DebtsHandlers,
+    FinancesHandlers,
+    GoalsHandlers,
+    GroupsHandlers,
+    InvitesHandlers,
+    MapsHandlers,
+    NotificationsHandlers,
+    PushHandlers,
+    QuickSplitsHandlers,
     UsersHandlers,
   ]),
   Layer.provide([

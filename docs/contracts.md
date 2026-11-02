@@ -31,7 +31,7 @@ HttpApiEndpoint.get('list', '/api/vehicles', {
 
 - A list that is small and bounded by nature may return everything at once. `GET /api/payment-methods` does (`PaymentMethodList`): a person links a handful of payment methods and the screen shows them all together. So do the registration form catalogs (product types, franchises and expiry years): a few closed values the form needs whole. A list that can grow without limit is never an exception.
 - The cursor is opaque: clients pass back `nextCursor` as-is and stop when it's `null`.
-- On the server, `paginate(items, idOf, query)` (`infrastructure/http/pagination.ts`) slices an ordered list.
+- On the server, pagination helpers adapt Prisma cursor queries to the shared response shape. Keep `pagination.limit`, `pagination.total`, and `pagination.nextCursor` because existing webapp callers read `pagination.total`.
 - In the app, `api.<group>.<list>.infiniteQueryOptions()` feeds `useInfiniteQuery`. It only exists on paginated endpoints.
 
 ## Errors every endpoint can return

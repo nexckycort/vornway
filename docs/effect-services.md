@@ -7,9 +7,9 @@ How server code is shaped. Read `.repos/effect/LLMS.md` first for the Effect API
 - `src/modules/<feature>/`: one folder per feature.
   - `http.ts`: the `HttpApiBuilder.group` handlers.
   - `service.ts`: the domain service.
-  - `legacy.ts` (or `legacy/` for several): the client for the legacy endpoints only this feature calls.
+  - `legacy.ts` (or `legacy/` for several): a client for external endpoints only this feature calls.
   - Other files only when they earn their place (`store.ts`, `alerts.ts`, …).
-- `src/infrastructure/`: what several features share to talk to the outside world (database, auth, email, SMS, the legacy HTTP client, envelope and paging) plus the HTTP edge (`http/`).
+- `src/infrastructure/`: what several features share to talk to the outside world (database, auth, email, SMS, the provider clients, envelope and paging) plus the HTTP edge (`http/`).
 - `src/app.ts`: the only place layers get wired together.
 
 ## Handlers stay thin

@@ -17,6 +17,8 @@ allowBuilds:
   workerd: true
 
 catalog:
+  '@effect/platform-bun': 4.0.5
+  effect: 4.0.5
   '@better-auth/expo': ^1.6.26
   '@biomejs/biome': ^2.5.4
   '@prisma/adapter-pg': ^7.9.1

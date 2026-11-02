@@ -7,7 +7,7 @@
   "scripts": {
     "postinstall": "bun db:generate && bun build:rpc",
     "build:rpc": "tsc -p tsconfig.rpc.json",
-    "dev": "portless api bun run --env-file=.env --hot src/index.ts 2>&1 | tee api-dev.log",
+    "dev": "portless api bun run --env-file=.env --hot src/main.ts 2>&1 | tee api-dev.log",
     "check": "biome check --write",
     "clean": "rm -rf node_modules && rm -rf dist",
     "db:generate": "DATABASE_URL=dummy prisma generate",
@@ -44,7 +44,9 @@
     "hono": "catalog:",
     "resend": "catalog:",
     "web-push": "^3.6.7",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "effect": "catalog:",
+    "@effect/platform-bun": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "catalog:",

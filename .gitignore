@@ -11,5 +11,3 @@ dist/
 doc_build/
 temp
 generated/
-.codex
-.agents

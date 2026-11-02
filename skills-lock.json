@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "skills": {
+    "argent-android-emulator-setup": {
+      "source": "software-mansion/argent",
+      "ref": "v0.29.0",
+      "sourceType": "github",
+      "skillPath": "packages/skills/skills/argent-android-emulator-setup/SKILL.md",
+      "computedHash": "12eabfd92af8fbb93db962102f61bcfa4e8bfd3038641aa8bc79009d3a38ce00"
+    },
+    "argent-device-interact": {
+      "source": "software-mansion/argent",
+      "ref": "v0.29.0",
+      "sourceType": "github",
+      "skillPath": "packages/skills/skills/argent-device-interact/SKILL.md",
+      "computedHash": "8ce16af5a76278f508c5e06233f1cbcb1e6695649f1ece524748b188ed1d2a71"
+    },
+    "argent-metro-debugger": {
+      "source": "software-mansion/argent",
+      "ref": "v0.29.0",
+      "sourceType": "github",
+      "skillPath": "packages/skills/skills/argent-metro-debugger/SKILL.md",
+      "computedHash": "755bf5e8a0cc1e0b7cea8f183c13681bbccabc4c0f6e0f671b9db5cb9517f2cf"
+    },
+    "argent-qa-flows": {
+      "source": "software-mansion/argent",
+      "ref": "v0.29.0",
+      "sourceType": "github",
+      "skillPath": "packages/skills/skills/argent-qa-flows/SKILL.md",
+      "computedHash": "d2797df09452976ee808dc9b8073f4b61cba01cc4984af1e0e474576dc6939a9"
+    },
+    "argent-react-native-app-workflow": {
+      "source": "software-mansion/argent",
+      "ref": "v0.29.0",
+      "sourceType": "github",
+      "skillPath": "packages/skills/skills/argent-react-native-app-workflow/SKILL.md",
+      "computedHash": "0bf4cc845d48e97cc98535dd2ae665edcc9d1328b21b907af422f9479ad9a3b8"
+    },
+    "argent-test-ui-flow": {
+      "source": "software-mansion/argent",
+      "ref": "v0.29.0",
+      "sourceType": "github",
+      "skillPath": "packages/skills/skills/argent-test-ui-flow/SKILL.md",
+      "computedHash": "6133bfb3997ee22cb12aba7977bcb9f18d95c86a269ce3ee3292fc3a90a0f14e"
+    },
+    "effect": {
+      "source": "kitlangton/skills",
+      "sourceType": "github",
+      "skillPath": "skills/effect/SKILL.md",
+      "computedHash": "d88417dca5f22fcc80b03ebd4096dfa6113a50cc6bb574bf53f75248cd321e35"
+    },
+    "react-native-best-practices": {
+      "source": "callstackincubator/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-native-best-practices/SKILL.md",
+      "computedHash": "4b2b9561ff7b4b9d15ff76d2dd2a6191e3cdc7f36c06d171e377bfefcbcb2bfb"
+    },
+    "vercel-composition-patterns": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/composition-patterns/SKILL.md",
+      "computedHash": "f98931159fa9c7fed043bcd18a891a46dcf89ababa38df13a4c5b7b30dc0ce07"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-best-practices/SKILL.md",
+      "computedHash": "ca7b0c0c6e5f2750043f7f0cd72d16ac4e2abc48f9b5500d047a4b77a2506212"
+    },
+    "vercel-react-native-skills": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-native-skills/SKILL.md",
+      "computedHash": "2e9088a7333666d8c2833b8ff58bd51b955501c42b4c7244f72b4cbf22dafcc4"
+    }
+  }
+}

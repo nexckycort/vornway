@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { homeClient } from '#/api/home';
+import { api } from '#/api/client';
 import {
   getCachedHomeSummary,
   type HomeApiResponse,
@@ -82,8 +82,6 @@ export type HomeQueryData = {
   savingGoals: SavingGoal[];
   recentDebts: RecentDebt[];
 };
-
-const homeEndpoint = homeClient.index.$get;
 
 function mapHomeData(apiData: HomeApiResponse): HomeQueryData {
   const t = getHomeMessages();
@@ -248,10 +246,8 @@ export function useHomeQuery() {
         throw new Error(t.loadError);
       }
 
-      let response: Awaited<ReturnType<typeof homeEndpoint>>;
-      try {
-        response = await homeEndpoint();
-      } catch {
+      const payload = await api.home.summary.request().catch(() => undefined);
+      if (!payload) {
         if (cachedHomeSummary) {
           return mapHomeData(cachedHomeSummary);
         }
@@ -259,14 +255,6 @@ export function useHomeQuery() {
         throw new Error(t.loadError);
       }
 
-      if (!response.ok) {
-        if (cachedHomeSummary) {
-          return mapHomeData(cachedHomeSummary);
-        }
-
-        throw new Error(t.loadError);
-      }
-      const payload = (await response.json()) as HomeApiResponse;
       await upsertCachedHomeSummary(payload);
       return mapHomeData(payload);
     },

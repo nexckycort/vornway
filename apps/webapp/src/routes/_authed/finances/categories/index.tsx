@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { api, failWithMessage } from '#/api/client';
 import { Button } from '#/components/ui/button';
 import {
   Drawer,
@@ -15,19 +16,15 @@ import { ScreenShell } from '../-components/finance-layout';
 import {
   categoryColors,
   categoryIcons,
-  createCategoryEndpoint,
   currency,
   currentMonthKey,
-  deleteCategoryEndpoint,
   type FinanceCategory,
   type FinanceCategoryInput,
   type FinanceCategoryKind,
   type FinanceCategoryUpdateInput,
   getBrowserTimeZone,
   getCategoryKindLabel,
-  summaryEndpoint,
   toCategoryKind,
-  updateCategoryEndpoint,
 } from '../-components/finance-model';
 
 export const Route = createFileRoute('/_authed/finances/categories/')({
@@ -66,19 +63,21 @@ function CategoriesRoute() {
   const summaryQuery = useQuery({
     queryKey: ['finances-summary', month, currency, timeZone],
     queryFn: async () => {
-      const response = await summaryEndpoint({
-        query: { month, currency, timeZone },
-      });
-      if (!response.ok) throw new Error(m['finances.loadError']());
-      return response.json();
+      return failWithMessage(
+        api.finances.summary.request({
+          query: { month, currency, timeZone },
+        }),
+        m['finances.loadError'](),
+      );
     },
   });
 
   const categoryMutation = useMutation({
     mutationFn: async (input: FinanceCategoryInput) => {
-      const response = await createCategoryEndpoint({ json: input });
-      if (!response.ok) throw new Error(m['finances.categorySaveFailed']());
-      return response.json();
+      return failWithMessage(
+        api.finances.createCategory.request({ payload: input }),
+        m['finances.categorySaveFailed'](),
+      );
     },
     onSuccess: async () => {
       await invalidateCategoryQueries(queryClient);
@@ -102,12 +101,13 @@ function CategoriesRoute() {
       id: string;
       input: FinanceCategoryUpdateInput;
     }) => {
-      const response = await updateCategoryEndpoint({
-        param: { id },
-        json: input,
-      });
-      if (!response.ok) throw new Error(m['finances.categoryUpdateFailed']());
-      return response.json();
+      return failWithMessage(
+        api.finances.updateCategory.request({
+          params: { id },
+          payload: input,
+        }),
+        m['finances.categoryUpdateFailed'](),
+      );
     },
     onSuccess: async (category) => {
       await invalidateCategoryQueries(queryClient);
@@ -125,9 +125,10 @@ function CategoriesRoute() {
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await deleteCategoryEndpoint({ param: { id } });
-      if (!response.ok) throw new Error(m['finances.deleteCategoryFailed']());
-      return response.json();
+      return failWithMessage(
+        api.finances.deleteCategory.request({ params: { id } }),
+        m['finances.deleteCategoryFailed'](),
+      );
     },
     onSuccess: async () => {
       await invalidateCategoryQueries(queryClient);

@@ -1,12 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { goalsClient } from '#/api/goals';
-import type { InferRequestType, InferResponseType } from '#/api/types';
+import { api, failWithMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
-
-const createGoalEndpoint = goalsClient.index.$post;
-
-type CreateGoalRequest = InferRequestType<typeof createGoalEndpoint>;
-type CreateGoalResponse = InferResponseType<typeof createGoalEndpoint>;
 
 export type CreateGoalFormValues = {
   name: string;
@@ -29,51 +23,48 @@ export type CreateGoalFormValues = {
   }>;
 };
 
-async function createGoal(
-  values: CreateGoalFormValues,
-): Promise<CreateGoalResponse> {
-  const payload: CreateGoalRequest = {
-    json: {
-      name: values.name.trim(),
-      description: values.description.trim() || undefined,
-      goalType: values.goalType,
-      emoji: values.emoji.trim() || undefined,
-      coverImageUrl: values.coverImageUrl || undefined,
-      themeColor: values.themeColor,
-      contributionMode: values.contributionMode,
-      currency: values.currency.trim().toUpperCase(),
-      targetAmount: Number(values.targetAmount),
-      startDate: values.startDate,
-      endDate: values.endDate,
-      installmentCount: Number(values.installmentCount),
-      ...(values.installmentAmount.trim()
-        ? { installmentAmount: Number(values.installmentAmount) }
-        : {}),
-      ...(values.suggestedContributionAmount.trim()
-        ? {
-            suggestedContributionAmount: Number(
-              values.suggestedContributionAmount,
-            ),
-          }
-        : {}),
-      ...(values.participants.length > 0
-        ? {
-            participants: values.participants.map((participant) => ({
-              name: participant.name.trim(),
-              ...(participant.userId ? { userId: participant.userId } : {}),
-            })),
-          }
-        : {}),
-    },
-  };
-
-  const response = await createGoalEndpoint(payload);
-
-  if (!response.ok) {
-    throw new Error(m['system.createGoalFailed']());
-  }
-
-  return (await response.json()) as CreateGoalResponse;
+function createGoal(values: CreateGoalFormValues) {
+  return failWithMessage(
+    api.goals.create.request({
+      payload: {
+        name: values.name.trim(),
+        ...(values.description.trim()
+          ? { description: values.description.trim() }
+          : {}),
+        goalType: values.goalType,
+        ...(values.emoji.trim() ? { emoji: values.emoji.trim() } : {}),
+        ...(values.coverImageUrl
+          ? { coverImageUrl: values.coverImageUrl }
+          : {}),
+        themeColor: values.themeColor,
+        contributionMode: values.contributionMode,
+        currency: values.currency.trim().toUpperCase(),
+        targetAmount: Number(values.targetAmount),
+        startDate: new Date(values.startDate),
+        endDate: new Date(values.endDate),
+        installmentCount: Number(values.installmentCount),
+        ...(values.installmentAmount.trim()
+          ? { installmentAmount: Number(values.installmentAmount) }
+          : {}),
+        ...(values.suggestedContributionAmount.trim()
+          ? {
+              suggestedContributionAmount: Number(
+                values.suggestedContributionAmount,
+              ),
+            }
+          : {}),
+        ...(values.participants.length > 0
+          ? {
+              participants: values.participants.map((participant) => ({
+                name: participant.name.trim(),
+                ...(participant.userId ? { userId: participant.userId } : {}),
+              })),
+            }
+          : {}),
+      },
+    }),
+    m['system.createGoalFailed'](),
+  );
 }
 
 export function useCreateGoalMutation() {

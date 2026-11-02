@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import type { ApiPayload } from '@vornway/api-client';
 import { useState } from 'react';
-import { debtsClient } from '#/api/debts';
-import type { InferRequestType } from '#/api/types';
+import { api, failWithMessage } from '#/api/client';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import { m } from '#/paraglide/messages.js';
@@ -15,8 +15,7 @@ export const Route = createFileRoute('/_authed/debts/new/')({
   component: RouteComponent,
 });
 
-const createEndpoint = debtsClient.index.$post;
-type CreateDebt = InferRequestType<typeof createEndpoint>['json'];
+type CreateDebt = ApiPayload<'debts', 'create'>;
 
 function RouteComponent() {
   const navigate = useNavigate();
@@ -34,11 +33,11 @@ function RouteComponent() {
   const [description, setDescription] = useState('');
   const searchQuery = useUserSearchQuery(name);
   const createMutation = useMutation({
-    mutationFn: async (input: CreateDebt) => {
-      const response = await createEndpoint({ json: input });
-      if (!response.ok) throw new Error('debt_create_failed');
-      return response.json();
-    },
+    mutationFn: (payload: CreateDebt) =>
+      failWithMessage(
+        api.debts.create.request({ payload }),
+        'debt_create_failed',
+      ),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
@@ -54,7 +53,7 @@ function RouteComponent() {
     const parsedAmounts = amounts
       .map((item) => ({
         amount: Number(item.value.replace(/[^\d.]/g, '')),
-        loanDate: item.loanDate,
+        loanDate: new Date(item.loanDate),
       }))
       .filter((item) => Number.isFinite(item.amount) && item.amount > 0);
     const principalAmount = parsedAmounts.reduce(
@@ -78,7 +77,7 @@ function RouteComponent() {
       currency: 'COP',
       interestType: interest ? 'percentage' : 'none',
       ...(interest ? { interestValue: Number(interest) } : {}),
-      ...(dueDate ? { dueDate } : {}),
+      ...(dueDate ? { dueDate: new Date(dueDate) } : {}),
       ...(description.trim() ? { description: description.trim() } : {}),
     });
   };

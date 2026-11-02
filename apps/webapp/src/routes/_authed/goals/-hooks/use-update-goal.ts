@@ -1,30 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { goalsClient } from '#/api/goals';
-import type { InferRequestType, InferResponseType } from '#/api/types';
+import type { ApiPayload } from '@vornway/api-client';
+import { api, withErrorMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
-
-const updateGoalEndpoint = goalsClient[':id'].$patch;
-
-type UpdateGoalRequest = InferRequestType<typeof updateGoalEndpoint>;
-type UpdateGoalResponse = InferResponseType<typeof updateGoalEndpoint>;
 
 export function useUpdateGoalMutation(goalId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (json: UpdateGoalRequest['json']) => {
-      const response = await updateGoalEndpoint({
-        param: { id: goalId },
-        json,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? m['system.updateGoalFailed']());
-      }
-
-      return (await response.json()) as UpdateGoalResponse;
-    },
+    mutationFn: (payload: ApiPayload<'goals', 'update'>) =>
+      withErrorMessage(
+        api.goals.update.request({ params: { id: goalId }, payload }),
+        m['system.updateGoalFailed'](),
+      ),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['goal-detail', goalId] }),

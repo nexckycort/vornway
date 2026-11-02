@@ -1,11 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import type { ApiPayload } from '@vornway/api-client';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { debtsClient } from '#/api/debts';
-import { financesClient } from '#/api/finances';
-import type { InferRequestType } from '#/api/types';
+import { api, failWithMessage } from '#/api/client';
 import { Button } from '#/components/ui/button';
 import {
   Drawer,
@@ -25,62 +24,17 @@ export const Route = createFileRoute('/_authed/debts/$id/')({
   component: RouteComponent,
 });
 
-const detailEndpoint = debtsClient[':id'].$get;
-const updateEndpoint = debtsClient[':id'].$patch;
-const deleteDebtEndpoint = debtsClient[':id'].$delete;
-const amountEndpoint = debtsClient[':id'].amounts.$post;
-const updateAmountEndpoint = debtsClient[':id'].amounts[':amountId'].$patch;
-const deleteAmountEndpoint = debtsClient[':id'].amounts[':amountId'].$delete;
-const paymentEndpoint = debtsClient[':id'].payments.$post;
-const updatePaymentEndpoint = debtsClient[':id'].payments[':paymentId'].$patch;
-const deletePaymentEndpoint = debtsClient[':id'].payments[':paymentId'].$delete;
-const financesSummaryEndpoint = financesClient.summary.$get;
-
-type DebtDetail = {
-  id: string;
-  name: string;
-  counterpartyId: string | null;
-  counterpartyName: string;
-  direction: 'lent' | 'borrowed';
-  principalAmount: number;
-  expectedTotal: number;
-  paidAmount: number;
-  remainingAmount: number;
-  currency: string;
-  dueDate: string | null;
-  description?: string | null;
-  status: 'active' | 'paid' | 'overdue';
-  viewerRole: 'owner' | 'counterparty';
-  amounts: Array<{
-    id: string;
-    account?: { id: string; name: string } | null;
-    amount: number;
-    loanDate: string;
-    note?: string | null;
-  }>;
-  payments: Array<{
-    id: string;
-    accountId?: string | null;
-    amount: number;
-    paidAt: string;
-    note?: string | null;
-    account?: { id: string; name: string } | null;
-  }>;
-};
-
-type PaymentInput = InferRequestType<typeof paymentEndpoint>['json'];
-type AmountInput = InferRequestType<typeof amountEndpoint>['json'];
-type UpdateAmountInput = InferRequestType<typeof updateAmountEndpoint>['json'];
-type UpdatePaymentInput = InferRequestType<
-  typeof updatePaymentEndpoint
->['json'];
-type UpdateDebtInput = InferRequestType<typeof updateEndpoint>['json'];
+type PaymentInput = ApiPayload<'debts', 'payment'>;
+type AmountInput = ApiPayload<'debts', 'addAmount'>;
+type UpdateAmountInput = ApiPayload<'debts', 'updateAmount'>;
+type UpdatePaymentInput = ApiPayload<'debts', 'updatePayment'>;
+type UpdateDebtInput = ApiPayload<'debts', 'update'>;
 type Activity =
   | {
       kind: 'loan';
       id: string;
       amount: number;
-      date: string;
+      date: Date;
       note?: string | null;
       account?: { id: string; name: string } | null;
     }
@@ -88,7 +42,7 @@ type Activity =
       kind: 'payment';
       id: string;
       amount: number;
-      date: string;
+      date: Date;
       note?: string | null;
       account?: { id: string; name: string } | null;
     };
@@ -106,7 +60,7 @@ const debtInputClass =
   'h-11 w-full rounded-2xl border border-black/10 bg-white px-3 text-base text-[#171717] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15';
 const debtTextareaClass =
   'w-full rounded-2xl border border-black/10 bg-white px-3 py-3 text-base text-[#171717] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15';
-const dateLabel = (date: string) =>
+const dateLabel = (date: Date) =>
   new Date(date).toLocaleDateString(undefined, {
     day: 'numeric',
     month: 'short',
@@ -136,21 +90,19 @@ function RouteComponent() {
 
   const detailQuery = useQuery({
     queryKey: ['debt', id],
-    queryFn: async () => {
-      const response = await detailEndpoint({ param: { id } });
-      if (!response.ok) throw new Error('debt_load_failed');
-      return (await response.json()) as unknown as DebtDetail;
-    },
+    queryFn: () =>
+      failWithMessage(
+        api.debts.get.request({ params: { id } }),
+        'debt_load_failed',
+      ),
   });
   const financesSummaryQuery = useQuery({
     queryKey: ['finances-summary', 'debt-payment-accounts', 'COP'],
-    queryFn: async () => {
-      const response = await financesSummaryEndpoint({
-        query: { currency: 'COP' },
-      });
-      if (!response.ok) throw new Error('finance_summary_load_failed');
-      return response.json();
-    },
+    queryFn: () =>
+      failWithMessage(
+        api.finances.summary.request({ query: { currency: 'COP' } }),
+        'finance_summary_load_failed',
+      ),
   });
   const detail = detailQuery.data;
   const paymentAccounts =
@@ -169,7 +121,6 @@ function RouteComponent() {
               id: item.id,
               amount: item.amount,
               date: item.loanDate,
-              note: item.note,
               account: item.account,
             })),
             ...detail.payments.map((item) => ({
@@ -197,11 +148,11 @@ function RouteComponent() {
     ]);
 
   const paymentMutation = useMutation({
-    mutationFn: async (input: PaymentInput) => {
-      const response = await paymentEndpoint({ param: { id }, json: input });
-      if (!response.ok) throw new Error('debt_payment_failed');
-      return response.json();
-    },
+    mutationFn: (payload: PaymentInput) =>
+      failWithMessage(
+        api.debts.payment.request({ params: { id }, payload }),
+        'debt_payment_failed',
+      ),
     onSuccess: async () => {
       await invalidate();
       closeSheet();
@@ -209,11 +160,11 @@ function RouteComponent() {
     },
   });
   const amountMutation = useMutation({
-    mutationFn: async (input: AmountInput) => {
-      const response = await amountEndpoint({ param: { id }, json: input });
-      if (!response.ok) throw new Error('debt_amount_failed');
-      return response.json();
-    },
+    mutationFn: (payload: AmountInput) =>
+      failWithMessage(
+        api.debts.addAmount.request({ params: { id }, payload }),
+        'debt_amount_failed',
+      ),
     onSuccess: async () => {
       await invalidate();
       closeSheet();
@@ -221,17 +172,14 @@ function RouteComponent() {
     },
   });
   const updateAmountMutation = useMutation({
-    mutationFn: async (input: {
-      amountId: string;
-      json: UpdateAmountInput;
-    }) => {
-      const response = await updateAmountEndpoint({
-        param: { id, amountId: input.amountId },
-        json: input.json,
-      });
-      if (!response.ok) throw new Error('debt_amount_update_failed');
-      return response.json();
-    },
+    mutationFn: (input: { amountId: string; json: UpdateAmountInput }) =>
+      failWithMessage(
+        api.debts.updateAmount.request({
+          params: { id, amountId: input.amountId },
+          payload: input.json,
+        }),
+        'debt_amount_update_failed',
+      ),
     onSuccess: async () => {
       await invalidate();
       closeSheet();
@@ -239,17 +187,14 @@ function RouteComponent() {
     },
   });
   const updatePaymentMutation = useMutation({
-    mutationFn: async (input: {
-      paymentId: string;
-      json: UpdatePaymentInput;
-    }) => {
-      const response = await updatePaymentEndpoint({
-        param: { id, paymentId: input.paymentId },
-        json: input.json,
-      });
-      if (!response.ok) throw new Error('debt_payment_update_failed');
-      return response.json();
-    },
+    mutationFn: (input: { paymentId: string; json: UpdatePaymentInput }) =>
+      failWithMessage(
+        api.debts.updatePayment.request({
+          params: { id, paymentId: input.paymentId },
+          payload: input.json,
+        }),
+        'debt_payment_update_failed',
+      ),
     onSuccess: async () => {
       await invalidate();
       closeSheet();
@@ -257,11 +202,11 @@ function RouteComponent() {
     },
   });
   const deleteAmountMutation = useMutation({
-    mutationFn: async (amountId: string) => {
-      const response = await deleteAmountEndpoint({ param: { id, amountId } });
-      if (!response.ok) throw new Error('debt_amount_delete_failed');
-      return response.json();
-    },
+    mutationFn: (amountId: string) =>
+      failWithMessage(
+        api.debts.deleteAmount.request({ params: { id, amountId } }),
+        'debt_amount_delete_failed',
+      ),
     onSuccess: async () => {
       await invalidate();
       closeSheet();
@@ -269,13 +214,11 @@ function RouteComponent() {
     },
   });
   const deletePaymentMutation = useMutation({
-    mutationFn: async (paymentId: string) => {
-      const response = await deletePaymentEndpoint({
-        param: { id, paymentId },
-      });
-      if (!response.ok) throw new Error('debt_payment_delete_failed');
-      return response.json();
-    },
+    mutationFn: (paymentId: string) =>
+      failWithMessage(
+        api.debts.deletePayment.request({ params: { id, paymentId } }),
+        'debt_payment_delete_failed',
+      ),
     onSuccess: async () => {
       await invalidate();
       closeSheet();
@@ -283,11 +226,11 @@ function RouteComponent() {
     },
   });
   const updateDebtMutation = useMutation({
-    mutationFn: async (input: UpdateDebtInput) => {
-      const response = await updateEndpoint({ param: { id }, json: input });
-      if (!response.ok) throw new Error('debt_update_failed');
-      return response.json();
-    },
+    mutationFn: (payload: UpdateDebtInput) =>
+      failWithMessage(
+        api.debts.update.request({ params: { id }, payload }),
+        'debt_update_failed',
+      ),
     onSuccess: async () => {
       await invalidate();
       closeSheet();
@@ -295,11 +238,11 @@ function RouteComponent() {
     },
   });
   const deleteDebtMutation = useMutation({
-    mutationFn: async () => {
-      const response = await deleteDebtEndpoint({ param: { id } });
-      if (!response.ok) throw new Error('debt_delete_failed');
-      return response.json();
-    },
+    mutationFn: () =>
+      failWithMessage(
+        api.debts.delete.request({ params: { id } }),
+        'debt_delete_failed',
+      ),
     onSuccess: async () => {
       await invalidate();
       await navigate({ to: '/debts', search: { from }, replace: true });
@@ -320,7 +263,7 @@ function RouteComponent() {
       setAccountId('');
     } else if (activity) {
       setAmount(String(activity.amount));
-      setDate(activity.date.slice(0, 10));
+      setDate(activity.date.toISOString().slice(0, 10));
       setNote(activity.note ?? '');
       setAccountId(activity.account?.id ?? '');
     }
@@ -331,14 +274,14 @@ function RouteComponent() {
     if (sheetMode === 'payment') {
       paymentMutation.mutate({
         amount: value,
-        paidAt: date,
+        paidAt: new Date(date),
         ...(accountId ? { accountId } : {}),
         ...(note.trim() ? { note: note.trim() } : {}),
       });
     } else if (sheetMode === 'loan') {
       amountMutation.mutate({
         amount: value,
-        loanDate: date,
+        loanDate: new Date(date),
         ...(accountId ? { accountId } : {}),
       });
     } else if (sheetMode === 'edit-loan' && selectedActivity) {
@@ -346,7 +289,7 @@ function RouteComponent() {
         amountId: selectedActivity.id,
         json: {
           amount: value,
-          loanDate: date,
+          loanDate: new Date(date),
           ...(accountId ? { accountId } : {}),
         },
       });
@@ -355,7 +298,7 @@ function RouteComponent() {
         paymentId: selectedActivity.id,
         json: {
           amount: value,
-          paidAt: date,
+          paidAt: new Date(date),
           accountId: accountId || null,
           note: note.trim(),
         },
@@ -527,7 +470,9 @@ function RouteComponent() {
                 setCounterpartyName(detail.counterpartyName);
                 setCounterpartyId(detail.counterpartyId ?? undefined);
                 setDebtDescription(detail.description ?? '');
-                setDebtDueDate(detail.dueDate?.slice(0, 10) ?? '');
+                setDebtDueDate(
+                  detail.dueDate?.toISOString().slice(0, 10) ?? '',
+                );
                 window.setTimeout(() => setSheetMode('edit-debt'), 180);
               }}
             >
@@ -543,7 +488,7 @@ function RouteComponent() {
                   setMenuOpen(false);
                   paymentMutation.mutate({
                     amount: detail.remainingAmount,
-                    paidAt: new Date().toISOString(),
+                    paidAt: new Date(),
                   });
                 }}
               >
@@ -794,11 +739,12 @@ function RouteComponent() {
                   updateDebtMutation.mutate({
                     counterpartyName: counterpartyName.trim(),
                     counterpartyId: counterpartyId ?? null,
-                    direction: detail.direction,
+                    direction:
+                      detail.direction === 'lent' ? 'lent' : 'borrowed',
                     currency: detail.currency,
                     name: debtName.trim(),
                     description: debtDescription.trim() || undefined,
-                    dueDate: debtDueDate || null,
+                    dueDate: debtDueDate ? new Date(debtDueDate) : null,
                   });
                 else submitForm();
               }}

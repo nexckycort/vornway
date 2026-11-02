@@ -14,7 +14,7 @@ Open-source expense sharing and group finance application.
 
 ## Architecture
 
-- `apps/api`: Bun + Hono + Prisma
+- `apps/api`: Bun + Effect + Prisma
 - `apps/webapp`: React + Rsbuild + TanStack
 - `apps/join`: Invite flow
 - `apps/landing`: Public website

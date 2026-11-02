@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { api, failWithMessage } from '#/api/client';
 import { Button } from '#/components/ui/button';
 import { m } from '#/paraglide/messages.js';
 import { ScreenShell, SummaryCard } from '../-components/finance-layout';
@@ -14,8 +15,6 @@ import {
   getBrowserTimeZone,
   moneyLabel,
   parseMoney,
-  summaryEndpoint,
-  upsertBudgetEndpoint,
 } from '../-components/finance-model';
 
 export const Route = createFileRoute('/_authed/finances/budgets/')({
@@ -39,19 +38,21 @@ function BudgetsRoute() {
   const summaryQuery = useQuery({
     queryKey: ['finances-summary', month, currency, timeZone],
     queryFn: async () => {
-      const response = await summaryEndpoint({
-        query: { month, currency, timeZone },
-      });
-      if (!response.ok) throw new Error(m['finances.loadError']());
-      return response.json();
+      return failWithMessage(
+        api.finances.summary.request({
+          query: { month, currency, timeZone },
+        }),
+        m['finances.loadError'](),
+      );
     },
   });
 
   const budgetMutation = useMutation({
     mutationFn: async (input: FinanceBudgetInput) => {
-      const response = await upsertBudgetEndpoint({ json: input });
-      if (!response.ok) throw new Error(m['finances.budgetSaveFailed']());
-      return response.json();
+      return failWithMessage(
+        api.finances.upsertBudget.request({ payload: input }),
+        m['finances.budgetSaveFailed'](),
+      );
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['finances-summary'] });

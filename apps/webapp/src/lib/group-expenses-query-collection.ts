@@ -1,22 +1,12 @@
 import { createCollection, localStorageCollectionOptions } from '@tanstack/db';
-import { groupsClient } from '#/api/groups';
-import type { InferResponseType } from '#/api/types';
+import type { ApiSuccess, Cursor } from '@vornway/api-client';
 
-const groupExpensesEndpoint = groupsClient[':id'].expenses.$get;
-
-type GroupExpensesPageResponse = InferResponseType<
-  typeof groupExpensesEndpoint
->;
-
-export type GroupExpensesPageSuccess = Extract<
-  GroupExpensesPageResponse,
-  { data: unknown[]; pagination: { nextCursor: string | null } }
->;
+export type GroupExpensesPageSuccess = ApiSuccess<'groups', 'listExpenses'>;
 
 type CachedGroupExpensesPage = {
   id: string;
   groupId: string;
-  pageParam: string | null;
+  pageParam: Cursor | null;
   page: GroupExpensesPageSuccess;
   updatedAt: string;
 };
@@ -31,14 +21,14 @@ export const cachedGroupExpensesCollection = createCollection(
 
 function getCachedGroupExpensesPageId(
   groupId: string,
-  pageParam: string | null,
+  pageParam: Cursor | null,
 ) {
   return `${groupId}:${pageParam ?? 'initial'}`;
 }
 
 export async function getCachedGroupExpensesPage(
   groupId: string,
-  pageParam: string | null,
+  pageParam: Cursor | null,
 ): Promise<GroupExpensesPageSuccess | undefined> {
   await cachedGroupExpensesCollection.preload();
 
@@ -49,7 +39,7 @@ export async function getCachedGroupExpensesPage(
 
 export async function upsertCachedGroupExpensesPage(
   groupId: string,
-  pageParam: string | null,
+  pageParam: Cursor | null,
   page: GroupExpensesPageSuccess,
 ) {
   await cachedGroupExpensesCollection.preload();

@@ -10,14 +10,15 @@ You are an expert in JavaScript, Rsbuild, and web application development. You w
 
 ## API clients
 
-- For internal API calls, prefer typed RPC clients.
-- Module clients live in `src/api/<module>.ts`.
-- Build those clients from `@vornway/api/hc/<module>` and `fetchWithCredentials`.
-- Do not use direct `fetch` against internal API endpoints when an RPC client can
-  be used.
-- If an API module adds or changes routes, update the matching
-  `apps/api/src/hc/<module>.ts` client and run `bun run build:rpc` in
-  `apps/api`.
+- All internal API calls go through `api` from `src/api/client.ts`, built with
+  `makeApiClient` from `@vornway/api-client`.
+- Endpoints, payloads, responses and errors are defined once in
+  `@vornway/contracts`; derive types from the contract instead of writing them
+  by hand.
+- Do not use direct `fetch` against internal API endpoints.
+- If an endpoint is missing or wrong, change the contract in
+  `packages/contracts` and its server handler in `apps/api` (see
+  `docs/contracts.md`).
 
 ## Offline And Service Worker
 

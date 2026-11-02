@@ -28,7 +28,7 @@ import {
   useState,
 } from 'react';
 import { toast } from 'sonner';
-import { usersClient } from '#/api/users';
+import { api, withErrorMessage } from '#/api/client';
 import { Button } from '#/components/ui/button';
 import {
   Dialog,
@@ -145,20 +145,10 @@ function RouteComponent() {
 
       setPreviewImageUrl(dataUrl);
 
-      const uploadResponse = await usersClient.me.image.$patch({
-        json: { dataUrl },
-      });
-
-      if (!uploadResponse.ok) {
-        const payload = (await uploadResponse.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-        throw new Error(payload?.error ?? t.photoUpdateFailed);
-      }
-
-      const payload = (await uploadResponse.json()) as {
-        imageUrl?: string | null;
-      };
+      const payload = await withErrorMessage(
+        api.users.image.request({ payload: { dataUrl } }),
+        t.photoUpdateFailed,
+      );
 
       if (!payload.imageUrl) {
         throw new Error(t.photoUpdateFailed);
@@ -186,24 +176,11 @@ function RouteComponent() {
   });
 
   const updateUsernameMutation = useMutation({
-    mutationFn: async (value: string) => {
-      const response = await usersClient.me.username.$patch({
-        json: { username: value },
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as {
-          message?: string;
-          error?: string;
-        } | null;
-
-        throw new Error(
-          payload?.message ?? payload?.error ?? t.usernameUpdateFailed,
-        );
-      }
-
-      return await response.json();
-    },
+    mutationFn: (value: string) =>
+      withErrorMessage(
+        api.users.username.request({ payload: { username: value } }),
+        t.usernameUpdateFailed,
+      ),
     onSuccess: async () => {
       await Promise.all([auth.refresh(), session.refetch()]);
       setShowUsernameDialog(false);

@@ -2,23 +2,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { api, failWithMessage } from '#/api/client';
 import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 import {
   currency,
   currentMonthKey,
   dateKeyToLocalDate,
-  deleteTransactionEndpoint,
   type EditableFinanceTransaction,
   type FinanceTransactionUpdateInput,
   getBrowserTimeZone,
-  getTransactionEndpoint,
   parseMoney,
   parseTagsInput,
-  summaryEndpoint,
   tagsToInput,
   toInputDate,
-  updateTransactionEndpoint,
 } from '../../-components/finance-model';
 import { TransactionDetailView } from '../../-components/finance-transaction-views';
 
@@ -53,19 +50,21 @@ function RouteComponent() {
   const transactionQuery = useQuery({
     queryKey: ['finances-transaction', id],
     queryFn: async () => {
-      const response = await getTransactionEndpoint({ param: { id } });
-      if (!response.ok) throw new Error(m['finances.loadError']());
-      return response.json();
+      return failWithMessage(
+        api.finances.transaction.request({ params: { id } }),
+        m['finances.loadError'](),
+      );
     },
   });
   const summaryQuery = useQuery({
     queryKey: ['finances-summary', month, currency, timeZone],
     queryFn: async () => {
-      const response = await summaryEndpoint({
-        query: { month, currency, timeZone },
-      });
-      if (!response.ok) throw new Error(m['finances.loadError']());
-      return response.json();
+      return failWithMessage(
+        api.finances.summary.request({
+          query: { month, currency, timeZone },
+        }),
+        m['finances.loadError'](),
+      );
     },
   });
 
@@ -84,14 +83,13 @@ function RouteComponent() {
       transactionId: string;
       input: FinanceTransactionUpdateInput;
     }) => {
-      const response = await updateTransactionEndpoint({
-        param: { id: transactionId },
-        json: input,
-      });
-      if (!response.ok) {
-        throw new Error(m['finances.transactionUpdateFailed']());
-      }
-      return response.json();
+      return failWithMessage(
+        api.finances.updateTransaction.request({
+          params: { id: transactionId },
+          payload: input,
+        }),
+        m['finances.transactionUpdateFailed'](),
+      );
     },
     onSuccess: async () => {
       await invalidateFinanceQueries();
@@ -107,11 +105,12 @@ function RouteComponent() {
   });
   const deleteTransactionMutation = useMutation({
     mutationFn: async (transactionId: string) => {
-      const response = await deleteTransactionEndpoint({
-        param: { id: transactionId },
-      });
-      if (!response.ok) throw new Error(m['finances.deleteMovementFailed']());
-      return response.json();
+      return failWithMessage(
+        api.finances.deleteTransaction.request({
+          params: { id: transactionId },
+        }),
+        m['finances.deleteMovementFailed'](),
+      );
     },
     onSuccess: async () => {
       await invalidateFinanceQueries();

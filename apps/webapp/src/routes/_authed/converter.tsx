@@ -7,19 +7,14 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
+import type { ApiSuccess } from '@vornway/api-client';
 import { useMemo, useState } from 'react';
-import { converterClient } from '#/api/converter';
-import type { InferResponseType } from '#/api/types';
+import { api, failWithMessage } from '#/api/client';
 import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 import { getConverterMessages } from '#/routes/_authed/converter/-messages';
 
-const converterEndpoint = converterClient.index.$get;
-type ConverterApiResponse = Extract<
-  InferResponseType<typeof converterEndpoint>,
-  { currencies: unknown }
->;
-type SupportedCurrency = ConverterApiResponse['currencies'][number];
+type SupportedCurrency = ApiSuccess<'converter', 'rates'>['currencies'][number];
 
 const CURRENCY_META: Record<string, { flag: string; name: string }> = {
   COP: { flag: '🇨🇴', name: m['common.currency.copFull']() },
@@ -50,21 +45,14 @@ function RouteComponent() {
 
   const converterQuery = useQuery({
     queryKey: ['currency-converter'],
-    queryFn: async () => {
-      const response = await converterEndpoint();
-
-      if (!response.ok) {
-        throw new Error(t.loadErrorTitle);
-      }
-
-      return (await response.json()) as ConverterApiResponse;
-    },
+    queryFn: () =>
+      failWithMessage(api.converter.rates.request(), t.loadErrorTitle),
   });
 
   const rateMap = useMemo(() => {
     const map = new Map<
       string,
-      { rate: number; effectiveDate: string; createdAt: string }
+      { rate: number; effectiveDate: Date; createdAt: Date }
     >();
 
     for (const rate of converterQuery.data?.rates ?? []) {
@@ -201,11 +189,15 @@ function RouteComponent() {
 
           <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-end gap-3">
             <div className="rounded-[22px] border border-[#e2e8f0] bg-[#f8fafc] p-3">
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]">
+              <label
+                htmlFor="converter-from"
+                className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]"
+              >
                 {t.from}
               </label>
               <div className="relative">
                 <select
+                  id="converter-from"
                   value={fromCurrency}
                   onChange={(event) =>
                     setFromCurrency(event.target.value as SupportedCurrency)
@@ -240,11 +232,15 @@ function RouteComponent() {
             </button>
 
             <div className="rounded-[22px] border border-[#e2e8f0] bg-[#f8fafc] p-3">
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]">
+              <label
+                htmlFor="converter-to"
+                className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]"
+              >
                 {t.to}
               </label>
               <div className="relative">
                 <select
+                  id="converter-to"
                   value={toCurrency}
                   onChange={(event) =>
                     setToCurrency(event.target.value as SupportedCurrency)

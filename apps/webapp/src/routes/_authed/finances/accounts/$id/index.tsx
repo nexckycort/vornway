@@ -7,10 +7,10 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import type { ApiSuccess, Cursor } from '@vornway/api-client';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { financesClient } from '#/api/finances';
-import type { InferResponseType } from '#/api/types';
+import { api, failWithMessage } from '#/api/client';
 import { Button } from '#/components/ui/button';
 import {
   Drawer,
@@ -31,7 +31,6 @@ import {
   getAccountTypeLabel,
   parseMoney,
   toInputDate,
-  updateAccountEndpoint,
 } from '../../-components/finance-model';
 
 export const Route = createFileRoute('/_authed/finances/accounts/$id/')({
@@ -44,16 +43,10 @@ export const Route = createFileRoute('/_authed/finances/accounts/$id/')({
   component: RouteComponent,
 });
 
-const accountEndpoint = financesClient.accounts[':id'].$get;
-const accountMovementsEndpoint = financesClient.accounts[':id'].movements.$get;
-type AccountMovementsResponse = InferResponseType<
-  typeof accountMovementsEndpoint
->;
-type AccountMovementsSuccess = Extract<
-  AccountMovementsResponse,
-  { data: unknown[] }
->;
-type AccountMovement = AccountMovementsSuccess['data'][number];
+type AccountMovement = ApiSuccess<
+  'finances',
+  'accountMovements'
+>['data'][number];
 
 function getMonthKey(value: string) {
   const date = new Date(value);
@@ -167,24 +160,26 @@ function RouteComponent() {
   const accountQuery = useQuery({
     queryKey: ['finances-account', id],
     queryFn: async () => {
-      const response = await accountEndpoint({ param: { id } });
-      if (!response.ok) throw new Error(m['finances.loadError']());
-      return response.json();
+      return failWithMessage(
+        api.finances.account.request({ params: { id } }),
+        m['finances.loadError'](),
+      );
     },
   });
   const movementsQuery = useInfiniteQuery({
     queryKey: ['finances-account-movements', id],
-    initialPageParam: undefined as string | undefined,
+    initialPageParam: undefined as Cursor | undefined,
     queryFn: async ({ pageParam }) => {
-      const response = await accountMovementsEndpoint({
-        param: { id },
-        query: {
-          limit: '20',
-          ...(pageParam ? { cursor: pageParam } : {}),
-        },
-      });
-      if (!response.ok) throw new Error(m['finances.loadError']());
-      return response.json() as Promise<AccountMovementsSuccess>;
+      return failWithMessage(
+        api.finances.accountMovements.request({
+          params: { id },
+          query: {
+            limit: 20,
+            ...(pageParam ? { cursor: pageParam } : {}),
+          },
+        }),
+        m['finances.loadError'](),
+      );
     },
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
   });
@@ -205,12 +200,13 @@ function RouteComponent() {
 
   const updateAccountMutation = useMutation({
     mutationFn: async (input: FinanceAccountUpdateInput) => {
-      const response = await updateAccountEndpoint({
-        param: { id },
-        json: input,
-      });
-      if (!response.ok) throw new Error(m['finances.accountSaveFailed']());
-      return response.json();
+      return failWithMessage(
+        api.finances.updateAccount.request({
+          params: { id },
+          payload: input,
+        }),
+        m['finances.accountSaveFailed'](),
+      );
     },
     onSuccess: async () => {
       await Promise.all([

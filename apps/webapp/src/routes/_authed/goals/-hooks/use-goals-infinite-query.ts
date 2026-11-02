@@ -1,35 +1,27 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { goalsClient } from '#/api/goals';
-import type { InferResponseType } from '#/api/types';
+import type { ApiSuccess, Cursor } from '@vornway/api-client';
+import { api, failWithMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
 
-const goalsEndpoint = goalsClient.index.$get;
-
-type GoalsApiResponse = InferResponseType<typeof goalsEndpoint>;
-
-export type GoalListItem = GoalsApiResponse['data'][number];
+export type GoalListItem = ApiSuccess<'goals', 'list'>['data'][number];
 
 export function useGoalsInfiniteQuery(search: string) {
   const normalizedSearch = search.trim();
 
   return useInfiniteQuery({
     queryKey: ['goals-list', normalizedSearch],
-    initialPageParam: undefined as string | undefined,
-    queryFn: async ({ pageParam }) => {
-      const response = await goalsEndpoint({
-        query: {
-          limit: '12',
-          ...(pageParam ? { cursor: pageParam } : {}),
-          ...(normalizedSearch ? { search: normalizedSearch } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(m['goals.loadError']());
-      }
-
-      return (await response.json()) as GoalsApiResponse;
-    },
+    initialPageParam: undefined as Cursor | undefined,
+    queryFn: ({ pageParam }) =>
+      failWithMessage(
+        api.goals.list.request({
+          query: {
+            limit: 12,
+            ...(pageParam ? { cursor: pageParam } : {}),
+            ...(normalizedSearch ? { search: normalizedSearch } : {}),
+          },
+        }),
+        m['goals.loadError'](),
+      ),
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
     staleTime: 30_000,
   });

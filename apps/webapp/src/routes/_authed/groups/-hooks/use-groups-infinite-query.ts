@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import type { Cursor } from '@vornway/api-client';
 import { useEffect } from 'react';
-import { groupsClient } from '#/api/groups';
+import { api, failWithMessage } from '#/api/client';
 import {
   GROUPS_LIST_REFRESH_EVENT,
   type GroupListFilter,
@@ -18,24 +19,21 @@ async function fetchGroupsPage({
   search,
   filter,
 }: {
-  pageParam: string | null;
+  pageParam: Cursor | null;
   search: string;
   filter: GroupListFilter;
 }): Promise<GroupsPage> {
-  const response = await groupsClient.index.$get({
-    query: {
-      limit: String(PAGE_LIMIT),
-      ...(pageParam ? { cursor: pageParam } : {}),
-      ...(search ? { search } : {}),
-      filter,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(m['groups.loadFailed']());
-  }
-
-  const page = (await response.json()) as GroupsPage;
+  const page = await failWithMessage(
+    api.groups.list.request({
+      query: {
+        limit: PAGE_LIMIT,
+        ...(pageParam ? { cursor: pageParam } : {}),
+        ...(search ? { search } : {}),
+        filter,
+      },
+    }),
+    m['groups.loadFailed'](),
+  );
   upsertGroupListItems(page.data);
   return page;
 }
@@ -62,7 +60,7 @@ export function useGroupsInfiniteQuery(input: {
     queryKey: ['groups-list', search, input.filter],
     queryFn: ({ pageParam }) =>
       fetchGroupsPage({ pageParam, search, filter: input.filter }),
-    initialPageParam: null as string | null,
+    initialPageParam: null as Cursor | null,
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor,
   });
 }

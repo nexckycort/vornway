@@ -2,12 +2,11 @@ import { Add01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import type { ApiPayload, ApiSuccess } from '@vornway/api-client';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { debtsClient } from '#/api/debts';
-import { financesClient } from '#/api/finances';
-import type { InferRequestType, InferResponseType } from '#/api/types';
+import { api, failWithMessage } from '#/api/client';
 import { Button } from '#/components/ui/button';
 import {
   Drawer,
@@ -27,10 +26,8 @@ export const Route = createFileRoute('/_authed/debts/')({
   component: DebtsRoute,
 });
 
-const listEndpoint = debtsClient.index.$get;
-const createEndpoint = debtsClient.index.$post;
-type Debt = InferResponseType<typeof listEndpoint>[number];
-type CreateDebt = InferRequestType<typeof createEndpoint>['json'];
+type Debt = ApiSuccess<'debts', 'list'>[number];
+type CreateDebt = ApiPayload<'debts', 'create'>;
 type Filter = 'all' | 'active' | 'paid';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -55,13 +52,11 @@ function DebtsRoute() {
   const userSearch = useUserSearchQuery(person);
   const accountsQuery = useQuery({
     queryKey: ['finances-summary', 'debt-loan-accounts', 'COP'],
-    queryFn: async () => {
-      const response = await financesClient.summary.$get({
-        query: { currency: 'COP' },
-      });
-      if (!response.ok) throw new Error('finance_summary_load_failed');
-      return response.json();
-    },
+    queryFn: () =>
+      failWithMessage(
+        api.finances.summary.request({ query: { currency: 'COP' } }),
+        'finance_summary_load_failed',
+      ),
   });
   const accounts =
     accountsQuery.data?.accounts.filter(
@@ -70,18 +65,18 @@ function DebtsRoute() {
 
   const debtsQuery = useQuery({
     queryKey: ['debts', 'all'],
-    queryFn: async () => {
-      const response = await listEndpoint({ query: { status: 'all' } });
-      if (!response.ok) throw new Error('debt_load_failed');
-      return response.json();
-    },
+    queryFn: () =>
+      failWithMessage(
+        api.debts.list.request({ query: { status: 'all' } }),
+        'debt_load_failed',
+      ),
   });
   const createMutation = useMutation({
-    mutationFn: async (input: CreateDebt) => {
-      const response = await createEndpoint({ json: input });
-      if (!response.ok) throw new Error('debt_create_failed');
-      return response.json();
-    },
+    mutationFn: (payload: CreateDebt) =>
+      failWithMessage(
+        api.debts.create.request({ payload }),
+        'debt_create_failed',
+      ),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['debts'] }),
@@ -138,12 +133,12 @@ function DebtsRoute() {
         {
           amount: parsedAmount,
           ...(accountId ? { accountId } : {}),
-          loanDate,
+          loanDate: new Date(loanDate),
         },
       ],
       interestType: 'none',
       currency: 'COP',
-      ...(dueDate ? { dueDate } : {}),
+      ...(dueDate ? { dueDate: new Date(dueDate) } : {}),
       ...(note.trim() ? { description: note.trim() } : {}),
     });
   }

@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
     "strict": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx",
     "types": ["bun"],
     "skipLibCheck": true,
     "paths": {
       "#/*": ["./src/*"]
-    }
-  }
+    },
+    "allowImportingTsExtensions": true
+  },
+  "exclude": ["node_modules", "dist"]
 }

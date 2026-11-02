@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { quickSplitsClient } from '#/api/quick-splits';
+import { api, withErrorMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
 
 export type UpsertQuickSplitExpenseValues = {
@@ -25,41 +25,29 @@ export type UpsertQuickSplitExpenseValues = {
   };
 };
 
-const createQuickSplitEndpoint = quickSplitsClient.index.$post;
-const createQuickSplitExpenseEndpoint = quickSplitsClient[':id'].expenses.$post;
-const updateQuickSplitExpenseEndpoint =
-  quickSplitsClient[':id'].expenses[':expenseId'].$put;
-
 async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
   if (values.quickSplitId && values.expenseId) {
-    const updateExpenseResponse = await updateQuickSplitExpenseEndpoint({
-      param: {
-        id: values.quickSplitId,
-        expenseId: values.expenseId,
-      },
-      json: {
-        description: values.description,
-        amount: values.amount,
-        currency: values.currency,
-        paidByParticipantId: values.paidByParticipantId,
-        splitMethod: values.splitMethod,
-        ...(values.percentageShares
-          ? { percentageShares: values.percentageShares }
-          : {}),
-        ...(values.exactShares ? { exactShares: values.exactShares } : {}),
-        ...(values.metadata ? { metadata: values.metadata } : {}),
-      },
-    });
-
-    if (!updateExpenseResponse.ok) {
-      const payload = (await updateExpenseResponse.json()) as {
-        message?: string;
-      };
-
-      throw new Error(payload.message ?? m['system.updateExpenseFailed']());
-    }
-
-    const expense = await updateExpenseResponse.json();
+    const expense = await withErrorMessage(
+      api.quickSplits.updateExpense.request({
+        params: {
+          id: values.quickSplitId,
+          expenseId: values.expenseId,
+        },
+        payload: {
+          description: values.description,
+          amount: values.amount,
+          currency: values.currency,
+          paidByParticipantId: values.paidByParticipantId,
+          splitMethod: values.splitMethod,
+          ...(values.percentageShares
+            ? { percentageShares: values.percentageShares }
+            : {}),
+          ...(values.exactShares ? { exactShares: values.exactShares } : {}),
+          ...(values.metadata ? { metadata: values.metadata } : {}),
+        },
+      }),
+      m['system.updateExpenseFailed'](),
+    );
 
     return {
       quickSplit: {
@@ -72,23 +60,16 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
     };
   }
 
-  const createQuickSplitResponse = await createQuickSplitEndpoint({
-    json: {
-      name: values.name,
-      description: values.description,
-      participants: values.participants,
-    },
-  });
-
-  if (!createQuickSplitResponse.ok) {
-    const payload = (await createQuickSplitResponse.json()) as {
-      message?: string;
-    };
-
-    throw new Error(payload.message ?? m['system.createExpenseFailed']());
-  }
-
-  const quickSplit = await createQuickSplitResponse.json();
+  const quickSplit = await withErrorMessage(
+    api.quickSplits.create.request({
+      payload: {
+        name: values.name,
+        description: values.description,
+        participants: values.participants,
+      },
+    }),
+    m['system.createExpenseFailed'](),
+  );
   const participantIdByClientId = new Map<string, string>();
   const currentUserParticipantId = (quickSplit.participants ?? []).find(
     (participant) => participant.userId === values.currentUserId,
@@ -108,47 +89,40 @@ async function upsertQuickSplitExpense(values: UpsertQuickSplitExpenseValues) {
     throw new Error(m['system.mapExpenseParticipantsFailed']());
   }
 
-  const createExpenseResponse = await createQuickSplitExpenseEndpoint({
-    param: { id: quickSplit.id },
-    json: {
-      description: values.description,
-      amount: values.amount,
-      currency: values.currency,
-      paidByParticipantId,
-      splitMethod: values.splitMethod,
-      ...(values.percentageShares
-        ? {
-            percentageShares: Object.fromEntries(
-              Object.entries(values.percentageShares).map(([key, value]) => [
-                participantIdByClientId.get(key) ?? key,
-                value,
-              ]),
-            ),
-          }
-        : {}),
-      ...(values.exactShares
-        ? {
-            exactShares: Object.fromEntries(
-              Object.entries(values.exactShares).map(([key, value]) => [
-                participantIdByClientId.get(key) ?? key,
-                value,
-              ]),
-            ),
-          }
-        : {}),
-      ...(values.metadata ? { metadata: values.metadata } : {}),
-    },
-  });
-
-  if (!createExpenseResponse.ok) {
-    const payload = (await createExpenseResponse.json()) as {
-      message?: string;
-    };
-
-    throw new Error(payload.message ?? m['system.createExpenseFailed']());
-  }
-
-  const expense = await createExpenseResponse.json();
+  const expense = await withErrorMessage(
+    api.quickSplits.createExpense.request({
+      params: { id: quickSplit.id },
+      payload: {
+        description: values.description,
+        amount: values.amount,
+        currency: values.currency,
+        paidByParticipantId,
+        splitMethod: values.splitMethod,
+        ...(values.percentageShares
+          ? {
+              percentageShares: Object.fromEntries(
+                Object.entries(values.percentageShares).map(([key, value]) => [
+                  participantIdByClientId.get(key) ?? key,
+                  value,
+                ]),
+              ),
+            }
+          : {}),
+        ...(values.exactShares
+          ? {
+              exactShares: Object.fromEntries(
+                Object.entries(values.exactShares).map(([key, value]) => [
+                  participantIdByClientId.get(key) ?? key,
+                  value,
+                ]),
+              ),
+            }
+          : {}),
+        ...(values.metadata ? { metadata: values.metadata } : {}),
+      },
+    }),
+    m['system.createExpenseFailed'](),
+  );
 
   return {
     quickSplit,

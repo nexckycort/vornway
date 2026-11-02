@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { api, failWithMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
 import {
   currency,
   currentMonthKey,
   getBrowserTimeZone,
   getCurrencyValue,
-  summaryEndpoint,
 } from '../-components/finance-model';
 import { FinanceReportsView } from '../-components/finance-reports-view';
 
@@ -27,11 +27,12 @@ function ReportsRoute() {
   const summaryQuery = useQuery({
     queryKey: ['finances-summary', month, currency, timeZone],
     queryFn: async () => {
-      const response = await summaryEndpoint({
-        query: { month, currency, timeZone },
-      });
-      if (!response.ok) throw new Error(m['finances.loadError']());
-      return response.json();
+      return failWithMessage(
+        api.finances.summary.request({
+          query: { month, currency, timeZone },
+        }),
+        m['finances.loadError'](),
+      );
     },
   });
 

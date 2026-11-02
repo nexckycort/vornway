@@ -1,16 +1,13 @@
 import { createCollection } from '@tanstack/db';
 import { QueryClient } from '@tanstack/query-core';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
-import { groupsClient } from '#/api/groups';
-import type { InferRequestType } from '#/api/types';
+import type { ApiPayload } from '@vornway/api-client';
+import { apiErrorKind, apiErrorMessage } from '@vornway/api-client';
+import { api } from '#/api/client';
 import { GROUPS_LIST_REFRESH_EVENT } from '#/lib/groups-list-query-collection';
 import { m } from '#/paraglide/messages.js';
 
-const createGroupEndpoint = groupsClient.index.$post;
-
-export type CreateGroupPayload = InferRequestType<
-  typeof createGroupEndpoint
->['json'];
+export type CreateGroupPayload = ApiPayload<'groups', 'create'>;
 
 export type PendingGroup = {
   id: string;
@@ -194,9 +191,7 @@ function removePendingGroup(id: string) {
 }
 
 async function postGroupToApi(payload: CreateGroupPayload) {
-  const request = createGroupEndpoint({
-    json: payload,
-  });
+  const request = api.groups.create.request({ payload });
 
   const timeout = new Promise<never>((_, reject) => {
     const timer = globalThis.setTimeout(() => {
@@ -312,19 +307,13 @@ export async function syncPendingGroupsQueue() {
   try {
     for (const item of pending) {
       try {
-        const response = await postGroupToApi(item.payload);
-
-        if (response.ok) {
-          removePendingGroup(item.id);
-          window.dispatchEvent(new CustomEvent(GROUPS_LIST_REFRESH_EVENT));
-          continue;
-        }
-
-        if (response.status >= 400 && response.status < 500) {
-          removePendingGroup(item.id);
-        }
-      } catch {
-        break;
+        await postGroupToApi(item.payload);
+        removePendingGroup(item.id);
+        window.dispatchEvent(new CustomEvent(GROUPS_LIST_REFRESH_EVENT));
+      } catch (error) {
+        const kind = apiErrorKind(error);
+        if (kind === 'network') break;
+        if (kind === 'rejected') removePendingGroup(item.id);
       }
     }
   } finally {
@@ -349,35 +338,19 @@ export async function createGroupOfflineFirst(
   payload: CreateGroupPayload,
 ): Promise<CreateGroupOfflineFirstResult> {
   if (typeof window === 'undefined') {
-    const response = await postGroupToApi(payload);
-    if (!response.ok) {
-      throw new Error(m['system.createGroupFailed']());
-    }
-
-    const data = (await response.json()) as CreateGroupOfflineFirstResult;
-    return data;
+    return postGroupToApi(payload).catch((error: unknown) => {
+      throw new Error(apiErrorMessage(error, m['system.createGroupFailed']()));
+    });
   }
 
   if (!navigator.onLine) {
     return enqueueGroupOffline(payload);
   }
 
-  let response: Awaited<ReturnType<typeof postGroupToApi>>;
   try {
-    response = await postGroupToApi(payload);
-  } catch {
-    return enqueueGroupOffline(payload);
+    return await postGroupToApi(payload);
+  } catch (error) {
+    if (apiErrorKind(error) !== 'rejected') return enqueueGroupOffline(payload);
+    throw new Error(apiErrorMessage(error, m['system.createGroupFailed']()));
   }
-
-  if (response.ok) {
-    const data = (await response.json()) as CreateGroupOfflineFirstResult;
-    return data;
-  }
-
-  if (response.status >= 500) {
-    return enqueueGroupOffline(payload);
-  }
-
-  const payloadError = (await response.json()) as { error?: string };
-  throw new Error(payloadError.error ?? m['system.createGroupFailed']());
 }

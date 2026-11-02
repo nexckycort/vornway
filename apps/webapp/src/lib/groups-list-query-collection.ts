@@ -1,13 +1,10 @@
 import { createCollection } from '@tanstack/db';
 import { QueryClient } from '@tanstack/query-core';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
-import { groupsClient } from '#/api/groups';
-import type { InferResponseType } from '#/api/types';
+import type { ApiSuccess } from '@vornway/api-client';
 import type { GroupSummary } from '#/routes/_authed/groups/$id/-types/group-detail.types';
 
-const listGroupsEndpoint = groupsClient.index.$get;
-
-export type GroupsPage = InferResponseType<typeof listGroupsEndpoint>;
+export type GroupsPage = ApiSuccess<'groups', 'list'>;
 export type GroupListItem = GroupsPage['data'][number];
 export type GroupListFilter = 'all' | 'theyOweYou' | 'youOweThem' | 'noDebt';
 

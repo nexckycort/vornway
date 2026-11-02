@@ -1,3 +1,5 @@
+import type { Cursor } from '@vornway/contracts/schema';
+
 export type NotificationType = 'expense.created' | 'group.member.added';
 
 export type NotificationInboxItem = {
@@ -19,27 +21,19 @@ export type ListNotificationsResult = {
   pagination: {
     limit: number;
     total: number;
-    nextCursor: string | null;
+    nextCursor: Cursor | null;
   };
   unreadCount: number;
 };
 
-export type NotificationInbox = {
-  createForUsers: (input: {
-    userIds: string[];
-    type: NotificationType | string;
-    title: string;
-    body: string;
-    url: string;
-    groupId?: string | null;
-    expenseId?: string | null;
-    actorName?: string | null;
-    actorImage?: string | null;
-  }) => Promise<void>;
-  listForUser: (input: {
-    userId: string;
-    limit: number;
-    cursor: string | null;
-  }) => Promise<ListNotificationsResult>;
-  markAllAsRead: (userId: string) => Promise<void>;
+export type NotificationInput = {
+  userIds: string[];
+  type: NotificationType | string;
+  title: string;
+  body: string;
+  url: string;
+  groupId?: string | null;
+  expenseId?: string | null;
+  actorName?: string | null;
+  actorImage?: string | null;
 };

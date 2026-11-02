@@ -1,15 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { groupsClient } from '#/api/groups';
-import type { InferRequestType, InferResponseType } from '#/api/types';
+import type { ApiPayload, ApiSuccess } from '@vornway/api-client';
 import {
   type CreateGroupOfflineFirstResult,
   createGroupOfflineFirst,
 } from '#/lib/offline-group-query-collection';
 
-const createGroupEndpoint = groupsClient.index.$post;
-
-type CreateGroupRequest = InferRequestType<typeof createGroupEndpoint>;
-type CreateGroupResponse = InferResponseType<typeof createGroupEndpoint>;
+type CreateGroupPayload = ApiPayload<'groups', 'create'>;
 
 export type CreateGroupFormValues = {
   name: string;
@@ -55,12 +51,12 @@ export function buildCreateGroupPayload(values: CreateGroupFormValues) {
           },
         }
       : {}),
-  } satisfies CreateGroupRequest['json'];
+  } satisfies CreateGroupPayload;
 }
 
 async function createGroup(
   values: CreateGroupFormValues,
-): Promise<CreateGroupResponse | CreateGroupOfflineFirstResult> {
+): Promise<ApiSuccess<'groups', 'create'> | CreateGroupOfflineFirstResult> {
   const payload = buildCreateGroupPayload(values);
 
   return createGroupOfflineFirst(payload);

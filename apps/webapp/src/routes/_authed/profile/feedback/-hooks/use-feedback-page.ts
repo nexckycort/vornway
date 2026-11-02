@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ApiSuccess } from '@vornway/api-client';
+import { Option, Schema } from 'effect';
 import { type ChangeEvent, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { feedbackClient } from '#/api/feedback';
+import { api, withErrorMessage } from '#/api/client';
 import { compressImageFileToDataUrl } from '#/lib/image-compression';
 import { m } from '#/paraglide/messages.js';
 import { getProfileMessages } from '#/routes/_authed/profile/-messages';
@@ -14,31 +16,15 @@ export type FeedbackStatus =
   | 'DONE'
   | 'REJECTED';
 
-export type FeedbackItem = {
-  id: string;
-  userId: string;
-  type: FeedbackType;
-  title: string;
-  description: string;
-  status: FeedbackStatus;
-  priority: string | null;
-  metadata: {
-    attachments?: Array<{
-      url: string;
-    }>;
-  };
-  createdAt: string;
-  updatedAt: string;
-};
+export type FeedbackItem = ApiSuccess<'feedback', 'list'>['data'][number];
 
-type FeedbackListResponse = {
-  data: FeedbackItem[];
-  pagination: {
-    limit: number;
-    total: number;
-    nextCursor: string | null;
-  };
-};
+const FeedbackAttachments = Schema.Array(Schema.Struct({ url: Schema.String }));
+
+export const feedbackAttachments = (metadata: FeedbackItem['metadata']) =>
+  Option.getOrElse(
+    Schema.decodeUnknownOption(FeedbackAttachments)(metadata.attachments),
+    () => [],
+  );
 
 export type DraftImage = {
   id: string;
@@ -46,19 +32,6 @@ export type DraftImage = {
   previewUrl: string;
   dataUrl: string;
 };
-
-type ErrorPayload = {
-  error?: string;
-  message?: string;
-};
-
-async function readErrorMessage(response: Response, fallback: string) {
-  const payload = (await response
-    .json()
-    .catch(() => null)) as ErrorPayload | null;
-
-  return payload?.message ?? payload?.error ?? fallback;
-}
 
 export function useFeedbackPage(initialType: FeedbackType) {
   const t = getProfileMessages();
@@ -76,42 +49,28 @@ export function useFeedbackPage(initialType: FeedbackType) {
 
   const feedbackQuery = useQuery({
     queryKey: ['user-feedback'],
-    queryFn: async () => {
-      const response = await feedbackClient.index.$get({
-        query: { limit: '20' },
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          await readErrorMessage(response, m['system.loadFeedbackFailed']()),
-        );
-      }
-
-      return (await response.json()) as FeedbackListResponse;
-    },
+    queryFn: () =>
+      withErrorMessage(
+        api.feedback.list.request({ query: { limit: 20 } }),
+        m['system.loadFeedbackFailed'](),
+      ),
   });
 
   const createFeedbackMutation = useMutation({
-    mutationFn: async () => {
-      const response = await feedbackClient.index.$post({
-        json: {
-          type,
-          title: title.trim(),
-          description: description.trim(),
-          images: draftImages.map((image) => ({
-            dataUrl: image.dataUrl,
-          })),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          await readErrorMessage(response, m['system.sendFeedbackFailed']()),
-        );
-      }
-
-      return (await response.json()) as FeedbackItem;
-    },
+    mutationFn: () =>
+      withErrorMessage(
+        api.feedback.create.request({
+          payload: {
+            type,
+            title: title.trim(),
+            description: description.trim(),
+            images: draftImages.map((image) => ({
+              dataUrl: image.dataUrl,
+            })),
+          },
+        }),
+        m['system.sendFeedbackFailed'](),
+      ),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['user-feedback'] });
       setTitle('');
@@ -133,15 +92,10 @@ export function useFeedbackPage(initialType: FeedbackType) {
 
   const deleteFeedbackMutation = useMutation({
     mutationFn: async (feedbackId: string) => {
-      const response = await feedbackClient[':feedbackId'].$delete({
-        param: { feedbackId },
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          await readErrorMessage(response, m['system.deleteFeedbackFailed']()),
-        );
-      }
+      await withErrorMessage(
+        api.feedback.delete.request({ params: { feedbackId } }),
+        m['system.deleteFeedbackFailed'](),
+      );
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['user-feedback'] });
@@ -175,7 +129,7 @@ export function useFeedbackPage(initialType: FeedbackType) {
   const feedbackItems = feedbackQuery.data?.data ?? [];
   const groupedEmptyCopy = useMemo(() => {
     return type === 'BUG' ? t.feedback.emptyBugs : t.feedback.emptyFeatures;
-  }, [type]);
+  }, [type, t.feedback.emptyBugs, t.feedback.emptyFeatures]);
 
   async function handleDraftImagesChange(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);

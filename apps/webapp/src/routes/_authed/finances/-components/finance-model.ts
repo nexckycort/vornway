@@ -1,5 +1,4 @@
-import { financesClient } from '#/api/finances';
-import type { InferRequestType, InferResponseType } from '#/api/types';
+import type { ApiPayload, ApiSuccess } from '@vornway/api-client';
 import { formatCurrency, getIntlLocale } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 
@@ -10,55 +9,26 @@ export type FinanceView =
   | 'categories'
   | 'budgets';
 
-export const summaryEndpoint = financesClient.summary.$get;
-export const movementsEndpoint = financesClient.movements.$get;
-export const accountsEndpoint = financesClient.accounts.$get;
-export const createAccountEndpoint = financesClient.accounts.$post;
-export const updateAccountEndpoint = financesClient.accounts[':id'].$patch;
-export const deleteAccountEndpoint = financesClient.accounts[':id'].$delete;
-export const closeAccountEndpoint = financesClient.accounts[':id'].close.$post;
-export const createTransactionEndpoint = financesClient.transactions.$post;
-export const getTransactionEndpoint = financesClient.transactions[':id'].$get;
-export const updateTransactionEndpoint =
-  financesClient.transactions[':id'].$patch;
-export const deleteTransactionEndpoint =
-  financesClient.transactions[':id'].$delete;
-export const createCategoryEndpoint = financesClient.categories.$post;
-export const updateCategoryEndpoint = financesClient.categories[':id'].$patch;
-export const deleteCategoryEndpoint = financesClient.categories[':id'].$delete;
-export const upsertBudgetEndpoint = financesClient.budgets.$post;
-
-export type FinanceSummary = InferResponseType<typeof summaryEndpoint>;
-export type FinanceMovementsPage = InferResponseType<typeof movementsEndpoint>;
-export type FinanceAccountsPage = InferResponseType<typeof accountsEndpoint>;
-export type FinanceAccountInput = InferRequestType<
-  typeof createAccountEndpoint
->['json'];
-export type FinanceAccountUpdateInput = InferRequestType<
-  typeof updateAccountEndpoint
->['json'];
-export type FinanceTransactionInput = InferRequestType<
-  typeof createTransactionEndpoint
->['json'];
-export type FinanceTransactionDetailResponse = InferResponseType<
-  typeof getTransactionEndpoint
+export type FinanceSummary = ApiSuccess<'finances', 'summary'>;
+export type FinanceMovementsPage = ApiSuccess<'finances', 'movements'>;
+export type FinanceAccountsPage = ApiSuccess<'finances', 'accounts'>;
+export type FinanceAccountInput = ApiPayload<'finances', 'createAccount'>;
+export type FinanceAccountUpdateInput = ApiPayload<'finances', 'updateAccount'>;
+export type FinanceTransactionInput = ApiPayload<
+  'finances',
+  'createTransaction'
 >;
-export type FinanceTransactionDetail = Extract<
-  FinanceTransactionDetailResponse,
-  { id: string }
+export type FinanceTransactionDetail = ApiSuccess<'finances', 'transaction'>;
+export type FinanceTransactionUpdateInput = ApiPayload<
+  'finances',
+  'updateTransaction'
 >;
-export type FinanceTransactionUpdateInput = InferRequestType<
-  typeof updateTransactionEndpoint
->['json'];
-export type FinanceCategoryInput = InferRequestType<
-  typeof createCategoryEndpoint
->['json'];
-export type FinanceCategoryUpdateInput = InferRequestType<
-  typeof updateCategoryEndpoint
->['json'];
-export type FinanceBudgetInput = InferRequestType<
-  typeof upsertBudgetEndpoint
->['json'];
+export type FinanceCategoryInput = ApiPayload<'finances', 'createCategory'>;
+export type FinanceCategoryUpdateInput = ApiPayload<
+  'finances',
+  'updateCategory'
+>;
+export type FinanceBudgetInput = ApiPayload<'finances', 'upsertBudget'>;
 export type FinanceCategory = FinanceSummary['categories'][number];
 export type FinanceSummaryAccount = FinanceSummary['accounts'][number];
 export type FinanceAccount = FinanceAccountsPage['data'][number];
@@ -184,7 +154,7 @@ export function parseMoney(value: string) {
   return Number.isFinite(amount) ? amount : 0;
 }
 
-export function toInputDate(value: string | null | undefined) {
+export function toInputDate(value: string | Date | null | undefined) {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';

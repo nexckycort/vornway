@@ -21,8 +21,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { financesClient } from '#/api/finances';
-import { mapsClient } from '#/api/maps';
+import { api, failWithMessage } from '#/api/client';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import {
@@ -158,9 +157,6 @@ const emptyAdvancedDetails: ExpenseAdvancedDetails = {
   notes: '',
 };
 
-const resolveMapEndpoint = mapsClient.resolve.$post;
-const financesSummaryEndpoint = financesClient.summary.$get;
-
 const customCategoryIconId = 'custom';
 
 const categoryColorOptions = [
@@ -223,21 +219,15 @@ async function resolveAdvancedDetailsMap(
   if (typeof navigator !== 'undefined' && !navigator.onLine) return details;
 
   try {
-    const response = await resolveMapEndpoint({
-      json: { url: details.mapUrl },
+    const resolution = await api.maps.resolve.request({
+      payload: { url: details.mapUrl },
     });
 
-    if (!response.ok) return details;
-
-    const payload = (await response.json()) as {
-      embedUrl?: string | null;
-    };
-
-    if (!payload.embedUrl) return details;
+    if (!resolution.embedUrl) return details;
 
     return {
       ...details,
-      mapEmbedUrl: payload.embedUrl,
+      mapEmbedUrl: resolution.embedUrl,
     };
   } catch {
     return details;
@@ -433,13 +423,11 @@ function RouteComponent() {
   const financesSummaryQuery = useQuery({
     queryKey: ['finances-summary', 'personal-expense-accounts', currency],
     enabled: groupQuery.data?.type === 'personal',
-    queryFn: async () => {
-      const response = await financesSummaryEndpoint({
-        query: { currency },
-      });
-      if (!response.ok) throw new Error(m['finances.loadError']());
-      return response.json();
-    },
+    queryFn: () =>
+      failWithMessage(
+        api.finances.summary.request({ query: { currency } }),
+        m['finances.loadError'](),
+      ),
   });
   const [paidByIds, setPaidByIds] = useState<string[]>([]);
   const [payerValues, setPayerValues] = useState<Record<string, string>>({});
@@ -682,7 +670,10 @@ function RouteComponent() {
           ? [groupQuery.data?.myMembership?.id ?? expense.paidBy.id]
           : expense.participants.map((participant) => participant.memberId),
       );
-      setSplitMethod(sharedSplit?.splitMethod ?? expense.splitMethod);
+      setSplitMethod(
+        sharedSplit?.splitMethod ??
+          (expense.splitMethod === 'unknown' ? 'equal' : expense.splitMethod),
+      );
       setParticipantValues(
         Object.fromEntries(
           expense.participants.map((participant) => {

@@ -1,33 +1,18 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { goalsClient } from '#/api/goals';
-import type { InferResponseType } from '#/api/types';
+import { api, withErrorMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
-
-const deleteGoalContributionEndpoint =
-  goalsClient[':id'].contributions[':contributionId'].$delete;
-
-type DeleteGoalContributionResponse = InferResponseType<
-  typeof deleteGoalContributionEndpoint
->;
 
 export function useDeleteGoalContributionMutation(goalId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (contributionId: string) => {
-      const response = await deleteGoalContributionEndpoint({
-        param: { id: goalId, contributionId },
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(
-          payload.error ?? m['system.deleteGoalContributionFailed'](),
-        );
-      }
-
-      return (await response.json()) as DeleteGoalContributionResponse;
-    },
+    mutationFn: (contributionId: string) =>
+      withErrorMessage(
+        api.goals.deleteContribution.request({
+          params: { id: goalId, contributionId },
+        }),
+        m['system.deleteGoalContributionFailed'](),
+      ),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['goal-detail', goalId] }),

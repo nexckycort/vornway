@@ -10,8 +10,10 @@ import {
   useNavigate,
   useRouterState,
 } from '@tanstack/react-router';
+import type { Cursor } from '@vornway/api-client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { api, failWithMessage } from '#/api/client';
 import { Button } from '#/components/ui/button';
 import { m } from '#/paraglide/messages.js';
 import { FinanceDashboardView } from './-components/finance-dashboard-view';
@@ -21,12 +23,9 @@ import {
   categoryIcons,
   categorySpend,
   compareFinanceMovements,
-  createCategoryEndpoint,
-  createTransactionEndpoint,
   currency,
   currentMonthKey,
   dateKeyToLocalDate,
-  deleteCategoryEndpoint,
   type FinanceBudgetInput,
   type FinanceCategory,
   type FinanceCategoryInput,
@@ -39,14 +38,10 @@ import {
   getCurrencyValue,
   isFinanceView,
   moneyLabel,
-  movementsEndpoint,
   parseMoney,
   parseTagsInput,
-  summaryEndpoint,
   toCategoryKind,
   todayKey,
-  updateCategoryEndpoint,
-  upsertBudgetEndpoint,
 } from './-components/finance-model';
 import { CreateTransactionView } from './-components/finance-transaction-views';
 
@@ -117,28 +112,30 @@ function FinancesDashboard() {
   const summaryQuery = useQuery({
     queryKey: ['finances-summary', month, currency, timeZone],
     queryFn: async () => {
-      const response = await summaryEndpoint({
-        query: { month, currency, timeZone },
-      });
-      if (!response.ok) throw new Error(m['finances.loadError']());
-      return response.json();
+      return failWithMessage(
+        api.finances.summary.request({
+          query: { month, currency, timeZone },
+        }),
+        m['finances.loadError'](),
+      );
     },
   });
   const movementsQuery = useInfiniteQuery({
     queryKey: ['finances-movements', month, currency, timeZone],
-    initialPageParam: undefined as string | undefined,
+    initialPageParam: undefined as Cursor | undefined,
     queryFn: async ({ pageParam }) => {
-      const response = await movementsEndpoint({
-        query: {
-          month,
-          currency,
-          timeZone,
-          limit: '20',
-          ...(pageParam ? { cursor: pageParam } : {}),
-        },
-      });
-      if (!response.ok) throw new Error(m['finances.loadError']());
-      return response.json();
+      return failWithMessage(
+        api.finances.movements.request({
+          query: {
+            month,
+            currency,
+            timeZone,
+            limit: 20,
+            ...(pageParam ? { cursor: pageParam } : {}),
+          },
+        }),
+        m['finances.loadError'](),
+      );
     },
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
   });
@@ -203,9 +200,10 @@ function FinancesDashboard() {
 
   const createTransactionMutation = useMutation({
     mutationFn: async (input: FinanceTransactionInput) => {
-      const response = await createTransactionEndpoint({ json: input });
-      if (!response.ok) throw new Error(m['finances.saveFailed']());
-      return response.json();
+      return failWithMessage(
+        api.finances.createTransaction.request({ payload: input }),
+        m['finances.saveFailed'](),
+      );
     },
     onSuccess: async () => {
       await invalidateFinanceQueries();
@@ -227,9 +225,10 @@ function FinancesDashboard() {
 
   const budgetMutation = useMutation({
     mutationFn: async (input: FinanceBudgetInput) => {
-      const response = await upsertBudgetEndpoint({ json: input });
-      if (!response.ok) throw new Error(m['finances.budgetSaveFailed']());
-      return response.json();
+      return failWithMessage(
+        api.finances.upsertBudget.request({ payload: input }),
+        m['finances.budgetSaveFailed'](),
+      );
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['finances-summary'] });
@@ -247,9 +246,10 @@ function FinancesDashboard() {
 
   const categoryMutation = useMutation({
     mutationFn: async (input: FinanceCategoryInput) => {
-      const response = await createCategoryEndpoint({ json: input });
-      if (!response.ok) throw new Error(m['finances.categorySaveFailed']());
-      return response.json();
+      return failWithMessage(
+        api.finances.createCategory.request({ payload: input }),
+        m['finances.categorySaveFailed'](),
+      );
     },
     onSuccess: async () => {
       await Promise.all([
@@ -276,12 +276,13 @@ function FinancesDashboard() {
       id: string;
       input: FinanceCategoryUpdateInput;
     }) => {
-      const response = await updateCategoryEndpoint({
-        param: { id },
-        json: input,
-      });
-      if (!response.ok) throw new Error(m['finances.categoryUpdateFailed']());
-      return response.json();
+      return failWithMessage(
+        api.finances.updateCategory.request({
+          params: { id },
+          payload: input,
+        }),
+        m['finances.categoryUpdateFailed'](),
+      );
     },
     onSuccess: async (category) => {
       await Promise.all([
@@ -302,9 +303,10 @@ function FinancesDashboard() {
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await deleteCategoryEndpoint({ param: { id } });
-      if (!response.ok) throw new Error(m['finances.deleteCategoryFailed']());
-      return response.json();
+      return failWithMessage(
+        api.finances.deleteCategory.request({ params: { id } }),
+        m['finances.deleteCategoryFailed'](),
+      );
     },
     onSuccess: async () => {
       await Promise.all([

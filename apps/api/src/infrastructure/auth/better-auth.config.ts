@@ -3,84 +3,80 @@ import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { anonymous, emailOTP } from 'better-auth/plugins';
 
-import { env } from '#/config/env';
-import { db } from '#/infrastructure/database/connection';
-import { resend } from '#/infrastructure/email/resend.config';
+import type { PrismaClient } from '#/generated/prisma/client';
 
 const ONE_YEAR_IN_SECONDS = 60 * 60 * 24 * 365;
 
-const authConfig = {
-  baseURL: env.BETTER_AUTH_URL,
-  trustedOrigins: [
-    'https://app.vornway.com',
-    'vornway://',
-    ...(env.NODE_ENV === 'development'
-      ? [
-          'https://app.dev.vornway.com',
-          'exp://',
-          'exp://**',
-          'exp://192.168.*.*:*/**',
-        ]
-      : []),
-  ],
-  database: prismaAdapter(db, {
-    provider: 'postgresql',
-  }),
-  user: {
-    additionalFields: {
-      username: {
-        type: 'string',
-        required: false,
-        input: false,
-      },
-    },
-  },
-  session: {
-    expiresIn: ONE_YEAR_IN_SECONDS,
-    updateAge: 60 * 60 * 24,
-  },
-  emailAndPassword: {
-    enabled: true,
-  },
-  socialProviders: {
-    google: {
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
-    },
-  },
-  plugins: [
-    expo(),
-    emailOTP({
-      async sendVerificationOTP(data) {
-        console.log(data.email, data.otp);
-        if (env.NODE_ENV === 'production') {
-          await resend.emails.send({
-            from: 'security@updates.vornway.com',
-            to: data.email,
-            subject: 'Código de verificación',
-            html: `
-    <p>Hola,</p>
-    <p>Tu código de verificación es: <strong>${data.otp}</strong></p>
-    <p>Si no solicitaste este código, por favor ignora este mensaje.</p>
-    <p>Saludos,</p>
-    <p>El equipo de Splitway</p>
-  `,
-          });
-        }
-      },
-    }),
-    anonymous({
-      onLinkAccount: async ({ anonymousUser, newUser }) => {
-        // Transferir membresías de grupo del usuario anónimo al nuevo usuario
-        await db.groupMember.updateMany({
-          where: { userId: anonymousUser.user.id },
-          data: { userId: newUser.user.id },
-        });
-      },
-    }),
-  ],
-} satisfies BetterAuthOptions;
+type AuthDependencies = {
+  readonly db: PrismaClient;
+  readonly baseURL: string;
+  readonly secret: string;
+  readonly development: boolean;
+  readonly google: { readonly clientId: string; readonly clientSecret: string };
+  readonly sendVerificationOtp: (data: {
+    email: string;
+    otp: string;
+  }) => Promise<void>;
+};
 
-export const auth = betterAuth(authConfig) as ReturnType<
-  typeof betterAuth<typeof authConfig>
->;
+export const makeAuth = (deps: AuthDependencies) => {
+  const authConfig = {
+    baseURL: deps.baseURL,
+    secret: deps.secret,
+    trustedOrigins: [
+      'https://app.vornway.com',
+      'vornway://',
+      ...(deps.development
+        ? [
+            'https://app.dev.vornway.com',
+            'exp://',
+            'exp://**',
+            'exp://192.168.*.*:*/**',
+          ]
+        : []),
+    ],
+    database: prismaAdapter(deps.db, {
+      provider: 'postgresql',
+    }),
+    user: {
+      additionalFields: {
+        username: {
+          type: 'string',
+          required: false,
+          input: false,
+        },
+      },
+    },
+    session: {
+      expiresIn: ONE_YEAR_IN_SECONDS,
+      updateAge: 60 * 60 * 24,
+    },
+    emailAndPassword: {
+      enabled: true,
+    },
+    socialProviders: {
+      google: deps.google,
+    },
+    plugins: [
+      expo(),
+      emailOTP({
+        sendVerificationOTP: (data) => deps.sendVerificationOtp(data),
+      }),
+      anonymous({
+        onLinkAccount: async ({ anonymousUser, newUser }) => {
+          // Transferir membresías de grupo del usuario anónimo al nuevo usuario
+          await deps.db.groupMember.updateMany({
+            where: { userId: anonymousUser.user.id },
+            data: { userId: newUser.user.id },
+          });
+        },
+      }),
+    ],
+  } satisfies BetterAuthOptions;
+
+  return betterAuth(authConfig) as ReturnType<
+    typeof betterAuth<typeof authConfig>
+  >;
+};
+
+export type BetterAuth = ReturnType<typeof makeAuth>;

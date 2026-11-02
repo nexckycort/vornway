@@ -1,62 +1,8 @@
 import { createCollection, localStorageCollectionOptions } from '@tanstack/db';
+import type { ApiSuccess } from '@vornway/api-client';
 
-export type HomeApiResponse = {
-  groups: Array<{
-    id: string;
-    name: string;
-    type: string;
-    description: string | null;
-    imageUrl: string | null;
-    createdAt: string;
-    members: Array<{
-      id: string;
-      name: string;
-      image: string | null;
-    }>;
-    currentUser: {
-      memberId: string;
-      name: string;
-      image: string | null;
-    } | null;
-    hasExpenses: boolean;
-    participantBalances: Array<{
-      memberId: string;
-      memberName: string;
-      currency: string;
-      amount: number;
-      direction: 'theyOweYou' | 'youOweThem';
-      label: string;
-    }>;
-    totalsByCurrency: Record<string, number>;
-  }>;
-  goals: Array<{
-    id: string;
-    title: string;
-    description: string | null;
-    currency: string;
-    targetAmount: number;
-    savedAmount: number;
-    progress: number;
-    endDate: string;
-    createdAt: string;
-    group: {
-      id: string;
-      name: string;
-    };
-  }>;
-  recentDebts: Array<{
-    id: string;
-    name: string;
-    counterpartyName: string;
-    direction: 'lent' | 'borrowed';
-    currency: string;
-    expectedTotal: number;
-    paidAmount: number;
-    remainingAmount: number;
-    status: 'active' | 'paid' | 'overdue';
-    updatedAt: string;
-  }>;
-};
+// Copies read back from storage are JSON, so their dates are ISO strings; consumers only format them.
+export type HomeApiResponse = ApiSuccess<'home', 'summary'>;
 
 type CachedHomeSummary = {
   id: 'home-summary';

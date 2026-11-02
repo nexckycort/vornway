@@ -9,15 +9,10 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
-import { adminClient } from '#/api/admin';
+import { api, withErrorMessage } from '#/api/client';
 import { Button } from '#/components/ui/button';
 import { useAuth } from '#/contexts/auth/use-auth';
 import { getProfileMessages } from '#/routes/_authed/profile/-messages';
-
-type AdminStatsResponse = {
-  totalUsers: number;
-  totalGroups: number;
-};
 
 const ALLOWED_EMAIL = 'junior110120@gmail.com';
 
@@ -36,18 +31,11 @@ function RouteComponent() {
   const statsQuery = useQuery({
     queryKey: ['admin-stats'],
     enabled: isAllowed,
-    queryFn: async () => {
-      const response = await adminClient.stats.$get();
-
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-        throw new Error(payload?.error ?? t.statsPage.loadMetricsFailed);
-      }
-
-      return (await response.json()) as AdminStatsResponse;
-    },
+    queryFn: () =>
+      withErrorMessage(
+        api.admin.stats.request(),
+        t.statsPage.loadMetricsFailed,
+      ),
   });
 
   if (loading) {

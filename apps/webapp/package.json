@@ -14,7 +14,9 @@
     "deploy": "wrangler pages deploy --branch=main",
     "typecheck": "tsc --noEmit",
     "preview": "rsbuild preview",
-    "machine-translate": "inlang machine translate --project project.inlang"
+    "machine-translate": "inlang machine translate --project project.inlang",
+    "check:effect": "bun ../../scripts/check-single-effect.ts",
+    "sync:contracts": "pnpm install --frozen-lockfile --offline --ignore-scripts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -26,11 +28,13 @@
     "@tanstack/query-db-collection": "^1.0.36",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "^1.168.25",
-    "@vornway/api": "workspace:*",
+    "@vornway/api-client": "workspace:*",
+    "@vornway/contracts": "workspace:*",
     "better-auth": "^1.6.9",
     "class-variance-authority": "^0.7.1",
     "cnfast": "^0.0.8",
     "date-fns": "^4.4.0",
+    "effect": "catalog:",
     "embla-carousel-react": "^8.6.0",
     "html5-qrcode": "^2.3.8",
     "input-otp": "^1.4.2",
@@ -58,5 +62,13 @@
     "portless": "catalog:",
     "typescript": "catalog:",
     "wrangler": "catalog:"
+  },
+  "dependenciesMeta": {
+    "@vornway/api-client": {
+      "injected": true
+    },
+    "@vornway/contracts": {
+      "injected": true
+    }
   }
 }

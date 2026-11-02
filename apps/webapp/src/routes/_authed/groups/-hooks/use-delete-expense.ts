@@ -1,10 +1,7 @@
 import type { InfiniteData } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { groupsClient } from '#/api/groups';
+import { api, withErrorMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
-
-const deleteExpenseEndpoint =
-  groupsClient[':id'].expenses[':expenseId'].$delete;
 
 type DeleteExpenseInput = {
   groupId: string;
@@ -34,22 +31,11 @@ function invalidateFinanceQueries(
   ]);
 }
 
-async function deleteExpense({ groupId, expenseId }: DeleteExpenseInput) {
-  const response = await deleteExpenseEndpoint({
-    param: {
-      id: groupId,
-      expenseId,
-    },
-  });
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as {
-      error?: string;
-    } | null;
-    throw new Error(payload?.error ?? m['system.deleteExpenseFailed']());
-  }
-
-  return response.json() as Promise<{ id: string }>;
+function deleteExpense({ groupId, expenseId }: DeleteExpenseInput) {
+  return withErrorMessage(
+    api.groups.removeExpense.request({ params: { id: groupId, expenseId } }),
+    m['system.deleteExpenseFailed'](),
+  );
 }
 
 export function useDeleteExpenseMutation(groupId: string) {

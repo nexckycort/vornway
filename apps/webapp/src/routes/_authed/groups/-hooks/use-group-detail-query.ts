@@ -3,9 +3,9 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import type { ApiSuccess, Cursor } from '@vornway/api-client';
 import { useEffect } from 'react';
-import { groupsClient } from '#/api/groups';
-import type { InferResponseType } from '#/api/types';
+import { api, failWithMessage, withErrorMessage } from '#/api/client';
 import {
   type GroupExpensesPageSuccess,
   getCachedGroupExpensesPage,
@@ -28,15 +28,6 @@ import type {
 } from '../$id/-types/group-detail.types';
 
 const PAGE_LIMIT = 20;
-
-const groupSummaryEndpoint = groupsClient[':id'].$get;
-const groupExpensesEndpoint = groupsClient[':id'].expenses.$get;
-const groupExpenseEndpoint = groupsClient[':id'].expenses[':expenseId'].$get;
-const groupReportsTotalsEndpoint = groupsClient[':id'].reports.totals.$get;
-const groupReportsCategoryCountEndpoint =
-  groupsClient[':id'].reports['category-count'].$get;
-const groupReportsBalancesEndpoint = groupsClient[':id'].reports.balances.$get;
-const groupReportsSharesEndpoint = groupsClient[':id'].reports.shares.$get;
 
 function buildPendingGroupSummary(group: PendingGroup): GroupSummary {
   const ownerMemberId = `${group.id}:owner`;
@@ -93,76 +84,12 @@ function buildPendingGroupSummary(group: PendingGroup): GroupSummary {
   };
 }
 
-type GroupExpenseResponse = InferResponseType<typeof groupExpenseEndpoint>;
-type GroupExpenseSuccess = Extract<GroupExpenseResponse, { id: string }>;
-type GroupReportsTotalsSuccess = {
-  range: 'all' | 'custom';
-  startDate?: string;
-  endDate?: string;
-  totalsByCurrency: Record<string, number>;
-  expenseCountByCurrency: Record<string, number>;
-  currentUserSpentByCurrency: Record<string, number>;
-  categoriesByCurrency: Record<
-    string,
-    Array<{
-      key: string;
-      id: string | null;
-      name: string;
-      icon: string | null;
-      expenseCount: number;
-      amount: number;
-      fill: string;
-    }>
-  >;
-  tagsByCurrency: Record<
-    string,
-    Array<{
-      key: string;
-      name: string;
-      amount: number;
-      fill: string;
-    }>
-  >;
-};
-
-type GroupReportsBalancesSuccess = {
-  range: 'all' | 'custom';
-  startDate?: string;
-  endDate?: string;
-  memberBalances: Array<{
-    memberId: string;
-    name: string;
-    isCurrentUser: boolean;
-    balances: Record<string, number>;
-  }>;
-};
-
-type GroupReportsCategoryCountSuccess = {
-  range: 'all' | 'custom';
-  startDate?: string;
-  endDate?: string;
-  expenseCount: number;
-};
-
-type GroupReportsSharesSuccess = {
-  range: 'all' | 'custom';
-  startDate?: string;
-  endDate?: string;
-  memberShares: Array<{
-    memberId: string;
-    name: string;
-    isCurrentUser: boolean;
-    shares: Record<string, number>;
-    categorySharesByCurrency: Record<string, Record<string, number>>;
-  }>;
-};
-
 function mapExpenseDetailToExpenseItem(
-  expense: GroupExpenseSuccess,
+  expense: ApiSuccess<'groups', 'getExpense'>,
 ): ExpenseItem {
   const paidByMembers =
     (
-      expense as GroupExpenseSuccess & {
+      expense as typeof expense & {
         paidByMembers?: ExpenseItem['paidByMembers'];
       }
     ).paidByMembers ?? [];
@@ -233,12 +160,11 @@ export function useGroupSummaryQuery(groupId: string) {
         return cachedGroup;
       }
 
-      let response: Awaited<ReturnType<typeof groupSummaryEndpoint>>;
-      try {
-        response = await groupSummaryEndpoint({
-          param: { id: groupId },
-        });
-      } catch {
+      const group = await api.groups.get
+        .request({ params: { id: groupId } })
+        .catch(() => undefined);
+
+      if (!group) {
         if (localGroup) {
           return buildPendingGroupSummary(localGroup);
         }
@@ -250,19 +176,6 @@ export function useGroupSummaryQuery(groupId: string) {
         throw new Error(m['system.loadGroupFailed']());
       }
 
-      if (!response.ok) {
-        if (localGroup) {
-          return buildPendingGroupSummary(localGroup);
-        }
-
-        if (cachedGroup) {
-          return cachedGroup;
-        }
-
-        throw new Error(m['system.loadGroupFailed']());
-      }
-
-      const group = (await response.json()) as unknown as GroupSummary;
       removeLocalGroupFallback(groupId);
       upsertCachedGroupSummary(group);
       return group;
@@ -273,7 +186,7 @@ export function useGroupSummaryQuery(groupId: string) {
 export function useGroupExpensesInfiniteQuery(groupId: string) {
   return useInfiniteQuery({
     queryKey: ['group-expenses', groupId],
-    initialPageParam: null as string | null,
+    initialPageParam: null as Cursor | null,
     queryFn: async ({ pageParam }) => {
       const cachedPage = await getCachedGroupExpensesPage(groupId, pageParam);
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -286,16 +199,17 @@ export function useGroupExpensesInfiniteQuery(groupId: string) {
         );
       }
 
-      let response: Awaited<ReturnType<typeof groupExpensesEndpoint>>;
-      try {
-        response = await groupExpensesEndpoint({
-          param: { id: groupId },
+      const page = await api.groups.listExpenses
+        .request({
+          params: { id: groupId },
           query: {
-            limit: String(PAGE_LIMIT),
+            limit: PAGE_LIMIT,
             ...(pageParam ? { cursor: pageParam } : {}),
           },
-        });
-      } catch {
+        })
+        .catch(() => undefined);
+
+      if (!page) {
         return (
           cachedPage ??
           ({
@@ -305,17 +219,6 @@ export function useGroupExpensesInfiniteQuery(groupId: string) {
         );
       }
 
-      if (!response.ok) {
-        return (
-          cachedPage ??
-          ({
-            data: [],
-            pagination: { limit: PAGE_LIMIT, total: 0, nextCursor: null },
-          } as GroupExpensesPageSuccess)
-        );
-      }
-
-      const page = (await response.json()) as GroupExpensesPageSuccess;
       await upsertCachedGroupExpensesPage(groupId, pageParam, page);
       return page;
     },
@@ -335,16 +238,10 @@ export function useGroupExpenseQuery(
         throw new Error(m['system.expenseNotFound']());
       }
 
-      const response = await groupExpenseEndpoint({
-        param: { id: groupId, expenseId },
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? m['system.loadExpenseFailed']());
-      }
-
-      return (await response.json()) as GroupExpenseSuccess;
+      return withErrorMessage(
+        api.groups.getExpense.request({ params: { id: groupId, expenseId } }),
+        m['system.loadExpenseFailed'](),
+      );
     },
   });
 }
@@ -362,14 +259,11 @@ export function usePinnedGroupExpensesQuery(
     queryFn: async () => {
       const results = await Promise.allSettled(
         stableIds.map(async (expenseId) => {
-          const response = await groupExpenseEndpoint({
-            param: { id: groupId, expenseId },
-          });
+          const expense = await api.groups.getExpense
+            .request({ params: { id: groupId, expenseId } })
+            .catch(() => null);
 
-          if (!response.ok) return null;
-
-          const payload = (await response.json()) as GroupExpenseSuccess;
-          return mapExpenseDetailToExpenseItem(payload);
+          return expense && mapExpenseDetailToExpenseItem(expense);
         }),
       );
 
@@ -405,22 +299,18 @@ export function useGroupReportsTotalsQuery(
     ],
     enabled,
     placeholderData: (previous) => previous,
-    queryFn: async () => {
-      const response = await groupReportsTotalsEndpoint({
-        param: { id: groupId },
-        query: {
-          range: filter.range,
-          ...(filter.startDate ? { startDate: filter.startDate } : {}),
-          ...(filter.endDate ? { endDate: filter.endDate } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(m['system.loadTotalsFailed']());
-      }
-
-      return (await response.json()) as GroupReportsTotalsSuccess;
-    },
+    queryFn: () =>
+      failWithMessage(
+        api.groups.reportTotals.request({
+          params: { id: groupId },
+          query: {
+            range: filter.range,
+            ...(filter.startDate ? { startDate: filter.startDate } : {}),
+            ...(filter.endDate ? { endDate: filter.endDate } : {}),
+          },
+        }),
+        m['system.loadTotalsFailed'](),
+      ),
   });
 }
 
@@ -443,22 +333,18 @@ export function useGroupReportsBalancesQuery(
     ],
     enabled,
     placeholderData: (previous) => previous,
-    queryFn: async () => {
-      const response = await groupReportsBalancesEndpoint({
-        param: { id: groupId },
-        query: {
-          range: filter.range,
-          ...(filter.startDate ? { startDate: filter.startDate } : {}),
-          ...(filter.endDate ? { endDate: filter.endDate } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(m['system.loadBalancesFailed']());
-      }
-
-      return (await response.json()) as GroupReportsBalancesSuccess;
-    },
+    queryFn: () =>
+      failWithMessage(
+        api.groups.reportBalances.request({
+          params: { id: groupId },
+          query: {
+            range: filter.range,
+            ...(filter.startDate ? { startDate: filter.startDate } : {}),
+            ...(filter.endDate ? { endDate: filter.endDate } : {}),
+          },
+        }),
+        m['system.loadBalancesFailed'](),
+      ),
   });
 }
 
@@ -489,28 +375,24 @@ export function useGroupReportsCategoryCountQuery(
     ],
     enabled,
     placeholderData: (previous) => previous,
-    queryFn: async () => {
-      const response = await groupReportsCategoryCountEndpoint({
-        param: { id: groupId },
-        query: {
-          range: filter.range,
-          currency: filter.currency,
-          ...(filter.categoryId ? { categoryId: filter.categoryId } : {}),
-          ...(filter.uncategorized ? { uncategorized: 'true' } : {}),
-          ...(filter.startDate ? { startDate: filter.startDate } : {}),
-          ...(filter.endDate ? { endDate: filter.endDate } : {}),
-          ...(filter.participantIds && filter.participantIds.length > 0
-            ? { participantIds: filter.participantIds.join(',') }
-            : {}),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(m['system.loadExpenseTotalFailed']());
-      }
-
-      return (await response.json()) as GroupReportsCategoryCountSuccess;
-    },
+    queryFn: () =>
+      failWithMessage(
+        api.groups.reportCategoryCount.request({
+          params: { id: groupId },
+          query: {
+            range: filter.range,
+            currency: filter.currency,
+            ...(filter.categoryId ? { categoryId: filter.categoryId } : {}),
+            ...(filter.uncategorized ? { uncategorized: true } : {}),
+            ...(filter.startDate ? { startDate: filter.startDate } : {}),
+            ...(filter.endDate ? { endDate: filter.endDate } : {}),
+            ...(filter.participantIds && filter.participantIds.length > 0
+              ? { participantIds: filter.participantIds.join(',') }
+              : {}),
+          },
+        }),
+        m['system.loadExpenseTotalFailed'](),
+      ),
   });
 }
 
@@ -533,21 +415,17 @@ export function useGroupReportsSharesQuery(
     ],
     enabled,
     placeholderData: (previous) => previous,
-    queryFn: async () => {
-      const response = await groupReportsSharesEndpoint({
-        param: { id: groupId },
-        query: {
-          range: filter.range,
-          ...(filter.startDate ? { startDate: filter.startDate } : {}),
-          ...(filter.endDate ? { endDate: filter.endDate } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(m['system.loadSharesFailed']());
-      }
-
-      return (await response.json()) as GroupReportsSharesSuccess;
-    },
+    queryFn: () =>
+      failWithMessage(
+        api.groups.reportShares.request({
+          params: { id: groupId },
+          query: {
+            range: filter.range,
+            ...(filter.startDate ? { startDate: filter.startDate } : {}),
+            ...(filter.endDate ? { endDate: filter.endDate } : {}),
+          },
+        }),
+        m['system.loadSharesFailed'](),
+      ),
   });
 }

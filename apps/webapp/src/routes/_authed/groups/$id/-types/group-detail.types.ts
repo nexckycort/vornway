@@ -13,7 +13,7 @@ export type ExpenseItem = {
   isDeleted: boolean;
   isSettlement: boolean;
   isPersonal: boolean;
-  expenseType: 'standard' | 'composite';
+  expenseType: 'standard' | 'composite' | 'unknown';
   subExpenseCount: number;
   settlementToName: string | null;
   paidBy: {

@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 
 import { AppError } from '#/shared/errors/app-error';
 import { isErrorMetadata } from '#/shared/errors/is-error-metadata';
-import authedRoutes from '../routes/authed/routes';
 import { createLoginOperations } from '../routes/public/login/auth/login-operations';
 import { createOAuthRouter } from '../routes/public/login/oauth/routes';
 import publicRoutes from '../routes/public/routes';
@@ -43,8 +42,7 @@ export function createHttpApp(): Hono {
 
   app
     .route('/', publicRoutes)
-    .route('/oauth', createOAuthRouter(createLoginOperations()))
-    .route('/', authedRoutes);
+    .route('/oauth', createOAuthRouter(createLoginOperations()));
 
   app.route('/', createMcpHttpRouter());
 

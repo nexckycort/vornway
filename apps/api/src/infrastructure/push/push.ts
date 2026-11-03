@@ -1,13 +1,20 @@
 import {
+  type Cause,
   Context,
   Data,
+  DateTime,
   Effect,
   Layer,
   Predicate,
   Redacted,
   Result,
+  Schema,
 } from 'effect';
-import { HttpClient, HttpClientRequest } from 'effect/http';
+import {
+  HttpClient,
+  type HttpClientError,
+  HttpClientRequest,
+} from 'effect/http';
 import webpush from 'web-push';
 import { env } from '#/config/env';
 import { DatabaseClient } from '#/infrastructure/database/database';
@@ -29,6 +36,8 @@ class DeliveryError extends Data.TaggedError('DeliveryError')<{
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 const DELIVERY_TIMEOUT = '10 seconds';
 
+const stringifyJson = Schema.encodeSync(Schema.fromJsonString(Schema.Unknown));
+
 export class Push extends Context.Service<
   Push,
   {
@@ -44,7 +53,7 @@ export class Push extends Context.Service<
       payload: PushNotificationPayload,
     ): Effect.Effect<void, PushError>;
   }
->()('vornway/Push') {
+>()('@vornway/api/infrastructure/push/push') {
   static readonly layer = Layer.effect(
     Push,
     Effect.gen(function* () {
@@ -101,7 +110,7 @@ export class Push extends Context.Service<
                 endpoint: subscription.endpoint,
                 keys: { p256dh: subscription.p256dh, auth: subscription.auth },
               },
-              JSON.stringify(payload),
+              stringifyJson(payload),
               { vapidDetails: vapid },
             ),
           ),
@@ -116,10 +125,12 @@ export class Push extends Context.Service<
         },
         payload: PushNotificationPayload,
       ) => {
-        const send: Effect.Effect<void, unknown> =
-          subscription.userAgent?.startsWith('expo:')
-            ? deliverToExpo(subscription, payload)
-            : deliverToBrowser(subscription, payload);
+        const send: Effect.Effect<
+          void,
+          HttpClientError.HttpClientError | Cause.UnknownError
+        > = subscription.userAgent?.startsWith('expo:')
+          ? deliverToExpo(subscription, payload)
+          : deliverToBrowser(subscription, payload);
         return send.pipe(
           Effect.timeout(DELIVERY_TIMEOUT),
           Effect.mapError(
@@ -157,10 +168,11 @@ export class Push extends Context.Service<
 
       const revokeSubscription = Effect.fn('Push.revokeSubscription')(
         function* ({ userId, endpoint }: { userId: string; endpoint: string }) {
+          const now = yield* DateTime.nowAsDate;
           yield* attempt(() =>
             client.pushSubscription.updateMany({
               where: { endpoint, userId },
-              data: { revokedAt: new Date() },
+              data: { revokedAt: now },
             }),
           );
         },
@@ -218,10 +230,11 @@ export class Push extends Context.Service<
         );
 
         if (gone.length === 0) return;
+        const now = yield* DateTime.nowAsDate;
         yield* attempt(() =>
           client.pushSubscription.updateMany({
             where: { id: { in: gone } },
-            data: { revokedAt: new Date() },
+            data: { revokedAt: now },
           }),
         );
       });

@@ -1,7 +1,8 @@
+import { DateTime } from 'effect';
 import { resolveUserImageUrl } from '#/infrastructure/storage/image-urls';
 import type { GoalDetailRow, GoalListRow } from './queries';
 
-export const summarizeGoal = (goal: GoalListRow) => {
+export const summarizeGoal = (goal: GoalListRow, now: Date) => {
   const savedAmount = totalOf(goal.contributions);
   const participantCount = goal.group._count.GroupMember;
   const monthlyTarget = monthlyTargetOf(goal);
@@ -21,7 +22,7 @@ export const summarizeGoal = (goal: GoalListRow) => {
     endDate: goal.endDate,
     createdAt: goal.createdAt,
     participantCount,
-    daysLeft: Math.max(0, differenceInCalendarDays(new Date(), goal.endDate)),
+    daysLeft: Math.max(0, differenceInCalendarDays(now, goal.endDate)),
     monthlyTarget,
     perMemberMonthlyTarget: normalizeAmount(
       monthlyTarget / Math.max(1, participantCount),
@@ -30,8 +31,11 @@ export const summarizeGoal = (goal: GoalListRow) => {
   };
 };
 
-export const summarizeGoalDetail = (goal: GoalDetailRow, userId: string) => {
-  const now = new Date();
+export const summarizeGoalDetail = (
+  goal: GoalDetailRow,
+  userId: string,
+  now: Date,
+) => {
   const currentMonthKey = monthKey(now);
   const savedAmount = totalOf(goal.contributions);
   const members = goal.group.GroupMember;
@@ -141,6 +145,7 @@ export const summarizeGoalDetail = (goal: GoalDetailRow, userId: string) => {
         savedAmount,
         goal.targetAmount,
         goal.contributions,
+        now,
       ),
       currentMonthContributionTotal: totalOf(currentMonthContributions),
       contributorsThisMonth: new Set(
@@ -180,12 +185,15 @@ const monthlyTargetOf = (goal: {
   );
 
 const differenceInCalendarDays = (from: Date, to: Date) => {
-  const fromDate = new Date(from);
-  const toDate = new Date(to);
+  const fromDate = cloneDate(from);
+  const toDate = cloneDate(to);
   fromDate.setHours(0, 0, 0, 0);
   toDate.setHours(0, 0, 0, 0);
   return Math.ceil((toDate.getTime() - fromDate.getTime()) / 86_400_000);
 };
+
+const cloneDate = (value: Date) =>
+  DateTime.toDateUtc(DateTime.makeUnsafe(value));
 
 const monthKey = (value: Date) =>
   `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}`;
@@ -194,9 +202,10 @@ const projectedCompletionDate = (
   savedAmount: number,
   targetAmount: number,
   contributions: readonly { amount: number; contributedAt: Date }[],
+  now: Date,
 ) => {
   const remaining = targetAmount - savedAmount;
-  if (remaining <= 0) return new Date();
+  if (remaining <= 0) return cloneDate(now);
   const sorted = [...contributions].sort(
     (left, right) =>
       left.contributedAt.getTime() - right.contributedAt.getTime(),
@@ -211,7 +220,7 @@ const projectedCompletionDate = (
     days;
   if (ratePerDay <= 0) return null;
 
-  const projected = new Date();
+  const projected = cloneDate(now);
   projected.setDate(projected.getDate() + Math.ceil(remaining / ratePerDay));
   return projected;
 };

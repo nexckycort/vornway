@@ -1,9 +1,12 @@
 import { describe, expect, test } from 'bun:test';
+import { DateTime } from 'effect';
 import { monthRange } from './calendar';
+
+const now = DateTime.toDateUtc(DateTime.makeUnsafe('2026-04-15T12:00:00Z'));
 
 describe('monthRange', () => {
   test('spans the month in the given time zone', () => {
-    const range = monthRange('2026-04', 'America/Bogota');
+    const range = monthRange(now, '2026-04', 'America/Bogota');
 
     expect(range.key).toBe('2026-04');
     expect(range.start.toISOString()).toBe('2026-04-01T05:00:00.000Z');
@@ -12,13 +15,13 @@ describe('monthRange', () => {
   });
 
   test('falls back to UTC for an unknown time zone', () => {
-    const range = monthRange('2026-12', 'Not/AZone');
+    const range = monthRange(now, '2026-12', 'Not/AZone');
 
     expect(range.start.toISOString()).toBe('2026-12-01T00:00:00.000Z');
     expect(range.end.toISOString()).toBe('2027-01-01T00:00:00.000Z');
   });
 
   test('defaults to the current month', () => {
-    expect(monthRange().key).toMatch(/^\d{4}-\d{2}$/);
+    expect(monthRange(now).key).toBe('2026-04');
   });
 });

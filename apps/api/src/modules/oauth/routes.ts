@@ -1,4 +1,4 @@
-import { Clock, Effect, Layer, Schema } from 'effect';
+import { Clock, Crypto, Effect, Layer, Schema } from 'effect';
 import {
   HttpRouter,
   HttpServerRequest,
@@ -50,6 +50,7 @@ const OAuthRoutesBase = HttpRouter.use((router) =>
     const codes = yield* AuthorizationCodes;
     const login = yield* Login;
     const tokens = yield* McpTokens;
+    const crypto = yield* Crypto.Crypto;
 
     const pageFor = (
       client: {
@@ -177,11 +178,12 @@ const OAuthRoutesBase = HttpRouter.use((router) =>
         !grant ||
         grant.clientId !== form.client_id ||
         grant.redirectUri !== form.redirect_uri ||
-        !verifyPkce(
+        !(yield* verifyPkce(
+          crypto,
           form.code_verifier,
           grant.codeChallenge,
           grant.codeChallengeMethod,
-        )
+        ))
       ) {
         return noStoreJson({ error: 'invalid_grant' }, 400);
       }

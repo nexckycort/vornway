@@ -2,6 +2,8 @@ import { describe, expect } from 'bun:test';
 import { Effect } from 'effect';
 import { makeTestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
+import { randomId } from '../../../testkit/id';
+import { stringifyJson } from '../../../testkit/json';
 import { signIn } from '../../../testkit/login';
 import {
   addMember,
@@ -21,7 +23,7 @@ describe('groups', () => {
       const post = {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name: 'Viaje', type: 'trip' }),
+        body: stringifyJson({ name: 'Viaje', type: 'trip' }),
       };
 
       const responses = yield* Effect.all([
@@ -92,7 +94,7 @@ describe('groups', () => {
           const app = yield* makeTestApp();
           const ana = yield* signIn(app, 'ana@vornway.test');
           const bruno = yield* signIn(app, 'bruno@vornway.test');
-          const id = crypto.randomUUID();
+          const id = yield* randomId;
 
           const response = yield* ana.device.post('/api/groups', {
             id,

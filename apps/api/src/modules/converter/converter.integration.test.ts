@@ -1,10 +1,10 @@
 import { describe, expect } from 'bun:test';
-import { Effect } from 'effect';
+import { DateTime, Effect } from 'effect';
 import { makeTestApp, type TestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
 import { signIn } from '../../../testkit/login';
 
-const FRESH_AT = new Date().toISOString();
+const FRESH_AT = DateTime.formatIso(DateTime.nowUnsafe());
 const STALE_AT = '2026-01-01T00:00:00.000Z';
 
 const frankfurter = {

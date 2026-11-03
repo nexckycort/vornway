@@ -37,13 +37,17 @@ type DebtWithRelations = Prisma.DebtGetPayload<{ include: typeof debtInclude }>;
 
 type AccountView = DebtWithRelations['payments'][number]['account'];
 
-export const toDebtView = (debt: DebtWithRelations, viewerId: string) => {
+export const toDebtView = (
+  debt: DebtWithRelations,
+  viewerId: string,
+  now: Date,
+) => {
   const paidAmount = sumAmounts(debt.payments);
   const remainingAmount = money(Math.max(debt.expectedTotal - paidAmount, 0));
   const status =
     remainingAmount <= 0
       ? 'paid'
-      : debt.dueDate && debt.dueDate < new Date()
+      : debt.dueDate && debt.dueDate < now
         ? 'overdue'
         : 'active';
   return {

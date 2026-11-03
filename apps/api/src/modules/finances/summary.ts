@@ -1,7 +1,7 @@
 import type { InternalError } from '@vornway/contracts/errors';
 import type { SummaryQuery } from '@vornway/contracts/modules/finances/inputs';
 import type { FinanceSummary } from '@vornway/contracts/modules/finances/summary';
-import { Context, Effect, Layer } from 'effect';
+import { Context, DateTime, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { monthRange } from './calendar';
 import { FinanceDefaults } from './defaults';
@@ -16,7 +16,7 @@ export class FinanceOverview extends Context.Service<
       query: typeof SummaryQuery.Type,
     ): Effect.Effect<typeof FinanceSummary.Type, InternalError>;
   }
->()('vornway/finances/FinanceOverview') {
+>()('@vornway/api/modules/finances/summary/FinanceOverview') {
   static readonly layer = Layer.effect(
     FinanceOverview,
     Effect.gen(function* () {
@@ -28,7 +28,8 @@ export class FinanceOverview extends Context.Service<
         query: typeof SummaryQuery.Type,
       ) {
         yield* defaults.ensure(userId, query.currency);
-        const range = monthRange(query.month, query.timeZone);
+        const now = yield* DateTime.nowAsDate;
+        const range = monthRange(now, query.month, query.timeZone);
         const involvesUser = {
           OR: [{ ownerId: userId }, { counterpartyId: userId }],
         };

@@ -2,6 +2,7 @@ import { describe, expect } from 'bun:test';
 import { Effect } from 'effect';
 import { makeTestApp, type TestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
+import { parseJson, stringifyJson } from '../../../testkit/json';
 
 type RpcResponse = {
   readonly result?: Record<string, unknown>;
@@ -33,7 +34,7 @@ const rpc = (
         'content-type': 'application/json',
         accept: 'application/json, text/event-stream',
       },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, ...body }),
+      body: stringifyJson({ jsonrpc: '2.0', id: 1, ...body }),
     });
     const text = yield* Effect.promise(() => response.text());
     const data = text
@@ -42,7 +43,7 @@ const rpc = (
       ?.slice('data: '.length);
     return {
       status: response.status,
-      message: (data ? JSON.parse(data) : null) as RpcResponse | null,
+      message: (data ? parseJson(data) : null) as RpcResponse | null,
     };
   });
 
@@ -173,7 +174,7 @@ describe('mcp', () => {
           content: [
             {
               type: 'text',
-              text: JSON.stringify({
+              text: stringifyJson({
                 module: 'expenses',
                 status: 'ok',
                 userId: ana.userId,

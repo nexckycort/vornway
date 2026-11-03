@@ -1,6 +1,6 @@
 import type { InternalError } from '@vornway/contracts/errors';
 import type { HomeSummary } from '@vornway/contracts/modules/home/contract';
-import { Context, Effect, Layer } from 'effect';
+import { Context, DateTime, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { summarizeDebt, summarizeGoal } from './goal-debt-summary';
 import { summarizeGroup } from './group-summary';
@@ -14,7 +14,7 @@ export class Home extends Context.Service<
       userId: string,
     ): Effect.Effect<typeof HomeSummary.Type, InternalError>;
   }
->()('vornway/home/Home') {
+>()('@vornway/api/modules/home/service/Home') {
   static readonly layer = Layer.effect(
     Home,
     Effect.gen(function* () {
@@ -129,12 +129,14 @@ export class Home extends Context.Service<
           { concurrency: 'unbounded' },
         );
 
+        const now = yield* DateTime.nowAsDate;
+
         return {
           groups: groups.map((group) =>
             summarizeGroup(group, userId, currentUser),
           ),
           goals: goals.map(summarizeGoal),
-          recentDebts: debts.map((debt) => summarizeDebt(debt, userId)),
+          recentDebts: debts.map((debt) => summarizeDebt(debt, userId, now)),
         };
       });
 

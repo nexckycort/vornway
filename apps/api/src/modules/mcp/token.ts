@@ -1,4 +1,3 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
 import {
   Clock,
   Context,
@@ -38,7 +37,7 @@ export class McpTokens extends Context.Service<
     ): Effect.Effect<{ accessToken: string; expiresIn: number }>;
     verify(token: string): Effect.Effect<McpUser | null>;
   }
->()('vornway/mcp/McpTokens') {
+>()('@vornway/api/modules/mcp/token/McpTokens') {
   static readonly layer = Layer.effect(
     McpTokens,
     Effect.gen(function* () {
@@ -111,10 +110,10 @@ const encode = (value: object) =>
   Buffer.from(JSON.stringify(value), 'utf8').toString('base64url');
 
 const sign = (data: string, secret: string) =>
-  createHmac('sha256', secret).update(data).digest('base64url');
+  new Bun.CryptoHasher('sha256', secret).update(data).digest('base64url');
 
 const safeEqual = (a: string, b: string) => {
   const left = Buffer.from(a, 'utf8');
   const right = Buffer.from(b, 'utf8');
-  return left.length === right.length && timingSafeEqual(left, right);
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
 };

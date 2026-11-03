@@ -1,5 +1,5 @@
 import { Cursor } from '@vornway/contracts/schema';
-import { Context, Data, Effect, Layer } from 'effect';
+import { Context, Data, DateTime, Effect, Layer } from 'effect';
 import { DatabaseClient } from '#/infrastructure/database/database';
 import { resolveUserImageUrl } from '#/infrastructure/storage/image-urls';
 import type {
@@ -29,7 +29,7 @@ export class NotificationInbox extends Context.Service<
     }): Effect.Effect<ListNotificationsResult, NotificationInboxError>;
     markAllAsRead(userId: string): Effect.Effect<void, NotificationInboxError>;
   }
->()('vornway/NotificationInbox') {
+>()('@vornway/api/infrastructure/notifications/inbox/NotificationInbox') {
   static readonly layer = Layer.effect(
     NotificationInbox,
     Effect.gen(function* () {
@@ -119,10 +119,11 @@ export class NotificationInbox extends Context.Service<
 
       const markAllAsRead = Effect.fn('NotificationInbox.markAllAsRead')(
         function* (userId: string) {
+          const now = yield* DateTime.nowAsDate;
           yield* attempt(() =>
             client.notification.updateMany({
               where: { userId, readAt: null },
-              data: { readAt: new Date() },
+              data: { readAt: now },
             }),
           );
         },

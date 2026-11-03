@@ -1,5 +1,8 @@
-import { Effect, Option, Schema } from 'effect';
+import { DateTime, Effect, Option, Schema } from 'effect';
 import type { Prisma } from '#/generated/prisma/client';
+
+export const parseDate = (value: string) =>
+  DateTime.toDateUtc(DateTime.makeUnsafe(value));
 
 export const normalizeAmount = (value: number) => Number(value.toFixed(2));
 
@@ -46,7 +49,12 @@ export const reportExpenses = (input: {
 }): Prisma.ExpenseWhereInput => ({
   ...activeExpenses(input.groupId),
   ...(input.range === 'custom' && input.startDate && input.endDate
-    ? { date: { gte: new Date(input.startDate), lte: new Date(input.endDate) } }
+    ? {
+        date: {
+          gte: parseDate(input.startDate),
+          lte: parseDate(input.endDate),
+        },
+      }
     : {}),
 });
 
@@ -55,7 +63,7 @@ export const calculateTotalsByCurrency = (
     amount: number;
     currency: string;
     notes?: string | null;
-    participants: ReadonlyArray<unknown>;
+    participants: readonly unknown[];
   }[],
   options?: { includeParticipantlessExpenses?: boolean },
 ) =>

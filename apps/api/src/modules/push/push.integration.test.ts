@@ -2,6 +2,7 @@ import { describe, expect } from 'bun:test';
 import { Effect } from 'effect';
 import { makeTestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
+import { stringifyJson } from '../../../testkit/json';
 import { signIn } from '../../../testkit/login';
 
 const ENDPOINT = 'https://push.example.com/subscriptions/ana';
@@ -17,7 +18,7 @@ describe('push', () => {
       const result = yield* app.fetch('/api/push/subscriptions', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ endpoint: ENDPOINT, keys: KEYS }),
+        body: stringifyJson({ endpoint: ENDPOINT, keys: KEYS }),
       });
 
       expect(result.status).toBe(401);

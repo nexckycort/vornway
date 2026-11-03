@@ -2,6 +2,7 @@ import { describe, expect } from 'bun:test';
 import { Effect } from 'effect';
 import { makeTestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
+import { stringifyJson } from '../../../testkit/json';
 import { signIn } from '../../../testkit/login';
 
 const DATA_URL = 'data:image/png;base64,iVBORw0KGgo=';
@@ -18,7 +19,7 @@ describe('users', () => {
         (yield* app.fetch('/api/users/me/username', {
           method: 'PATCH',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ username: 'ana' }),
+          body: stringifyJson({ username: 'ana' }),
         })).status,
       ).toBe(401);
     }),

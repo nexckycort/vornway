@@ -1,12 +1,15 @@
 import { describe, expect } from 'bun:test';
-import { createHash } from 'node:crypto';
 import { Effect } from 'effect';
+import { Base64Url } from 'effect/encoding';
 import { makeTestApp, type TestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
+import { stringifyJson } from '../../../testkit/json';
 
 const REDIRECT = 'https://claude.ai/api/mcp/callback';
 const VERIFIER = 'a-code-verifier-that-is-long-enough-to-be-valid-0123456789';
-const CHALLENGE = createHash('sha256').update(VERIFIER).digest('base64url');
+const CHALLENGE = Base64Url.encode(
+  new Bun.CryptoHasher('sha256').update(VERIFIER).digest(),
+);
 
 const form = (app: TestApp, path: string, fields: Record<string, string>) =>
   app.fetch(path, {
@@ -153,7 +156,7 @@ describe('oauth', () => {
       app.fetch('/oauth/register', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
+        body: stringifyJson(body),
       });
 
     testEffect('issues a public client for safe redirect URIs', () =>
@@ -316,7 +319,7 @@ describe('oauth', () => {
             'content-type': 'application/json',
             accept: 'application/json, text/event-stream',
           },
-          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+          body: stringifyJson({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
         });
         expect(yield* Effect.promise(() => mcp.text())).toContain(
           'expenses_health',

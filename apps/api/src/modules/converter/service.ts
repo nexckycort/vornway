@@ -3,7 +3,7 @@ import {
   type CurrencyConverter as CurrencyConverterSchema,
   CURRENCIES,
 } from '@vornway/contracts/modules/converter/contract';
-import { Context, Effect, Layer } from 'effect';
+import { Clock, Context, Effect, Layer } from 'effect';
 import { HttpClient } from 'effect/http';
 import { Database } from '#/infrastructure/database/database';
 import { makeInternalFailure } from '#/infrastructure/http/errors';
@@ -19,7 +19,7 @@ export class Converter extends Context.Service<
   {
     rates(): Effect.Effect<typeof CurrencyConverterSchema.Type, InternalError>;
   }
->()('vornway/converter/Converter') {
+>()('@vornway/api/modules/converter/service/Converter') {
   static readonly layer = Layer.effect(
     Converter,
     Effect.gen(function* () {
@@ -36,8 +36,8 @@ export class Converter extends Context.Service<
               select: { createdAt: true },
             }),
           );
-          if (latest && Date.now() - latest.createdAt.getTime() < SIX_HOURS_MS)
-            return;
+          const now = yield* Clock.currentTimeMillis;
+          if (latest && now - latest.createdAt.getTime() < SIX_HOURS_MS) return;
 
           const snapshot = yield* fetchRateSnapshot(client);
           yield* database.use((db) =>

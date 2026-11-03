@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Option, Schema } from 'effect';
+import { Context, Crypto, Effect, Layer, Option, Schema } from 'effect';
 import { env } from '#/config/env';
 
 export type OAuthClient = {
@@ -40,10 +40,11 @@ export class OAuthClients extends Context.Service<
       redirectUri: string,
     ): Effect.Effect<OAuthClient | null>;
   }
->()('vornway/oauth/OAuthClients') {
+>()('@vornway/api/modules/oauth/clients/OAuthClients') {
   static readonly layer = Layer.effect(
     OAuthClients,
     Effect.gen(function* () {
+      const crypto = yield* Crypto.Crypto;
       const configured = yield* env.mcpOauthClients.pipe(
         Effect.flatMap((json) =>
           Option.match(json, {
@@ -56,11 +57,13 @@ export class OAuthClients extends Context.Service<
 
       const register = Effect.fn('OAuthClients.register')(
         (input: ClientRegistration) =>
-          Effect.sync(() => {
-            const client = newClient(input);
-            if (client) dynamic.set(client.client_id, client);
+          Effect.gen(function* () {
+            if (!isValidRegistration(input)) return null;
+            const clientId = yield* crypto.randomUUIDv4();
+            const client = newClient(input, clientId);
+            dynamic.set(client.client_id, client);
             return client;
-          }),
+          }).pipe(Effect.orElseSucceed(() => null)),
       );
 
       const resolve = Effect.fn('OAuthClients.resolve')(
@@ -111,21 +114,20 @@ const isSafeRedirectUri = (redirectUri: string) => {
   );
 };
 
-const newClient = (input: ClientRegistration): OAuthClient | null => {
-  if (input.redirect_uris.length === 0) return null;
-  if (!input.redirect_uris.every(isSafeRedirectUri)) return null;
-  const method = input.token_endpoint_auth_method;
-  if (method && method !== 'none') return null;
+const isValidRegistration = (input: ClientRegistration) =>
+  input.redirect_uris.length > 0 &&
+  input.redirect_uris.every(isSafeRedirectUri) &&
+  (!input.token_endpoint_auth_method ||
+    input.token_endpoint_auth_method === 'none');
 
-  return {
-    client_id: `mcp_${crypto.randomUUID().replaceAll('-', '')}`,
-    client_name: input.client_name,
-    redirect_uris: input.redirect_uris,
-    grant_types: input.grant_types ?? ['authorization_code'],
-    response_types: input.response_types ?? ['code'],
-    token_endpoint_auth_method: 'none',
-  };
-};
+const newClient = (input: ClientRegistration, uuid: string): OAuthClient => ({
+  client_id: `mcp_${uuid.replaceAll('-', '')}`,
+  client_name: input.client_name,
+  redirect_uris: input.redirect_uris,
+  grant_types: input.grant_types ?? ['authorization_code'],
+  response_types: input.response_types ?? ['code'],
+  token_endpoint_auth_method: 'none',
+});
 
 const anonymousClient = (
   clientId: string,

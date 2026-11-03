@@ -2,7 +2,7 @@ import type { InternalError } from '@vornway/contracts/errors';
 import type { FinanceBudgetWithCategory } from '@vornway/contracts/modules/finances/entities';
 import { InvalidFinanceCategory } from '@vornway/contracts/modules/finances/errors';
 import type { UpsertBudgetPayload } from '@vornway/contracts/modules/finances/inputs';
-import { Context, Effect, Layer } from 'effect';
+import { Context, DateTime, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { monthRange } from './calendar';
 import { FinanceDefaults } from './defaults';
@@ -19,7 +19,7 @@ export class FinanceBudgets extends Context.Service<
       InvalidFinanceCategory | InternalError
     >;
   }
->()('vornway/finances/FinanceBudgets') {
+>()('@vornway/api/modules/finances/budgets/FinanceBudgets') {
   static readonly layer = Layer.effect(
     FinanceBudgets,
     Effect.gen(function* () {
@@ -43,7 +43,8 @@ export class FinanceBudgets extends Context.Service<
         );
         if (!category) return yield* new InvalidFinanceCategory();
 
-        const month = monthRange(input.month).budgetMonth;
+        const now = yield* DateTime.nowAsDate;
+        const month = monthRange(now, input.month).budgetMonth;
         const amount = money(input.amount);
         return yield* database.use((db) =>
           db.financeBudget.upsert({

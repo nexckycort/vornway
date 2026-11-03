@@ -59,10 +59,10 @@ export const latestRates = (rows: readonly StoredRate[]) => {
 export const lastEffectiveDate = (
   rates: readonly { readonly effectiveDate: Date }[],
 ) =>
-  rates.length === 0
-    ? null
-    : rates.reduce(
-        (latest, current) =>
-          current.effectiveDate > latest ? current.effectiveDate : latest,
-        rates[0].effectiveDate,
-      );
+  rates.reduce<Date | null>(
+    (latest, current) =>
+      latest && latest >= current.effectiveDate
+        ? latest
+        : current.effectiveDate,
+    null,
+  );

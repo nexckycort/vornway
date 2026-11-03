@@ -5,6 +5,7 @@ import { makeTestApp } from '../../../testkit/app';
 import { testConfig } from '../../../testkit/config';
 import { testEffect } from '../../../testkit/effect';
 import { makeHttp, type OutboundHandler } from '../../../testkit/fakes';
+import { parseJson } from '../../../testkit/json';
 import { signIn } from '../../../testkit/login';
 import { DatabaseClient } from '../database/database';
 import { Push } from './push';
@@ -23,7 +24,7 @@ const PAYLOAD: PushNotificationPayload = {
 
 const jsonBody = (request: HttpClientRequest.HttpClientRequest | undefined) =>
   request?.body._tag === 'Uint8Array'
-    ? JSON.parse(new TextDecoder().decode(request.body.body))
+    ? parseJson(new TextDecoder().decode(request.body.body))
     : undefined;
 
 const withPush = (url: string, handler?: OutboundHandler) => {

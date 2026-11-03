@@ -1,4 +1,3 @@
-// @ts-expect-error
 await Bun.build({
   entrypoints: ['./src/main.ts'],
   compile: {

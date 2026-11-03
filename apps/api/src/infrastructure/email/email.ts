@@ -17,7 +17,7 @@ export class Email extends Context.Service<
       otp: string,
     ) => Effect.Effect<void, EmailError>;
   }
->()('vornway/Email') {
+>()('@vornway/api/infrastructure/email/email') {
   static readonly layer = Layer.effect(
     Email,
     Effect.gen(function* () {

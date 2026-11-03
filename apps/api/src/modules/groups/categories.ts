@@ -76,7 +76,7 @@ export class GroupCategories extends Context.Service<
       | InternalError
     >;
   }
->()('vornway/groups/GroupCategories') {
+>()('@vornway/api/modules/groups/categories/GroupCategories') {
   static readonly layer = Layer.effect(
     GroupCategories,
     Effect.gen(function* () {

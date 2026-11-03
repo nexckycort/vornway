@@ -1,4 +1,5 @@
 import { Prisma } from '#/generated/prisma/client';
+import { parseDate } from './helpers';
 
 export type ReportRange = {
   range: 'all' | 'custom';
@@ -43,7 +44,7 @@ export const reportExpenseSql = (
   }
   ${
     input.range === 'custom' && input.startDate && input.endDate
-      ? Prisma.sql`and e.date >= ${new Date(input.startDate)} and e.date <= ${new Date(input.endDate)}`
+      ? Prisma.sql`and e.date >= ${parseDate(input.startDate)} and e.date <= ${parseDate(input.endDate)}`
       : Prisma.empty
   }
 `;

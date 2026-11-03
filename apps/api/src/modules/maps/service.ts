@@ -18,7 +18,7 @@ export class Maps extends Context.Service<
       url: string,
     ): Effect.Effect<typeof MapResolution.Type, GoogleMapsOnly | InternalError>;
   }
->()('vornway/maps/Maps') {
+>()('@vornway/api/modules/maps/service/Maps') {
   static readonly layer = Layer.effect(
     Maps,
     Effect.gen(function* () {

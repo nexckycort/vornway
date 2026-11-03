@@ -2,6 +2,7 @@ import { describe, expect } from 'bun:test';
 import { Effect } from 'effect';
 import { makeTestApp, type TestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
+import { stringifyJson } from '../../../testkit/json';
 import { signIn } from '../../../testkit/login';
 
 const REPORT = { type: 'BUG', title: 'Crash', description: 'It crashes' };
@@ -31,7 +32,7 @@ describe('feedback', () => {
         (yield* app.fetch('/api/feedback', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(REPORT),
+          body: stringifyJson(REPORT),
         })).status,
       ).toBe(401);
     }),

@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
+import { DateTime } from 'effect';
 import { summarizeDebt, summarizeGoal } from './goal-debt-summary';
+
+const date = (value: string) => DateTime.toDateUtc(DateTime.makeUnsafe(value));
+const now = date('2026-11-02');
 
 const goal = (
   overrides: Partial<Parameters<typeof summarizeGoal>[0]> = {},
@@ -9,8 +13,8 @@ const goal = (
   description: null,
   currency: 'EUR',
   targetAmount: 200,
-  endDate: new Date('2026-12-31'),
-  createdAt: new Date('2026-11-01'),
+  endDate: date('2026-12-31'),
+  createdAt: date('2026-11-01'),
   group: { id: 'group-1', name: 'Trip' },
   contributions: [{ amount: 50.555 }, { amount: 25 }],
   ...overrides,
@@ -27,7 +31,7 @@ const debt = (
   currency: 'EUR',
   expectedTotal: 100,
   dueDate: null,
-  updatedAt: new Date('2026-11-01'),
+  updatedAt: date('2026-11-01'),
   payments: [{ amount: 40 }],
   ...overrides,
 });
@@ -48,7 +52,7 @@ describe('summarizeGoal', () => {
 
 describe('summarizeDebt', () => {
   test('is active until the expected total is paid', () => {
-    const summary = summarizeDebt(debt(), 'ana');
+    const summary = summarizeDebt(debt(), 'ana', now);
 
     expect(summary).toMatchObject({
       direction: 'lent',
@@ -60,17 +64,17 @@ describe('summarizeDebt', () => {
 
   test('is overdue past its due date and paid once nothing remains', () => {
     expect(
-      summarizeDebt(debt({ dueDate: new Date('2020-01-01') }), 'ana').status,
+      summarizeDebt(debt({ dueDate: date('2020-01-01') }), 'ana', now).status,
     ).toBe('overdue');
     expect(
-      summarizeDebt(debt({ payments: [{ amount: 100 }] }), 'ana').status,
+      summarizeDebt(debt({ payments: [{ amount: 100 }] }), 'ana', now).status,
     ).toBe('paid');
   });
 
   test('shows the opposite direction to the counterparty', () => {
-    expect(summarizeDebt(debt(), 'bruno').direction).toBe('borrowed');
+    expect(summarizeDebt(debt(), 'bruno', now).direction).toBe('borrowed');
     expect(
-      summarizeDebt(debt({ direction: 'borrowed' }), 'ana').direction,
+      summarizeDebt(debt({ direction: 'borrowed' }), 'ana', now).direction,
     ).toBe('borrowed');
   });
 });

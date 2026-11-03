@@ -2,6 +2,7 @@ import { describe, expect } from 'bun:test';
 import { Effect } from 'effect';
 import { makeTestApp, type TestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
+import { stringifyJson } from '../../../testkit/json';
 import { signIn } from '../../../testkit/login';
 import { createGroup } from '../groups/test-support';
 
@@ -136,7 +137,7 @@ describe('login', () => {
         const response = yield* app.fetch('/api/login/verify-otp', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ email: 'ANA@gmail.com', otp: ` ${otp} ` }),
+          body: stringifyJson({ email: 'ANA@gmail.com', otp: ` ${otp} ` }),
         });
         const body = (yield* Effect.promise(() => response.json())) as {
           success: boolean;

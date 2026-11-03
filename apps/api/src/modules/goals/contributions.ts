@@ -7,7 +7,7 @@ import {
   GoalNotFound,
   GoalParticipantInvalid,
 } from '@vornway/contracts/modules/goals/contract';
-import { Context, Effect, Layer } from 'effect';
+import { Context, DateTime, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { memberGoalWhere } from './queries';
 
@@ -57,13 +57,15 @@ const make = Effect.gen(function* () {
     );
     if (!member) return yield* new GoalParticipantInvalid();
 
+    const now = yield* DateTime.nowAsDate;
+
     return yield* database.transaction(async (tx) => {
       const contribution = await tx.goalContribution.create({
         data: {
           goalId: goal.id,
           memberId: member.id,
           amount: input.amount,
-          contributedAt: input.contributedAt ?? new Date(),
+          contributedAt: input.contributedAt ?? now,
           notes: input.notes?.trim() || null,
         },
         select: { id: true },
@@ -92,7 +94,7 @@ const make = Effect.gen(function* () {
       if ((totals._sum.amount ?? 0) >= goal.targetAmount) {
         await tx.goal.update({
           where: { id: goal.id },
-          data: { completedAt: new Date() },
+          data: { completedAt: now },
         });
       }
       return { id: contribution.id };
@@ -159,6 +161,6 @@ const make = Effect.gen(function* () {
 export class GoalContributions extends Context.Service<
   GoalContributions,
   Effect.Success<typeof make>
->()('vornway/goals/GoalContributions') {
+>()('@vornway/api/modules/goals/contributions/GoalContributions') {
   static readonly layer = Layer.effect(GoalContributions, make);
 }

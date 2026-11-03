@@ -9,6 +9,7 @@ import {
 } from 'effect/http-api';
 import { makeTestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
+import { parseJson } from '../../../testkit/json';
 import { ErrorBoundaryLive } from './errors';
 
 class FaultyApi extends HttpApiGroup.make('faulty').add(
@@ -43,7 +44,7 @@ describe('ErrorBoundary', () => {
       const text = yield* Effect.promise(() => response.text());
 
       expect(response.status).toBe(500);
-      expect(JSON.parse(text)).toEqual({
+      expect(parseJson(text)).toEqual({
         _tag: 'InternalError',
         traceId: expect.any(String),
       });

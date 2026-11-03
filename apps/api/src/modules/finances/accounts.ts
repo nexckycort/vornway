@@ -14,7 +14,7 @@ import type {
 } from '@vornway/contracts/modules/finances/inputs';
 import type { AccountMovementPage } from '@vornway/contracts/modules/finances/movements';
 import { Cursor, type PageQuery } from '@vornway/contracts/schema';
-import { Context, Effect, Layer, Option } from 'effect';
+import { Context, DateTime, Effect, Layer, Option } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { pageArgs, toPage } from '#/infrastructure/database/pagination';
 import { creditAvailable } from './account-balance';
@@ -22,6 +22,7 @@ import { money } from './money';
 import {
   decodeAccountMovementCursor,
   encodeAccountMovementCursor,
+  occurredAtMillis,
 } from './movement-cursor';
 
 type Account = typeof FinanceAccount.Type;
@@ -66,7 +67,7 @@ export class FinanceAccounts extends Context.Service<
       accountId: string,
     ): Effect.Effect<void, FinanceAccountNotFound | InternalError>;
   }
->()('vornway/finances/FinanceAccounts') {
+>()('@vornway/api/modules/finances/accounts/FinanceAccounts') {
   static readonly layer = Layer.effect(
     FinanceAccounts,
     Effect.gen(function* () {
@@ -230,8 +231,7 @@ export class FinanceAccounts extends Context.Service<
             })),
           ].sort(
             (left, right) =>
-              new Date(right.occurredAt).getTime() -
-                new Date(left.occurredAt).getTime() ||
+              occurredAtMillis(right) - occurredAtMillis(left) ||
               right.id.localeCompare(left.id),
           );
           const data = movements.slice(0, limit);
@@ -303,6 +303,7 @@ export class FinanceAccounts extends Context.Service<
         input: typeof UpdateAccountPayload.Type,
       ) {
         const account = yield* requireActive(userId, accountId);
+        const now = yield* DateTime.nowAsDate;
         const accountType = input.type
           ? toAccountType(input.type)
           : account.accountType;
@@ -370,7 +371,7 @@ export class FinanceAccounts extends Context.Service<
               ...(input.status
                 ? {
                     status: toAccountStatus(input.status),
-                    closedAt: input.status === 'closed' ? new Date() : null,
+                    closedAt: input.status === 'closed' ? now : null,
                   }
                 : {}),
             },
@@ -383,10 +384,11 @@ export class FinanceAccounts extends Context.Service<
         accountId: string,
       ) {
         yield* requireActive(userId, accountId);
+        const now = yield* DateTime.nowAsDate;
         return yield* database.use((db) =>
           db.financeAccount.update({
             where: { id: accountId },
-            data: { status: 'CLOSED', closedAt: new Date() },
+            data: { status: 'CLOSED', closedAt: now },
           }),
         );
       });
@@ -396,10 +398,11 @@ export class FinanceAccounts extends Context.Service<
         accountId: string,
       ) {
         yield* requireActive(userId, accountId);
+        const now = yield* DateTime.nowAsDate;
         yield* database.use((db) =>
           db.financeAccount.update({
             where: { id: accountId },
-            data: { archivedAt: new Date() },
+            data: { archivedAt: now },
           }),
         );
       });

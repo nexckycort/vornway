@@ -25,7 +25,7 @@ export class FinanceDefaults extends Context.Service<
       currency: string,
     ): Effect.Effect<void, InternalError>;
   }
->()('vornway/finances/FinanceDefaults') {
+>()('@vornway/api/modules/finances/defaults/FinanceDefaults') {
   static readonly layer = Layer.effect(
     FinanceDefaults,
     Effect.gen(function* () {

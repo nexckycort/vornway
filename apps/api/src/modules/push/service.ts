@@ -37,7 +37,7 @@ export class PushSubscriptions extends Context.Service<
       readonly email: string;
     }): Effect.Effect<void>;
   }
->()('vornway/push/PushSubscriptions') {
+>()('@vornway/api/modules/push/service/PushSubscriptions') {
   static readonly layer = Layer.effect(
     PushSubscriptions,
     Effect.gen(function* () {
@@ -66,7 +66,14 @@ export class PushSubscriptions extends Context.Service<
       });
 
       const subscribeWeb = Effect.fn('PushSubscriptions.subscribeWeb')(
-        function* (userId, input, userAgent) {
+        function* (
+          userId: string,
+          input: {
+            readonly endpoint: string;
+            readonly keys: { readonly p256dh: string; readonly auth: string };
+          },
+          userAgent: string | undefined,
+        ) {
           return yield* store({
             userId,
             endpoint: input.endpoint,
@@ -78,13 +85,17 @@ export class PushSubscriptions extends Context.Service<
       );
 
       const unsubscribeWeb = Effect.fn('PushSubscriptions.unsubscribeWeb')(
-        function* (userId, endpoint) {
+        function* (userId: string, endpoint: string) {
           yield* revoke(userId, endpoint);
         },
       );
 
       const subscribeNative = Effect.fn('PushSubscriptions.subscribeNative')(
-        function* (userId, token, platform) {
+        function* (
+          userId: string,
+          token: string,
+          platform: 'ios' | 'android' | undefined,
+        ) {
           return yield* store({
             userId,
             endpoint: nativeEndpoint(token),
@@ -97,12 +108,16 @@ export class PushSubscriptions extends Context.Service<
 
       const unsubscribeNative = Effect.fn(
         'PushSubscriptions.unsubscribeNative',
-      )(function* (userId, token) {
+      )(function* (userId: string, token: string) {
         yield* revoke(userId, nativeEndpoint(token));
       });
 
       const sendTest = Effect.fn('PushSubscriptions.sendTest')(
-        function* (user) {
+        function* (user: {
+          readonly id: string;
+          readonly name: string;
+          readonly email: string;
+        }) {
           yield* push
             .sendToUsers([user.id], {
               title: 'Push notifications enabled',

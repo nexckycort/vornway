@@ -177,6 +177,7 @@ const balancesFor = (group: GroupRow, currentMemberId: string) => {
 
   for (const key of currencyKeys) {
     const [memberId, currency] = key.split(':');
+    if (!currency) continue;
     if (memberId === 'personal' && isPersonalGroup) {
       totalsByCurrency[currency] = normalizeAmount(
         (totalsByCurrency[currency] ?? 0) + (credits.get(key) ?? 0),

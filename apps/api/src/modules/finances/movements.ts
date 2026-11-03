@@ -5,7 +5,7 @@ import type {
   FinanceMovementPage,
 } from '@vornway/contracts/modules/finances/movements';
 import { Cursor } from '@vornway/contracts/schema';
-import { Context, Effect, Layer } from 'effect';
+import { Context, DateTime, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { monthRange } from './calendar';
 import { FinanceDefaults } from './defaults';
@@ -28,7 +28,7 @@ export class FinanceMovements extends Context.Service<
       query: typeof MovementListQuery.Type,
     ): Effect.Effect<typeof FinanceMovementPage.Type, InternalError>;
   }
->()('vornway/finances/FinanceMovements') {
+>()('@vornway/api/modules/finances/movements/FinanceMovements') {
   static readonly layer = Layer.effect(
     FinanceMovements,
     Effect.gen(function* () {
@@ -40,7 +40,8 @@ export class FinanceMovements extends Context.Service<
         query: typeof MovementListQuery.Type,
       ) {
         yield* defaults.ensure(userId, query.currency);
-        const range = monthRange(query.month, query.timeZone);
+        const now = yield* DateTime.nowAsDate;
+        const range = monthRange(now, query.month, query.timeZone);
         const { limit } = query;
         const cursor = decodeMovementCursor(query.cursor);
         const upToCursor = cursor ? { lte: cursor.occurredAt } : {};

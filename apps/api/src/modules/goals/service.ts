@@ -5,8 +5,8 @@ import {
   GoalNameRequired,
   GoalNotFound,
 } from '@vornway/contracts/modules/goals/contract';
-import { Context, Effect, Layer } from 'effect';
-import { Database } from '#/infrastructure/database/database';
+import { Context, Crypto, DateTime, Effect, Layer } from 'effect';
+import { Database, DatabaseError } from '#/infrastructure/database/database';
 import { pageArgs, toPage } from '#/infrastructure/database/pagination';
 import {
   adminGoalWhere,
@@ -20,6 +20,11 @@ const DEFAULT_LIMIT = 12;
 
 const make = Effect.gen(function* () {
   const database = yield* Database;
+  const crypto = yield* Crypto.Crypto;
+  const randomUUID = crypto.randomUUIDv4().pipe(
+    Effect.mapError((cause) => new DatabaseError({ cause })),
+    Effect.catchTag('DatabaseError', database.internal),
+  );
 
   const list = Effect.fn('Goals.list')(function* (
     userId: string,
@@ -45,7 +50,8 @@ const make = Effect.gen(function* () {
       { concurrency: 2 },
     );
     const page = toPage(rows, limit, total);
-    return { ...page, data: page.data.map(summarizeGoal) };
+    const now = yield* DateTime.nowAsDate;
+    return { ...page, data: page.data.map((goal) => summarizeGoal(goal, now)) };
   });
 
   const get = Effect.fn('Goals.get')(function* (
@@ -59,7 +65,8 @@ const make = Effect.gen(function* () {
       }),
     );
     if (!goal) return yield* new GoalNotFound();
-    return summarizeGoalDetail(goal, userId);
+    const now = yield* DateTime.nowAsDate;
+    return summarizeGoalDetail(goal, userId, now);
   });
 
   const create = Effect.fn('Goals.create')(function* (
@@ -74,18 +81,20 @@ const make = Effect.gen(function* () {
     const goalType = input.goalType ?? 'saving';
     const contributionMode = input.contributionMode ?? 'manual';
     const participants = normalizeParticipants(input.participants, user.id);
-    const now = new Date();
+    const now = yield* DateTime.nowAsDate;
+    const groupId = yield* randomUUID;
+    const inviteCode = (yield* randomUUID).slice(0, 8);
 
     return yield* database.transaction(async (tx) => {
       const group = await tx.group.create({
         data: {
-          id: crypto.randomUUID(),
+          id: groupId,
           name: title,
           type: 'meta',
           createdAt: now,
           updatedAt: now,
           ownerId: user.id,
-          inviteCode: crypto.randomUUID().slice(0, 8),
+          inviteCode,
         },
         select: { id: true, owner: { select: { name: true } } },
       });
@@ -173,6 +182,8 @@ const make = Effect.gen(function* () {
     const title = input.name?.trim();
     if (title === '') return yield* new GoalNameRequired();
 
+    const now = yield* DateTime.nowAsDate;
+
     return yield* database.transaction(async (tx) => {
       const updated = await tx.goal.update({
         where: { id: goal.id },
@@ -197,7 +208,7 @@ const make = Effect.gen(function* () {
       if (title !== undefined) {
         await tx.group.update({
           where: { id: goal.groupId },
-          data: { name: title, updatedAt: new Date() },
+          data: { name: title, updatedAt: now },
         });
       }
       return updated;
@@ -210,7 +221,7 @@ const make = Effect.gen(function* () {
 export class Goals extends Context.Service<
   Goals,
   Effect.Success<typeof make>
->()('vornway/goals/Goals') {
+>()('@vornway/api/modules/goals/service/Goals') {
   static readonly layer = Layer.effect(Goals, make);
 }
 

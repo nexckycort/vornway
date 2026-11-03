@@ -36,7 +36,7 @@ export class Users extends Context.Service<
       UserNotFound | UserImageRejected | InternalError
     >;
   }
->()('vornway/users/Users') {
+>()('@vornway/api/modules/users/service/Users') {
   static readonly layer = Layer.effect(
     Users,
     Effect.gen(function* () {

@@ -26,7 +26,7 @@ export class DatabaseError extends Data.TaggedError('DatabaseError')<{
 export class DatabaseClient extends Context.Service<
   DatabaseClient,
   PrismaClient
->()('vornway/DatabaseClient') {
+>()('@vornway/api/infrastructure/database/database/DatabaseClient') {
   static readonly layer = Layer.effect(
     DatabaseClient,
     Effect.gen(function* () {
@@ -59,7 +59,7 @@ export class Database extends Context.Service<
     ): Effect.Effect<A, DatabaseError>;
     internal(error: DatabaseError): Effect.Effect<never, InternalError>;
   }
->()('vornway/Database') {
+>()('@vornway/api/infrastructure/database/database') {
   static readonly layer = Layer.effect(
     Database,
     Effect.gen(function* () {

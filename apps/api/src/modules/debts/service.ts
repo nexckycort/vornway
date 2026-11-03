@@ -12,7 +12,7 @@ import type {
   UpdateDebtPayload,
 } from '@vornway/contracts/modules/debts/schemas';
 import type { InvalidFinanceAccount } from '@vornway/contracts/modules/finances/errors';
-import { Context, Effect, Layer } from 'effect';
+import { Context, DateTime, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { applyAccountTransactionEffect } from '#/modules/finances/account-balance';
 import { DebtAccounts } from './accounts';
@@ -65,7 +65,7 @@ export class Debts extends Context.Service<
       debtId: string,
     ): Effect.Effect<void, DebtNotFound | InternalError>;
   }
->()('vornway/debts/Debts') {
+>()('@vornway/api/modules/debts/service/Debts') {
   static readonly layer = Layer.effect(
     Debts,
     Effect.gen(function* () {
@@ -98,8 +98,9 @@ export class Debts extends Context.Service<
             orderBy: { createdAt: 'desc' },
           }),
         );
+        const now = yield* DateTime.nowAsDate;
         return debts
-          .map((debt) => toDebtView(debt, userId))
+          .map((debt) => toDebtView(debt, userId, now))
           .filter(
             (debt) => query.status === 'all' || debt.status === query.status,
           );
@@ -122,7 +123,8 @@ export class Debts extends Context.Service<
           }),
         );
         if (!debt) return yield* new DebtNotFound();
-        return toDebtView(debt, userId);
+        const now = yield* DateTime.nowAsDate;
+        return toDebtView(debt, userId, now);
       });
 
       const requireCounterparty = Effect.fn('Debts.requireCounterparty')(
@@ -144,11 +146,10 @@ export class Debts extends Context.Service<
         input: typeof CreateDebtPayload.Type,
       ) {
         yield* requireCounterparty(userId, input.counterpartyId);
+        const now = yield* DateTime.nowAsDate;
         const currency = input.currency.toUpperCase();
         const amounts: readonly (typeof DebtAmountPayload.Type)[] =
-          input.amounts ?? [
-            { amount: input.principalAmount, loanDate: new Date() },
-          ];
+          input.amounts ?? [{ amount: input.principalAmount, loanDate: now }];
         yield* Effect.forEach(
           amounts,
           (amount) => accounts.require(userId, amount.accountId, currency),
@@ -192,7 +193,7 @@ export class Debts extends Context.Service<
           }
           return created;
         });
-        return toDebtView(debt, userId);
+        return toDebtView(debt, userId, now);
       });
 
       const update = Effect.fn('Debts.update')(function* (
@@ -238,7 +239,8 @@ export class Debts extends Context.Service<
             include: debtInclude,
           }),
         );
-        return toDebtView(debt, userId);
+        const now = yield* DateTime.nowAsDate;
+        return toDebtView(debt, userId, now);
       });
 
       const remove = Effect.fn('Debts.delete')(function* (

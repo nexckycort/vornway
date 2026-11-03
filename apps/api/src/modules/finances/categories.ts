@@ -8,7 +8,7 @@ import type {
   CreateCategoryPayload,
   UpdateCategoryPayload,
 } from '@vornway/contracts/modules/finances/inputs';
-import { Context, Effect, Layer } from 'effect';
+import { Context, DateTime, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { FinanceDefaults } from './defaults';
 
@@ -34,7 +34,7 @@ export class FinanceCategories extends Context.Service<
       categoryId: string,
     ): Effect.Effect<void, FinanceCategoryNotFound | InternalError>;
   }
->()('vornway/finances/FinanceCategories') {
+>()('@vornway/api/modules/finances/categories/FinanceCategories') {
   static readonly layer = Layer.effect(
     FinanceCategories,
     Effect.gen(function* () {
@@ -136,10 +136,11 @@ export class FinanceCategories extends Context.Service<
       ) {
         const category = yield* findActive(userId, categoryId);
         if (!category) return yield* new FinanceCategoryNotFound();
+        const now = yield* DateTime.nowAsDate;
         yield* database.use((db) =>
           db.financeCategory.update({
             where: { id: categoryId },
-            data: { archivedAt: new Date() },
+            data: { archivedAt: now },
           }),
         );
       });

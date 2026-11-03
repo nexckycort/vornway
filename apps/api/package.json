@@ -17,7 +17,7 @@
     "db:migrate:create": "bun run --bun prisma migrate dev --name ",
     "db:migrate": "bun run --bun prisma migrate dev",
     "db:migrate:deploy": "bun --env-file=.env prisma migrate deploy",
-    "typecheck": "tsrs --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "bun test"
   },
   "dependencies": {
@@ -38,8 +38,7 @@
     "@types/bun": "catalog:",
     "@types/web-push": "^3.6.4",
     "portless": "catalog:",
-    "prisma": "catalog:",
-    "typescript": "catalog:"
+    "prisma": "catalog:"
   },
   "dependenciesMeta": {
     "@vornway/contracts": {

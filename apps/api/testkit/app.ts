@@ -1,3 +1,4 @@
+import { BunCrypto } from '@effect/platform-bun';
 import { Effect, Layer, Logger } from 'effect';
 import { HttpRouter, HttpServer } from 'effect/http';
 import { AppRoutesNoDeps } from '#/app';
@@ -14,6 +15,7 @@ import {
   makeStorage,
   type OutboundHandler,
 } from './fakes';
+import { parseJson, stringifyJson } from './json';
 
 type Fetch = (path: string, init?: RequestInit) => Effect.Effect<Response>;
 
@@ -46,7 +48,7 @@ export const makeTestApp = Effect.fn(function* (
         HttpServer.layerServices,
       ]),
       Layer.provide([DatabaseClient.layer, ErrorCapture.layerLog]),
-      Layer.provide(testConfig({ DATABASE_URL: db.url })),
+      Layer.provide([testConfig({ DATABASE_URL: db.url }), BunCrypto.layer]),
       Layer.provideMerge(
         process.env.TEST_LOGS ? Layer.empty : Logger.layer([]),
       ),
@@ -92,7 +94,7 @@ const makeDevice = (fetch: Fetch) => {
       const response = yield* fetch(path, {
         method,
         headers,
-        ...(json && { body: JSON.stringify(json) }),
+        ...(json && { body: stringifyJson(json) }),
       });
 
       for (const cookie of response.headers.getSetCookie()) {
@@ -106,7 +108,7 @@ const makeDevice = (fetch: Fetch) => {
       const text = yield* Effect.promise(() => response.text());
       return {
         status: response.status,
-        body: (text ? JSON.parse(text) : null) as Record<string, unknown>,
+        body: (text ? parseJson(text) : null) as Record<string, unknown>,
       };
     });
 

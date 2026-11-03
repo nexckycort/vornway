@@ -1,9 +1,9 @@
 import { describe, expect } from 'bun:test';
-import { Effect } from 'effect';
+import { DateTime, Effect } from 'effect';
 import { testEffect } from '../../../testkit/effect';
 import { asList, balanceOf, createAccount, twoUsers } from './testing';
 
-const NOW = new Date().toISOString();
+const NOW = DateTime.formatIso(DateTime.nowUnsafe());
 
 describe('finance transactions', () => {
   testEffect('move the balance of their account while they change', () =>

@@ -20,6 +20,7 @@ catalog:
   '@effect/platform-node-shared': 4.0.5
   effect: 4.0.5
   '@better-auth/expo': ^1.6.26
+  '@effect/tsgo': 0.53.3
   eslint-plugin-react-doctor: 0.9.18
   '@prisma/adapter-pg': ^7.9.1
   '@prisma/client': ^7.9.1

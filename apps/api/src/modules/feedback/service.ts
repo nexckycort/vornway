@@ -7,7 +7,7 @@ import {
   type FeedbackPage,
 } from '@vornway/contracts/modules/feedback/contract';
 import type { Cursor } from '@vornway/contracts/schema';
-import { Context, Effect, Exit, Layer } from 'effect';
+import { Context, Crypto, Effect, Exit, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { pageArgs, toPage } from '#/infrastructure/database/pagination';
 import { Storage } from '#/infrastructure/storage/storage';
@@ -41,14 +41,18 @@ export class Feedback extends Context.Service<
       FeedbackNotFound | InternalError
     >;
   }
->()('vornway/feedback/Feedback') {
+>()('@vornway/api/modules/feedback/service/Feedback') {
   static readonly layer = Layer.effect(
     Feedback,
     Effect.gen(function* () {
       const database = yield* Database;
       const storage = yield* Storage;
+      const crypto = yield* Crypto.Crypto;
 
-      const list = Effect.fn('Feedback.list')(function* (userId, query) {
+      const list = Effect.fn('Feedback.list')(function* (
+        userId: string,
+        query: { readonly cursor?: Cursor; readonly limit?: number },
+      ) {
         const { limit, args } = pageArgs(query);
         const [rows, total] = yield* Effect.all(
           [
@@ -71,7 +75,9 @@ export class Feedback extends Context.Service<
         userId: string,
         input: typeof CreateFeedbackPayload.Type,
       ) {
-        const feedbackId = crypto.randomUUID();
+        const feedbackId = yield* crypto
+          .randomUUIDv4()
+          .pipe(Effect.mapError(() => new FeedbackCreateFailed()));
         const metadata = normalizeFeedbackMetadata(input.metadata);
         const created = yield* Effect.scoped(
           Effect.gen(function* () {
@@ -123,30 +129,31 @@ export class Feedback extends Context.Service<
         return presentFeedback(created);
       });
 
-      const remove = Effect.fn('Feedback.remove')(
-        function* (userId, feedbackId) {
-          const existing = yield* database.use((db) =>
-            db.userFeedback.findFirst({
-              where: { id: feedbackId, userId },
-              select: { id: true, metadata: true },
-            }),
-          );
-          if (!existing) return yield* new FeedbackNotFound();
+      const remove = Effect.fn('Feedback.remove')(function* (
+        userId: string,
+        feedbackId: string,
+      ) {
+        const existing = yield* database.use((db) =>
+          db.userFeedback.findFirst({
+            where: { id: feedbackId, userId },
+            select: { id: true, metadata: true },
+          }),
+        );
+        if (!existing) return yield* new FeedbackNotFound();
 
-          yield* Effect.forEach(
-            resolvedAttachments(readMetadata(existing.metadata).attachments),
-            (attachment) =>
-              storage
-                .deleteFeedbackImage(attachment.url)
-                .pipe(Effect.ignore({ log: true })),
-            { concurrency: 'unbounded', discard: true },
-          );
-          yield* database.use((db) =>
-            db.userFeedback.delete({ where: { id: existing.id } }),
-          );
-          return { success: true as const };
-        },
-      );
+        yield* Effect.forEach(
+          resolvedAttachments(readMetadata(existing.metadata).attachments),
+          (attachment) =>
+            storage
+              .deleteFeedbackImage(attachment.url)
+              .pipe(Effect.ignore({ log: true })),
+          { concurrency: 'unbounded', discard: true },
+        );
+        yield* database.use((db) =>
+          db.userFeedback.delete({ where: { id: existing.id } }),
+        );
+        return { success: true as const };
+      });
 
       return Feedback.of({ list, create, remove });
     }),

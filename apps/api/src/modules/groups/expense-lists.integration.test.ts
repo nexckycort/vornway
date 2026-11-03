@@ -297,7 +297,7 @@ describe('group expense lists', () => {
         );
         const walked = yield* walkPages(ana.device, path, 2);
 
-        expect(old.data.map((i) => i.id)).toEqual([ids[0]]);
+        expect(old.data.map((i) => i.id)).toEqual(ids.slice(0, 1));
         expect(walked.pages).toBe(2);
         expect(walked.totals).toEqual([3, 3]);
         expect([...walked.ids].sort()).toEqual([...ids].sort());

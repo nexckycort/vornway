@@ -1,5 +1,5 @@
 import { Prisma } from '#/generated/prisma/client';
-import { normalizeAmount } from './helpers';
+import { normalizeAmount, parseDate } from './helpers';
 
 type MemberExpenseFilter = {
   groupId: string;
@@ -51,7 +51,7 @@ export const memberExpenseSql = (input: MemberExpenseFilter) => Prisma.sql`
   }
   ${
     input.startDate && input.endDate
-      ? Prisma.sql`and e.date >= ${new Date(input.startDate)} and e.date <= ${new Date(input.endDate)}`
+      ? Prisma.sql`and e.date >= ${parseDate(input.startDate)} and e.date <= ${parseDate(input.endDate)}`
       : Prisma.empty
   }
 `;

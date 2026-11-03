@@ -125,6 +125,6 @@ const make = Effect.gen(function* () {
 export class Invites extends Context.Service<
   Invites,
   Effect.Success<typeof make>
->()('vornway/invites/Invites') {
+>()('@vornway/api/modules/invites/service/Invites') {
   static readonly layer = Layer.effect(Invites, make);
 }

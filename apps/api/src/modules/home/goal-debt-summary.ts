@@ -58,6 +58,7 @@ type DebtRow = {
 export const summarizeDebt = (
   debt: DebtRow,
   userId: string,
+  now: Date,
 ): typeof HomeDebtSummary.Type => {
   const paidAmount = normalizeAmount(
     debt.payments.reduce((total, payment) => total + payment.amount, 0),
@@ -68,7 +69,7 @@ export const summarizeDebt = (
   const status =
     remainingAmount <= 0
       ? 'paid'
-      : debt.dueDate && debt.dueDate < new Date()
+      : debt.dueDate && debt.dueDate < now
         ? 'overdue'
         : 'active';
 

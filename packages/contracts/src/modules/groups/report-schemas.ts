@@ -1,4 +1,4 @@
-import { Schema } from 'effect';
+import { DateTime, Option, Schema } from 'effect';
 import { PageQuery } from '../../schema.ts';
 import { MoneyByCurrency, NonEmpty } from './schemas.ts';
 
@@ -14,14 +14,22 @@ type DateRange = {
 };
 
 export const endNotBeforeStart = (data: DateRange) =>
-  !data.startDate ||
-  !data.endDate ||
-  new Date(data.endDate) >= new Date(data.startDate)
+  !data.startDate || !data.endDate || isNotBefore(data.endDate, data.startDate)
     ? undefined
     : {
         path: ['endDate'],
         issue: 'La fecha final debe ser mayor o igual a la inicial',
       };
+
+const isNotBefore = (end: string, start: string) => {
+  const endTime = DateTime.make(end);
+  const startTime = DateTime.make(start);
+  return (
+    Option.isSome(endTime) &&
+    Option.isSome(startTime) &&
+    DateTime.isGreaterThanOrEqualTo(endTime.value, startTime.value)
+  );
+};
 
 const dateRangeFilter = Schema.makeFilter((data: DateRange) =>
   data.range === 'custom' && !(data.startDate && data.endDate)

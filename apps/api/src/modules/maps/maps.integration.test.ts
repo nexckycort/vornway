@@ -2,6 +2,7 @@ import { describe, expect } from 'bun:test';
 import { Effect } from 'effect';
 import { makeTestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
+import { stringifyJson } from '../../../testkit/json';
 import { signIn } from '../../../testkit/login';
 
 const SHORT_LINK = 'https://maps.app.goo.gl/abc';
@@ -20,7 +21,7 @@ describe('maps', () => {
       const result = yield* app.fetch('/api/maps/resolve', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ url: SHORT_LINK }),
+        body: stringifyJson({ url: SHORT_LINK }),
       });
 
       expect(result.status).toBe(401);

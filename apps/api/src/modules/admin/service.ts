@@ -27,7 +27,7 @@ export class Admin extends Context.Service<
       AdminFeedbackNotFound | InternalError
     >;
   }
->()('vornway/admin/Admin') {
+>()('@vornway/api/modules/admin/service/Admin') {
   static readonly layer = Layer.effect(
     Admin,
     Effect.gen(function* () {
@@ -44,7 +44,9 @@ export class Admin extends Context.Service<
         return { totalUsers, totalGroups };
       });
 
-      const listFeedback = Effect.fn('Admin.listFeedback')(function* (query) {
+      const listFeedback = Effect.fn('Admin.listFeedback')(function* (
+        query: typeof FeedbackPageQuery.Type,
+      ) {
         const { limit, args } = pageArgs(query);
         const [rows, total] = yield* Effect.all(
           [

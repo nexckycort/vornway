@@ -2,6 +2,7 @@ import { describe, expect } from 'bun:test';
 import { Effect } from 'effect';
 import { makeTestApp } from '../../../testkit/app';
 import { testEffect } from '../../../testkit/effect';
+import { randomId } from '../../../testkit/id';
 import {
   addExpense,
   createSplit,
@@ -94,7 +95,7 @@ describe('quick splits', () => {
     testEffect('accepts a client generated id', () =>
       Effect.gen(function* () {
         const { ana } = yield* setup;
-        const id = crypto.randomUUID();
+        const id = yield* randomId;
 
         const split = yield* createSplit(ana.device, [{ name: 'Guest' }], {
           id,

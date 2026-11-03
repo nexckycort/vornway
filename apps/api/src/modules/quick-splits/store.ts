@@ -376,7 +376,7 @@ const make = Effect.gen(function* () {
   );
 
   const deleteExpense = Effect.fn('QuickSplitStore.deleteExpense')(
-    (expenseId: string) =>
+    (expenseId: string, updatedAt: Date) =>
       database.transaction(async (tx) => {
         const deleted = await tx.quickSplitExpense.delete({
           where: { id: expenseId },
@@ -384,7 +384,7 @@ const make = Effect.gen(function* () {
         });
         await tx.quickSplit.update({
           where: { id: deleted.quickSplitId },
-          data: { updatedAt: new Date() },
+          data: { updatedAt },
         });
         return deleted;
       }),
@@ -409,6 +409,6 @@ const make = Effect.gen(function* () {
 export class QuickSplitStore extends Context.Service<
   QuickSplitStore,
   Effect.Success<typeof make>
->()('vornway/quick-splits/QuickSplitStore') {
+>()('@vornway/api/modules/quick-splits/store/QuickSplitStore') {
   static readonly layer = Layer.effect(QuickSplitStore, make);
 }

@@ -1,4 +1,4 @@
-import { Data, Effect, Schema } from 'effect';
+import { Data, DateTime, Effect, Schema } from 'effect';
 import { type HttpClient, HttpClientResponse } from 'effect/http';
 import type { Prisma } from '#/generated/prisma/client';
 
@@ -52,16 +52,19 @@ const frankfurterSnapshot = (client: HttpClient.HttpClient) =>
     {
       usd: fetchFrankfurter(client, 'USD'),
       cop: fetchFrankfurter(client, 'COP'),
+      now: DateTime.now,
     },
     { concurrency: 'unbounded' },
   ).pipe(
-    Effect.map(({ usd, cop }): RateSnapshot => ({
+    Effect.map(({ usd, cop, now }): RateSnapshot => ({
       eurToUsd: usd.rate,
       eurToCop: cop.rate,
-      effectiveDate: new Date(`${usd.date}T00:00:00.000Z`),
+      effectiveDate: DateTime.toDateUtc(
+        DateTime.makeUnsafe(`${usd.date}T00:00:00.000Z`),
+      ),
       metadata: {
         provider: 'frankfurter',
-        fetchedAt: new Date().toISOString(),
+        fetchedAt: DateTime.formatIso(now),
         response: { usd: usd.raw, cop: cop.raw },
       },
     })),
@@ -78,13 +81,16 @@ const openExchangeSnapshot = Effect.fnUntraced(
     const eurToCop = yield* Schema.decodeUnknownEffect(ProviderRate)(
       payload.rates.COP,
     );
+    const now = yield* DateTime.now;
     return {
       eurToUsd,
       eurToCop,
-      effectiveDate: new Date(payload.time_last_update_unix * 1000),
+      effectiveDate: DateTime.toDateUtc(
+        DateTime.makeUnsafe(payload.time_last_update_unix * 1000),
+      ),
       metadata: {
         provider: 'open.er-api',
-        fetchedAt: new Date().toISOString(),
+        fetchedAt: DateTime.formatIso(now),
         response: raw,
       },
     } satisfies RateSnapshot;

@@ -4,7 +4,7 @@ import {
   InvalidRequest,
   RequestValidation,
 } from '@vornway/contracts/errors';
-import { Cause, Context, Effect, Layer, Option } from 'effect';
+import { Cause, Context, Crypto, Effect, Layer, Option } from 'effect';
 import { HttpApiMiddleware } from 'effect/http-api';
 
 const MAX_REASON_LENGTH = 1024;
@@ -14,21 +14,25 @@ export class ErrorCapture extends Context.Service<
   {
     capture(cause: Cause.Cause<unknown>): Effect.Effect<string>;
   }
->()('vornway/http/ErrorCapture') {
-  static readonly layerLog = Layer.succeed(
+>()('@vornway/api/infrastructure/http/errors/ErrorCapture') {
+  static readonly layerLog = Layer.effect(
     ErrorCapture,
-    ErrorCapture.of({
-      capture: Effect.fn('ErrorCapture.capture')(function* (cause) {
-        const span = yield* Effect.option(Effect.currentSpan);
-        const traceId = Option.match(span, {
-          onNone: () => crypto.randomUUID(),
-          onSome: (current) => current.traceId,
-        });
-        yield* Effect.logError('Unexpected error', cause).pipe(
-          Effect.annotateLogs({ traceId }),
-        );
-        return traceId;
-      }),
+    Effect.gen(function* () {
+      const crypto = yield* Crypto.Crypto;
+      return ErrorCapture.of({
+        capture: Effect.fn('ErrorCapture.capture')(function* (cause) {
+          const span = yield* Effect.option(Effect.currentSpan);
+          const traceId = Option.isSome(span)
+            ? span.value.traceId
+            : yield* crypto
+                .randomUUIDv4()
+                .pipe(Effect.orElseSucceed(() => 'unknown'));
+          yield* Effect.logError('Unexpected error', cause).pipe(
+            Effect.annotateLogs({ traceId }),
+          );
+          return traceId;
+        }),
+      });
     }),
   );
 }

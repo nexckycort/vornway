@@ -1,3 +1,4 @@
+import { BunCrypto } from '@effect/platform-bun';
 import { Api } from '@vornway/contracts/api';
 import { Layer } from 'effect';
 import { FetchHttpClient } from 'effect/http';
@@ -99,4 +100,5 @@ export const AppRoutes = AppRoutesNoDeps.pipe(
     ErrorCapture.layerLog,
     FetchHttpClient.layer,
   ]),
+  Layer.provide(BunCrypto.layer),
 );

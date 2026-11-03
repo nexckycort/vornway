@@ -1,5 +1,6 @@
 import { groupExpenseShare } from './group-expenses';
 import { addCurrencyTotal, money } from './money';
+import { occurredAtMillis } from './movement-cursor';
 import { readExpenseTags } from './tags';
 
 export const debtViewerDirection = (
@@ -17,7 +18,7 @@ export const debtTotals = (
     direction: string;
     currency: string;
     expectedTotal: number;
-    payments: ReadonlyArray<{ amount: number }>;
+    payments: readonly { amount: number }[];
   }[],
   userId: string,
 ) => {
@@ -46,7 +47,7 @@ export const goalTotals = (
   goals: readonly {
     currency: string;
     targetAmount: number;
-    contributions: ReadonlyArray<{ amount: number }>;
+    contributions: readonly { amount: number }[];
   }[],
 ) => {
   const target: Record<string, number> = {};
@@ -138,8 +139,8 @@ export const groupExpenseTotals = (
     id: string;
     name: string;
     type: string;
-    GroupMember: ReadonlyArray<{ id: string }>;
-    Expense: ReadonlyArray<{
+    GroupMember: readonly { id: string }[];
+    Expense: readonly {
       id: string;
       amount: number;
       currency: string;
@@ -147,9 +148,9 @@ export const groupExpenseTotals = (
       description: string;
       metadata: unknown;
       category: CategoryRef | null;
-      payers: ReadonlyArray<{ memberId: string; amount: number }>;
-      participants: ReadonlyArray<{ memberId: string; share: number }>;
-    }>;
+      payers: readonly { memberId: string; amount: number }[];
+      participants: readonly { memberId: string; share: number }[];
+    }[];
   }[],
 ) => {
   const totals: Record<string, number> = {};
@@ -183,9 +184,7 @@ export const groupExpenseTotals = (
       });
     })
     .sort((left, right) => {
-      const dateDelta =
-        new Date(right.occurredAt).getTime() -
-        new Date(left.occurredAt).getTime();
+      const dateDelta = occurredAtMillis(right) - occurredAtMillis(left);
       return dateDelta === 0 ? right.id.localeCompare(left.id) : dateDelta;
     });
 

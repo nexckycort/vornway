@@ -14,7 +14,7 @@ import type {
   ExpenseRef,
   SettlementPayload,
 } from '@vornway/contracts/modules/groups/expense-schemas';
-import { Context, Effect, Layer } from 'effect';
+import { Context, DateTime, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { makeInternalFailure } from '#/infrastructure/http/errors';
 import { Storage } from '#/infrastructure/storage/storage';
@@ -79,7 +79,7 @@ export class GroupExpenseWrites extends Context.Service<
       GroupAccessDenied | GroupSettlementParticipantsInvalid | InternalError
     >;
   }
->()('vornway/groups/GroupExpenseWrites') {
+>()('@vornway/api/modules/groups/expense-writes/GroupExpenseWrites') {
   static readonly layer = Layer.effect(
     GroupExpenseWrites,
     Effect.gen(function* () {
@@ -271,11 +271,13 @@ export class GroupExpenseWrites extends Context.Service<
           return { id: expense.id };
         }
 
+        const deletedAt = yield* DateTime.nowAsDate;
         yield* database.transaction((tx) =>
           markExpenseDeleted(tx, {
             userId,
             groupId,
             actorName: membership.name,
+            deletedAt,
             expense,
           }),
         );
@@ -310,6 +312,7 @@ export class GroupExpenseWrites extends Context.Service<
           return yield* new GroupSettlementParticipantsInvalid();
         }
 
+        const settledAt = yield* DateTime.nowAsDate;
         return yield* database.transaction(async (tx) => {
           const created = await tx.expense.create({
             data: {
@@ -318,7 +321,7 @@ export class GroupExpenseWrites extends Context.Service<
               description: `Liquidación: ${from.name} -> ${to.name}`,
               amount: payload.amount,
               currency: payload.currency,
-              notes: `[SETTLEMENT:FLEX] ${new Date().toISOString()} by ${membership.id}`,
+              notes: `[SETTLEMENT:FLEX] ${settledAt.toISOString()} by ${membership.id}`,
               payers: {
                 create: [{ memberId: from.id, amount: payload.amount }],
               },

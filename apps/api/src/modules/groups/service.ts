@@ -22,7 +22,7 @@ import type {
   UpdateGroupPayload,
   UpdateGroupSettingsPayload,
 } from '@vornway/contracts/modules/groups/schemas';
-import { Context, Effect, Layer } from 'effect';
+import { Context, Crypto, DateTime, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { makeInternalFailure } from '#/infrastructure/http/errors';
 import { getVersionedGroupImageUrl } from '#/infrastructure/storage/image-urls';
@@ -97,7 +97,7 @@ export class Groups extends Context.Service<
       | InternalError
     >;
   }
->()('vornway/groups/Groups') {
+>()('@vornway/api/modules/groups/service/Groups') {
   static readonly layer = Layer.effect(
     Groups,
     Effect.gen(function* () {
@@ -105,11 +105,15 @@ export class Groups extends Context.Service<
       const storage = yield* Storage;
       const failInternal = yield* makeInternalFailure;
       const list = yield* makeGroupLister;
+      const crypto = yield* Crypto.Crypto;
+      const randomUUID = crypto
+        .randomUUIDv4()
+        .pipe(Effect.catchTag('PlatformError', failInternal));
 
       const generateInviteCode = Effect.fn('Groups.generateInviteCode')(
         function* () {
           for (let attempt = 0; attempt < INVITE_CODE_ATTEMPTS; attempt += 1) {
-            const inviteCode = crypto.randomUUID().slice(0, 8);
+            const inviteCode = (yield* randomUUID).slice(0, 8);
             const exists = yield* database.use((db) =>
               db.group.findUnique({
                 where: { inviteCode },
@@ -135,10 +139,10 @@ export class Groups extends Context.Service<
         user: typeof SessionUser.Type,
         payload: typeof CreateGroupPayload.Type,
       ) {
-        const now = new Date();
+        const now = yield* DateTime.nowAsDate;
         const ownerName = user.name?.trim() || user.email || 'Usuario';
         const inviteCode = yield* generateInviteCode();
-        const groupId = payload.id?.trim() || crypto.randomUUID();
+        const groupId = payload.id?.trim() || (yield* randomUUID);
         const name = payload.name.trim();
         const type = payload.type.trim();
         const description = payload.description?.trim() || null;
@@ -325,7 +329,7 @@ export class Groups extends Context.Service<
         const name = payload.name.trim();
         const type = payload.type.trim();
         const description = payload.description?.trim() || null;
-        const updatedAt = new Date();
+        const updatedAt = yield* DateTime.nowAsDate;
         const imageUrl = payload.image
           ? yield* uploadImage(groupId, payload.image.dataUrl)
           : group.imageUrl;
@@ -362,6 +366,7 @@ export class Groups extends Context.Service<
             }),
           )
           .pipe(required(() => new GroupNotFound()));
+        const updatedAt = yield* DateTime.nowAsDate;
         const updated = yield* database.use((db) =>
           db.group.update({
             where: { id: groupId },
@@ -372,7 +377,7 @@ export class Groups extends Context.Service<
                     advancedExpenseDetailsEnabled:
                       payload.advancedExpenseDetailsEnabled,
                   }),
-              updatedAt: new Date(),
+              updatedAt,
             },
             select: {
               id: true,
@@ -398,7 +403,7 @@ export class Groups extends Context.Service<
           )
           .pipe(required(() => new GroupNotFound()));
         const imageUrl = yield* uploadImage(groupId, image.dataUrl);
-        const updatedAt = new Date();
+        const updatedAt = yield* DateTime.nowAsDate;
         yield* database.use((db) =>
           db.group.update({
             where: { id: groupId },
@@ -451,7 +456,7 @@ export class Groups extends Context.Service<
           return yield* new GroupOwnerTransferTargetSame();
         }
 
-        const updatedAt = new Date();
+        const updatedAt = yield* DateTime.nowAsDate;
         yield* database.transaction(async (tx) => {
           await tx.group.update({
             where: { id: group.id },

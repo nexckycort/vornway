@@ -41,7 +41,7 @@ export class Storage extends Context.Service<
     deleteFeedbackImage(pathOrUrl: string | null | undefined): Removal;
     getObject(key: string): Effect.Effect<StoredObject | null, StorageError>;
   }
->()('vornway/Storage') {
+>()('@vornway/api/infrastructure/storage/storage') {
   static readonly layer = Layer.effect(
     Storage,
     Effect.gen(function* () {

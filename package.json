@@ -1,10 +1,10 @@
 {
   "name": "vornway",
   "private": true,
-  "author": "Nestor Cortina <nexckycort@gmail.com>",
   "license": "MIT",
+  "author": "Nestor Cortina <nexckycort@gmail.com>",
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks",
+    "prepare": "git config core.hooksPath .githooks && effect-tsgo patch --typescript",
     "clean:apps": "bun run -r --parallel --filter='./apps/*' clean",
     "clean:packages": "bun run -r --parallel --filter='./packages/*' clean",
     "clean": "bun run clean:apps & bun run clean:packages & rm -rf node_modules",
@@ -14,6 +14,7 @@
     "lint:fix": "pnpm -r run lint:fix"
   },
   "devDependencies": {
+    "@effect/tsgo": "catalog:",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "bun-types": "catalog:",

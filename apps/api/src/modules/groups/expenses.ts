@@ -23,7 +23,7 @@ import {
   toExpenseListItem,
   toMemberExpenseListItem,
 } from './expense-views';
-import { activeExpenses, required, visibleGroup } from './helpers';
+import { activeExpenses, parseDate, required, visibleGroup } from './helpers';
 
 const listOrder = [
   { date: 'desc' },
@@ -59,7 +59,7 @@ export class GroupExpenses extends Context.Service<
       GroupNotFound | GroupExpenseNotFound | InternalError
     >;
   }
->()('vornway/groups/GroupExpenses') {
+>()('@vornway/api/modules/groups/expenses/GroupExpenses') {
   static readonly layer = Layer.effect(
     GroupExpenses,
     Effect.gen(function* () {
@@ -148,8 +148,8 @@ export class GroupExpenses extends Context.Service<
           ...(query.startDate && query.endDate
             ? {
                 date: {
-                  gte: new Date(query.startDate),
-                  lte: new Date(query.endDate),
+                  gte: parseDate(query.startDate),
+                  lte: parseDate(query.endDate),
                 },
               }
             : {}),

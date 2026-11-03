@@ -12,7 +12,7 @@ import {
   QuickSplitSettlementAmountInvalid,
   QuickSplitSettlementParticipantsInvalid,
 } from '@vornway/contracts/modules/quick-splits/contract';
-import { Context, Effect, Layer } from 'effect';
+import { Context, Crypto, DateTime, Effect, Layer } from 'effect';
 import { Database, DatabaseError } from '#/infrastructure/database/database';
 import { toPage } from '#/infrastructure/database/pagination';
 import { normalizeAmount, sameCurrency, splitShares } from './shares';
@@ -30,6 +30,7 @@ const DEFAULT_LIMIT = 12;
 const make = Effect.gen(function* () {
   const database = yield* Database;
   const store = yield* QuickSplitStore;
+  const crypto = yield* Crypto.Crypto;
 
   const internalFailure = (message: string) =>
     database.internal(new DatabaseError({ cause: new Error(message) }));
@@ -63,14 +64,23 @@ const make = Effect.gen(function* () {
     const owner = yield* store.findUserName(userId);
     if (!owner) return yield* internalFailure('Quick split owner not found');
 
+    const id =
+      input.id ??
+      (yield* crypto
+        .randomUUIDv4()
+        .pipe(
+          Effect.catchTag('PlatformError', (cause) =>
+            database.internal(new DatabaseError({ cause })),
+          ),
+        ));
     const quickSplit = yield* store.create({
-      id: input.id ?? crypto.randomUUID(),
+      id,
       ownerId: userId,
       ownerName: owner.name,
       name: input.name,
       description: input.description || null,
       participants,
-      createdAt: new Date(),
+      createdAt: yield* DateTime.nowAsDate,
     });
     return toCreatedQuickSplit(
       quickSplit,
@@ -143,7 +153,7 @@ const make = Effect.gen(function* () {
       splitMethod: input.splitMethod,
       shares,
       metadata: input.metadata,
-      at: new Date(),
+      at: yield* DateTime.nowAsDate,
     });
     return toExpenseResult(expense, input.splitMethod);
   });
@@ -194,7 +204,7 @@ const make = Effect.gen(function* () {
       splitMethod: input.splitMethod,
       shares,
       metadata: input.metadata,
-      at: new Date(),
+      at: yield* DateTime.nowAsDate,
     });
     return toExpenseResult(expense, input.splitMethod);
   });
@@ -248,7 +258,7 @@ const make = Effect.gen(function* () {
       toParticipantId: to.id,
       amount,
       currency,
-      at: new Date(),
+      at: yield* DateTime.nowAsDate,
     });
   });
 
@@ -264,7 +274,10 @@ const make = Effect.gen(function* () {
     });
     if (!expense) return yield* new QuickSplitExpenseNotFound();
 
-    const deleted = yield* store.deleteExpense(expense.id);
+    const deleted = yield* store.deleteExpense(
+      expense.id,
+      yield* DateTime.nowAsDate,
+    );
     return { id: deleted.id };
   });
 
@@ -330,7 +343,7 @@ const payerOf = (
 export class QuickSplits extends Context.Service<
   QuickSplits,
   Effect.Success<typeof make>
->()('vornway/quick-splits/QuickSplits') {
+>()('@vornway/api/modules/quick-splits/service/QuickSplits') {
   static readonly layer = Layer.effect(QuickSplits, make).pipe(
     Layer.provide(QuickSplitStore.layer),
   );

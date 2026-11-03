@@ -1,4 +1,5 @@
 import { describe, expect } from 'bun:test';
+import { BunCrypto } from '@effect/platform-bun';
 import { Cursor } from '@vornway/contracts/schema';
 import { Effect, Layer } from 'effect';
 import { testConfig } from '../../../testkit/config';
@@ -10,6 +11,7 @@ import { pageArgs, toPage } from './pagination';
 
 const TestDatabase = Database.layer.pipe(
   Layer.provide([DatabaseClient.layer, ErrorCapture.layerLog]),
+  Layer.provide(BunCrypto.layer),
 );
 
 describe('pageArgs and toPage', () => {

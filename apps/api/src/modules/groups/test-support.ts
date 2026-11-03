@@ -1,5 +1,6 @@
 import { Effect } from 'effect';
 import type { Device, TestApp } from '../../../testkit/app';
+import { stringifyJson } from '../../../testkit/json';
 import { signIn } from '../../../testkit/login';
 
 export const DATA_URL = 'data:image/png;base64,iVBORw0KGgo=';
@@ -105,12 +106,12 @@ export const sessionCookie = (app: TestApp, email: string) =>
     yield* app.fetch('/api/auth/email-otp/send-verification-otp', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ email, type: 'sign-in' }),
+      body: stringifyJson({ email, type: 'sign-in' }),
     });
     const response = yield* app.fetch('/api/auth/sign-in/email-otp', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ email, otp: app.email.otpFor(email) }),
+      body: stringifyJson({ email, otp: app.email.otpFor(email) }),
     });
     return response.headers
       .getSetCookie()

@@ -12,7 +12,7 @@ import type {
   CreateTransactionPayload,
   UpdateTransactionPayload,
 } from '@vornway/contracts/modules/finances/inputs';
-import { Context, Effect, Layer } from 'effect';
+import { Context, DateTime, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { applyAccountTransactionEffect } from './account-balance';
 import { monthRange } from './calendar';
@@ -64,7 +64,7 @@ export class FinanceTransactions extends Context.Service<
       transactionId: string,
     ): Effect.Effect<void, FinanceTransactionNotFound | InternalError>;
   }
->()('vornway/finances/FinanceTransactions') {
+>()('@vornway/api/modules/finances/transactions/FinanceTransactions') {
   static readonly layer = Layer.effect(
     FinanceTransactions,
     Effect.gen(function* () {
@@ -131,7 +131,8 @@ export class FinanceTransactions extends Context.Service<
         limit: number,
       ) {
         yield* defaults.ensure(userId, 'COP');
-        const range = monthRange();
+        const now = yield* DateTime.nowAsDate;
+        const range = monthRange(now);
         const transactions = yield* database.use((db) =>
           db.financeTransaction.findMany({
             where: {
@@ -154,6 +155,7 @@ export class FinanceTransactions extends Context.Service<
         input: typeof CreateTransactionPayload.Type,
       ) {
         yield* defaults.ensure(userId, input.currency);
+        const now = yield* DateTime.nowAsDate;
         const type = input.type === 'income' ? 'INCOME' : 'EXPENSE';
         const tags = normalizeTags(input.tags);
         yield* requireCategory(userId, input.categoryId, type);
@@ -169,7 +171,7 @@ export class FinanceTransactions extends Context.Service<
               amount: money(input.amount),
               currency: input.currency,
               description: input.description,
-              occurredAt: input.occurredAt ?? new Date(),
+              occurredAt: input.occurredAt ?? now,
               notes: input.notes,
               ...(tags.length > 0
                 ? { tags: { create: tagCreates(userId, tags) } }

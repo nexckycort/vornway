@@ -16,14 +16,17 @@ export class Notifications extends Context.Service<
     ): Effect.Effect<typeof NotificationsPage.Type, InternalError>;
     markAllRead(userId: string): Effect.Effect<void, InternalError>;
   }
->()('vornway/notifications/Notifications') {
+>()('@vornway/api/modules/notifications/service/Notifications') {
   static readonly layer = Layer.effect(
     Notifications,
     Effect.gen(function* () {
       const inbox = yield* NotificationInbox;
       const internalFailure = yield* makeInternalFailure;
 
-      const list = Effect.fn('Notifications.list')(function* (userId, query) {
+      const list = Effect.fn('Notifications.list')(function* (
+        userId: string,
+        query: { readonly cursor?: Cursor; readonly limit?: number },
+      ) {
         return yield* inbox
           .listForUser({
             userId,
@@ -33,13 +36,13 @@ export class Notifications extends Context.Service<
           .pipe(Effect.catchTag('NotificationInboxError', internalFailure));
       });
 
-      const markAllRead = Effect.fn('Notifications.markAllRead')(
-        function* (userId) {
-          yield* inbox
-            .markAllAsRead(userId)
-            .pipe(Effect.catchTag('NotificationInboxError', internalFailure));
-        },
-      );
+      const markAllRead = Effect.fn('Notifications.markAllRead')(function* (
+        userId: string,
+      ) {
+        yield* inbox
+          .markAllAsRead(userId)
+          .pipe(Effect.catchTag('NotificationInboxError', internalFailure));
+      });
 
       return Notifications.of({ list, markAllRead });
     }),

@@ -12,7 +12,7 @@ export class DebtAccounts extends Context.Service<
       currency: string,
     ): Effect.Effect<void, InvalidFinanceAccount | InternalError>;
   }
->()('vornway/debts/DebtAccounts') {
+>()('@vornway/api/modules/debts/accounts/DebtAccounts') {
   static readonly layer = Layer.effect(
     DebtAccounts,
     Effect.gen(function* () {

@@ -72,7 +72,7 @@ export class GroupMembers extends Context.Service<
       | InternalError
     >;
   }
->()('vornway/groups/GroupMembers') {
+>()('@vornway/api/modules/groups/members/GroupMembers') {
   static readonly layer = Layer.effect(
     GroupMembers,
     Effect.gen(function* () {

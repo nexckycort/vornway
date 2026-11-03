@@ -7,7 +7,7 @@ import { type BetterAuth, makeAuth } from './better-auth.config';
 export class Auth extends Context.Service<
   Auth,
   { readonly instance: BetterAuth }
->()('vornway/Auth') {
+>()('@vornway/api/infrastructure/auth/auth') {
   static readonly layer = Layer.effect(
     Auth,
     Effect.gen(function* () {

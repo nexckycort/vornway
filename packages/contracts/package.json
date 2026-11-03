@@ -28,12 +28,11 @@
   "scripts": {
     "fmt:fix": "bun fmt",
     "lint:fix": "bun lint --fix",
-    "typecheck": "tsrs --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "bun test"
   },
   "devDependencies": {
-    "@types/bun": "catalog:",
-    "typescript": "catalog:"
+    "@types/bun": "catalog:"
   },
   "peerDependencies": {
     "effect": "4.0.5"

@@ -258,6 +258,7 @@ export const markExpenseDeleted = async (
     userId: string;
     groupId: string;
     actorName: string;
+    deletedAt: Date;
     expense: {
       id: string;
       amount: number;
@@ -268,8 +269,7 @@ export const markExpenseDeleted = async (
     };
   },
 ) => {
-  const { expense, groupId } = input;
-  const deletedAt = new Date();
+  const { expense, groupId, deletedAt } = input;
   await tx.expense.update({
     where: { id: expense.id },
     data: {

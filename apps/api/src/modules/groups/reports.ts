@@ -49,7 +49,7 @@ export class GroupReports extends Context.Service<
       query: typeof ReportsQuery.Type,
     ): Report<typeof ReportsShares.Type>;
   }
->()('vornway/groups/GroupReports') {
+>()('@vornway/api/modules/groups/reports/GroupReports') {
   static readonly layer = Layer.effect(
     GroupReports,
     Effect.gen(function* () {

@@ -10,7 +10,7 @@ import type {
   UpdatePaymentPayload,
 } from '@vornway/contracts/modules/debts/schemas';
 import type { InvalidFinanceAccount } from '@vornway/contracts/modules/finances/errors';
-import { Context, Effect, Layer } from 'effect';
+import { Context, DateTime, Effect, Layer } from 'effect';
 import { Database } from '#/infrastructure/database/database';
 import { applyAccountTransactionEffect } from '#/modules/finances/account-balance';
 import { DebtAccounts } from './accounts';
@@ -55,7 +55,7 @@ export class DebtPayments extends Context.Service<
       DebtNotFound | DebtPaymentNotFound | InternalError
     >;
   }
->()('vornway/debts/DebtPayments') {
+>()('@vornway/api/modules/debts/payments/DebtPayments') {
   static readonly layer = Layer.effect(
     DebtPayments,
     Effect.gen(function* () {
@@ -83,6 +83,7 @@ export class DebtPayments extends Context.Service<
           return yield* new DebtPaymentExceedsBalance();
         }
 
+        const now = yield* DateTime.nowAsDate;
         yield* database.transaction(async (tx) => {
           const payment = await tx.debtPayment.create({
             data: {
@@ -95,7 +96,7 @@ export class DebtPayments extends Context.Service<
           });
           await tx.debt.update({
             where: { id: debtId },
-            data: { updatedAt: new Date() },
+            data: { updatedAt: now },
           });
           await applyAccountTransactionEffect(
             tx,
@@ -139,6 +140,7 @@ export class DebtPayments extends Context.Service<
         yield* accounts.require(userId, input.accountId, payment.debt.currency);
         const type = paymentTransactionType(payment.debt.direction);
 
+        const now = yield* DateTime.nowAsDate;
         yield* database.transaction(async (tx) => {
           await applyAccountTransactionEffect(
             tx,
@@ -170,7 +172,7 @@ export class DebtPayments extends Context.Service<
           );
           await tx.debt.update({
             where: { id: debtId },
-            data: { updatedAt: new Date() },
+            data: { updatedAt: now },
           });
         });
         return yield* debts.get(userId, debtId);
@@ -189,6 +191,7 @@ export class DebtPayments extends Context.Service<
         );
         if (!payment) return yield* new DebtPaymentNotFound();
 
+        const now = yield* DateTime.nowAsDate;
         yield* database.transaction(async (tx) => {
           await applyAccountTransactionEffect(
             tx,
@@ -202,7 +205,7 @@ export class DebtPayments extends Context.Service<
           await tx.debtPayment.delete({ where: { id: paymentId } });
           await tx.debt.update({
             where: { id: debtId },
-            data: { updatedAt: new Date() },
+            data: { updatedAt: now },
           });
         });
         return yield* debts.get(userId, debtId);

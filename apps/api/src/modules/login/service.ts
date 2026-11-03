@@ -10,7 +10,7 @@ import {
   OtpRejected,
   type OtpSent,
 } from '@vornway/contracts/modules/login/contract';
-import { Context, Data, Effect, Layer } from 'effect';
+import { Context, Crypto, Data, Effect, Layer } from 'effect';
 import { Auth } from '#/infrastructure/auth/auth';
 import type { BetterAuth } from '#/infrastructure/auth/better-auth.config';
 import { Database } from '#/infrastructure/database/database';
@@ -58,7 +58,7 @@ export class Login extends Context.Service<
       input: Credentials,
     ): Effect.Effect<typeof McpToken.Type, OtpRejected | InternalError>;
   }
->()('vornway/login/Login') {
+>()('@vornway/api/modules/login/service/Login') {
   static readonly layer = Layer.effect(
     Login,
     Effect.gen(function* () {
@@ -66,6 +66,7 @@ export class Login extends Context.Service<
       const database = yield* Database;
       const tokens = yield* McpTokens;
       const failInternal = yield* makeInternalFailure;
+      const crypto = yield* Crypto.Crypto;
 
       const call = <A>(operation: () => Promise<A>) =>
         Effect.tryPromise({
@@ -118,9 +119,12 @@ export class Login extends Context.Service<
         if (input.name) {
           if (existing) return yield* new LoginUserAlreadyExists();
           const name = input.name;
+          const password = yield* crypto
+            .randomUUIDv4()
+            .pipe(Effect.catchTag('PlatformError', failInternal));
           yield* call(() =>
             auth.api.signUpEmail({
-              body: { email, name, password: crypto.randomUUID() },
+              body: { email, name, password },
             }),
           ).pipe(Effect.catchTag('AuthCallFailed', failInternal));
         } else if (!existing) {

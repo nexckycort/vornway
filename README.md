@@ -1,79 +1,32 @@
 # Vornway
 
-Open-source expense sharing and group finance application.
+Vornway is an open-source app for group travel. It takes the chaos out of
+organizing a trip with several people: who paid what, who owes whom and how
+much is left to save.
 
 ## Features
 
-- Shared groups and expenses
-- Multi-currency support
-- Invitations
-- Activity history
-- Goals
+- Shared groups and expenses, with equal, percentage or exact splits
+- Multi-currency balances and settlements
+- Quick splits with friends outside a group
+- Savings goals and personal finances
+- Invitations by link or QR code
 - Push notifications
-- PWA
+- Installable as a PWA, with a mobile app on the way
 
-## Architecture
+## Apps
 
-- `apps/api`: Bun + Effect + Prisma
-- `apps/webapp`: React + Rsbuild + TanStack
-- `apps/join`: Invite flow
-- `apps/landing`: Public website
+- `apps/webapp`: the web app
+- `apps/mobile`: the mobile app
+- `apps/api`: the server behind both
+- `apps/join`: the invite flow
+- `apps/landing`: the public website
 
-## Local Development
+## Status
 
-Install the workspace dependencies:
+Vornway is in early, active development. Expect rough edges and breaking
+changes. Contributions, suggestions and discussions are welcome.
 
-```bash
-bun install
-```
+## License
 
-Before starting the project, configure the Portless HTTPS proxy and synchronize
-its hosts:
-
-```bash
-bun run portless:setup
-```
-
-This stops the proxy first in case it is already running, starts it with the
-`dev.vornway.com` HTTPS domain, and runs `portless hosts sync`. If you prefer to
-run the commands manually, use:
-
-```bash
-portless proxy stop
-portless proxy start --https --tld dev.vornway.com
-portless hosts sync
-```
-
-Start all development services from the repository root:
-
-```bash
-bun dev
-```
-
-Once the services are running, open another terminal and trust the local
-Portless certificate:
-
-```bash
-portless trust
-```
-
-The trust command may request administrator permissions. It only needs to be
-completed once per development machine unless the local certificate changes.
-
-## Project Status
-
-⚠️ **This project is currently under active development and should be considered experimental.**
-
-Most of the current codebase was written with the assistance of AI.
-
-The original version of Vornway had been in development for a longer period, but I decided to discard it and rebuild the project from scratch. The current rewrite was bootstrapped in approximately **five days** to validate the architecture and accelerate development.
-
-The total time dedicated to this project is tracked across its current and former names:
-
-[![WakaTime](https://wakatime.com/badge/user/028c7e3a-aa95-48d2-a991-97f3d117a6ef/project/15ae72fd-4f68-408e-bf68-657b0ac73806.svg)](https://wakatime.com/badge/user/028c7e3a-aa95-48d2-a991-97f3d117a6ef/project/15ae72fd-4f68-408e-bf68-657b0ac73806) + [![WakaTime](https://wakatime.com/badge/user/028c7e3a-aa95-48d2-a991-97f3d117a6ef/project/121d87b4-01d0-4676-9e35-809051520178.svg)](https://wakatime.com/badge/user/028c7e3a-aa95-48d2-a991-97f3d117a6ef/project/121d87b4-01d0-4676-9e35-809051520178)
-
-The second tracker corresponds to the former **Splitwayapp** name, whose tracked time is no longer increasing but remains part of the project's total.
-
-As a result, parts of the codebase prioritize shipping features over long-term maintainability. There is technical debt and some low-quality or duplicated code that will be progressively rewritten as the project evolves.
-
-The long-term goal is to replace AI-generated scaffolding with cleaner, more maintainable implementations while keeping the project fully open source. Contributions, suggestions, and discussions are always welcome.
+MIT

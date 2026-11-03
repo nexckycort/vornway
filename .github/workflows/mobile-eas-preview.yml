@@ -1,0 +1,99 @@
+name: Mobile EAS Preview
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled]
+    paths:
+      - apps/mobile/**
+      - packages/api-client/**
+      - packages/contracts/**
+      - pnpm-workspace.yaml
+      - .github/workflows/mobile-eas-preview.yml
+
+jobs:
+  preview:
+    name: EAS Preview
+    if: |
+      contains(github.event.pull_request.labels.*.name, '🚀 Mobile Continuous Deployment') &&
+      (github.event.action != 'labeled' || github.event.label.name == '🚀 Mobile Continuous Deployment')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: mobile-eas-preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      APP_VARIANT: preview
+      EAS_SKIP_CLI_VERSION_CHECK: '1'
+      NODE_OPTIONS: --max-old-space-size=8192
+      MOBILE_VERSION_POLICY: fingerprint
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - id: expo-token
+        name: Check for EXPO_TOKEN
+        working-directory: .
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -n "$EXPO_TOKEN" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "EXPO_TOKEN is not available; skipping EAS preview."
+          fi
+
+      # Run before checkout: the repo requires Bun in devEngines, while this
+      # action resolves eas-cli with npm.
+      - if: steps.expo-token.outputs.present == 'true'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup EAS
+        if: steps.expo-token.outputs.present == 'true'
+        uses: expo/expo-github-action@v8
+        with:
+          # eas-cli 22 renamed `project` to `app` in build JSON. The fix for
+          # https://github.com/expo/expo-github-action/issues/358 missed newly created builds.
+          # Remove this pin once that path normalizes the build JSON too.
+          eas-version: 21.8.0
+          token: ${{ secrets.EXPO_TOKEN }}
+          packager: bun
+
+      - name: Checkout
+        if: steps.expo-token.outputs.present == 'true'
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - if: steps.expo-token.outputs.present == 'true'
+        uses: pnpm/setup@v3
+        with:
+          cache: true
+          install: false
+
+      - name: Install dependencies
+        if: steps.expo-token.outputs.present == 'true'
+        working-directory: .
+        run: pnpm install --frozen-lockfile --filter '@vornway/mobile...'
+
+      - name: Pull preview environment variables
+        if: steps.expo-token.outputs.present == 'true'
+        run: eas env:pull preview --non-interactive
+
+      - name: Deploy with fingerprint check
+        if: steps.expo-token.outputs.present == 'true'
+        uses: expo/expo-github-action/continuous-deploy-fingerprint@main
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          RUNNER_DEBUG: '1'
+        with:
+          profile: preview:dev
+          branch: pr-${{ github.event.pull_request.number }}
+          platform: android
+          environment: preview
+          working-directory: apps/mobile
+          github-token: ${{ secrets.GITHUB_TOKEN }}

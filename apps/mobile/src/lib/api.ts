@@ -1,9 +1,10 @@
 import { apiErrorMessage, makeApiClient } from '@vornway/api-client';
 import { Platform } from 'react-native';
-import { API_URL, authClient } from './auth-client';
+import { env } from '@/config/env';
+import { authClient } from './auth-client';
 
 export const api = makeApiClient({
-  baseUrl: API_URL,
+  baseUrl: env.apiUrl,
   headers: async () => {
     // The browser sends web cookies itself; native reads them from SecureStore.
     const cookie = Platform.OS === 'web' ? null : authClient.getCookie();

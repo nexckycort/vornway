@@ -1,14 +1,11 @@
 import { describe, expect, test } from 'bun:test';
-import { DateTime } from 'effect';
+import { toDate } from '#/infrastructure/dates';
 import {
   getVersionedGroupImageUrl,
   resolveAssetUrl,
   resolveUserImageUrl,
   storageKey,
 } from './image-urls';
-
-const at = (value: string | number) =>
-  DateTime.toDateUtc(DateTime.makeUnsafe(value));
 
 describe('resolveAssetUrl', () => {
   test('resolves stored paths against the asset host and keeps absolute URLs', () => {
@@ -26,7 +23,7 @@ describe('resolveAssetUrl', () => {
 });
 
 describe('resolveUserImageUrl', () => {
-  const updatedAt = at('2026-11-01T00:00:00.000Z');
+  const updatedAt = toDate('2026-11-01T00:00:00.000Z');
 
   test('versions stored paths but leaves absolute URLs and data URLs alone', () => {
     expect(resolveUserImageUrl('/users/ana/avatar.webp', updatedAt)).toBe(
@@ -56,12 +53,15 @@ describe('getVersionedGroupImageUrl', () => {
       `https://assets.vornway.com/groups/g1/cover.webp?v=${Date.parse('2026-11-01T00:00:00.000Z')}`,
     );
     expect(
-      getVersionedGroupImageUrl('https://cdn.example.com/a.webp?x=1', at(5)),
+      getVersionedGroupImageUrl(
+        'https://cdn.example.com/a.webp?x=1',
+        toDate(5),
+      ),
     ).toBe('https://cdn.example.com/a.webp?x=1&v=5');
     expect(getVersionedGroupImageUrl('/groups/g1/cover.webp', null)).toBe(
       'https://assets.vornway.com/groups/g1/cover.webp',
     );
-    expect(getVersionedGroupImageUrl(undefined, at(5))).toBeNull();
+    expect(getVersionedGroupImageUrl(undefined, toDate(5))).toBeNull();
   });
 });
 

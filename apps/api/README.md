@@ -13,7 +13,6 @@ bun fmt:fix
 bun typecheck
 bun run test
 bun run sync:contracts          # after adding files to packages/contracts
-bun run check:effect            # one copy of effect across the workspace
 ```
 
 `bun lint:fix`, `bun fmt:fix`, `bun typecheck` and `bun run test` must pass before a change is considered done.

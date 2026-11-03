@@ -1,4 +1,4 @@
-import { DateTime } from 'effect';
+import { toDate } from '#/infrastructure/dates';
 import { resolveUserImageUrl } from '#/infrastructure/storage/image-urls';
 import type { GoalDetailRow, GoalListRow } from './queries';
 
@@ -185,15 +185,12 @@ const monthlyTargetOf = (goal: {
   );
 
 const differenceInCalendarDays = (from: Date, to: Date) => {
-  const fromDate = cloneDate(from);
-  const toDate = cloneDate(to);
-  fromDate.setHours(0, 0, 0, 0);
-  toDate.setHours(0, 0, 0, 0);
-  return Math.ceil((toDate.getTime() - fromDate.getTime()) / 86_400_000);
+  const fromDay = toDate(from);
+  const toDay = toDate(to);
+  fromDay.setHours(0, 0, 0, 0);
+  toDay.setHours(0, 0, 0, 0);
+  return Math.ceil((toDay.getTime() - fromDay.getTime()) / 86_400_000);
 };
-
-const cloneDate = (value: Date) =>
-  DateTime.toDateUtc(DateTime.makeUnsafe(value));
 
 const monthKey = (value: Date) =>
   `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}`;
@@ -205,7 +202,7 @@ const projectedCompletionDate = (
   now: Date,
 ) => {
   const remaining = targetAmount - savedAmount;
-  if (remaining <= 0) return cloneDate(now);
+  if (remaining <= 0) return toDate(now);
   const sorted = [...contributions].sort(
     (left, right) =>
       left.contributedAt.getTime() - right.contributedAt.getTime(),
@@ -220,7 +217,7 @@ const projectedCompletionDate = (
     days;
   if (ratePerDay <= 0) return null;
 
-  const projected = cloneDate(now);
+  const projected = toDate(now);
   projected.setDate(projected.getDate() + Math.ceil(remaining / ratePerDay));
   return projected;
 };

@@ -9,7 +9,6 @@
     "dev": "portless api bun run --env-file=.env --hot src/main.ts 2>&1 | tee api-dev.log",
     "fmt:fix": "bun fmt",
     "lint:fix": "bun lint --fix",
-    "check:effect": "bun ../../scripts/check-single-effect.ts",
     "sync:contracts": "pnpm install --frozen-lockfile --offline --ignore-scripts",
     "clean": "rm -rf node_modules && rm -rf dist",
     "db:generate": "DATABASE_URL=dummy prisma generate",

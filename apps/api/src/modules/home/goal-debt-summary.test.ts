@@ -1,9 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { DateTime } from 'effect';
+import { toDate } from '#/infrastructure/dates';
 import { summarizeDebt, summarizeGoal } from './goal-debt-summary';
 
-const date = (value: string) => DateTime.toDateUtc(DateTime.makeUnsafe(value));
-const now = date('2026-11-02');
+const now = toDate('2026-11-02');
 
 const goal = (
   overrides: Partial<Parameters<typeof summarizeGoal>[0]> = {},
@@ -13,8 +12,8 @@ const goal = (
   description: null,
   currency: 'EUR',
   targetAmount: 200,
-  endDate: date('2026-12-31'),
-  createdAt: date('2026-11-01'),
+  endDate: toDate('2026-12-31'),
+  createdAt: toDate('2026-11-01'),
   group: { id: 'group-1', name: 'Trip' },
   contributions: [{ amount: 50.555 }, { amount: 25 }],
   ...overrides,
@@ -31,7 +30,7 @@ const debt = (
   currency: 'EUR',
   expectedTotal: 100,
   dueDate: null,
-  updatedAt: date('2026-11-01'),
+  updatedAt: toDate('2026-11-01'),
   payments: [{ amount: 40 }],
   ...overrides,
 });
@@ -64,7 +63,7 @@ describe('summarizeDebt', () => {
 
   test('is overdue past its due date and paid once nothing remains', () => {
     expect(
-      summarizeDebt(debt({ dueDate: date('2020-01-01') }), 'ana', now).status,
+      summarizeDebt(debt({ dueDate: toDate('2020-01-01') }), 'ana', now).status,
     ).toBe('overdue');
     expect(
       summarizeDebt(debt({ payments: [{ amount: 100 }] }), 'ana', now).status,

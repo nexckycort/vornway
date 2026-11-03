@@ -1,4 +1,5 @@
 import { DateTime, Option, Schema } from 'effect';
+import { toDate } from '#/infrastructure/dates';
 
 const SEPARATOR = '|';
 const SOURCES = [
@@ -34,7 +35,7 @@ export const decodeMovementCursor = (cursor?: string): MovementKey | null => {
   if (!Number.isFinite(timestamp) || !knownSource || !id) return null;
 
   return {
-    occurredAt: DateTime.toDateUtc(DateTime.makeUnsafe(timestamp)),
+    occurredAt: toDate(timestamp),
     source: knownSource,
     id,
   };

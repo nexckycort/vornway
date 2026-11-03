@@ -7,7 +7,7 @@ The contract is the only thing the server and the apps share. Old app versions s
 - `contracts` depends only on `effect`. It never imports server or app code.
 - `api-client` depends only on `contracts`.
 - Workspace packages are imported by name (`@vornway/contracts/...`), never by relative path.
-- `effect` is a peer dependency of both packages, and the server and the apps consume them `injected` (`dependenciesMeta`), so there is a single copy of `effect` at runtime. With two copies, Schema checks fail across them (a transform from one copy crashes in the other). `bun run check:effect` runs `scripts/check-single-effect.ts` in a project.
+- `effect` is a peer dependency of both packages, and the server and the apps consume them `injected` (`dependenciesMeta`), so there is a single copy of `effect` at runtime. With two copies, Schema checks fail across them (a transform from one copy crashes in the other).
 - An injected package is a hard-linked copy: edits to existing contract files show up at once, but a **new file** needs `bun run sync:contracts` in the consumer (`apps/api`, `packages/api-client`). After a `git stash`/`checkout` run it too.
 - Contract modules are exported with a wildcard (`@vornway/contracts/modules/<feature>/contract`): adding one needs no `package.json` edit.
 

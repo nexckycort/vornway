@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { DateTime } from 'effect';
+import { toDate } from '#/infrastructure/dates';
 import { monthRange } from './calendar';
 
-const now = DateTime.toDateUtc(DateTime.makeUnsafe('2026-04-15T12:00:00Z'));
+const now = toDate('2026-04-15T12:00:00Z');
 
 describe('monthRange', () => {
   test('spans the month in the given time zone', () => {

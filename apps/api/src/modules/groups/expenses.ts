@@ -15,6 +15,7 @@ import { Context, Effect, Layer } from 'effect';
 import type { Prisma } from '#/generated/prisma/client';
 import { Database } from '#/infrastructure/database/database';
 import { pageArgs, toPage } from '#/infrastructure/database/pagination';
+import { toDate } from '#/infrastructure/dates';
 import { type MoneyRow, memberExpenseSql, sumByCurrency } from './expense-sql';
 import {
   expenseDetailSelect,
@@ -23,7 +24,7 @@ import {
   toExpenseListItem,
   toMemberExpenseListItem,
 } from './expense-views';
-import { activeExpenses, parseDate, required, visibleGroup } from './helpers';
+import { activeExpenses, required, visibleGroup } from './helpers';
 
 const listOrder = [
   { date: 'desc' },
@@ -148,8 +149,8 @@ export class GroupExpenses extends Context.Service<
           ...(query.startDate && query.endDate
             ? {
                 date: {
-                  gte: parseDate(query.startDate),
-                  lte: parseDate(query.endDate),
+                  gte: toDate(query.startDate),
+                  lte: toDate(query.endDate),
                 },
               }
             : {}),

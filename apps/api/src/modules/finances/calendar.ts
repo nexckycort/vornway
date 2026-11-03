@@ -1,4 +1,5 @@
 import { DateTime } from 'effect';
+import { toDate } from '#/infrastructure/dates';
 
 const FALLBACK_TIME_ZONE = 'UTC';
 
@@ -16,12 +17,9 @@ export const monthRange = (now: Date, month?: string, timeZone?: string) => {
     key: source,
     start: zonedMonthBoundaryToUtc(validTimeZone, year, monthIndex),
     end: zonedMonthBoundaryToUtc(validTimeZone, year, monthIndex + 1),
-    budgetMonth: utcDate(Date.UTC(year, monthIndex, 1)),
+    budgetMonth: toDate(Date.UTC(year, monthIndex, 1)),
   };
 };
-
-const utcDate = (epochMillis: number) =>
-  DateTime.toDateUtc(DateTime.makeUnsafe(epochMillis));
 
 const validTimeZoneOrFallback = (timeZone?: string) => {
   if (!timeZone) return FALLBACK_TIME_ZONE;
@@ -89,5 +87,5 @@ const zonedMonthBoundaryToUtc = (
     utcTimestamp += delta;
   }
 
-  return utcDate(utcTimestamp);
+  return toDate(utcTimestamp);
 };

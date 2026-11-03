@@ -26,7 +26,7 @@ export const buildSummary = (input: {
     currency: string;
     categoryId: string | null;
     category: { name: string } | null;
-    tags: ReadonlyArray<TransactionLink>;
+    tags: readonly TransactionLink[];
   }[];
   accounts: Parameters<typeof accountTotals>[0];
   groupExpenses: ReturnType<typeof groupExpenseTotals>;

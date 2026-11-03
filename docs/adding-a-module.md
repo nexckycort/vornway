@@ -24,7 +24,7 @@
    - the error bodies, the validation 400s and the 401 without session;
    - anything that leaves the server (storage, push, email, outbound HTTP) goes through the testkit fakes, never a hand-built layer.
 9. **Contract tests**: update the surface in `packages/contracts/src/api.test.ts` on purpose (one line per endpoint with its statuses).
-10. **Finish**: `bun lint:fix`, `bun fmt:fix`, `bun typecheck` and `bun run test` in `apps/api` and `packages/contracts` (plus `packages/api-client` if touched). Run `bun run check:effect` in `apps/api` if you changed dependencies.
+10. **Finish**: `bun lint:fix`, `bun fmt:fix`, `bun typecheck` and `bun run test` in `apps/api` and `packages/contracts` (plus `packages/api-client` if touched).
 
 ## Routes outside the contract
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { DateTime } from 'effect';
+import { toDate } from '#/infrastructure/dates';
 import { summarizeGroup } from './group-summary';
 
 const member = (id: string, userId: string | null, name = id) => ({
@@ -22,8 +22,6 @@ const expense = (
   participants,
 });
 
-const date = (value: string) => DateTime.toDateUtc(DateTime.makeUnsafe(value));
-
 const group = (
   overrides: Partial<Parameters<typeof summarizeGroup>[0]> = {},
 ): Parameters<typeof summarizeGroup>[0] => ({
@@ -32,8 +30,8 @@ const group = (
   type: 'trip',
   description: null,
   imageUrl: null,
-  createdAt: date('2026-11-01T00:00:00.000Z'),
-  updatedAt: date('2026-11-01T00:00:00.000Z'),
+  createdAt: toDate('2026-11-01T00:00:00.000Z'),
+  updatedAt: toDate('2026-11-01T00:00:00.000Z'),
   GroupMember: [
     member('m-ana', 'ana'),
     member('m-bruno', 'bruno'),
@@ -53,7 +51,7 @@ const group = (
   ...overrides,
 });
 
-const profile = { name: 'Ana', image: null, updatedAt: date('2026-01-01') };
+const profile = { name: 'Ana', image: null, updatedAt: toDate('2026-01-01') };
 
 describe('summarizeGroup', () => {
   test('shows what the payer is owed, per member', () => {

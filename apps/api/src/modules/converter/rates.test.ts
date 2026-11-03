@@ -1,8 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { DateTime } from 'effect';
+import { toDate } from '#/infrastructure/dates';
 import { lastEffectiveDate, latestRates, pairRates } from './rates';
-
-const at = (value: string) => DateTime.toDateUtc(DateTime.makeUnsafe(value));
 
 const row = (
   pair: [string, string],
@@ -14,9 +12,9 @@ const row = (
   baseCurrency: pair[0],
   quoteCurrency: pair[1],
   rate,
-  effectiveDate: at(effectiveDate),
+  effectiveDate: toDate(effectiveDate),
   metadata: null,
-  createdAt: at(createdAt),
+  createdAt: toDate(createdAt),
 });
 
 describe('pairRates', () => {
@@ -80,7 +78,9 @@ describe('lastEffectiveDate', () => {
       ),
     ]);
 
-    expect(lastEffectiveDate(rates)).toEqual(at('2026-11-02T00:00:00.000Z'));
+    expect(lastEffectiveDate(rates)).toEqual(
+      toDate('2026-11-02T00:00:00.000Z'),
+    );
     expect(lastEffectiveDate([])).toBeNull();
   });
 });

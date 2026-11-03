@@ -1,64 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { homeClient } from '@/api/home';
-import { notificationsClient } from '@/api/notifications';
-import { quickSplitsClient } from '@/api/quick-splits';
+import { type ApiSuccess, apiErrorMessage } from '@vornway/api-client';
+import { api } from '@/lib/api';
 import { authClient } from '@/lib/auth-client';
 import { cacheHomeData, readCachedHomeData } from '@/lib/home-cache';
 import type { HomeData } from '../home.types';
 
-type HomeResponse = {
-  groups: {
-    id: string;
-    name: string;
-    createdAt: string;
-    type?: string;
-    imageUrl: string | null;
-    hasExpenses: boolean;
-    members: Array<{ id: string; name: string; image: string | null }>;
-    participantBalances: Array<{
-      memberId: string;
-      amount: number;
-      currency: string;
-      memberName: string;
-      direction: 'theyOweYou' | 'youOweThem';
-      label: string;
-    }>;
-    totalsByCurrency: Record<string, number>;
-  }[];
-  goals: {
-    id: string;
-    title: string;
-    currency: string;
-    targetAmount: number;
-    savedAmount: number;
-    progress: number;
-    group: { name: string };
-  }[];
-  recentDebts: {
-    id: string;
-    counterpartyName: string;
-    direction: 'lent' | 'borrowed';
-    currency: string;
-    remainingAmount: number;
-    status: 'active' | 'paid' | 'overdue';
-    updatedAt: string;
-  }[];
-};
-type ExpensesResponse = {
-  data: {
-    id: string;
-    quickSplitId: string;
-    description: string;
-    quickSplitName: string;
-    amount: number;
-    currency: string;
-    participantCount: number;
-    paidBy: { name: string };
-    currentUserBalance: number;
-    createdAt: string;
-  }[];
-};
-type NotificationsResponse = { unreadCount: number };
+type HomeResponse = ApiSuccess<'home', 'summary'>;
+type ExpensesResponse = ApiSuccess<'quickSplits', 'listExpenses'>;
+type NotificationsResponse = ApiSuccess<'notifications', 'list'>;
 
 const money = (amount: number, currency: string) =>
   new Intl.NumberFormat('es-CO', {
@@ -67,7 +16,7 @@ const money = (amount: number, currency: string) =>
     maximumFractionDigits: 2,
   }).format(Math.abs(amount));
 
-const date = (value: string) =>
+const date = (value: Date | string) =>
   new Intl.DateTimeFormat('es-CO', {
     day: 'numeric',
     month: 'short',
@@ -164,25 +113,12 @@ export function useHomeData() {
     enabled: !isSessionPending && Boolean(session),
     queryFn: async () => {
       try {
-        const [homeResponse, expensesResponse, notificationsResponse] =
-          await Promise.all([
-            homeClient.index.$get(),
-            quickSplitsClient.expenses.$get({ query: { limit: '3' } }),
-            notificationsClient.index.$get({ query: { limit: '1' } }),
-          ]);
-
-        if (
-          !homeResponse.ok ||
-          !expensesResponse.ok ||
-          !notificationsResponse.ok
-        ) {
-          throw new Error('No se pudo cargar el home');
-        }
-        const data = mapHome(
-          await homeResponse.json(),
-          await expensesResponse.json(),
-          await notificationsResponse.json(),
-        );
+        const [home, expenses, notifications] = await Promise.all([
+          api.home.summary.request(),
+          api.quickSplits.listExpenses.request({ query: { limit: 3 } }),
+          api.notifications.list.request({ query: { limit: 1 } }),
+        ]);
+        const data = mapHome(home, expenses, notifications);
         try {
           await cacheHomeData(data);
         } catch {
@@ -199,7 +135,9 @@ export function useHomeData() {
 
   return {
     data: query.data ?? null,
-    error: query.error instanceof Error ? query.error.message : null,
+    error: query.error
+      ? apiErrorMessage(query.error, 'No se pudo cargar el home')
+      : null,
     isLoading: query.isLoading || isSessionPending,
     reload: query.refetch,
   };

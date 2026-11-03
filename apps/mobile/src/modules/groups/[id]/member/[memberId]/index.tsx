@@ -1,46 +1,19 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import type { ApiSuccess } from '@vornway/api-client';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
+import { toDayBoundary } from '@/modules/groups/date-boundary';
 
-type Member = {
-  id: string;
-  name: string;
-  email?: string | null;
-  image?: string | null;
-  isCurrentUser?: boolean;
-};
-type Expense = {
-  id: string;
-  description: string;
-  amount: number;
-  currency: string;
-  date: string;
-  category?: {
-    name: string;
-    color?: string | null;
-    icon?: string | null;
-  } | null;
-  paidBy?: { id: string };
-  paidByMembers?: { memberId: string; amount: number }[];
-  participants?: { memberId: string; share: number }[];
-  isSettlement?: boolean;
-};
-type ExpenseResponse = {
-  data: Expense[];
-  summary?: {
-    spentByCurrency?: Record<string, number>;
-    grossPaidByCurrency?: Record<string, number>;
-  };
-  pagination?: { nextCursor?: string | null };
-};
+type Expense = ApiSuccess<'groups', 'listMemberExpenses'>['data'][number];
+
 export default function GroupMemberExpensesScreen() {
   const { id, memberId, categoryId, categoryName, uncategorized } =
     useLocalSearchParams<{
@@ -55,53 +28,26 @@ export default function GroupMemberExpensesScreen() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const groupQuery = useQuery({
-    queryKey: ['group-summary', id],
+    ...api.groups.get.queryOptions({ params: { id: id ?? '' } }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].$get({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('group_load_failed');
-      return response.json();
-    },
   });
+  const start = toDayBoundary(startDate, false);
+  const end = toDayBoundary(endDate, true);
   const expensesQuery = useInfiniteQuery({
-    queryKey: [
-      'group-member-expenses',
-      id,
-      memberId,
-      paidOnly,
-      startDate,
-      endDate,
-      categoryId,
-      uncategorized,
-    ],
-    initialPageParam: null as string | null,
+    ...api.groups.listMemberExpenses.infiniteQueryOptions({
+      params: { id: id ?? '', memberId: memberId ?? '' },
+      query: {
+        limit: 50,
+        ...(paidOnly ? { paidOnly: true } : {}),
+        ...(start ? { startDate: start } : {}),
+        ...(end ? { endDate: end } : {}),
+        ...(categoryId ? { categoryId } : {}),
+        ...(uncategorized === 'true' ? { uncategorized: true } : {}),
+      },
+    }),
     enabled: Boolean(id && memberId),
-    queryFn: async ({ pageParam }) => {
-      const response = await groupsClient[':id'].members[
-        ':memberId'
-      ].expenses.$get({
-        param: { id: id ?? '', memberId: memberId ?? '' },
-        query: {
-          limit: '50',
-          ...(pageParam ? { cursor: pageParam } : {}),
-          ...(paidOnly ? { paidOnly: 'true' } : {}),
-          ...(startDate ? { startDate } : {}),
-          ...(endDate ? { endDate } : {}),
-          ...(categoryId ? { categoryId } : {}),
-          ...(uncategorized === 'true' ? { uncategorized: 'true' } : {}),
-        },
-      });
-      if (!response.ok) throw new Error('member_expenses_load_failed');
-      return response.json() as Promise<ExpenseResponse>;
-    },
-    getNextPageParam: (lastPage) => lastPage.pagination?.nextCursor,
   });
-  const member =
-    groupQuery.data && 'members' in groupQuery.data
-      ? groupQuery.data.members.find((item: Member) => item.id === memberId)
-      : null;
+  const member = groupQuery.data?.members.find((item) => item.id === memberId);
   const summary = expensesQuery.data?.pages[0]?.summary;
   const expenses = expensesQuery.data?.pages.flatMap((page) => page.data) ?? [];
   return (

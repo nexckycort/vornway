@@ -18,7 +18,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -36,6 +35,7 @@ import {
 } from '@/components/ui/drawer';
 import { Screen } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import {
   cacheGroupExpenses,
   readCachedGroupExpenses,
@@ -46,16 +46,6 @@ type ExpenseOption = {
   description: string;
   isSettlement?: boolean;
   isDeleted?: boolean;
-};
-
-type PinnedExpense = {
-  id: string;
-  description: string;
-  amount: number;
-  currency: string;
-  isSettlement?: boolean;
-  isDeleted?: boolean;
-  date?: string;
 };
 
 import {
@@ -98,72 +88,43 @@ export default function GroupDetailScreen() {
   useEffect(() => {
     if (!id) return;
     void syncPendingExpenses().then(() => {
-      void queryClient.invalidateQueries({ queryKey: ['group-expenses', id] });
-      void queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
+      void queryClient.invalidateQueries({ queryKey: api.groups.key() });
       void queryClient.invalidateQueries({
         queryKey: ['offline-pending-expenses', id],
       });
     });
   }, [id, queryClient]);
   const groupQuery = useQuery({
-    queryKey: ['group-summary', id],
+    ...api.groups.get.queryOptions({ params: { id: id ?? '' } }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].$get({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('No se pudo cargar el espacio');
-      return response.json();
-    },
   });
   const expensesQuery = useInfiniteQuery({
-    queryKey: ['group-expenses', id],
-    initialPageParam: null as string | null,
+    ...api.groups.listExpenses.infiniteQueryOptions({
+      params: { id: id ?? '' },
+      query: { limit: 50 },
+    }),
     enabled: Boolean(id),
-    queryFn: async ({ pageParam }) => {
-      const response = await groupsClient[':id'].expenses.$get({
-        param: { id: id ?? '' },
-        query: {
-          limit: '50',
-          ...(pageParam ? { cursor: pageParam } : {}),
-        },
-      });
-      if (!response.ok) throw new Error('No se pudieron cargar los gastos');
-      const page = await response.json();
-      if ('data' in page && Array.isArray(page.data)) {
-        try {
-          await cacheGroupExpenses(id ?? '', page.data);
-          queryClient.setQueryData(
-            ['cached-group-expenses', id],
-            (current: { id: string }[] = []) => {
-              const merged = new Map(
-                current.map((expense) => [expense.id, expense]),
-              );
-              for (const expense of page.data) merged.set(expense.id, expense);
-              return [...merged.values()];
-            },
-          );
-        } catch {
-          // Cache persistence is best effort and must not block the response.
-        }
-      }
-      return page;
-    },
-    getNextPageParam: (lastPage) =>
-      'pagination' in lastPage ? lastPage.pagination.nextCursor : undefined,
   });
+  const expensePages = expensesQuery.data?.pages;
+  useEffect(() => {
+    const loaded = expensePages?.flatMap((page) => page.data) ?? [];
+    if (!id || loaded.length === 0) return;
+    void cacheGroupExpenses(id, loaded).catch(() => undefined);
+    queryClient.setQueryData(
+      ['cached-group-expenses', id],
+      (current: { id: string }[] = []) => {
+        const merged = new Map(current.map((expense) => [expense.id, expense]));
+        for (const expense of loaded) merged.set(expense.id, expense);
+        return [...merged.values()];
+      },
+    );
+  }, [expensePages, id, queryClient]);
   const pinnedExpenseQueries = useQueries({
     queries: pinnedExpenseIds.map((expenseId) => ({
-      queryKey: ['group-expense', id, expenseId],
+      ...api.groups.getExpense.queryOptions({
+        params: { id: id ?? '', expenseId },
+      }),
       enabled: Boolean(id && expenseId),
-      queryFn: async (): Promise<PinnedExpense | null> => {
-        const response = await groupsClient[':id'].expenses[':expenseId'].$get({
-          param: { id: id ?? '', expenseId },
-        });
-        if (!response.ok) return null;
-        const expense = (await response.json()) as PinnedExpense;
-        return expense;
-      },
     })),
   });
   const pendingExpensesQuery = useQuery({
@@ -181,29 +142,19 @@ export default function GroupDetailScreen() {
     staleTime: Number.POSITIVE_INFINITY,
   });
   const deleteExpenseMutation = useMutation({
-    mutationFn: async (expenseId: string) => {
-      const response = await groupsClient[':id'].expenses[':expenseId'].$delete(
-        {
-          param: { id: id ?? '', expenseId },
-        },
-      );
-      if (!response.ok) throw new Error('expense_delete_failed');
-    },
+    mutationFn: (expenseId: string) =>
+      api.groups.removeExpense.request({
+        params: { id: id ?? '', expenseId },
+      }),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-expenses', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
+        queryClient.invalidateQueries({ queryKey: api.groups.key() }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
       ]);
     },
   });
-  const group =
-    groupQuery.data && 'name' in groupQuery.data ? groupQuery.data : null;
-  const expenses =
-    expensesQuery.data?.pages.flatMap((page) =>
-      'data' in page ? page.data : [],
-    ) ?? [];
+  const group = groupQuery.data ?? null;
+  const expenses = expensePages?.flatMap((page) => page.data) ?? [];
   const visibleExpenses =
     expenses.length > 0
       ? expenses

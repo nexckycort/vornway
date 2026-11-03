@@ -12,7 +12,7 @@ type CalendarProps = ViewProps & {
   onValueChange?: (date: Date) => void;
 };
 function Calendar({ value, onValueChange, style, ...props }: CalendarProps) {
-  const [date, setDate] = useState(value ?? new Date());
+  const [date, setDate] = useState(() => value ?? new Date());
   const selected = value ?? date;
   const days = useMemo(
     () => Array.from({ length: 30 }, (_, index) => index + 1),

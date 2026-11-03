@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -9,7 +9,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { debtsClient } from '@/api/debts';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -22,57 +21,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { formatDebtAmount } from '../format';
+import { type Activity, formatDebtAmount } from '../format';
+import { useDebtMutations } from '../use-debt-mutations';
 
-type Debt = {
-  id: string;
-  name: string;
-  counterpartyName: string;
-  remainingAmount: number;
-  principalAmount?: number;
-  expectedTotal?: number;
-  paidAmount?: number;
-  currency: string;
-  direction: string;
-  description?: string | null;
-  status?: string;
-  dueDate?: string | null;
-  amounts?: {
-    id: string;
-    amount: number;
-    loanDate: string;
-    note?: string | null;
-  }[];
-  payments?: {
-    id: string;
-    amount: number;
-    paidAt: string;
-    note?: string | null;
-  }[];
-};
-type Activity =
-  | {
-      kind: 'loan';
-      id: string;
-      amount: number;
-      date: string;
-      note?: string | null;
-    }
-  | {
-      kind: 'payment';
-      id: string;
-      amount: number;
-      date: string;
-      note?: string | null;
-    };
 type DialogMode = 'edit-debt' | 'activity' | 'edit-activity' | null;
 
 export default function DebtDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id = '' } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useI18n();
-  const queryClient = useQueryClient();
   const [payment, setPayment] = useState('');
   const [paymentDate, setPaymentDate] = useState(today());
   const [paymentNote, setPaymentNote] = useState('');
@@ -89,173 +48,68 @@ export default function DebtDetailScreen() {
   const [activityDate, setActivityDate] = useState('');
   const [activityNote, setActivityNote] = useState('');
   const debtQuery = useQuery({
-    queryKey: ['debt', id],
+    ...api.debts.get.queryOptions({ params: { id } }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await debtsClient[':id'].$get({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('debt_load_failed');
-      return (await response.json()) as Debt;
-    },
   });
-  const paymentMutation = useMutation({
-    mutationFn: async (overrideAmount?: number) => {
-      const amount = overrideAmount ?? Number(payment.replace(',', '.'));
-      if (!Number.isFinite(amount) || amount <= 0) throw new Error('invalid');
-      const response = await debtsClient[':id'].payments.$post({
-        param: { id: id ?? '' },
-        json: {
-          amount,
-          paidAt: paymentDate,
-          ...(paymentNote.trim() ? { note: paymentNote.trim() } : {}),
-        },
-      });
-      if (!response.ok) throw new Error('payment_failed');
-    },
-    onSuccess: async () => {
-      setPayment('');
-      setPaymentDate(today());
-      setPaymentNote('');
-      await queryClient.invalidateQueries({ queryKey: ['debt', id] });
-      await queryClient.invalidateQueries({ queryKey: ['debts'] });
-      await queryClient.invalidateQueries({ queryKey: ['home-summary'] });
-    },
-  });
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const response = await debtsClient[':id'].$delete({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('delete_failed');
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['debts'] });
-      await queryClient.invalidateQueries({ queryKey: ['home-summary'] });
-      router.replace('/debts' as never);
-    },
-  });
-  const loanMutation = useMutation({
-    mutationFn: async () => {
-      const amount = Number(loanAmount.replace(',', '.'));
-      if (!Number.isFinite(amount) || amount <= 0) throw new Error('invalid');
-      const response = await debtsClient[':id'].amounts.$post({
-        param: { id: id ?? '' },
-        json: {
-          amount,
-          loanDate,
-        },
-      });
-      if (!response.ok) throw new Error('loan_failed');
-    },
-    onSuccess: async () => {
-      setLoanAmount('');
-      setLoanDate(today());
-      setAddingLoan(false);
-      await queryClient.invalidateQueries({ queryKey: ['debt', id] });
-      await queryClient.invalidateQueries({ queryKey: ['debts'] });
-      await queryClient.invalidateQueries({ queryKey: ['home-summary'] });
-    },
-  });
-  const updateDebtMutation = useMutation({
-    mutationFn: async () => {
-      if (!debt) throw new Error('debt_missing');
-      const response = await debtsClient[':id'].$patch({
-        param: { id: id ?? '' },
-        json: {
-          name: debtName.trim(),
-          description: debtDescription.trim() || undefined,
-          dueDate: debtDueDate || null,
-        },
-      });
-      if (!response.ok) throw new Error('debt_update_failed');
-    },
-    onSuccess: async () => {
-      setDialogMode(null);
-      await queryClient.invalidateQueries({ queryKey: ['debt', id] });
-      await queryClient.invalidateQueries({ queryKey: ['debts'] });
-      await queryClient.invalidateQueries({ queryKey: ['home-summary'] });
-    },
-  });
-  const updateActivityMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedActivity) throw new Error('activity_missing');
-      const response =
-        selectedActivity.kind === 'loan'
-          ? await debtsClient[':id'].amounts[':amountId'].$patch({
-              param: { id: id ?? '', amountId: selectedActivity.id },
-              json: {
-                amount: Number(loanAmount.replace(',', '.')),
-                loanDate: activityDate,
-              },
-            })
-          : await debtsClient[':id'].payments[':paymentId'].$patch({
-              param: { id: id ?? '', paymentId: selectedActivity.id },
-              json: {
-                amount: Number(payment.replace(',', '.')),
-                paidAt: activityDate,
-                note: activityNote.trim(),
-              },
-            });
-      if (!response.ok) throw new Error('activity_update_failed');
-    },
-    onSuccess: async () => {
-      setDialogMode(null);
-      setSelectedActivity(null);
-      await queryClient.invalidateQueries({ queryKey: ['debt', id] });
-      await queryClient.invalidateQueries({ queryKey: ['debts'] });
-      await queryClient.invalidateQueries({ queryKey: ['home-summary'] });
-    },
-  });
-  const deleteActivityMutation = useMutation({
-    mutationFn: async (activity: Activity) => {
-      const response =
-        activity.kind === 'loan'
-          ? await debtsClient[':id'].amounts[':amountId'].$delete({
-              param: { id: id ?? '', amountId: activity.id },
-            })
-          : await debtsClient[':id'].payments[':paymentId'].$delete({
-              param: { id: id ?? '', paymentId: activity.id },
-            });
-      if (!response.ok) throw new Error('activity_delete_failed');
-    },
-    onSuccess: async () => {
-      setDialogMode(null);
-      setSelectedActivity(null);
-      await queryClient.invalidateQueries({ queryKey: ['debt', id] });
-      await queryClient.invalidateQueries({ queryKey: ['debts'] });
-      await queryClient.invalidateQueries({ queryKey: ['home-summary'] });
-    },
-  });
+  const mutations = useDebtMutations(id);
   const debt = debtQuery.data;
   const progress = debt
-    ? debt.expectedTotal && debt.expectedTotal > 0
-      ? Math.min(100, ((debt.paidAmount ?? 0) / debt.expectedTotal) * 100)
+    ? debt.expectedTotal > 0
+      ? Math.min(100, (debt.paidAmount / debt.expectedTotal) * 100)
       : 0
     : 0;
   const activities: Activity[] = debt
     ? [
-        ...(debt.amounts ?? []).map((item) => ({
+        ...debt.amounts.map((item) => ({
           kind: 'loan' as const,
           id: item.id,
           amount: item.amount,
-          date: item.loanDate,
-          note: item.note,
+          date: item.loanDate.toISOString(),
         })),
-        ...(debt.payments ?? []).map((item) => ({
+        ...debt.payments.map((item) => ({
           kind: 'payment' as const,
           id: item.id,
           amount: item.amount,
-          date: item.paidAt,
+          date: item.paidAt.toISOString(),
           note: item.note,
         })),
       ].sort((left, right) => right.date.localeCompare(left.date))
     : [];
+  const resetPayment = () => {
+    setPayment('');
+    setPaymentDate(today());
+    setPaymentNote('');
+  };
+  const closeActivity = () => {
+    setDialogMode(null);
+    setSelectedActivity(null);
+  };
+  const saveDialog = () => {
+    if (dialogMode === 'edit-debt')
+      return mutations.update.mutate(
+        {
+          name: debtName,
+          description: debtDescription,
+          dueDate: debtDueDate,
+        },
+        { onSuccess: () => setDialogMode(null) },
+      );
+    if (!selectedActivity) return;
+    mutations.updateActivity.mutate(
+      {
+        activity: selectedActivity,
+        amount: selectedActivity.kind === 'loan' ? loanAmount : payment,
+        date: activityDate,
+        note: activityNote,
+      },
+      { onSuccess: closeActivity },
+    );
+  };
   const openDebtEditor = () => {
     if (!debt) return;
     setDebtName(debt.name);
     setDebtDescription(debt.description ?? '');
-    setDebtDueDate(debt.dueDate?.slice(0, 10) ?? '');
+    setDebtDueDate(debt.dueDate?.toISOString().slice(0, 10) ?? '');
     setDialogMode('edit-debt');
   };
   const openActivity = (activity: Activity) => {
@@ -299,14 +153,9 @@ export default function DebtDetailScreen() {
             </Text>
             <Text style={styles.copy}>
               {t('debts.remainingPaid')} ·{' '}
-              {formatDebtAmount(debt.paidAmount ?? 0, debt.currency)}{' '}
+              {formatDebtAmount(debt.paidAmount, debt.currency)}{' '}
               {t('debts.percentPaid')} {t('debts.expectedTotal')} {''}
-              {formatDebtAmount(
-                debt.expectedTotal ??
-                  debt.principalAmount ??
-                  debt.remainingAmount,
-                debt.currency,
-              )}
+              {formatDebtAmount(debt.expectedTotal, debt.currency)}
             </Text>
             <View style={styles.progressTrack}>
               <View style={[styles.progressBar, { width: `${progress}%` }]} />
@@ -317,7 +166,7 @@ export default function DebtDetailScreen() {
             {debt.dueDate ? (
               <Text style={styles.copy}>
                 {t('debts.duePrefix')}{' '}
-                {new Date(debt.dueDate).toLocaleDateString('es-CO')}
+                {debt.dueDate.toLocaleDateString('es-CO')}
               </Text>
             ) : null}
             {debt.description ? (
@@ -344,15 +193,19 @@ export default function DebtDetailScreen() {
                   placeholder={t('debts.paymentNotePlaceholder')}
                 />
                 <Button
-                  disabled={paymentMutation.isPending}
+                  disabled={mutations.payment.isPending}
                   onPress={() =>
-                    paymentMutation.mutate(undefined, {
-                      onError: () =>
-                        Alert.alert(
-                          'No se pudo registrar',
-                          'Intenta nuevamente.',
-                        ),
-                    })
+                    mutations.payment.mutate(
+                      { amount: payment, date: paymentDate, note: paymentNote },
+                      {
+                        onSuccess: resetPayment,
+                        onError: () =>
+                          Alert.alert(
+                            'No se pudo registrar',
+                            'Intenta nuevamente.',
+                          ),
+                      },
+                    )
                   }
                 >
                   <Text style={styles.buttonText}>
@@ -381,15 +234,23 @@ export default function DebtDetailScreen() {
                       placeholder="Fecha del préstamo (AAAA-MM-DD)"
                     />
                     <Button
-                      disabled={loanMutation.isPending}
+                      disabled={mutations.loan.isPending}
                       onPress={() =>
-                        loanMutation.mutate(undefined, {
-                          onError: () =>
-                            Alert.alert(
-                              'No se pudo agregar',
-                              'Intenta nuevamente.',
-                            ),
-                        })
+                        mutations.loan.mutate(
+                          { amount: loanAmount, date: loanDate },
+                          {
+                            onSuccess: () => {
+                              setLoanAmount('');
+                              setLoanDate(today());
+                              setAddingLoan(false);
+                            },
+                            onError: () =>
+                              Alert.alert(
+                                'No se pudo agregar',
+                                'Intenta nuevamente.',
+                              ),
+                          },
+                        )
                       }
                     >
                       <Text style={styles.buttonText}>
@@ -400,7 +261,7 @@ export default function DebtDetailScreen() {
                 ) : null}
                 <Button
                   variant="outline"
-                  disabled={paymentMutation.isPending}
+                  disabled={mutations.payment.isPending}
                   onPress={() =>
                     Alert.alert(
                       'Marcar deuda como pagada',
@@ -410,13 +271,21 @@ export default function DebtDetailScreen() {
                         {
                           text: 'Marcar pagada',
                           onPress: () => {
-                            paymentMutation.mutate(debt.remainingAmount, {
-                              onError: () =>
-                                Alert.alert(
-                                  'No se pudo marcar como pagada',
-                                  'Intenta nuevamente.',
-                                ),
-                            });
+                            mutations.payment.mutate(
+                              {
+                                amount: String(debt.remainingAmount),
+                                date: paymentDate,
+                                note: paymentNote,
+                              },
+                              {
+                                onSuccess: resetPayment,
+                                onError: () =>
+                                  Alert.alert(
+                                    'No se pudo marcar como pagada',
+                                    'Intenta nuevamente.',
+                                  ),
+                              },
+                            );
                           },
                         },
                       ],
@@ -457,7 +326,7 @@ export default function DebtDetailScreen() {
           </Card>
           <Button
             variant="destructive"
-            disabled={deleteMutation.isPending}
+            disabled={mutations.remove.isPending}
             onPress={() =>
               Alert.alert('Eliminar deuda', '¿Quieres eliminar esta deuda?', [
                 { text: 'Cancelar', style: 'cancel' },
@@ -465,7 +334,8 @@ export default function DebtDetailScreen() {
                   text: 'Eliminar',
                   style: 'destructive',
                   onPress: () =>
-                    deleteMutation.mutate(undefined, {
+                    mutations.remove.mutate(undefined, {
+                      onSuccess: () => router.replace('/debts' as never),
                       onError: () =>
                         Alert.alert(
                           'No se pudo eliminar',
@@ -537,7 +407,7 @@ export default function DebtDetailScreen() {
               </Button>
               <Button
                 variant="destructive"
-                disabled={deleteActivityMutation.isPending}
+                disabled={mutations.deleteActivity.isPending}
                 onPress={() => {
                   if (!selectedActivity) return;
                   Alert.alert('Eliminar movimiento', '¿Quieres eliminarlo?', [
@@ -546,7 +416,9 @@ export default function DebtDetailScreen() {
                       text: 'Eliminar',
                       style: 'destructive',
                       onPress: () =>
-                        deleteActivityMutation.mutate(selectedActivity),
+                        mutations.deleteActivity.mutate(selectedActivity, {
+                          onSuccess: closeActivity,
+                        }),
                     },
                   ]);
                 }}
@@ -582,14 +454,10 @@ export default function DebtDetailScreen() {
             <DialogFooter>
               <Button
                 disabled={
-                  updateDebtMutation.isPending ||
-                  updateActivityMutation.isPending
+                  mutations.update.isPending ||
+                  mutations.updateActivity.isPending
                 }
-                onPress={() =>
-                  dialogMode === 'edit-debt'
-                    ? updateDebtMutation.mutate()
-                    : updateActivityMutation.mutate()
-                }
+                onPress={saveDialog}
               >
                 <Text style={styles.buttonText}>{t('debts.save')}</Text>
               </Button>

@@ -1,6 +1,6 @@
 import * as Network from 'expo-network';
 import * as SecureStore from 'expo-secure-store';
-import { groupsClient } from '@/api/groups';
+import { api } from '@/lib/api';
 
 export type OfflineGroupPayload = {
   name: string;
@@ -57,8 +57,7 @@ export async function syncPendingGroups() {
   const remaining: PendingGroup[] = [];
   for (const item of queue) {
     try {
-      const response = await groupsClient.index.$post({ json: item.payload });
-      if (!response.ok) remaining.push(item);
+      await api.groups.create.request({ payload: item.payload });
     } catch {
       remaining.push(item);
     }

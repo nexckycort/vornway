@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
-import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -15,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 
 const CATEGORY_COLORS = [
   '#FF7FA3',
@@ -49,73 +49,45 @@ export default function GroupCategoriesScreen() {
   const [movingId, setMovingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const groupQuery = useQuery({
-    queryKey: ['group-summary', id],
+    ...api.groups.get.queryOptions({ params: { id: id ?? '' } }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].$get({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('No se pudo cargar el espacio');
-      return response.json();
-    },
   });
-  const categories =
-    groupQuery.data && 'categories' in groupQuery.data
-      ? groupQuery.data.categories
-      : [];
+  const categories = groupQuery.data?.categories ?? [];
   const createMutation = useMutation({
-    mutationFn: async (categoryName: string) => {
-      const response = await groupsClient[':id'].categories.$post({
-        param: { id: id ?? '' },
-        json: {
+    mutationFn: (categoryName: string) =>
+      api.groups.createCategory.request({
+        params: { id: id ?? '' },
+        payload: {
           name: categoryName,
           ...(icon.trim() ? { icon: icon.trim() } : {}),
           color,
         },
-      });
-      if (!response.ok) throw new Error('No se pudo crear la categoría');
-    },
+      }),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
-      ]);
+      await queryClient.invalidateQueries({ queryKey: api.groups.key() });
       setName('');
       setIcon('');
       setColor('#FF7FA3');
     },
   });
   const deleteMutation = useMutation({
-    mutationFn: async (categoryId: string) => {
-      const response = await groupsClient[':id'].categories[
-        ':categoryId'
-      ].$delete({
-        param: { id: id ?? '', categoryId },
-      });
-      if (!response.ok) throw new Error('No se pudo eliminar la categoría');
-    },
+    mutationFn: (categoryId: string) =>
+      api.groups.removeCategory.request({
+        params: { id: id ?? '', categoryId },
+      }),
     onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
-      ]),
+      queryClient.invalidateQueries({ queryKey: api.groups.key() }),
   });
   const updateMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: () => {
       if (!editingId || !name.trim()) throw new Error('invalid');
-      const response = await groupsClient[':id'].categories[
-        ':categoryId'
-      ].$patch({
-        param: { id: id ?? '', categoryId: editingId },
-        json: { name: name.trim(), icon: icon.trim() || null, color },
+      return api.groups.updateCategory.request({
+        params: { id: id ?? '', categoryId: editingId },
+        payload: { name: name.trim(), icon: icon.trim() || null, color },
       });
-      if (!response.ok) throw new Error('No se pudo actualizar la categoría');
     },
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
-      ]);
+      await queryClient.invalidateQueries({ queryKey: api.groups.key() });
       setEditingId(null);
       setName('');
       setIcon('');
@@ -123,21 +95,15 @@ export default function GroupCategoriesScreen() {
     },
   });
   const moveMutation = useMutation({
-    mutationFn: async (targetCategoryId: string | null) => {
+    mutationFn: (targetCategoryId: string | null) => {
       if (!movingId) throw new Error('invalid');
-      const response = await groupsClient[':id'].categories[':categoryId'][
-        'move-expenses'
-      ].$post({
-        param: { id: id ?? '', categoryId: movingId },
-        json: { targetCategoryId },
+      return api.groups.moveCategoryExpenses.request({
+        params: { id: id ?? '', categoryId: movingId },
+        payload: { targetCategoryId },
       });
-      if (!response.ok) throw new Error('No se pudieron mover los gastos');
     },
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
-      ]);
+      await queryClient.invalidateQueries({ queryKey: api.groups.key() });
       setMovingId(null);
     },
   });

@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { converterClient } from '@/api/converter';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -14,20 +13,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
-type ConverterData = {
-  currencies: string[];
-  rates: {
-    baseCurrency: string;
-    quoteCurrency: string;
-    rate: number;
-    effectiveDate?: string;
-    createdAt?: string;
-  }[];
-  disclaimer?: string;
-  lastUpdatedAt?: string | null;
-};
 export default function ConverterScreen() {
   const router = useRouter();
   const { locale, t } = useI18n();
@@ -37,14 +25,7 @@ export default function ConverterScreen() {
   const [currencyDrawer, setCurrencyDrawer] = useState<'from' | 'to' | null>(
     null,
   );
-  const converterQuery = useQuery({
-    queryKey: ['currency-converter'],
-    queryFn: async () => {
-      const response = await converterClient.index.$get();
-      if (!response.ok) throw new Error('converter_load_failed');
-      return (await response.json()) as ConverterData;
-    },
-  });
+  const converterQuery = useQuery(api.converter.rates.queryOptions());
   const data = converterQuery.data;
   const currencies = data?.currencies ?? ['EUR', 'COP', 'USD'];
   const rate = useMemo(

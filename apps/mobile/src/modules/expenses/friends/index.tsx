@@ -9,26 +9,15 @@ import {
   Text,
   View,
 } from 'react-native';
-import { quickSplitsClient } from '@/api/quick-splits';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Screen } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { authClient } from '@/lib/auth-client';
 import { useExpenseEntryData } from '../hooks/use-expense-entry-data';
 
-type Expense = {
-  id: string;
-  quickSplitId: string;
-  description: string;
-  amount: number;
-  currency: string;
-  quickSplitName?: string;
-  paidBy?: { name: string; userId?: string | null };
-  currentUserBalance?: number;
-  participants?: { id: string; name: string }[];
-};
 type ExpenseFilter = 'all' | 'settled' | 'owed' | 'owe';
 export default function ExpensesScreen() {
   const router = useRouter();
@@ -38,29 +27,17 @@ export default function ExpensesScreen() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<ExpenseFilter>('all');
   const { recentFriends, isLoading: friendsLoading } = useExpenseEntryData();
-  const expensesQuery = useInfiniteQuery({
-    queryKey: ['quick-split-expenses'],
-    initialPageParam: null as string | null,
-    queryFn: async ({ pageParam }) => {
-      const response = await quickSplitsClient.expenses.$get({
-        query: { limit: '50', ...(pageParam ? { cursor: pageParam } : {}) },
-      });
-      if (!response.ok) throw new Error('expenses_load_failed');
-      return (await response.json()) as {
-        data: Expense[];
-        pagination?: { nextCursor?: string | null };
-      };
-    },
-    getNextPageParam: (lastPage) => lastPage.pagination?.nextCursor,
-  });
+  const expensesQuery = useInfiniteQuery(
+    api.quickSplits.listExpenses.infiniteQueryOptions({ query: { limit: 50 } }),
+  );
   const visible = (
     expensesQuery.data?.pages.flatMap((page) => page.data) ?? []
   ).filter((item) => {
     const matchesSearch =
-      `${item.description} ${item.quickSplitName ?? ''} ${item.paidBy?.name ?? ''} ${(item.participants ?? []).map((participant) => participant.name).join(' ')}`
+      `${item.description} ${item.quickSplitName} ${item.paidBy.name} ${item.participants.map((participant) => participant.name).join(' ')}`
         .toLowerCase()
         .includes(search.toLowerCase());
-    const balance = item.currentUserBalance ?? 0;
+    const balance = item.currentUserBalance;
     const matchesFilter =
       filter === 'all' ||
       (filter === 'settled' && balance === 0) ||
@@ -253,7 +230,7 @@ export default function ExpensesScreen() {
                 <Text style={styles.copy}>
                   {item.quickSplitName || 'Gasto compartido'}
                 </Text>
-                {item.participants?.length ? (
+                {item.participants.length ? (
                   <Text style={styles.copy}>
                     {item.participants
                       .slice(0, 3)
@@ -265,21 +242,21 @@ export default function ExpensesScreen() {
                   {formatMoney(item.amount, item.currency)}
                 </Text>
                 <Text style={styles.copy}>
-                  {item.paidBy?.name
+                  {item.paidBy.name
                     ? `Pagado por ${item.paidBy.userId === currentUserId ? 'ti' : item.paidBy.name}`
                     : ''}
                 </Text>
                 <Text
                   style={[
                     styles.balance,
-                    (item.currentUserBalance ?? 0) > 0
+                    item.currentUserBalance > 0
                       ? styles.balancePositive
-                      : (item.currentUserBalance ?? 0) < 0
+                      : item.currentUserBalance < 0
                         ? styles.balanceNegative
                         : styles.balanceNeutral,
                   ]}
                 >
-                  {formatBalance(item.currentUserBalance ?? 0, item.currency)}
+                  {formatBalance(item.currentUserBalance, item.currency)}
                 </Text>
               </Button>
             </Card>

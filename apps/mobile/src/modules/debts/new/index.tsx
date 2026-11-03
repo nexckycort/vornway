@@ -2,14 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
-import { debtsClient } from '@/api/debts';
-import { usersClient } from '@/api/users';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api, withErrorMessage } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
 const createAmountDraft = () => ({
@@ -31,29 +30,15 @@ export default function DebtCreateScreen() {
   const [dueDate, setDueDate] = useState('');
   const [description, setDescription] = useState('');
   const searchQuery = useQuery({
-    queryKey: ['debt-counterparty-search', person.trim()],
+    ...api.users.search.queryOptions({ query: { query: person.trim() } }),
     enabled: person.trim().length > 1 && !counterpartyId,
-    queryFn: async () => {
-      const response = await usersClient.search.$get({
-        query: { query: person.trim() },
-      });
-      if (!response.ok) throw new Error('counterparty_search_failed');
-      return response.json() as Promise<{
-        data: {
-          id: string;
-          name: string;
-          username?: string | null;
-          email?: string | null;
-        }[];
-      }>;
-    },
   });
   const mutation = useMutation({
     mutationFn: async () => {
       const parsedAmounts = amounts
         .map((item) => ({
           amount: Number(item.value.replace(',', '.')),
-          loanDate: item.loanDate,
+          loanDate: new Date(item.loanDate),
         }))
         .filter((item) => Number.isFinite(item.amount) && item.amount > 0);
       const principalAmount = parsedAmounts.reduce(
@@ -72,28 +57,30 @@ export default function DebtCreateScreen() {
           (!Number.isFinite(parsedInterest) || parsedInterest < 0))
       )
         throw new Error('invalid');
-      const response = await debtsClient.index.$post({
-        json: {
-          name: debtName.trim(),
-          counterpartyName: person.trim(),
-          ...(counterpartyId ? { counterpartyId } : {}),
-          direction,
-          principalAmount,
-          amounts: parsedAmounts,
-          interestType: parsedInterest !== undefined ? 'percentage' : 'none',
-          ...(parsedInterest !== undefined
-            ? { interestValue: parsedInterest }
-            : {}),
-          currency: 'COP',
-          ...(dueDate ? { dueDate } : {}),
-          ...(description.trim() ? { description: description.trim() } : {}),
-        },
-      });
-      if (!response.ok) throw new Error('failed');
+      await withErrorMessage(
+        api.debts.create.request({
+          payload: {
+            name: debtName.trim(),
+            counterpartyName: person.trim(),
+            ...(counterpartyId ? { counterpartyId } : {}),
+            direction,
+            principalAmount,
+            amounts: parsedAmounts,
+            interestType: parsedInterest !== undefined ? 'percentage' : 'none',
+            ...(parsedInterest !== undefined
+              ? { interestValue: parsedInterest }
+              : {}),
+            currency: 'COP',
+            ...(dueDate ? { dueDate: new Date(dueDate) } : {}),
+            ...(description.trim() ? { description: description.trim() } : {}),
+          },
+        }),
+        'failed',
+      );
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: api.debts.key() }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
       router.replace('/debts' as never);
@@ -121,7 +108,7 @@ export default function DebtCreateScreen() {
           }}
           placeholder={t('debts.personPlaceholder')}
         />
-        {searchQuery.data?.data?.map((user) => (
+        {searchQuery.data?.data.map((user) => (
           <Button
             key={user.id}
             variant="outline"

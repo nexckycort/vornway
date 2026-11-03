@@ -2,69 +2,31 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import * as Network from 'expo-network';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { groupsClient } from '@/api/groups';
-import { mapsClient } from '@/api/maps';
+import { useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { enqueueExpense } from '@/lib/offline-expense-queue';
+import { AdvancedDetailsFields } from './advanced-details-fields';
+import { CreateCategoryDrawer } from './create-category-drawer';
+import {
+  buildExpensePayload,
+  emptyAdvancedDetails,
+  type ExpenseAttachment,
+  type SharedExpenseItem,
+  type SplitMethod,
+} from './expense-payload';
 
-type SplitMethod = 'equal' | 'percentage' | 'exact';
-type AdvancedExpenseType =
-  | 'stay'
-  | 'food'
-  | 'transport'
-  | 'activity'
-  | 'purchase'
-  | 'other';
-type SharedExpenseItem = { id: string; name: string; amount: string };
-type ExistingExpense = {
-  description: string;
-  amount: number;
-  currency: string;
-  category?: { id: string } | null;
-  tags?: string[];
-  paidBy?: { id: string };
-  paidByMembers?: { memberId: string; amount: number }[];
-  participants?: { memberId: string; share: number }[];
-  splitMethod?: SplitMethod;
-  lineItems?: {
-    memberId: string;
-    description: string;
-    amount: number;
-  }[];
-  sharedSplit?: {
-    amount: number;
-    splitMethod: 'percentage' | 'exact';
-    splitValues?: Record<string, number>;
-    items?: { name: string; amount: number }[];
-  } | null;
-  advancedDetails?: {
-    type: AdvancedExpenseType;
-    placeName?: string;
-    address?: string;
-    mapUrl?: string;
-    contactName?: string;
-    phone?: string;
-    email?: string;
-    bookingCode?: string;
-    reservationTime?: string;
-    websiteUrl?: string;
-    notes?: string;
-  } | null;
-};
+const resolveMapEmbedUrl = (url: string) =>
+  api.maps.resolve
+    .request({ payload: { url } })
+    .then((map) => map.embedUrl ?? undefined)
+    .catch(() => undefined);
 
 export default function GroupExpenseCreateScreen() {
   const { id, expenseId } = useLocalSearchParams<{
@@ -79,14 +41,10 @@ export default function GroupExpenseCreateScreen() {
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('COP');
   const [tags, setTags] = useState('');
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [pickedIds, setSelectedIds] = useState<string[]>([]);
   const [categoryId, setCategoryId] = useState('');
   const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryIcon, setNewCategoryIcon] = useState('🍽️');
-  const [newCategoryColor, setNewCategoryColor] = useState('#14B8A6');
-  const [paidById, setPaidById] = useState('');
-  const [paidByIds, setPaidByIds] = useState<string[]>([]);
+  const [pickedPayerIds, setPaidByIds] = useState<string[]>([]);
   const [payerValues, setPayerValues] = useState<Record<string, string>>({});
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
   const [shareValues, setShareValues] = useState<Record<string, string>>({});
@@ -96,107 +54,59 @@ export default function GroupExpenseCreateScreen() {
   const [lineItemDescriptions, setLineItemDescriptions] = useState<
     Record<string, string>
   >({});
-  const [advancedType, setAdvancedType] =
-    useState<AdvancedExpenseType>('other');
-  const [placeName, setPlaceName] = useState('');
-  const [address, setAddress] = useState('');
-  const [mapUrl, setMapUrl] = useState('');
-  const [contactName, setContactName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [bookingCode, setBookingCode] = useState('');
-  const [reservationTime, setReservationTime] = useState('');
-  const [websiteUrl, setWebsiteUrl] = useState('');
-  const [notes, setNotes] = useState('');
-  const [attachment, setAttachment] = useState<{
-    dataUrl: string;
-    fileName?: string;
-  } | null>(null);
+  const [advanced, setAdvanced] = useState(emptyAdvancedDetails);
+  const [attachment, setAttachment] = useState<ExpenseAttachment | null>(null);
   const groupQuery = useQuery({
-    queryKey: ['group-summary', id],
+    ...api.groups.get.queryOptions({ params: { id: id ?? '' } }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].$get({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('No se pudo cargar el espacio');
-      return response.json();
-    },
   });
   const expenseQuery = useQuery({
-    queryKey: ['group-expense', id, expenseId],
+    ...api.groups.getExpense.queryOptions({
+      params: { id: id ?? '', expenseId: expenseId ?? '' },
+    }),
     enabled: Boolean(id && expenseId),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].expenses[':expenseId'].$get({
-        param: { id: id ?? '', expenseId: expenseId ?? '' },
-      });
-      if (!response.ok) throw new Error('No se pudo cargar el gasto');
-      return (await response.json()) as unknown as ExistingExpense;
-    },
   });
-  const members =
-    groupQuery.data && 'members' in groupQuery.data
-      ? groupQuery.data.members
-      : [];
-  const categories =
-    groupQuery.data && 'categories' in groupQuery.data
-      ? groupQuery.data.categories
-      : [];
-  const createCategoryMutation = useMutation({
-    mutationFn: async () => {
-      const name = newCategoryName.trim();
-      if (!id || !name) throw new Error('category_name_required');
-      const response = await groupsClient[':id'].categories.$post({
-        param: { id },
-        json: {
-          name,
-          icon: newCategoryIcon,
-          color: newCategoryColor,
-        },
-      });
-      if (!response.ok) throw new Error('category_create_failed');
-      return response.json();
-    },
-    onSuccess: async (created) => {
-      if (!('id' in created)) return;
-      setCategoryId(created.id);
-      setNewCategoryName('');
-      setCreateCategoryOpen(false);
-      await queryClient.invalidateQueries({ queryKey: ['group-summary', id] });
-    },
-  });
-  const advancedDetailsEnabled = Boolean(
-    groupQuery.data &&
-    'advancedExpenseDetailsEnabled' in groupQuery.data &&
-    groupQuery.data.advancedExpenseDetailsEnabled,
-  );
-  useEffect(() => {
-    const expense = expenseQuery.data;
-    if (!isEditMode || !expense || editHydrated) return;
+  const members = groupQuery.data?.members ?? [];
+  const categories = groupQuery.data?.categories ?? [];
+  const isPersonal = groupQuery.data?.type === 'personal';
+  const advancedDetailsEnabled =
+    groupQuery.data?.advancedExpenseDetailsEnabled ?? false;
+  const selectedIds =
+    pickedIds.length > 0 ? pickedIds : members.map((member) => member.id);
+  const paidByIds =
+    pickedPayerIds.length > 0
+      ? pickedPayerIds
+      : members[0]
+        ? [members[0].id]
+        : [];
+  const existingExpense = expenseQuery.data;
+  if (isEditMode && existingExpense && !editHydrated) {
+    const expense = existingExpense;
+    setEditHydrated(true);
     setDescription(expense.description);
     setAmount(String(expense.amount));
     setCurrency(expense.currency);
     setCategoryId(expense.category?.id ?? '');
-    setTags((expense.tags ?? []).join(' '));
-    const participantIds = (expense.participants ?? []).map(
+    setTags(expense.tags.join(' '));
+    const participantIds = expense.participants.map(
       (participant) => participant.memberId,
     );
     setSelectedIds(participantIds);
-    const payerMembers = expense.paidByMembers ?? [];
+    const payerMembers = expense.paidByMembers;
     const payerIds = payerMembers.length
       ? payerMembers.map((payer) => payer.memberId)
       : expense.paidBy?.id
         ? [expense.paidBy.id]
         : [];
     setPaidByIds(payerIds);
-    setPaidById(payerIds[0] ?? '');
     setPayerValues(
       Object.fromEntries(
         payerMembers.map((payer) => [payer.memberId, String(payer.amount)]),
       ),
     );
     const method =
-      expense.sharedSplit?.splitMethod ?? expense.splitMethod ?? 'equal';
+      expense.sharedSplit?.splitMethod ??
+      (expense.splitMethod === 'unknown' ? 'equal' : expense.splitMethod);
     setSplitMethod(method);
     const splitValues = expense.sharedSplit?.splitValues ?? {};
     const sharedShareFallback =
@@ -212,7 +122,7 @@ export default function GroupExpenseCreateScreen() {
               ? (splitValues[memberId] ?? 0)
               : method === 'exact'
                 ? (splitValues[memberId] ??
-                  (expense.participants?.find(
+                  (expense.participants.find(
                     (item) => item.memberId === memberId,
                   )?.share ?? 0) - sharedShareFallback)
                 : '',
@@ -222,10 +132,7 @@ export default function GroupExpenseCreateScreen() {
     );
     setLineItemDescriptions(
       Object.fromEntries(
-        (expense.lineItems ?? []).map((item) => [
-          item.memberId,
-          item.description,
-        ]),
+        expense.lineItems.map((item) => [item.memberId, item.description]),
       ),
     );
     setSharedExpenseItems(
@@ -236,20 +143,22 @@ export default function GroupExpenseCreateScreen() {
       })),
     );
     if (expense.advancedDetails) {
-      setAdvancedType(expense.advancedDetails.type);
-      setPlaceName(expense.advancedDetails.placeName ?? '');
-      setAddress(expense.advancedDetails.address ?? '');
-      setMapUrl(expense.advancedDetails.mapUrl ?? '');
-      setContactName(expense.advancedDetails.contactName ?? '');
-      setPhone(expense.advancedDetails.phone ?? '');
-      setEmail(expense.advancedDetails.email ?? '');
-      setBookingCode(expense.advancedDetails.bookingCode ?? '');
-      setReservationTime(expense.advancedDetails.reservationTime ?? '');
-      setWebsiteUrl(expense.advancedDetails.websiteUrl ?? '');
-      setNotes(expense.advancedDetails.notes ?? '');
+      const details = expense.advancedDetails;
+      setAdvanced({
+        type: details.type === 'unknown' ? 'other' : details.type,
+        placeName: details.placeName ?? '',
+        address: details.address ?? '',
+        mapUrl: details.mapUrl ?? '',
+        contactName: details.contactName ?? '',
+        phone: details.phone ?? '',
+        email: details.email ?? '',
+        bookingCode: details.bookingCode ?? '',
+        reservationTime: details.reservationTime ?? '',
+        websiteUrl: details.websiteUrl ?? '',
+        notes: details.notes ?? '',
+      });
     }
-    setEditHydrated(true);
-  }, [editHydrated, expenseQuery.data, isEditMode]);
+  }
   const chooseAttachment = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -265,212 +174,43 @@ export default function GroupExpenseCreateScreen() {
       ...(asset.fileName ? { fileName: asset.fileName } : {}),
     });
   };
-  useEffect(() => {
-    if (selectedIds.length === 0 && members.length > 0)
-      setSelectedIds(members.map((member) => member.id));
-    if (!paidById && members[0]) {
-      setPaidById(members[0].id);
-      setPaidByIds([members[0].id]);
-    }
-  }, [members, paidById, selectedIds.length]);
   const mutation = useMutation({
     mutationFn: async () => {
-      const parsedAmount = Number(amount.replace(',', '.'));
-      const sharedItems = sharedExpenseItems
-        .map((item) => ({
-          name: item.name.trim(),
-          amount: Number(item.amount.replace(',', '.')) || 0,
-        }))
-        .filter((item) => item.name && item.amount > 0);
-      const hasInvalidSharedItem = sharedExpenseItems.some((item) => {
-        const itemAmount = Number(item.amount.replace(',', '.'));
-        return (
-          !item.name.trim() || !Number.isFinite(itemAmount) || itemAmount <= 0
-        );
-      });
-      const normalizedSharedAmount = sharedItems.reduce(
-        (sum, item) => sum + item.amount,
-        0,
+      if (!id) throw new Error('invalid');
+      const payload = await buildExpensePayload(
+        {
+          description,
+          amount,
+          currency,
+          tags,
+          selectedIds,
+          categoryId,
+          paidByIds,
+          payerValues,
+          splitMethod,
+          shareValues,
+          sharedExpenseItems,
+          lineItemDescriptions,
+          advanced,
+          attachment,
+          advancedDetailsEnabled,
+          isPersonal,
+        },
+        resolveMapEmbedUrl,
       );
-      const selectedCount = selectedIds.length;
-      const baseAmount = Math.max(parsedAmount - normalizedSharedAmount, 0);
-      const sharedShare =
-        selectedCount > 0 ? normalizedSharedAmount / selectedCount : 0;
-      const rawValues = Object.fromEntries(
-        selectedIds.map((memberId) => {
-          return [
-            memberId,
-            Number((shareValues[memberId] ?? '').replace(',', '.')) || 0,
-          ];
-        }),
-      );
-      const values = Object.fromEntries(
-        selectedIds.map((memberId) => {
-          const entered = rawValues[memberId] ?? 0;
-          return [
-            memberId,
-            splitMethod === 'percentage'
-              ? baseAmount * (entered / 100) + sharedShare
-              : entered + sharedShare,
-          ];
-        }),
-      );
-      const expectedTotal = splitMethod === 'percentage' ? 100 : parsedAmount;
-      const rawTotal = Object.values(rawValues).reduce(
-        (sum, value) => sum + value,
-        0,
-      );
-      const payerIds =
-        paidByIds.length > 0 ? paidByIds : paidById ? [paidById] : [];
-      const payerAmounts = payerIds.map((memberId) => ({
-        memberId,
-        amount:
-          payerIds.length === 1
-            ? parsedAmount
-            : Number((payerValues[memberId] ?? '').replace(',', '.')) || 0,
-      }));
-      const payerTotal = payerAmounts.reduce(
-        (sum, payer) => sum + payer.amount,
-        0,
-      );
-      if (
-        !id ||
-        !description.trim() ||
-        !Number.isFinite(parsedAmount) ||
-        parsedAmount <= 0 ||
-        selectedIds.length === 0 ||
-        payerIds.length === 0 ||
-        hasInvalidSharedItem ||
-        normalizedSharedAmount > parsedAmount ||
-        (payerIds.length > 1 && Math.abs(payerTotal - parsedAmount) > 0.01) ||
-        (splitMethod === 'exact' &&
-          Object.values(values).some((value) => value <= 0)) ||
-        (splitMethod === 'percentage' &&
-          (Math.abs(rawTotal - expectedTotal) > 0.01 ||
-            Object.values(rawValues).some((value) => value <= 0))) ||
-        (splitMethod === 'exact' &&
-          Math.abs(rawTotal + normalizedSharedAmount - parsedAmount) > 0.01)
-      )
-        throw new Error('invalid');
-      let resolvedMapEmbedUrl: string | undefined;
-      if (advancedDetailsEnabled && mapUrl.trim()) {
-        try {
-          const mapResponse = await mapsClient.resolve.$post({
-            json: { url: mapUrl.trim() },
-          });
-          if (mapResponse.ok) {
-            const mapPayload = (await mapResponse.json()) as {
-              embedUrl?: string | null;
-            };
-            resolvedMapEmbedUrl = mapPayload.embedUrl ?? undefined;
-          }
-        } catch {
-          // Keep the original URL when resolving an embed is unavailable.
-        }
+      if (isEditMode && expenseId) {
+        await api.groups.updateExpense.request({
+          params: { id, expenseId },
+          payload,
+        });
+        return { queued: false };
       }
-      const payloadSplitMethod =
-        normalizedSharedAmount > 0 && splitMethod !== 'equal'
-          ? 'exact'
-          : splitMethod;
-      const payload = {
-        description: description.trim(),
-        amount: parsedAmount,
-        currency,
-        participantIds:
-          groupQuery.data &&
-          'type' in groupQuery.data &&
-          groupQuery.data.type === 'personal'
-            ? []
-            : selectedIds,
-        paidById: payerIds[0],
-        paidByIds: payerIds,
-        ...(payerIds.length > 1 ? { payers: payerAmounts } : {}),
-        splitMethod: payloadSplitMethod,
-        ...(splitMethod !== 'equal'
-          ? {
-              exactShares: values,
-              ...(normalizedSharedAmount > 0
-                ? {
-                    sharedSplit: {
-                      amount: normalizedSharedAmount,
-                      splitMethod,
-                      splitValues: rawValues,
-                      items: sharedItems,
-                    },
-                  }
-                : {}),
-            }
-          : {}),
-        ...(splitMethod === 'exact'
-          ? {
-              lineItems: selectedIds.map((memberId) => ({
-                memberId,
-                description:
-                  lineItemDescriptions[memberId]?.trim() || 'Gasto compartido',
-                amount: values[memberId] ?? 0,
-              })),
-            }
-          : {}),
-        ...(categoryId ? { categoryId } : {}),
-        ...(advancedDetailsEnabled
-          ? {
-              advancedDetails: {
-                type: advancedType,
-                ...(placeName.trim() ? { placeName: placeName.trim() } : {}),
-                ...(address.trim() ? { address: address.trim() } : {}),
-                ...(mapUrl.trim() ? { mapUrl: mapUrl.trim() } : {}),
-                ...(resolvedMapEmbedUrl
-                  ? { mapEmbedUrl: resolvedMapEmbedUrl }
-                  : {}),
-                ...(contactName.trim()
-                  ? { contactName: contactName.trim() }
-                  : {}),
-                ...(phone.trim() ? { phone: phone.trim() } : {}),
-                ...(email.trim() ? { email: email.trim() } : {}),
-                ...(bookingCode.trim()
-                  ? { bookingCode: bookingCode.trim() }
-                  : {}),
-                ...(reservationTime.trim()
-                  ? { reservationTime: reservationTime.trim() }
-                  : {}),
-                ...(websiteUrl.trim() ? { websiteUrl: websiteUrl.trim() } : {}),
-                ...(notes.trim() ? { notes: notes.trim() } : {}),
-              },
-            }
-          : {}),
-        ...(advancedDetailsEnabled && attachment
-          ? { attachmentImage: attachment }
-          : {}),
-        ...(groupQuery.data &&
-        'type' in groupQuery.data &&
-        groupQuery.data.type === 'personal'
-          ? {
-              tags: tags
-                .split(/[\s,]+/)
-                .map((tag) => tag.replace(/^#/, '').trim())
-                .filter(Boolean)
-                .slice(0, 10),
-            }
-          : {}),
-      };
-      if (!isEditMode) {
-        const network = await Network.getNetworkStateAsync();
-        if (!network.isConnected || network.isInternetReachable === false) {
-          await enqueueExpense(id, payload as Record<string, unknown>);
-          return { queued: true };
-        }
+      const network = await Network.getNetworkStateAsync();
+      if (!network.isConnected || network.isInternetReachable === false) {
+        await enqueueExpense(id, payload);
+        return { queued: true };
       }
-      const response =
-        isEditMode && expenseId
-          ? await groupsClient[':id'].expenses[':expenseId'].$put({
-              param: { id, expenseId },
-              json: payload,
-            })
-          : await groupsClient[':id'].expenses.$post({
-              param: { id },
-              json: payload,
-            });
-      if (!response.ok) throw new Error('failed');
+      await api.groups.createExpense.request({ params: { id }, payload });
       return { queued: false };
     },
     onSuccess: async (result) => {
@@ -482,16 +222,7 @@ export default function GroupExpenseCreateScreen() {
       }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['group-expenses', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
-        ...(expenseId
-          ? [
-              queryClient.invalidateQueries({
-                queryKey: ['group-expense', id, expenseId],
-              }),
-            ]
-          : []),
+        queryClient.invalidateQueries({ queryKey: api.groups.key() }),
       ]);
       router.replace(`/groups/${id}` as never);
     },
@@ -543,9 +274,7 @@ export default function GroupExpenseCreateScreen() {
               </Button>
             ),
           )}
-          {groupQuery.data &&
-          'type' in groupQuery.data &&
-          groupQuery.data.type === 'personal' ? (
+          {isPersonal ? (
             <>
               <Label>Etiquetas</Label>
               <Input
@@ -563,10 +292,10 @@ export default function GroupExpenseCreateScreen() {
                 key={member.id}
                 variant={selected ? 'default' : 'outline'}
                 onPress={() =>
-                  setSelectedIds((current) =>
+                  setSelectedIds(
                     selected
-                      ? current.filter((value) => value !== member.id)
-                      : [...current, member.id],
+                      ? selectedIds.filter((value) => value !== member.id)
+                      : [...selectedIds, member.id],
                   )
                 }
               >
@@ -583,13 +312,11 @@ export default function GroupExpenseCreateScreen() {
               key={`payer-${member.id}`}
               variant={paidByIds.includes(member.id) ? 'default' : 'outline'}
               onPress={() => {
-                setPaidByIds((current) => {
-                  const next = current.includes(member.id)
-                    ? current.filter((value) => value !== member.id)
-                    : [...current, member.id];
-                  setPaidById(next[0] ?? '');
-                  return next;
-                });
+                setPaidByIds(
+                  paidByIds.includes(member.id)
+                    ? paidByIds.filter((value) => value !== member.id)
+                    : [...paidByIds, member.id],
+                );
               }}
             >
               <Text style={styles.buttonText}>{member.name}</Text>
@@ -750,93 +477,12 @@ export default function GroupExpenseCreateScreen() {
             </>
           ) : null}
           {advancedDetailsEnabled ? (
-            <>
-              <Label>Detalles avanzados</Label>
-              <Text style={styles.helperText}>
-                Agrega información útil para recordar este gasto.
-              </Text>
-              {(
-                [
-                  ['other', 'Otro'],
-                  ['food', 'Comida'],
-                  ['stay', 'Alojamiento'],
-                  ['transport', 'Transporte'],
-                  ['activity', 'Actividad'],
-                  ['purchase', 'Compra'],
-                ] as const
-              ).map(([value, label]) => (
-                <Button
-                  key={value}
-                  variant={advancedType === value ? 'default' : 'outline'}
-                  onPress={() => setAdvancedType(value)}
-                >
-                  <Text style={styles.buttonText}>{label}</Text>
-                </Button>
-              ))}
-              <Input
-                value={placeName}
-                onChangeText={setPlaceName}
-                placeholder="Lugar o nombre"
-              />
-              <Input
-                value={address}
-                onChangeText={setAddress}
-                placeholder="Dirección"
-              />
-              <Input
-                value={mapUrl}
-                onChangeText={setMapUrl}
-                autoCapitalize="none"
-                keyboardType="url"
-                placeholder="Enlace de mapa"
-              />
-              <Input
-                value={contactName}
-                onChangeText={setContactName}
-                placeholder="Persona de contacto"
-              />
-              <Input
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-                placeholder="Teléfono"
-              />
-              <Input
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                placeholder="Correo electrónico"
-              />
-              <Input
-                value={bookingCode}
-                onChangeText={setBookingCode}
-                placeholder="Código de reserva"
-              />
-              <Input
-                value={reservationTime}
-                onChangeText={setReservationTime}
-                placeholder="Fecha u hora de reserva"
-              />
-              <Input
-                value={websiteUrl}
-                onChangeText={setWebsiteUrl}
-                autoCapitalize="none"
-                keyboardType="url"
-                placeholder="Sitio web"
-              />
-              <Input
-                value={notes}
-                onChangeText={setNotes}
-                multiline
-                placeholder="Notas"
-              />
-              <Button variant="outline" onPress={() => void chooseAttachment()}>
-                <Text style={styles.outlineText}>
-                  {attachment ? 'Cambiar imagen adjunta' : 'Adjuntar imagen'}
-                </Text>
-              </Button>
-            </>
+            <AdvancedDetailsFields
+              value={advanced}
+              onChange={setAdvanced}
+              hasAttachment={Boolean(attachment)}
+              onChooseAttachment={() => void chooseAttachment()}
+            />
           ) : null}
           <Button
             disabled={mutation.isPending}
@@ -858,83 +504,12 @@ export default function GroupExpenseCreateScreen() {
           </Button>
         </Card>
       </ScrollView>
-      <Drawer open={createCategoryOpen} onOpenChange={setCreateCategoryOpen}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Crear categoría</DrawerTitle>
-          </DrawerHeader>
-          <Label>Nombre</Label>
-          <Input
-            value={newCategoryName}
-            onChangeText={setNewCategoryName}
-            placeholder="Comida, transporte..."
-          />
-          <Label>Ícono</Label>
-          <View style={styles.optionRow}>
-            {['🍽️', '🚗', '🏨', '🎟️', '🛍️', '💸'].map((icon) => (
-              <Button
-                key={icon}
-                size="sm"
-                variant={newCategoryIcon === icon ? 'default' : 'outline'}
-                onPress={() => setNewCategoryIcon(icon)}
-              >
-                <Text
-                  style={
-                    newCategoryIcon === icon
-                      ? styles.buttonText
-                      : styles.outlineText
-                  }
-                >
-                  {icon}
-                </Text>
-              </Button>
-            ))}
-          </View>
-          <Label>Color</Label>
-          <View style={styles.optionRow}>
-            {['#14B8A6', '#F43F5E', '#F59E0B', '#3B82F6', '#8B5CF6'].map(
-              (color) => (
-                <Button
-                  key={color}
-                  size="sm"
-                  variant={newCategoryColor === color ? 'default' : 'outline'}
-                  onPress={() => setNewCategoryColor(color)}
-                >
-                  <Text
-                    style={{
-                      color: newCategoryColor === color ? '#FFFFFF' : color,
-                      fontSize: 14,
-                      fontWeight: '600',
-                    }}
-                  >
-                    ●
-                  </Text>
-                </Button>
-              ),
-            )}
-          </View>
-          <DrawerFooter>
-            <Button
-              disabled={
-                createCategoryMutation.isPending || !newCategoryName.trim()
-              }
-              onPress={() =>
-                createCategoryMutation.mutate(undefined, {
-                  onError: () =>
-                    Alert.alert(
-                      'No se pudo crear la categoría',
-                      'Intenta nuevamente.',
-                    ),
-                })
-              }
-            >
-              <Text style={styles.buttonText}>
-                {createCategoryMutation.isPending ? 'Creando...' : 'Crear'}
-              </Text>
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+      <CreateCategoryDrawer
+        groupId={id}
+        open={createCategoryOpen}
+        onOpenChange={setCreateCategoryOpen}
+        onCreated={setCategoryId}
+      />
     </Screen>
   );
 }
@@ -943,9 +518,7 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 152 },
   card: { gap: 12, margin: 16, padding: 18 },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
-  optionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   outlineText: { color: '#111827', fontSize: 14, fontWeight: '600' },
-  helperText: { color: '#6B7280', fontSize: 13 },
   itemCard: { gap: 8, padding: 12 },
   deleteText: { color: '#B91C1C', fontSize: 14, fontWeight: '600' },
   errorCard: { gap: 10, margin: 16, padding: 16 },

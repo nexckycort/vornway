@@ -1,26 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, Image, StyleSheet, Text } from 'react-native';
-import { invitesClient } from '@/api/invites';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useUsernameRequirement } from '../../username/use-username-requirement';
 
-type Preview = {
-  group?: {
-    id: string;
-    name: string;
-    description?: string | null;
-    type?: string;
-    imageUrl?: string | null;
-    memberCount?: number;
-  };
-  alreadyMember?: boolean;
-  unregisteredMembers?: { id: string; name: string }[];
-};
 export default function InviteScreen() {
   const { inviteCode } = useLocalSearchParams<{ inviteCode: string }>();
   const router = useRouter();
@@ -28,48 +16,27 @@ export default function InviteScreen() {
   const queryClient = useQueryClient();
   const { ensureUsername, usernameDialog } = useUsernameRequirement();
   const previewQuery = useQuery({
-    queryKey: ['invite-preview', inviteCode],
+    ...api.invites.preview.queryOptions({ params: { inviteCode } }),
     enabled: Boolean(inviteCode),
-    queryFn: async () => {
-      const response = await invitesClient[':inviteCode'].$get({
-        param: { inviteCode: inviteCode ?? '' },
-      });
-      if (!response.ok) throw new Error('invite_load_failed');
-      return (await response.json()) as Preview;
-    },
   });
   const acceptMutation = useMutation({
-    mutationFn: async (memberId?: string) => {
-      const response = await invitesClient[':inviteCode'].accept.$post({
-        param: { inviteCode: inviteCode ?? '' },
-        json: memberId ? { memberId } : {},
-      });
-      if (!response.ok) throw new Error('invite_accept_failed');
-      return response.json() as Promise<{
-        groupId?: string;
-        groupType?: string;
-      }>;
-    },
+    ...api.invites.accept.mutationOptions(),
     onSuccess: async (result) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: api.groups.key() }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
-      if (result.groupId) {
-        if (result.groupType === 'meta') {
-          router.replace({
-            pathname: '/goals/[id]',
-            params: { id: result.groupId, from: 'goals' },
-          } as never);
-        } else {
-          router.replace(`/groups/${result.groupId}` as never);
-        }
-      } else router.replace('/groups' as never);
+      if (result.groupType === 'meta') {
+        router.replace({
+          pathname: '/goals/[id]',
+          params: { id: result.groupId, from: 'goals' },
+        } as never);
+      } else router.replace(`/groups/${result.groupId}` as never);
     },
   });
   const openGroup = async (groupId: string, groupType?: string) => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+      queryClient.invalidateQueries({ queryKey: api.groups.key() }),
       queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
     ]);
     if (groupType === 'meta') {
@@ -84,9 +51,12 @@ export default function InviteScreen() {
 
   async function acceptInvite(memberId?: string) {
     if (!(await ensureUsername())) return;
-    acceptMutation.mutate(memberId, {
-      onError: () => Alert.alert(t('invite.acceptFailed'), t('common.retry')),
-    });
+    acceptMutation.mutate(
+      { params: { inviteCode }, payload: memberId ? { memberId } : {} },
+      {
+        onError: () => Alert.alert(t('invite.acceptFailed'), t('common.retry')),
+      },
+    );
   }
 
   const preview = previewQuery.data;

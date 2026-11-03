@@ -3,32 +3,12 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, Share, StyleSheet, Text } from 'react-native';
-import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
-
-type Member = {
-  id: string;
-  name: string;
-  email?: string | null;
-  image?: string | null;
-  role?: string;
-  userId?: string | null;
-  isCurrentUser?: boolean;
-  expenseCount?: number;
-  user?: { name?: string | null } | null;
-};
-type SearchUser = {
-  id: string;
-  name: string;
-  email?: string;
-  username?: string | null;
-  isAlreadyMember?: boolean;
-  isCurrentUser?: boolean;
-};
+import { api } from '@/lib/api';
 
 export default function GroupParticipantsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -42,113 +22,57 @@ export default function GroupParticipantsScreen() {
     return () => clearTimeout(timeout);
   }, [search]);
   const membersQuery = useQuery({
-    queryKey: ['group-summary', id],
+    ...api.groups.get.queryOptions({ params: { id: id ?? '' } }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].$get({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('No se pudo cargar el espacio');
-      return response.json();
-    },
   });
   const usersQuery = useQuery({
-    queryKey: ['group-member-search', id, debouncedSearch],
+    ...api.groups.searchMembers.queryOptions({
+      params: { id: id ?? '' },
+      query: { query: debouncedSearch },
+    }),
     enabled: debouncedSearch.length > 1,
-    queryFn: async () => {
-      const response = await groupsClient[':id'].members.search.$get({
-        param: { id: id ?? '' },
-        query: { query: debouncedSearch },
-      });
-      if (!response.ok) throw new Error('No se pudo buscar usuarios');
-      return response.json() as Promise<{ data: SearchUser[] }>;
-    },
   });
+  const invalidate = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      queryClient.invalidateQueries({ queryKey: api.groups.key() }),
+    ]);
+  };
   const addMutation = useMutation({
-    mutationFn: async (participant: {
-      name: string;
-      linkedUserId?: string;
-    }) => {
-      const response = await groupsClient[':id'].members.$post({
-        param: { id: id ?? '' },
-        json: participant,
-      });
-      if (!response.ok) throw new Error('No se pudo agregar');
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
-      ]);
-    },
+    mutationFn: (participant: { name: string; linkedUserId?: string }) =>
+      api.groups.addMember.request({
+        params: { id: id ?? '' },
+        payload: participant,
+      }),
+    onSuccess: invalidate,
   });
   const removeMutation = useMutation({
-    mutationFn: async (memberId: string) => {
-      const response = await groupsClient[':id'].members[':memberId'].$delete({
-        param: { id: id ?? '', memberId },
-      });
-      if (!response.ok) throw new Error('No se pudo eliminar');
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
-      ]);
-    },
+    mutationFn: (memberId: string) =>
+      api.groups.removeMember.request({
+        params: { id: id ?? '', memberId },
+      }),
+    onSuccess: invalidate,
   });
   const unlinkMutation = useMutation({
-    mutationFn: async (memberId: string) => {
-      const response = await groupsClient[':id'].members[':memberId'][
-        'account-link'
-      ].$delete({ param: { id: id ?? '', memberId } });
-      if (!response.ok) throw new Error('No se pudo desvincular');
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
-      ]);
-    },
+    mutationFn: (memberId: string) =>
+      api.groups.unlinkMember.request({
+        params: { id: id ?? '', memberId },
+      }),
+    onSuccess: invalidate,
   });
   const transferMutation = useMutation({
-    mutationFn: async (memberId: string) => {
-      const response = await groupsClient[':id'].owner.$patch({
-        param: { id: id ?? '' },
-        json: { memberId },
-      });
-      if (!response.ok) throw new Error('No se pudo transferir la propiedad');
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
-      ]);
-    },
+    mutationFn: (memberId: string) =>
+      api.groups.transferOwner.request({
+        params: { id: id ?? '' },
+        payload: { memberId },
+      }),
+    onSuccess: invalidate,
   });
-  const members =
-    membersQuery.data && 'members' in membersQuery.data
-      ? (membersQuery.data.members as Member[])
-      : [];
-  const inviteCode =
-    membersQuery.data && 'inviteCode' in membersQuery.data
-      ? membersQuery.data.inviteCode
-      : null;
-  const isOwner =
-    membersQuery.data && 'isOwner' in membersQuery.data
-      ? Boolean(membersQuery.data.isOwner)
-      : false;
-  const ownerId =
-    membersQuery.data && 'ownerId' in membersQuery.data
-      ? membersQuery.data.ownerId
-      : undefined;
-  const currentMemberId =
-    membersQuery.data && 'myMembership' in membersQuery.data
-      ? membersQuery.data.myMembership?.id
-      : undefined;
+  const members = membersQuery.data?.members ?? [];
+  const inviteCode = membersQuery.data?.inviteCode ?? null;
+  const isOwner = membersQuery.data?.isOwner ?? false;
+  const ownerId = membersQuery.data?.ownerId;
+  const currentMemberId = membersQuery.data?.myMembership?.id;
   function addManual() {
     if (!name.trim() || addMutation.isPending) return;
     addMutation.mutate(
@@ -257,13 +181,11 @@ export default function GroupParticipantsScreen() {
             {member.image ? (
               <Image source={{ uri: member.image }} style={styles.avatar} />
             ) : (
-              <Text style={styles.avatarFallback}>
-                {initials(member.user?.name || member.name)}
-              </Text>
+              <Text style={styles.avatarFallback}>{initials(member.name)}</Text>
             )}
             <Card style={styles.memberIdentity}>
               <Text style={styles.name}>
-                {member.user?.name || member.name}
+                {member.name}
                 {member.userId === ownerId ? ' · Propietario' : ''}
                 {member.isCurrentUser || member.id === currentMemberId
                   ? ' · Tú'

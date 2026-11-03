@@ -1,10 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { goalsClient } from '@/api/goals';
-import { groupsClient } from '@/api/groups';
-import { usersClient } from '@/api/users';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -19,75 +16,17 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { formatGoalAmount } from '../format';
-
-type Member = { id: string; name: string };
-type Contribution = {
-  id: string;
-  member?: { name: string };
-  amount: number;
-  currency: string;
-  contributedAt?: string;
-  notes?: string | null;
-};
-type Goal = {
-  title: string;
-  description?: string | null;
-  targetAmount: number;
-  savedAmount: number;
-  currency: string;
-  endDate?: string;
-  contributionMode?: 'manual' | 'monthly' | 'flexible' | 'suggested';
-  progress?: number;
-  startDate?: string;
-  daysLeft?: number;
-  monthlyTarget?: number;
-  installmentCount?: number;
-  suggestedContributionAmount?: number;
-  members?: Member[];
-  group?: { id: string; name?: string };
-  contributions?: Contribution[];
-  participantCount?: number;
-  stats?: {
-    remainingAmount: number;
-    averageContribution: number;
-    currentMonthContributionTotal?: number;
-    contributorsThisMonth: number;
-    pendingMembersThisMonth: number;
-  };
-  memberStats?: {
-    memberId: string;
-    totalAmount: number;
-    contributionCount: number;
-    contributedThisMonth: boolean;
-  }[];
-  myMembership?: { role: string } | null;
-};
-
-function buildTimeline(startDate?: string, endDate?: string) {
-  if (!startDate || !endDate) return [];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return [];
-
-  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-  const last = new Date(end.getFullYear(), end.getMonth(), 1);
-  const items: { key: string; label: string; date: Date }[] = [];
-  while (cursor <= last && items.length < 18) {
-    items.push({
-      key: `${cursor.getFullYear()}-${cursor.getMonth()}`,
-      label: cursor.toLocaleDateString('es-CO', { month: 'short' }),
-      date: new Date(cursor),
-    });
-    cursor.setMonth(cursor.getMonth() + 1);
-  }
-  return items;
-}
+import { buildTimeline } from '../timeline';
+import { useGoalMutations } from '../use-goal-mutations';
 
 export default function GoalDetailScreen() {
-  const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
+  const { id = '', from } = useLocalSearchParams<{
+    id: string;
+    from?: string;
+  }>();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [drawer, setDrawer] = useState<'edit' | 'contribution' | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -104,15 +43,8 @@ export default function GoalDetailScreen() {
   const [debouncedParticipantSearch, setDebouncedParticipantSearch] =
     useState('');
   const goalQuery = useQuery({
-    queryKey: ['goal-detail', id],
+    ...api.goals.get.queryOptions({ params: { id } }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await goalsClient[':id'].$get({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('goal_load_failed');
-      return (await response.json()) as unknown as Goal;
-    },
   });
   useEffect(() => {
     const timeout = setTimeout(
@@ -122,154 +54,77 @@ export default function GoalDetailScreen() {
     return () => clearTimeout(timeout);
   }, [participantSearch]);
   const userSearchQuery = useQuery({
-    queryKey: ['goal-member-search', debouncedParticipantSearch],
+    ...api.users.search.queryOptions({
+      query: { query: debouncedParticipantSearch },
+    }),
     enabled: debouncedParticipantSearch.length > 1,
-    queryFn: async () => {
-      const response = await usersClient.search.$get({
-        query: { query: debouncedParticipantSearch },
-      });
-      if (!response.ok) throw new Error('member_search_failed');
-      return response.json() as Promise<{
-        data: {
-          id: string;
-          name: string;
-          username?: string | null;
-          isCurrentUser?: boolean;
-        }[];
-      }>;
-    },
   });
-  const addMemberMutation = useMutation({
-    mutationFn: async (member: { name: string; linkedUserId?: string }) => {
-      if (!goal?.group?.id) throw new Error('group_missing');
-      const response = await groupsClient[':id'].members.$post({
-        param: { id: goal.group.id },
-        json: member,
-      });
-      if (!response.ok) throw new Error('member_add_failed');
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['goal-detail', id] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-      setParticipantSearch('');
-    },
-  });
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      const response = await goalsClient[':id'].$patch({
-        param: { id: id ?? '' },
-        json: {
-          name: title.trim(),
-          description: description.trim(),
-          targetAmount: Number(targetAmount.replace(',', '.')),
-          ...(endDate ? { endDate } : {}),
-          contributionMode,
-        },
-      });
-      if (!response.ok) throw new Error('goal_update_failed');
-      return response.json();
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['goal-detail', id] }),
-        queryClient.invalidateQueries({ queryKey: ['goals-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-      setDrawer(null);
-    },
-  });
-  const contributionMutation = useMutation({
-    mutationFn: async () => {
-      const response = await goalsClient[':id'].contributions.$post({
-        param: { id: id ?? '' },
-        json: {
-          memberId,
-          amount: Number(contributionAmount.replace(',', '.')),
-          ...(contributionDate
-            ? { contributedAt: new Date(contributionDate) }
-            : {}),
-          ...(contributionNotes.trim()
-            ? { notes: contributionNotes.trim() }
-            : {}),
-        },
-      });
-      if (!response.ok) throw new Error('goal_contribution_failed');
-      return response.json();
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['goal-detail', id] }),
-        queryClient.invalidateQueries({ queryKey: ['goals-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-      setDrawer(null);
-      setContributionAmount('');
-    },
-  });
-  const deleteContributionMutation = useMutation({
-    mutationFn: async (contributionId: string) => {
-      const response = await goalsClient[':id'].contributions[
-        ':contributionId'
-      ].$delete({
-        param: { id: id ?? '', contributionId },
-      });
-      if (!response.ok) throw new Error('goal_contribution_delete_failed');
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['goal-detail', id] }),
-        queryClient.invalidateQueries({ queryKey: ['goals-list'] }),
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-      ]);
-    },
-  });
+  const [now] = useState(() => new Date());
+  const mutations = useGoalMutations(id, goalQuery.data?.group.id);
   const goal = goalQuery.data;
   const isAdmin = goal?.myMembership?.role === 'admin';
-  const progress = goal
-    ? Math.max(
-        0,
-        Math.min(
-          100,
-          goal.progress ?? (goal.savedAmount / goal.targetAmount) * 100,
-        ),
-      )
-    : 0;
-  const timeline = buildTimeline(goal?.startDate, goal?.endDate);
-  const membersOnTrack = goal?.memberStats
+  const progress = goal ? Math.max(0, Math.min(100, goal.progress)) : 0;
+  const timeline = goal ? buildTimeline(goal.startDate, goal.endDate) : [];
+  const membersOnTrack = goal
     ? goal.memberStats.filter((item) => {
-        const expected =
-          goal.savedAmount / Math.max(goal.participantCount ?? 0, 1);
+        const expected = goal.savedAmount / Math.max(goal.participantCount, 1);
         return item.totalAmount + 0.01 >= expected;
       }).length
     : 0;
   const pendingMembers = Math.max(
     0,
-    (goal?.participantCount ?? goal?.members?.length ?? 0) - membersOnTrack,
+    (goal?.participantCount ?? 0) - membersOnTrack,
   );
   function openEdit() {
     if (!goal) return;
     setTitle(goal.title);
     setDescription(goal.description ?? '');
     setTargetAmount(String(goal.targetAmount));
-    setEndDate(goal.endDate?.slice(0, 10) ?? '');
-    setContributionMode(goal.contributionMode ?? 'manual');
+    setEndDate(goal.endDate.toISOString().slice(0, 10));
+    setContributionMode(toContributionMode(goal.contributionMode));
     setDrawer('edit');
   }
   function saveEdit() {
     const value = Number(targetAmount.replace(',', '.'));
     if (!title.trim() || !Number.isFinite(value) || value <= 0) return;
-    void updateMutation
-      .mutateAsync()
-      .catch(() => Alert.alert('No se pudo actualizar', 'Intenta nuevamente.'));
+    mutations.update.mutate(
+      {
+        name: title.trim(),
+        description: description.trim(),
+        targetAmount: value,
+        ...(endDate ? { endDate: new Date(endDate) } : {}),
+        contributionMode,
+      },
+      {
+        onSuccess: () => setDrawer(null),
+        onError: () =>
+          Alert.alert('No se pudo actualizar', 'Intenta nuevamente.'),
+      },
+    );
   }
   function saveContribution() {
     const value = Number(contributionAmount.replace(',', '.'));
     if (!isAdmin || !memberId || !Number.isFinite(value) || value <= 0) return;
-    void contributionMutation
-      .mutateAsync()
-      .catch(() => Alert.alert('No se pudo registrar', 'Intenta nuevamente.'));
+    mutations.contribution.mutate(
+      {
+        memberId,
+        amount: value,
+        ...(contributionDate
+          ? { contributedAt: new Date(contributionDate) }
+          : {}),
+        ...(contributionNotes.trim()
+          ? { notes: contributionNotes.trim() }
+          : {}),
+      },
+      {
+        onSuccess: () => {
+          setDrawer(null);
+          setContributionAmount('');
+        },
+        onError: () =>
+          Alert.alert('No se pudo registrar', 'Intenta nuevamente.'),
+      },
+    );
   }
   return (
     <Screen>
@@ -303,13 +158,11 @@ export default function GoalDetailScreen() {
                 {formatGoalAmount(goal.savedAmount, goal.currency)} de{' '}
                 {formatGoalAmount(goal.targetAmount, goal.currency)}
               </Text>
-              {goal.daysLeft !== undefined ? (
-                <Text style={styles.memberMeta}>
-                  {goal.daysLeft >= 0
-                    ? `${goal.daysLeft} días restantes`
-                    : 'Meta finalizada'}
-                </Text>
-              ) : null}
+              <Text style={styles.memberMeta}>
+                {goal.daysLeft >= 0
+                  ? `${goal.daysLeft} días restantes`
+                  : 'Meta finalizada'}
+              </Text>
               <Button onPress={openEdit}>
                 <Text style={styles.buttonText}>Editar meta</Text>
               </Button>
@@ -320,7 +173,7 @@ export default function GoalDetailScreen() {
                   <Text style={styles.statLabel}>Este mes</Text>
                   <Text style={styles.statValue}>
                     {formatGoalAmount(
-                      goal.stats?.currentMonthContributionTotal ?? 0,
+                      goal.stats.currentMonthContributionTotal,
                       goal.currency,
                     )}
                   </Text>
@@ -337,13 +190,11 @@ export default function GoalDetailScreen() {
             </Card>
             <Card style={styles.card}>
               <Text style={styles.section}>Participantes</Text>
-              {goal.stats ? (
-                <Text style={styles.copy}>
-                  {goal.stats.contributorsThisMonth} de{' '}
-                  {goal.participantCount ?? goal.members?.length ?? 0} aportaron
-                  este mes · {goal.stats.pendingMembersThisMonth} pendientes
-                </Text>
-              ) : null}
+              <Text style={styles.copy}>
+                {goal.stats.contributorsThisMonth} de {goal.participantCount}{' '}
+                aportaron este mes · {goal.stats.pendingMembersThisMonth}{' '}
+                pendientes
+              </Text>
               <Input
                 value={participantSearch}
                 onChangeText={setParticipantSearch}
@@ -352,32 +203,36 @@ export default function GoalDetailScreen() {
               <Button
                 variant="outline"
                 disabled={
-                  addMemberMutation.isPending || !participantSearch.trim()
+                  mutations.addMember.isPending || !participantSearch.trim()
                 }
                 onPress={() =>
-                  addMemberMutation.mutate({
-                    name: participantSearch.trim(),
-                  })
+                  mutations.addMember.mutate(
+                    { name: participantSearch.trim() },
+                    { onSuccess: () => setParticipantSearch('') },
+                  )
                 }
               >
                 <Text style={styles.outlineText}>
                   Agregar participante manual
                 </Text>
               </Button>
-              {userSearchQuery.data?.data?.map((candidate) => (
+              {userSearchQuery.data?.data.map((candidate) => (
                 <Button
                   key={candidate.id}
                   variant="outline"
                   disabled={
-                    addMemberMutation.isPending || candidate.isCurrentUser
+                    mutations.addMember.isPending || candidate.isCurrentUser
                   }
                   onPress={() =>
                     candidate.isCurrentUser
                       ? undefined
-                      : addMemberMutation.mutate({
-                          name: candidate.name,
-                          linkedUserId: candidate.id,
-                        })
+                      : mutations.addMember.mutate(
+                          {
+                            name: candidate.name,
+                            linkedUserId: candidate.id,
+                          },
+                          { onSuccess: () => setParticipantSearch('') },
+                        )
                   }
                 >
                   <Text style={styles.outlineText}>
@@ -387,17 +242,17 @@ export default function GoalDetailScreen() {
                   </Text>
                 </Button>
               ))}
-              {goal.members?.map((member) => (
+              {goal.members.map((member) => (
                 <View key={member.id} style={styles.memberRow}>
                   <Text style={styles.copy}>{member.name}</Text>
                   <Text style={styles.memberMeta}>
                     {formatGoalAmount(
-                      goal.memberStats?.find(
+                      goal.memberStats.find(
                         (item) => item.memberId === member.id,
                       )?.totalAmount ?? 0,
                       goal.currency,
                     )}
-                    {goal.memberStats?.find(
+                    {goal.memberStats.find(
                       (item) => item.memberId === member.id,
                     )?.contributedThisMonth
                       ? ' · Este mes'
@@ -407,10 +262,13 @@ export default function GoalDetailScreen() {
               ))}
               <Button
                 disabled={
-                  addMemberMutation.isPending || !participantSearch.trim()
+                  mutations.addMember.isPending || !participantSearch.trim()
                 }
                 onPress={() =>
-                  addMemberMutation.mutate({ name: participantSearch.trim() })
+                  mutations.addMember.mutate(
+                    { name: participantSearch.trim() },
+                    { onSuccess: () => setParticipantSearch('') },
+                  )
                 }
               >
                 <Text style={styles.buttonText}>Agregar participante</Text>
@@ -419,16 +277,14 @@ export default function GoalDetailScreen() {
             {timeline.length > 0 ? (
               <Card style={styles.card}>
                 <Text style={styles.section}>Calendario de aportes</Text>
-                <Text style={styles.copy}>
-                  {goal.installmentCount ?? timeline.length} cuotas
-                </Text>
+                <Text style={styles.copy}>{goal.installmentCount} cuotas</Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.timeline}
                 >
                   {timeline.map((item, index) => {
-                    const active = item.date <= new Date();
+                    const active = item.date <= now;
                     return (
                       <View key={item.key} style={styles.timelineItem}>
                         <View
@@ -441,7 +297,7 @@ export default function GoalDetailScreen() {
                         <Text style={styles.memberMeta}>
                           {index === 0
                             ? 'Inicio'
-                            : `${goal.monthlyTarget ?? goal.suggestedContributionAmount ?? 0} ${goal.currency}`}
+                            : `${goal.monthlyTarget} ${goal.currency}`}
                         </Text>
                       </View>
                     );
@@ -451,14 +307,11 @@ export default function GoalDetailScreen() {
             ) : null}
             <Card style={styles.card}>
               <Text style={styles.section}>Contribuciones</Text>
-              {goal.contributions?.map((item) => (
+              {goal.contributions.map((item) => (
                 <React.Fragment key={item.id}>
                   <Text style={styles.copy}>
-                    {item.member?.name ?? 'Participante'} · {item.amount}{' '}
-                    {goal.currency}
-                    {item.contributedAt
-                      ? ` · ${new Date(item.contributedAt).toLocaleDateString('es-CO')}`
-                      : ''}
+                    {item.member.name} · {item.amount} {goal.currency} ·{' '}
+                    {item.contributedAt.toLocaleDateString('es-CO')}
                   </Text>
                   {item.notes ? (
                     <Text style={styles.memberMeta}>{item.notes}</Text>
@@ -466,7 +319,7 @@ export default function GoalDetailScreen() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    disabled={deleteContributionMutation.isPending}
+                    disabled={mutations.deleteContribution.isPending}
                     onPress={() =>
                       Alert.alert(
                         'Eliminar contribución',
@@ -477,7 +330,7 @@ export default function GoalDetailScreen() {
                             text: 'Eliminar',
                             style: 'destructive',
                             onPress: () =>
-                              deleteContributionMutation.mutate(item.id),
+                              mutations.deleteContribution.mutate(item.id),
                           },
                         ],
                       )
@@ -489,9 +342,9 @@ export default function GoalDetailScreen() {
               ))}
               <Button
                 variant="outline"
-                disabled={!isAdmin || !goal.members?.length}
+                disabled={!isAdmin || !goal.members.length}
                 onPress={() => {
-                  setMemberId(goal.members?.[0]?.id ?? '');
+                  setMemberId(goal.members[0]?.id ?? '');
                   setContributionAmount(
                     goal.suggestedContributionAmount
                       ? String(Math.round(goal.suggestedContributionAmount))
@@ -566,7 +419,7 @@ export default function GoalDetailScreen() {
           ) : (
             <>
               <Label>Participante</Label>
-              {goal?.members?.map((member) => (
+              {goal?.members.map((member) => (
                 <Button
                   key={member.id}
                   variant={memberId === member.id ? 'default' : 'outline'}
@@ -606,12 +459,12 @@ export default function GoalDetailScreen() {
           <DrawerFooter>
             <Button
               disabled={
-                updateMutation.isPending || contributionMutation.isPending
+                mutations.update.isPending || mutations.contribution.isPending
               }
               onPress={drawer === 'edit' ? saveEdit : saveContribution}
             >
               <Text style={styles.buttonText}>
-                {updateMutation.isPending || contributionMutation.isPending
+                {mutations.update.isPending || mutations.contribution.isPending
                   ? 'Guardando...'
                   : 'Guardar'}
               </Text>
@@ -668,3 +521,8 @@ const styles = StyleSheet.create({
   timelineDotActive: { backgroundColor: '#DE034D' },
   timelineLabel: { color: '#0F172A', fontSize: 13, fontWeight: '600' },
 });
+
+const toContributionMode = (mode: string) =>
+  mode === 'monthly' || mode === 'flexible' || mode === 'suggested'
+    ? mode
+    : 'manual';

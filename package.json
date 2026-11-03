@@ -20,7 +20,7 @@
     "bun-types": "catalog:",
     "mprocs": "^0.9.6",
     "portless": "catalog:",
-    "tsrs": "0.20.1-ts7.1.0-beta",
+    "tsrs": "catalog:",
     "typescript": "catalog:"
   },
   "devEngines": {

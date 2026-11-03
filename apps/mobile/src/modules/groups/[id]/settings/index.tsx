@@ -10,7 +10,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -22,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { authClient } from '@/lib/auth-client';
 
 export default function GroupSettingsScreen() {
@@ -36,61 +36,42 @@ export default function GroupSettingsScreen() {
   const canManageAdvancedDetails =
     userEmail?.trim().toLowerCase() === 'junior110120@gmail.com';
   const groupQuery = useQuery({
-    queryKey: ['group-summary', id],
+    ...api.groups.get.queryOptions({ params: { id: id ?? '' } }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].$get({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('load_failed');
-      return response.json();
-    },
   });
-  const group =
-    groupQuery.data && 'advancedExpenseDetailsEnabled' in groupQuery.data
-      ? groupQuery.data
-      : null;
+  const group = groupQuery.data ?? null;
   const mutation = useMutation({
-    mutationFn: async (value: boolean) => {
-      const response = await groupsClient[':id'].settings.$patch({
-        param: { id: id ?? '' },
-        json: { advancedExpenseDetailsEnabled: value },
-      });
-      if (!response.ok) throw new Error('save_failed');
-    },
+    mutationFn: (value: boolean) =>
+      api.groups.updateSettings.request({
+        params: { id: id ?? '' },
+        payload: { advancedExpenseDetailsEnabled: value },
+      }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
+        queryClient.invalidateQueries({ queryKey: api.groups.key() }),
       ]);
     },
   });
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const response = await groupsClient[':id'].$delete({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('delete_failed');
-    },
+    mutationFn: () => api.groups.remove.request({ params: { id: id ?? '' } }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: api.groups.key() }),
       ]);
       router.replace('/spaces' as never);
     },
   });
   const leaveMutation = useMutation({
-    mutationFn: async (memberId: string) => {
-      const response = await groupsClient[':id'].members[':memberId'].$delete({
-        param: { id: id ?? '', memberId },
-      });
-      if (!response.ok) throw new Error('leave_failed');
-    },
+    mutationFn: (memberId: string) =>
+      api.groups.removeMember.request({
+        params: { id: id ?? '', memberId },
+      }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: api.groups.key() }),
       ]);
       router.replace('/spaces' as never);
     },
@@ -105,14 +86,10 @@ export default function GroupSettingsScreen() {
     if (!id || isExporting) return;
     setIsExporting(true);
     try {
-      const response = await groupsClient[':id'].export.$get({
-        param: { id },
-      });
-      if (!response.ok) throw new Error('export_failed');
-      const csv = await response.text();
+      const csv = await api.groups.exportCsv.request({ params: { id } });
       await Share.share({
         title: `Exportación de ${group?.name ?? 'espacio'}`,
-        message: csv,
+        message: csv.body,
       });
     } catch {
       Alert.alert('No se pudo exportar', 'Intenta nuevamente.');

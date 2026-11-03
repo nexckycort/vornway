@@ -4,7 +4,6 @@ import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { groupsClient } from '@/api/groups';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -19,7 +18,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { readCachedGroupExpenses } from '@/lib/group-expense-cache';
+import { toExpenseUpdatePayload } from './update-payload';
 
 export default function GroupExpenseDetailScreen() {
   const { id, expenseId } = useLocalSearchParams<{
@@ -33,26 +34,14 @@ export default function GroupExpenseDetailScreen() {
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('COP');
   const expenseQuery = useQuery({
-    queryKey: ['group-expense', id, expenseId],
+    ...api.groups.getExpense.queryOptions({
+      params: { id: id ?? '', expenseId: expenseId ?? '' },
+    }),
     enabled: Boolean(id && expenseId),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].expenses[':expenseId'].$get({
-        param: { id: id ?? '', expenseId: expenseId ?? '' },
-      });
-      if (!response.ok) throw new Error('No se pudo cargar el gasto');
-      return response.json();
-    },
   });
   const groupQuery = useQuery({
-    queryKey: ['group-summary', id],
+    ...api.groups.get.queryOptions({ params: { id: id ?? '' } }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].$get({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('No se pudo cargar el grupo');
-      return response.json();
-    },
   });
   const cachedExpenseQuery = useQuery({
     queryKey: ['cached-group-expenses', id],
@@ -61,18 +50,14 @@ export default function GroupExpenseDetailScreen() {
     staleTime: Number.POSITIVE_INFINITY,
   });
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const response = await groupsClient[':id'].expenses[':expenseId'].$delete(
-        { param: { id: id ?? '', expenseId: expenseId ?? '' } },
-      );
-      if (!response.ok) throw new Error('No se pudo eliminar');
-    },
+    mutationFn: () =>
+      api.groups.removeExpense.request({
+        params: { id: id ?? '', expenseId: expenseId ?? '' },
+      }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['group-expenses', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
+        queryClient.invalidateQueries({ queryKey: api.groups.key() }),
       ]);
       router.replace(`/groups/${id}` as never);
     },
@@ -87,84 +72,30 @@ export default function GroupExpenseDetailScreen() {
       ) {
         throw new Error('invalid');
       }
-      const response = await groupsClient[':id'].expenses[':expenseId'].$put({
-        param: { id: id ?? '', expenseId: expenseId ?? '' },
-        json: {
+      return api.groups.updateExpense.request({
+        params: { id: id ?? '', expenseId: expenseId ?? '' },
+        payload: toExpenseUpdatePayload(expense, {
           description: description.trim(),
           amount: parsedAmount,
           currency,
-          participantIds:
-            expense?.participants?.map((participant) => participant.memberId) ??
-            [],
-          ...(expense?.paidBy?.id ? { paidById: expense.paidBy.id } : {}),
-          ...(expense?.paidByMembers?.length
-            ? {
-                paidByIds: expense.paidByMembers.map(
-                  (member) => member.memberId,
-                ),
-                payers: expense.paidByMembers.map((member) => ({
-                  memberId: member.memberId,
-                  amount: member.amount,
-                })),
-              }
-            : {}),
-          splitMethod:
-            expense?.sharedSplit?.splitMethod ??
-            expense?.splitMethod ??
-            'equal',
-          ...(expense?.splitMethod === 'exact' && expense?.participants
-            ? {
-                exactShares: Object.fromEntries(
-                  expense.participants.map((participant) => [
-                    participant.memberId,
-                    participant.share,
-                  ]),
-                ),
-              }
-            : {}),
-          ...(expense?.sharedSplit ? { sharedSplit: expense.sharedSplit } : {}),
-          ...(expense?.lineItems?.length
-            ? { lineItems: expense.lineItems }
-            : {}),
-          ...(expense?.advancedDetails
-            ? { advancedDetails: expense.advancedDetails }
-            : {}),
-          ...(expense?.category?.id ? { categoryId: expense.category.id } : {}),
-          ...(expense?.tags?.length ? { tags: expense.tags } : {}),
-        },
+        }),
       });
-      if (!response.ok) throw new Error('update_failed');
     },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expense', id, expenseId],
-        }),
-        queryClient.invalidateQueries({ queryKey: ['group-expenses', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
+        queryClient.invalidateQueries({ queryKey: api.groups.key() }),
       ]);
       setEditOpen(false);
     },
   });
-  const expense =
-    expenseQuery.data && 'description' in expenseQuery.data
-      ? expenseQuery.data
-      : null;
+  const expense = expenseQuery.data ?? null;
   const cachedExpense = cachedExpenseQuery.data?.find(
     (item) => item.id === expenseId,
   );
-  const advancedDetails =
-    expense && 'advancedDetails' in expense ? expense.advancedDetails : null;
-  const lineItems =
-    expense && 'lineItems' in expense && Array.isArray(expense.lineItems)
-      ? expense.lineItems
-      : [];
-  const members =
-    groupQuery.data && 'members' in groupQuery.data
-      ? groupQuery.data.members
-      : [];
+  const advancedDetails = expense?.advancedDetails ?? null;
+  const lineItems = expense?.lineItems ?? [];
+  const members = groupQuery.data?.members ?? [];
   const formatDate = (value: string) => {
     const date = new Date(value);
     return Number.isNaN(date.getTime())

@@ -2,49 +2,16 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
+import { toDayBoundary } from '@/modules/groups/date-boundary';
 
 type Tab = 'balance' | 'totals';
 type DateFilterMode = 'all' | 'day' | 'range';
-type Totals = {
-  totalsByCurrency: Record<string, number>;
-  expenseCountByCurrency: Record<string, number>;
-  currentUserSpentByCurrency?: Record<string, number>;
-  categoriesByCurrency: Record<
-    string,
-    {
-      key: string;
-      id?: string | null;
-      name: string;
-      amount: number;
-      fill?: string;
-    }[]
-  >;
-  tagsByCurrency?: Record<
-    string,
-    { key: string; name: string; amount: number }[]
-  >;
-};
-type Balances = {
-  memberBalances: {
-    memberId: string;
-    name: string;
-    balances: Record<string, number>;
-  }[];
-};
-type Shares = {
-  memberShares: {
-    memberId: string;
-    name: string;
-    shares: Record<string, number>;
-  }[];
-};
-
 export default function GroupReportsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -55,30 +22,16 @@ export default function GroupReportsScreen() {
   const [endDate, setEndDate] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState('');
   const groupQuery = useQuery({
-    queryKey: ['group-summary', id],
+    ...api.groups.get.queryOptions({ params: { id: id ?? '' } }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].$get({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('No se pudo cargar el espacio');
-      return response.json();
-    },
   });
-  const isPersonalSpace =
-    groupQuery.data && 'type' in groupQuery.data
-      ? groupQuery.data.type === 'personal'
-      : false;
+  const isPersonalSpace = groupQuery.data?.type === 'personal';
   const activeTab: Tab = isPersonalSpace ? 'totals' : tab;
   const reportRange = useMemo(() => {
     const rangeStart = dateFilterMode === 'day' ? selectedDay : startDate;
     const rangeEnd = dateFilterMode === 'day' ? selectedDay : endDate;
-    const start = rangeStart
-      ? new Date(`${rangeStart}T00:00:00.000Z`).toISOString()
-      : undefined;
-    const end = rangeEnd
-      ? new Date(`${rangeEnd}T23:59:59.999Z`).toISOString()
-      : undefined;
+    const start = toDayBoundary(rangeStart, false);
+    const end = toDayBoundary(rangeEnd, true);
     return {
       range: dateFilterMode === 'all' ? ('all' as const) : ('custom' as const),
       ...(start ? { startDate: start } : {}),
@@ -86,65 +39,38 @@ export default function GroupReportsScreen() {
     };
   }, [dateFilterMode, endDate, selectedDay, startDate]);
   const totalsQuery = useQuery({
-    queryKey: ['group-report-totals', id, reportRange],
+    ...api.groups.reportTotals.queryOptions({
+      params: { id: id ?? '' },
+      query: reportRange,
+    }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].reports.totals.$get({
-        param: { id: id ?? '' },
-        query: reportRange,
-      });
-      if (!response.ok) throw new Error('No se pudo cargar el reporte');
-      return response.json();
-    },
   });
   const balancesQuery = useQuery({
-    queryKey: ['group-report-balances', id, reportRange],
+    ...api.groups.reportBalances.queryOptions({
+      params: { id: id ?? '' },
+      query: reportRange,
+    }),
     enabled: Boolean(id) && activeTab === 'balance',
-    queryFn: async () => {
-      const response = await groupsClient[':id'].reports.balances.$get({
-        param: { id: id ?? '' },
-        query: reportRange,
-      });
-      if (!response.ok) throw new Error('No se pudo cargar los saldos');
-      return response.json();
-    },
   });
   const sharesQuery = useQuery({
-    queryKey: ['group-report-shares', id, reportRange],
+    ...api.groups.reportShares.queryOptions({
+      params: { id: id ?? '' },
+      query: reportRange,
+    }),
     enabled: Boolean(id) && activeTab === 'totals',
-    queryFn: async () => {
-      const response = await groupsClient[':id'].reports.shares.$get({
-        param: { id: id ?? '' },
-        query: reportRange,
-      });
-      if (!response.ok) throw new Error('No se pudo cargar la participación');
-      return response.json();
-    },
   });
-  const totals = (
-    totalsQuery.data && 'totalsByCurrency' in totalsQuery.data
-      ? totalsQuery.data
-      : null
-  ) as Totals | null;
+  const totals = totalsQuery.data ?? null;
   const currencies = Object.keys(totals?.totalsByCurrency ?? {});
   const currency = currencies.includes(selectedCurrency)
     ? selectedCurrency
     : (currencies[0] ?? 'COP');
-  const categories = totals?.categoriesByCurrency?.[currency] ?? [];
+  const categories = totals?.categoriesByCurrency[currency] ?? [];
   const categoryTotal = categories.reduce(
     (total, category) => total + Math.max(0, category.amount),
     0,
   );
-  const balances = (
-    balancesQuery.data && 'memberBalances' in balancesQuery.data
-      ? balancesQuery.data
-      : null
-  ) as Balances | null;
-  const shares = (
-    sharesQuery.data && 'memberShares' in sharesQuery.data
-      ? sharesQuery.data
-      : null
-  ) as Shares | null;
+  const balances = balancesQuery.data ?? null;
+  const shares = sharesQuery.data ?? null;
   const loading =
     totalsQuery.isLoading ||
     (activeTab === 'balance' && balancesQuery.isLoading) ||

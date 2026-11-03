@@ -4,13 +4,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
-import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 
 export default function GroupEditScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -22,18 +22,10 @@ export default function GroupEditScreen() {
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const hydratedRef = useRef(false);
   const groupQuery = useQuery({
-    queryKey: ['group-summary', id],
+    ...api.groups.get.queryOptions({ params: { id: id ?? '' } }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].$get({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('load_failed');
-      return response.json();
-    },
   });
-  const group =
-    groupQuery.data && 'name' in groupQuery.data ? groupQuery.data : null;
+  const group = groupQuery.data ?? null;
   useEffect(() => {
     if (!group || hydratedRef.current) return;
     hydratedRef.current = true;
@@ -43,10 +35,10 @@ export default function GroupEditScreen() {
     setImageDataUrl(null);
   }, [group]);
   const mutation = useMutation({
-    mutationFn: async () => {
-      const response = await groupsClient[':id'].$patch({
-        param: { id: id ?? '' },
-        json: {
+    mutationFn: () =>
+      api.groups.update.request({
+        params: { id: id ?? '' },
+        payload: {
           name: name.trim(),
           type: type.trim(),
           description: description.trim() || undefined,
@@ -54,14 +46,11 @@ export default function GroupEditScreen() {
             ? { image: { dataUrl: imageDataUrl, fileName: 'group-image.jpg' } }
             : {}),
         },
-      });
-      if (!response.ok) throw new Error('save_failed');
-    },
+      }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['groups-list'] }),
+        queryClient.invalidateQueries({ queryKey: api.groups.key() }),
       ]);
       router.replace(`/groups/${id}` as never);
     },

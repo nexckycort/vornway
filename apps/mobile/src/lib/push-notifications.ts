@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { pushClient } from '@/api/push';
+import { api } from './api';
 
 export type PushNotificationStatus =
   | 'unsupported'
@@ -58,17 +58,15 @@ export async function enablePushNotifications(): Promise<PushNotificationStatus>
   if (!permission.granted) return 'permission-required';
 
   const token = await getExpoToken();
-  const response = await pushClient['native-subscriptions'].$post({
-    json: {
+  await api.push.subscribeNative.request({
+    payload: {
       token,
       platform: Platform.OS === 'ios' ? 'ios' : 'android',
     },
   });
 
-  if (!response.ok) throw new Error('push_register_failed');
-
   try {
-    await pushClient.test.$post();
+    await api.push.test.request();
   } catch (error) {
     // Registration succeeded; a test delivery must not make the toggle fail.
     console.warn('Push test notification failed:', error);
@@ -81,10 +79,6 @@ export async function disablePushNotifications(): Promise<PushNotificationStatus
   if (!isNativePushSupported()) return 'unsupported';
 
   const token = await getExpoToken();
-  const response = await pushClient['native-subscriptions'].$delete({
-    json: { token },
-  });
-
-  if (!response.ok) throw new Error('push_disable_failed');
+  await api.push.unsubscribeNative.request({ payload: { token } });
   return 'permission-required';
 }

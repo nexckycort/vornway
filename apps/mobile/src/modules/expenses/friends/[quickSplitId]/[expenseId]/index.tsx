@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
-import { quickSplitsClient } from '@/api/quick-splits';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -16,32 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api, withErrorMessage } from '@/lib/api';
 
-type Expense = {
-  id?: string;
-  description: string;
-  amount: number;
-  currency: string;
-  splitMethod?: 'equal' | 'percentage' | 'exact';
-  metadata?: {
-    category?: string;
-    items?: { name: string; amount: number }[];
-  } | null;
-  participants?: {
-    id: string;
-    name: string;
-    balance?: number;
-    share?: number;
-  }[];
-  settlements?: {
-    id: string;
-    from: { id: string; name: string };
-    to: { id: string; name: string };
-    amount: number;
-    currency: string;
-    createdAt: string;
-  }[];
-};
 export default function QuickSplitExpenseDetailScreen() {
   const { quickSplitId, expenseId, from } = useLocalSearchParams<{
     quickSplitId: string;
@@ -51,8 +26,8 @@ export default function QuickSplitExpenseDetailScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [settlement, setSettlement] = useState('');
-  const [fromParticipantId, setFromParticipantId] = useState('');
-  const [toParticipantId, setToParticipantId] = useState('');
+  const [selectedFromId, setFromParticipantId] = useState('');
+  const [selectedToId, setToParticipantId] = useState('');
   const [expandedSettlementParticipants, setExpandedSettlementParticipants] =
     useState<Record<string, boolean>>({});
   const [editOpen, setEditOpen] = useState(false);
@@ -67,24 +42,20 @@ export default function QuickSplitExpenseDetailScreen() {
     { name: string; amount: string }[]
   >([]);
   const expenseQuery = useQuery({
-    queryKey: ['quick-split-expense', quickSplitId, expenseId],
+    ...api.quickSplits.expenseDetail.queryOptions({
+      params: { id: quickSplitId ?? '', expenseId: expenseId ?? '' },
+    }),
     enabled: Boolean(quickSplitId && expenseId),
-    queryFn: async () => {
-      const response = await quickSplitsClient[':id'].expenses[
-        ':expenseId'
-      ].$get({
-        param: { id: quickSplitId ?? '', expenseId: expenseId ?? '' },
-      });
-      if (!response.ok) throw new Error('expense_load_failed');
-      return (await response.json()) as unknown as Expense;
-    },
   });
+  const invalidateExpenses = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
+      queryClient.invalidateQueries({ queryKey: api.quickSplits.key() }),
+    ]);
   const expense = expenseQuery.data ?? null;
-  useEffect(() => {
-    if (!expense || fromParticipantId || toParticipantId) return;
-    setFromParticipantId(expense.participants?.[0]?.id ?? '');
-    setToParticipantId(expense.participants?.[1]?.id ?? '');
-  }, [expense, fromParticipantId, toParticipantId]);
+  const fromParticipantId =
+    selectedFromId || (expense?.participants[0]?.id ?? '');
+  const toParticipantId = selectedToId || (expense?.participants[1]?.id ?? '');
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!quickSplitId || !expenseId || !expense) throw new Error('invalid');
@@ -95,7 +66,7 @@ export default function QuickSplitExpenseDetailScreen() {
         nextAmount <= 0
       )
         throw new Error('invalid');
-      const enteredShares = (expense.participants ?? []).map(
+      const enteredShares = expense.participants.map(
         (participant) =>
           Number((editShares[participant.id] ?? '').replace(',', '.')) || 0,
       );
@@ -103,105 +74,92 @@ export default function QuickSplitExpenseDetailScreen() {
       const expectedTotal = editMethod === 'percentage' ? 100 : nextAmount;
       if (editMethod !== 'equal' && Math.abs(shareTotal - expectedTotal) > 0.01)
         throw new Error('invalid_split');
-      const response = await quickSplitsClient[':id'].expenses[
-        ':expenseId'
-      ].$put({
-        param: { id: quickSplitId, expenseId },
-        json: {
-          description: editDescription.trim(),
-          amount: nextAmount,
-          currency: expense.currency,
-          paidByParticipantId: fromParticipantId,
-          splitMethod: editMethod,
-          ...(editMethod === 'percentage'
-            ? {
-                percentageShares: Object.fromEntries(
-                  (expense.participants ?? []).map((participant, index) => [
-                    participant.id,
-                    enteredShares[index],
-                  ]),
-                ),
-              }
-            : {}),
-          ...(editMethod === 'exact'
-            ? {
-                exactShares: Object.fromEntries(
-                  (expense.participants ?? []).map((participant, index) => [
-                    participant.id,
-                    editMethod === 'exact'
-                      ? enteredShares[index]
-                      : nextAmount / (expense.participants?.length || 1),
-                  ]),
-                ),
-              }
-            : {}),
-          metadata: {
-            ...(editCategory.trim() ? { category: editCategory.trim() } : {}),
-            ...(editItems.length > 0
+      await withErrorMessage(
+        api.quickSplits.updateExpense.request({
+          params: { id: quickSplitId, expenseId },
+          payload: {
+            description: editDescription.trim(),
+            amount: nextAmount,
+            currency: expense.currency,
+            paidByParticipantId: fromParticipantId,
+            splitMethod: editMethod,
+            ...(editMethod === 'percentage'
               ? {
-                  items: editItems
-                    .map((item) => ({
-                      name: item.name.trim(),
-                      amount: Number(item.amount.replace(',', '.')),
-                    }))
-                    .filter((item) => item.name.length > 0 && item.amount > 0),
+                  percentageShares: Object.fromEntries(
+                    expense.participants.map((participant, index) => [
+                      participant.id,
+                      enteredShares[index],
+                    ]),
+                  ),
                 }
               : {}),
+            ...(editMethod === 'exact'
+              ? {
+                  exactShares: Object.fromEntries(
+                    expense.participants.map((participant, index) => [
+                      participant.id,
+                      editMethod === 'exact'
+                        ? enteredShares[index]
+                        : nextAmount / (expense.participants?.length || 1),
+                    ]),
+                  ),
+                }
+              : {}),
+            metadata: {
+              ...(editCategory.trim() ? { category: editCategory.trim() } : {}),
+              ...(editItems.length > 0
+                ? {
+                    items: editItems
+                      .map((item) => ({
+                        name: item.name.trim(),
+                        amount: Number(item.amount.replace(',', '.')),
+                      }))
+                      .filter(
+                        (item) => item.name.length > 0 && item.amount > 0,
+                      ),
+                  }
+                : {}),
+            },
           },
-        },
-      });
-      if (!response.ok) throw new Error('update_failed');
+        }),
+        'update_failed',
+      );
     },
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({
-          queryKey: ['quick-split-expense', quickSplitId, expenseId],
-        }),
-        queryClient.invalidateQueries({ queryKey: ['quick-split-expenses'] }),
-      ]);
+      await invalidateExpenses();
       setEditOpen(false);
     },
   });
   const settlementMutation = useMutation({
     mutationFn: async (amount: number) => {
       if (!quickSplitId || !expenseId || !expense) throw new Error('invalid');
-      const response = await quickSplitsClient[':id'].expenses[
-        ':expenseId'
-      ].settlements.$post({
-        param: { id: quickSplitId, expenseId },
-        json: {
-          amount,
-          currency: expense.currency,
-          fromParticipantId,
-          toParticipantId,
-        },
-      });
-      if (!response.ok) throw new Error('settlement_failed');
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({
-          queryKey: ['quick-split-expense', quickSplitId, expenseId],
+      await withErrorMessage(
+        api.quickSplits.settleDebt.request({
+          params: { id: quickSplitId, expenseId },
+          payload: {
+            amount,
+            currency: expense.currency,
+            fromParticipantId,
+            toParticipantId,
+          },
         }),
-        queryClient.invalidateQueries({ queryKey: ['quick-split-expenses'] }),
-      ]);
+        'settlement_failed',
+      );
     },
+    onSuccess: invalidateExpenses,
   });
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!quickSplitId || !expenseId) throw new Error('invalid');
-      const response = await quickSplitsClient[':id'].expenses[
-        ':expenseId'
-      ].$delete({ param: { id: quickSplitId, expenseId } });
-      if (!response.ok) throw new Error('delete_failed');
+      await withErrorMessage(
+        api.quickSplits.deleteExpense.request({
+          params: { id: quickSplitId, expenseId },
+        }),
+        'delete_failed',
+      );
     },
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['quick-split-expenses'] }),
-      ]);
+      await invalidateExpenses();
       router.replace(
         from === 'home' ? ('/(tabs)' as never) : ('/expenses/friends' as never),
       );
@@ -241,7 +199,9 @@ export default function QuickSplitExpenseDetailScreen() {
     if (!expense) return;
     setEditDescription(expense.description);
     setEditAmount(String(expense.amount));
-    setEditMethod(expense.splitMethod ?? 'equal');
+    setEditMethod(
+      expense.splitMethod === 'unknown' ? 'equal' : expense.splitMethod,
+    );
     setEditCategory(expense.metadata?.category ?? '');
     setEditItems(
       (expense.metadata?.items ?? []).map((item) => ({
@@ -251,15 +211,11 @@ export default function QuickSplitExpenseDetailScreen() {
     );
     setEditShares(
       Object.fromEntries(
-        (expense.participants ?? []).map((participant) => [
+        expense.participants.map((participant) => [
           participant.id,
           expense.splitMethod === 'percentage'
-            ? String(
-                ((participant.share ?? participant.balance ?? 0) /
-                  expense.amount) *
-                  100,
-              )
-            : String(participant.share ?? participant.balance ?? 0),
+            ? String((participant.share / expense.amount) * 100)
+            : String(participant.share),
         ]),
       ),
     );
@@ -312,8 +268,8 @@ export default function QuickSplitExpenseDetailScreen() {
           >
             <Text style={styles.outlineText}>Editar reparto completo</Text>
           </Button>
-          {expense.participants?.map((participant) => {
-            const participantSettlements = (expense.settlements ?? []).filter(
+          {expense.participants.map((participant) => {
+            const participantSettlements = expense.settlements.filter(
               (item) => item.from.id === participant.id,
             );
             const isExpanded = expandedSettlementParticipants[participant.id];
@@ -327,9 +283,7 @@ export default function QuickSplitExpenseDetailScreen() {
             return (
               <Card key={participant.id} style={styles.participantCard}>
                 <Text style={styles.copy}>
-                  {participant.name}:{' '}
-                  {participant.share ?? participant.balance ?? 0}{' '}
-                  {expense.currency}
+                  {participant.name}: {participant.share} {expense.currency}
                 </Text>
                 {visibleSettlements.map((item) => (
                   <Text key={item.id} style={styles.settlementText}>
@@ -359,7 +313,7 @@ export default function QuickSplitExpenseDetailScreen() {
             );
           })}
           <Text style={styles.label}>Quién paga</Text>
-          {expense.participants?.map((participant) => (
+          {expense.participants.map((participant) => (
             <Button
               key={`from-${participant.id}`}
               variant={
@@ -371,7 +325,7 @@ export default function QuickSplitExpenseDetailScreen() {
             </Button>
           ))}
           <Text style={styles.label}>Quién recibe</Text>
-          {expense.participants?.map((participant) => (
+          {expense.participants.map((participant) => (
             <Button
               key={`to-${participant.id}`}
               variant={

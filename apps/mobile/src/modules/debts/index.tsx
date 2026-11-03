@@ -2,8 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
-import { debtsClient } from '@/api/debts';
-import { usersClient } from '@/api/users';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -16,22 +14,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api, withErrorMessage } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { formatDebtAmount } from './format';
+import { type Debt, formatDebtAmount } from './format';
 
-type Debt = {
-  id: string;
-  name: string;
-  counterpartyName: string;
-  remainingAmount: number;
-  currency: string;
-  direction: string;
-  status: string;
-  expectedTotal?: number;
-  paidAmount?: number;
-  amounts?: { amount: number; loanDate: string }[];
-  payments?: { amount: number; paidAt: string }[];
-};
 type DebtFilter = 'active' | 'all' | 'paid';
 export default function DebtsScreen() {
   const router = useRouter();
@@ -47,26 +33,12 @@ export default function DebtsScreen() {
   const [dueDate, setDueDate] = useState('');
   const [note, setNote] = useState('');
   const [filter, setFilter] = useState<DebtFilter>('active');
-  const debtsQuery = useQuery({
-    queryKey: ['debts'],
-    queryFn: async () => {
-      const response = await debtsClient.index.$get({
-        query: { status: 'all' },
-      });
-      if (!response.ok) throw new Error('debts_load_failed');
-      return (await response.json()) as Debt[];
-    },
-  });
+  const debtsQuery = useQuery(
+    api.debts.list.queryOptions({ query: { status: 'all' } }),
+  );
   const userSearch = useQuery({
-    queryKey: ['debt-counterparty-search', person.trim()],
+    ...api.users.search.queryOptions({ query: { query: person.trim() } }),
     enabled: person.trim().length > 1 && !counterpartyId,
-    queryFn: async () => {
-      const response = await usersClient.search.$get({
-        query: { query: person.trim() },
-      });
-      if (!response.ok) throw new Error('user_search_failed');
-      return response.json();
-    },
   });
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -78,25 +50,27 @@ export default function DebtsScreen() {
         value <= 0
       )
         throw new Error('invalid');
-      const response = await debtsClient.index.$post({
-        json: {
-          name: name.trim(),
-          counterpartyName: person.trim(),
-          ...(counterpartyId ? { counterpartyId } : {}),
-          direction,
-          principalAmount: value,
-          amounts: [{ amount: value, loanDate }],
-          interestType: 'none',
-          currency: 'COP',
-          ...(dueDate ? { dueDate } : {}),
-          ...(note.trim() ? { description: note.trim() } : {}),
-        },
-      });
-      if (!response.ok) throw new Error('create_failed');
+      await withErrorMessage(
+        api.debts.create.request({
+          payload: {
+            name: name.trim(),
+            counterpartyName: person.trim(),
+            ...(counterpartyId ? { counterpartyId } : {}),
+            direction,
+            principalAmount: value,
+            amounts: [{ amount: value, loanDate: new Date(loanDate) }],
+            interestType: 'none',
+            currency: 'COP',
+            ...(dueDate ? { dueDate: new Date(dueDate) } : {}),
+            ...(note.trim() ? { description: note.trim() } : {}),
+          },
+        }),
+        'create_failed',
+      );
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: api.debts.key() }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
       setOpen(false);
@@ -231,7 +205,7 @@ export default function DebtsScreen() {
             }}
             placeholder={t('debts.personPlaceholder')}
           />
-          {userSearch.data?.data?.length && !counterpartyId
+          {userSearch.data?.data.length && !counterpartyId
             ? userSearch.data.data.map((user) => (
                 <Button
                   key={user.id}
@@ -342,25 +316,22 @@ function today() {
 }
 
 function progressFor(debt: Debt) {
-  if (!debt.expectedTotal || debt.expectedTotal <= 0) return 0;
+  if (debt.expectedTotal <= 0) return 0;
   return Math.round(
-    Math.min(
-      100,
-      Math.max(0, ((debt.paidAmount ?? 0) / debt.expectedTotal) * 100),
-    ),
+    Math.min(100, Math.max(0, (debt.paidAmount / debt.expectedTotal) * 100)),
   );
 }
 
 function lastActivity(debt: Debt) {
   const payment = debt.payments
-    ?.slice()
-    .sort((a, b) => b.paidAt.localeCompare(a.paidAt))[0];
+    .slice()
+    .sort((a, b) => b.paidAt.getTime() - a.paidAt.getTime())[0];
   const loan = debt.amounts
-    ?.slice()
-    .sort((a, b) => b.loanDate.localeCompare(a.loanDate))[0];
+    .slice()
+    .sort((a, b) => b.loanDate.getTime() - a.loanDate.getTime())[0];
   if (!payment && !loan) return null;
   if (payment && (!loan || payment.paidAt > loan.loanDate)) {
-    return `Abono · ${payment.amount} COP · ${payment.paidAt}`;
+    return `Abono · ${payment.amount} COP · ${payment.paidAt.toISOString()}`;
   }
-  return `Préstamo · ${loan?.amount ?? 0} COP · ${loan?.loanDate ?? ''}`;
+  return `Préstamo · ${loan?.amount ?? 0} COP · ${loan?.loanDate.toISOString() ?? ''}`;
 }

@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ApiSuccess } from '@vornway/api-client';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { adminClient } from '@/api/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -18,20 +18,12 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { authClient } from '@/lib/auth-client';
+import { feedbackAttachments } from '../../feedback/feedback.types';
 
-type Item = {
-  id: string;
-  title: string;
-  description: string;
-  type: string;
-  status: string;
-  priority: string | null;
-  metadata?: { attachments?: { url: string }[] };
-  createdAt?: string;
-  user: { name: string; email: string };
-};
-const statuses = ['OPEN', 'IN_REVIEW', 'PLANNED', 'DONE', 'REJECTED'];
+type Item = ApiSuccess<'admin', 'feedback'>['data'][number];
+const statuses = ['OPEN', 'IN_REVIEW', 'PLANNED', 'DONE', 'REJECTED'] as const;
 const statusLabels: Record<string, string> = {
   OPEN: 'Abierto',
   IN_REVIEW: 'En revisión',
@@ -52,34 +44,13 @@ export default function AdminFeedbackScreen() {
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [priority, setPriority] = useState('');
   const feedbackQuery = useQuery({
-    queryKey: ['admin-feedback'],
+    ...api.admin.feedback.queryOptions({ query: { limit: 50 } }),
     enabled: email === 'junior110120@gmail.com',
-    queryFn: async () => {
-      const response = await adminClient.feedback.$get({
-        query: { limit: '50' },
-      });
-      if (!response.ok) throw new Error('feedback_load_failed');
-      return ((await response.json()) as { data: Item[] }).data;
-    },
   });
   const updateMutation = useMutation({
-    mutationFn: async (input: {
-      item: Item;
-      status?: string;
-      priority?: string | null;
-    }) => {
-      const response = await adminClient.feedback[':feedbackId'].$patch({
-        param: { feedbackId: input.item.id },
-        json: {
-          ...(input.status ? { status: input.status as never } : {}),
-          ...(input.priority !== undefined ? { priority: input.priority } : {}),
-        },
-      });
-      if (!response.ok) throw new Error('feedback_update_failed');
-      return (await response.json()) as Item;
-    },
+    ...api.admin.updateFeedback.mutationOptions(),
     onSuccess: async (updated) => {
-      await queryClient.invalidateQueries({ queryKey: ['admin-feedback'] });
+      await queryClient.invalidateQueries({ queryKey: api.admin.key() });
       setSelectedItem(updated);
       setPriority(updated.priority ?? '');
     },
@@ -122,7 +93,7 @@ export default function AdminFeedbackScreen() {
               <Text style={styles.buttonText}>Reintentar</Text>
             </Button>
           </Card>
-        ) : (feedbackQuery.data ?? []).length === 0 ? (
+        ) : (feedbackQuery.data?.data ?? []).length === 0 ? (
           <Card style={styles.emptyCard}>
             <Text style={styles.copy}>Aún no hay feedback registrado.</Text>
           </Card>
@@ -135,7 +106,7 @@ export default function AdminFeedbackScreen() {
                   <View key={status} style={styles.summaryItem}>
                     <Text style={styles.summaryValue}>
                       {
-                        (feedbackQuery.data ?? []).filter(
+                        (feedbackQuery.data?.data ?? []).filter(
                           (item) => item.status === status,
                         ).length
                       }
@@ -147,27 +118,25 @@ export default function AdminFeedbackScreen() {
                 ))}
               </View>
             </Card>
-            {(feedbackQuery.data ?? []).map((item) => (
+            {(feedbackQuery.data?.data ?? []).map((item) => (
               <Card key={item.id} style={styles.card}>
                 <Text style={styles.itemTitle}>{item.title}</Text>
                 <Text style={styles.copy}>
                   {item.user.name} · {item.user.email} · {item.type}
                 </Text>
                 <Text style={styles.description}>{item.description}</Text>
-                {item.createdAt ? (
-                  <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
-                ) : null}
+                <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
                 {item.priority ? (
                   <Text style={styles.priority}>
                     Prioridad: {item.priority}
                   </Text>
                 ) : null}
-                {item.metadata?.attachments?.length ? (
+                {feedbackAttachments(item.metadata).length > 0 ? (
                   <ScrollView
                     horizontal
                     contentContainerStyle={styles.attachments}
                   >
-                    {item.metadata.attachments.map((attachment) => (
+                    {feedbackAttachments(item.metadata).map((attachment) => (
                       <Image
                         key={attachment.url}
                         source={{ uri: attachment.url }}
@@ -186,7 +155,10 @@ export default function AdminFeedbackScreen() {
                       disabled={updateMutation.isPending}
                       onPress={() =>
                         updateMutation.mutate(
-                          { item, status },
+                          {
+                            params: { feedbackId: item.id },
+                            payload: { status },
+                          },
                           {
                             onError: () =>
                               Alert.alert(
@@ -246,8 +218,8 @@ export default function AdminFeedbackScreen() {
               onPress={() => {
                 if (!selectedItem) return;
                 updateMutation.mutate({
-                  item: selectedItem,
-                  priority: priority.trim() || null,
+                  params: { feedbackId: selectedItem.id },
+                  payload: { priority: priority.trim() || null },
                 });
               }}
             >
@@ -328,8 +300,7 @@ const styles = StyleSheet.create({
   },
 });
 
-function formatDate(value: string) {
-  const date = new Date(value);
+function formatDate(date: Date) {
   if (Number.isNaN(date.getTime())) return '';
   return new Intl.DateTimeFormat('es-CO', {
     day: 'numeric',

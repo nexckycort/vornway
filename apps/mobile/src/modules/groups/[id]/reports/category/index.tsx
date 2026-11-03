@@ -2,34 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
+import { toDayBoundary } from '@/modules/groups/date-boundary';
 
 type DateFilterMode = 'all' | 'day' | 'range';
-
-function toBoundary(value: string, end: boolean) {
-  if (!value) return undefined;
-  const date = new Date(`${value}T${end ? '23:59:59.999' : '00:00:00.000'}Z`);
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
-}
-
-type CategoryExpense = {
-  id: string;
-  description: string;
-  amount: number;
-  currency: string;
-  date: string;
-  category?: {
-    id?: string | null;
-    name?: string | null;
-    icon?: string | null;
-    color?: string | null;
-  } | null;
-};
 
 export default function GroupCategoryReportScreen() {
   const {
@@ -69,8 +50,8 @@ export default function GroupCategoryReportScreen() {
   const reportQuery = useMemo(() => {
     const rangeStart = dateFilterMode === 'day' ? selectedDay : startDate;
     const rangeEnd = dateFilterMode === 'day' ? selectedDay : endDate;
-    const start = toBoundary(rangeStart, false);
-    const end = toBoundary(rangeEnd, true);
+    const start = toDayBoundary(rangeStart, false);
+    const end = toDayBoundary(rangeEnd, true);
     return {
       range: dateFilterMode === 'all' ? ('all' as const) : ('custom' as const),
       ...(start ? { startDate: start } : {}),
@@ -78,101 +59,53 @@ export default function GroupCategoryReportScreen() {
     };
   }, [dateFilterMode, endDate, selectedDay, startDate]);
   const groupQuery = useQuery({
-    queryKey: ['group-summary', id],
+    ...api.groups.get.queryOptions({ params: { id: id ?? '' } }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].$get({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('group_load_failed');
-      return response.json();
-    },
   });
   const totalsQuery = useQuery({
-    queryKey: ['group-report-totals', id, reportQuery],
+    ...api.groups.reportTotals.queryOptions({
+      params: { id: id ?? '' },
+      query: reportQuery,
+    }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].reports.totals.$get({
-        param: { id: id ?? '' },
-        query: reportQuery,
-      });
-      if (!response.ok) throw new Error('report_load_failed');
-      return response.json();
-    },
   });
   const sharesQuery = useQuery({
-    queryKey: ['group-report-shares', id, reportQuery],
+    ...api.groups.reportShares.queryOptions({
+      params: { id: id ?? '' },
+      query: reportQuery,
+    }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].reports.shares.$get({
-        param: { id: id ?? '' },
-        query: reportQuery,
-      });
-      if (!response.ok) throw new Error('shares_load_failed');
-      return (await response.json()) as {
-        memberShares: {
-          memberId: string;
-          name: string;
-          categorySharesByCurrency?: Record<string, Record<string, number>>;
-        }[];
-      };
-    },
   });
-  const totals =
-    totalsQuery.data && 'totalsByCurrency' in totalsQuery.data
-      ? totalsQuery.data
-      : null;
+  const totals = totalsQuery.data ?? null;
   const currencies = Object.keys(totals?.totalsByCurrency ?? {});
   const currency = currencies.includes(selectedCurrency)
     ? selectedCurrency
     : (currencies[0] ?? 'COP');
-  const category =
-    totals && 'categoriesByCurrency' in totals
-      ? totals.categoriesByCurrency[currency]?.find(
-          (item) => item.key === categoryKey || item.id === categoryId,
-        )
-      : null;
+  const category = totals?.categoriesByCurrency[currency]?.find(
+    (item) => item.key === categoryKey || item.id === categoryId,
+  );
   const countQuery = useQuery({
-    queryKey: [
-      'group-report-category-count',
-      id,
-      categoryId,
-      currency,
-      reportQuery,
-      selectedParticipantIds,
-    ],
+    ...api.groups.reportCategoryCount.queryOptions({
+      params: { id: id ?? '' },
+      query: {
+        ...reportQuery,
+        currency,
+        ...(categoryId ? { categoryId } : {}),
+        ...(uncategorized === 'true' ? { uncategorized: true } : {}),
+        ...(selectedParticipantIds.length > 0
+          ? { participantIds: selectedParticipantIds.join(',') }
+          : {}),
+      },
+    }),
     enabled: Boolean(id && (categoryId || categoryKey)),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].reports['category-count'].$get(
-        {
-          param: { id: id ?? '' },
-          query: {
-            ...reportQuery,
-            currency,
-            ...(categoryId ? { categoryId } : {}),
-            ...(uncategorized === 'true' ? { uncategorized: 'true' } : {}),
-            ...(selectedParticipantIds.length > 0
-              ? { participantIds: selectedParticipantIds.join(',') }
-              : {}),
-          },
-        },
-      );
-      if (!response.ok) throw new Error('category_count_failed');
-      return response.json();
-    },
   });
   const name = category?.name ?? categoryName ?? 'Categoría';
   const amount = category?.amount ?? 0;
-  const categoryColor =
-    ('fill' in (category ?? {}) ? category?.fill : null) ?? '#14B8A6';
-  const categoryIcon =
-    ('icon' in (category ?? {}) ? category?.icon : null) ?? '🏷️';
-  const total = totals?.totalsByCurrency?.[currency] ?? 0;
+  const categoryColor = category?.fill ?? '#14B8A6';
+  const categoryIcon = category?.icon ?? '🏷️';
+  const total = totals?.totalsByCurrency[currency] ?? 0;
   const percentage = total > 0 ? Math.round((amount / total) * 100) : 0;
-  const members =
-    groupQuery.data && 'members' in groupQuery.data
-      ? groupQuery.data.members
-      : [];
+  const members = groupQuery.data?.members ?? [];
   const participantShares = sharesQuery.data?.memberShares ?? [];
   const historyQuery = useQuery({
     queryKey: [
@@ -191,26 +124,24 @@ export default function GroupCategoryReportScreen() {
           : members.map((member) => member.id);
       const responses = await Promise.all(
         memberIds.map(async (memberId) => {
-          const response = await groupsClient[':id'].members[
-            ':memberId'
-          ].expenses.$get({
-            param: { id: id ?? '', memberId },
-            query: {
-              limit: '100',
-              ...(reportQuery.startDate
-                ? { startDate: reportQuery.startDate }
-                : {}),
-              ...(reportQuery.endDate ? { endDate: reportQuery.endDate } : {}),
-            },
-          });
-          if (!response.ok) return [] as CategoryExpense[];
-          const result = (await response.json()) as {
-            data?: CategoryExpense[];
-          };
-          return result.data ?? [];
+          const page = await api.groups.listMemberExpenses
+            .request({
+              params: { id: id ?? '', memberId },
+              query: {
+                limit: 100,
+                ...(reportQuery.startDate
+                  ? { startDate: reportQuery.startDate }
+                  : {}),
+                ...(reportQuery.endDate
+                  ? { endDate: reportQuery.endDate }
+                  : {}),
+              },
+            })
+            .catch(() => null);
+          return page?.data ?? [];
         }),
       );
-      const unique = new Map<string, CategoryExpense>();
+      const unique = new Map<string, (typeof responses)[number][number]>();
       for (const expense of responses.flat()) unique.set(expense.id, expense);
       return Array.from(unique.values())
         .filter((expense) => {

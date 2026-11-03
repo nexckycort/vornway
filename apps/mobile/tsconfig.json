@@ -2,10 +2,20 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "types": ["bun"],
     "paths": {
       "@/*": ["./src/*"],
       "@/assets/*": ["./assets/*"]
-    }
+    },
+    "allowImportingTsExtensions": true
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": [
+    "node_modules",
+    "babel.config.js",
+    "metro.config.js",
+    "android",
+    "ios",
+    "**/*.test.ts"
+  ]
 }

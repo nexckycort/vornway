@@ -1,18 +1,14 @@
-export type FeedbackType = 'BUG' | 'FEATURE_REQUEST';
-export type FeedbackStatus =
-  | 'OPEN'
-  | 'IN_REVIEW'
-  | 'PLANNED'
-  | 'DONE'
-  | 'REJECTED';
+import type { ApiSuccess } from '@vornway/api-client';
+import { Option, Schema } from 'effect';
 
-export type FeedbackItem = {
-  id: string;
-  type: FeedbackType;
-  title: string;
-  description: string;
-  status: FeedbackStatus;
-  priority: string | null;
-  metadata: { attachments?: { url: string }[] };
-  createdAt: string;
-};
+export type FeedbackItem = ApiSuccess<'feedback', 'list'>['data'][number];
+export type FeedbackType = 'BUG' | 'FEATURE_REQUEST';
+export type FeedbackStatus = FeedbackItem['status'];
+
+const FeedbackAttachments = Schema.Array(Schema.Struct({ url: Schema.String }));
+
+export const feedbackAttachments = (metadata: FeedbackItem['metadata']) =>
+  Option.getOrElse(
+    Schema.decodeUnknownOption(FeedbackAttachments)(metadata.attachments),
+    () => [],
+  );

@@ -179,6 +179,9 @@ catalogs:
     portless:
       specifier: ^0.15.5
       version: 0.15.12
+    tsrs:
+      specifier: 0.20.1-ts7.1.0-beta
+      version: 0.20.1-ts7.1.0-beta
     typescript:
       specifier: ^7.0.2
       version: 7.0.2
@@ -209,7 +212,7 @@ importers:
         specifier: 'catalog:'
         version: 0.15.12
       tsrs:
-        specifier: 0.20.1-ts7.1.0-beta
+        specifier: 'catalog:'
         version: 0.20.1-ts7.1.0-beta
       typescript:
         specifier: 'catalog:'

@@ -2,10 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { adminClient } from '@/api/admin';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { authClient } from '@/lib/auth-client';
 
 export default function StatsScreen() {
@@ -18,16 +18,8 @@ export default function StatsScreen() {
     .toLowerCase();
   const allowed = email === 'junior110120@gmail.com';
   const statsQuery = useQuery({
-    queryKey: ['admin-stats'],
+    ...api.admin.stats.queryOptions(),
     enabled: allowed,
-    queryFn: async () => {
-      const response = await adminClient.stats.$get();
-      if (!response.ok) throw new Error('stats_load_failed');
-      return (await response.json()) as {
-        totalUsers: number;
-        totalGroups: number;
-      };
-    },
   });
 
   return (

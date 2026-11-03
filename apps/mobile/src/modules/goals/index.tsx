@@ -9,50 +9,26 @@ import {
   Text,
   View,
 } from 'react-native';
-import { goalsClient } from '@/api/goals';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Screen } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { formatGoalAmount } from './format';
 
-type Goal = {
-  id: string;
-  title: string;
-  description?: string | null;
-  currency: string;
-  targetAmount: number;
-  savedAmount: number;
-  progress?: number;
-  group?: { name: string };
-};
 export default function GoalsScreen() {
   const router = useRouter();
   const { t } = useI18n();
   const [search, setSearch] = useState('');
   const isProduction = process.env.NODE_ENV === 'production';
-  const goalsQuery = useInfiniteQuery({
-    queryKey: ['goals-list', search.trim()],
-    initialPageParam: null as string | null,
-    queryFn: async ({ pageParam }) => {
-      const response = await goalsClient.index.$get({
-        query: {
-          limit: '50',
-          ...(pageParam ? { cursor: pageParam } : {}),
-          ...(search.trim() ? { search: search.trim() } : {}),
-        },
-      });
-      if (!response.ok) throw new Error('goals_load_failed');
-      return (await response.json()) as unknown as {
-        data: Goal[];
-        pagination?: { nextCursor?: string | null };
-      };
-    },
-    getNextPageParam: (lastPage) => lastPage.pagination?.nextCursor,
-  });
+  const goalsQuery = useInfiniteQuery(
+    api.goals.list.infiniteQueryOptions({
+      query: { limit: 50, ...(search.trim() ? { search: search.trim() } : {}) },
+    }),
+  );
   const goals = goalsQuery.data?.pages.flatMap((page) => page.data) ?? [];
   return (
     <Screen>
@@ -123,19 +99,11 @@ export default function GoalsScreen() {
           </Card>
         ) : (
           goals.map((goal) => {
-            const progress = Math.max(
-              0,
-              Math.min(
-                100,
-                goal.progress ?? (goal.savedAmount / goal.targetAmount) * 100,
-              ),
-            );
+            const progress = Math.max(0, Math.min(100, goal.progress));
             return (
               <Card key={goal.id} style={styles.card}>
                 <Text style={styles.title}>{goal.title}</Text>
-                {goal.group?.name ? (
-                  <Text style={styles.copy}>{goal.group.name}</Text>
-                ) : null}
+                <Text style={styles.copy}>{goal.group.name}</Text>
                 <Text style={styles.copy}>
                   {goal.description ||
                     `${formatGoalAmount(goal.savedAmount, goal.currency)} de ${formatGoalAmount(goal.targetAmount, goal.currency)}`}

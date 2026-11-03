@@ -2,14 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { goalsClient } from '@/api/goals';
-import { usersClient } from '@/api/users';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api, withErrorMessage } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useUsernameRequirement } from '../../username/use-username-requirement';
 import { formatGoalAmount } from '../format';
@@ -71,23 +70,10 @@ export default function GoalCreateScreen() {
     return () => clearTimeout(timeout);
   }, [participantSearch]);
   const participantSearchQuery = useQuery({
-    queryKey: ['goal-participant-search', debouncedParticipantSearch],
+    ...api.users.search.queryOptions({
+      query: { query: debouncedParticipantSearch },
+    }),
     enabled: debouncedParticipantSearch.length > 1,
-    queryFn: async () => {
-      const response = await usersClient.search.$get({
-        query: { query: debouncedParticipantSearch },
-      });
-      if (!response.ok) throw new Error('participant_search_failed');
-      return response.json() as Promise<{
-        data: {
-          id: string;
-          name: string;
-          username?: string | null;
-          email?: string | null;
-          isCurrentUser?: boolean;
-        }[];
-      }>;
-    },
   });
   const mutation = useMutation({
     mutationFn: async () => {
@@ -128,45 +114,49 @@ export default function GoalCreateScreen() {
       const calculatedSuggestedAmount =
         parsedInstallmentAmount ??
         Math.round(target / installments / Math.max(1, participantCount));
-      const response = await goalsClient.index.$post({
-        json: {
-          name: name.trim(),
-          description: description.trim() || undefined,
-          emoji: emoji.trim() || undefined,
-          themeColor:
-            goalType === 'trip'
-              ? '#0EA5E9'
-              : goalType === 'gift'
-                ? '#F97316'
-                : goalType === 'event'
-                  ? '#E11D48'
-                  : goalType === 'custom'
-                    ? '#7C3AED'
-                    : '#10B981',
-          currency: currency.trim().toUpperCase(),
-          targetAmount: target,
-          startDate,
-          endDate,
-          installmentCount: installments,
-          ...(parsedInstallmentAmount !== undefined
-            ? { installmentAmount: parsedInstallmentAmount }
-            : {}),
-          suggestedContributionAmount:
-            parsedSuggestedAmount ?? calculatedSuggestedAmount,
-          goalType,
-          contributionMode,
-          participants: [
-            ...manualParticipants.map((value) => ({ name: value })),
-            ...linkedParticipants,
-          ],
-        },
-      });
-      if (!response.ok) throw new Error('failed');
-      return response.json();
+      return withErrorMessage(
+        api.goals.create.request({
+          payload: {
+            name: name.trim(),
+            ...(description.trim() ? { description: description.trim() } : {}),
+            ...(emoji.trim() ? { emoji: emoji.trim() } : {}),
+            themeColor:
+              goalType === 'trip'
+                ? '#0EA5E9'
+                : goalType === 'gift'
+                  ? '#F97316'
+                  : goalType === 'event'
+                    ? '#E11D48'
+                    : goalType === 'custom'
+                      ? '#7C3AED'
+                      : '#10B981',
+            currency: currency.trim().toUpperCase(),
+            targetAmount: target,
+            startDate: new Date(startDate),
+            endDate: new Date(endDate),
+            installmentCount: installments,
+            ...(parsedInstallmentAmount !== undefined
+              ? { installmentAmount: parsedInstallmentAmount }
+              : {}),
+            suggestedContributionAmount:
+              parsedSuggestedAmount ?? calculatedSuggestedAmount,
+            goalType,
+            contributionMode,
+            participants: [
+              ...manualParticipants.map((value) => ({ name: value })),
+              ...linkedParticipants.map((participant) => ({
+                name: participant.name,
+                userId: participant.userId,
+              })),
+            ],
+          },
+        }),
+        'failed',
+      );
     },
     onSuccess: async (goal) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['goals-list'] }),
+        queryClient.invalidateQueries({ queryKey: api.goals.key() }),
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
       ]);
       router.replace({
@@ -362,7 +352,7 @@ export default function GoalCreateScreen() {
               onChangeText={setParticipantSearch}
               placeholder={t('goals.peoplePlaceholder')}
             />
-            {participantSearchQuery.data?.data?.map((participant) => (
+            {participantSearchQuery.data?.data.map((participant) => (
               <Button
                 key={participant.id}
                 variant="outline"

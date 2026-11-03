@@ -1,8 +1,9 @@
+import type { ApiPayload } from '@vornway/api-client';
 import * as Network from 'expo-network';
 import * as SecureStore from 'expo-secure-store';
-import { groupsClient } from '@/api/groups';
+import { api } from '@/lib/api';
 
-type ExpensePayload = Record<string, unknown>;
+type ExpensePayload = ApiPayload<'groups', 'createExpense'>;
 export type PendingExpense = {
   id: string;
   groupId: string;
@@ -54,11 +55,10 @@ export async function syncPendingExpenses() {
   const remaining: PendingExpense[] = [];
   for (const item of queue) {
     try {
-      const response = await groupsClient[':id'].expenses.$post({
-        param: { id: item.groupId },
-        json: item.payload as never,
+      await api.groups.createExpense.request({
+        params: { id: item.groupId },
+        payload: item.payload,
       });
-      if (!response.ok) remaining.push(item);
     } catch {
       remaining.push(item);
     }

@@ -5,13 +5,12 @@ import * as Network from 'expo-network';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, Share, StyleSheet, Text } from 'react-native';
-import { groupsClient } from '@/api/groups';
-import { usersClient } from '@/api/users';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { authClient } from '@/lib/auth-client';
 import { enqueueGroup, syncPendingGroups } from '@/lib/offline-group-queue';
 import { useUsernameRequirement } from '../../../username/use-username-requirement';
@@ -47,7 +46,8 @@ export default function GroupCreateParticipantsScreen() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
-  const [draftLoaded, setDraftLoaded] = useState(!draftId);
+  const [loadedDraftId, setLoadedDraftId] = useState<string | null>(null);
+  const draftLoaded = !draftId || loadedDraftId === draftId;
   const personalCreationStartedRef = useRef(false);
   const [createdGroup, setCreatedGroup] = useState<{
     id: string;
@@ -56,14 +56,11 @@ export default function GroupCreateParticipantsScreen() {
     queued?: boolean;
   } | null>(null);
   useEffect(() => {
-    if (!draftId) {
-      setDraftLoaded(true);
-      return;
-    }
+    if (!draftId) return;
     void loadGroupDraft(draftId).then((draft) => {
       if (draft?.imageDataUrl) setImageDataUrl(draft.imageDataUrl);
       if (draft?.imageFileName) setImageFileName(draft.imageFileName);
-      setDraftLoaded(true);
+      setLoadedDraftId(draftId);
     });
   }, [draftId]);
   useEffect(() => {
@@ -71,23 +68,8 @@ export default function GroupCreateParticipantsScreen() {
     return () => clearTimeout(timeout);
   }, [input]);
   const searchQuery = useQuery({
-    queryKey: ['group-create-user-search', debouncedInput],
+    ...api.users.search.queryOptions({ query: { query: debouncedInput } }),
     enabled: debouncedInput.length > 1,
-    queryFn: async () => {
-      const response = await usersClient.search.$get({
-        query: { query: debouncedInput },
-      });
-      if (!response.ok) throw new Error('search_failed');
-      return response.json() as Promise<{
-        data: {
-          id: string;
-          name: string;
-          username?: string | null;
-          email?: string | null;
-          isCurrentUser?: boolean;
-        }[];
-      }>;
-    },
   });
 
   const createMutation = useMutation({
@@ -104,8 +86,8 @@ export default function GroupCreateParticipantsScreen() {
         const pending = await enqueueGroup(payload);
         return { id: pending.id, name: pending.payload.name, queued: true };
       }
-      const response = await groupsClient.index.$post({
-        json: {
+      return api.groups.create.request({
+        payload: {
           ...payload,
           ...(imageDataUrl
             ? {
@@ -118,8 +100,6 @@ export default function GroupCreateParticipantsScreen() {
           participants,
         },
       });
-      if (!response.ok) throw new Error('create_failed');
-      return response.json();
     },
     onSuccess: (group) => {
       void Promise.all([
@@ -320,7 +300,7 @@ export default function GroupCreateParticipantsScreen() {
           >
             <Text style={styles.outlineText}>Agregar manualmente</Text>
           </Button>
-          {searchQuery.data?.data?.map((user) => (
+          {searchQuery.data?.data.map((user) => (
             <Button
               key={user.id}
               variant="outline"

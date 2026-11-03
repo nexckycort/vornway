@@ -8,7 +8,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { feedbackClient } from '@/api/feedback';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -16,10 +15,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
-import type {
-  FeedbackItem,
-  FeedbackStatus,
-  FeedbackType,
+import { api } from '@/lib/api';
+import {
+  type FeedbackItem,
+  type FeedbackStatus,
+  type FeedbackType,
+  feedbackAttachments,
 } from './feedback.types';
 
 const statusLabels: Record<FeedbackStatus, string> = {
@@ -28,6 +29,7 @@ const statusLabels: Record<FeedbackStatus, string> = {
   PLANNED: 'Planeado',
   DONE: 'Completado',
   REJECTED: 'Descartado',
+  unknown: '',
 };
 
 export default function FeedbackScreen() {
@@ -40,36 +42,13 @@ export default function FeedbackScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [images, setImages] = useState<{ uri: string; dataUrl: string }[]>([]);
-  const feedbackQuery = useInfiniteQuery({
-    queryKey: ['feedback'],
-    initialPageParam: null as string | null,
-    queryFn: async ({ pageParam }) => {
-      const response = await feedbackClient.index.$get({
-        query: { limit: '20', ...(pageParam ? { cursor: pageParam } : {}) },
-      });
-      if (!response.ok) throw new Error('feedback_load_failed');
-      return (await response.json()) as {
-        data: FeedbackItem[];
-        pagination?: { nextCursor?: string | null };
-      };
-    },
-    getNextPageParam: (lastPage) => lastPage.pagination?.nextCursor,
-  });
+  const feedbackQuery = useInfiniteQuery(
+    api.feedback.list.infiniteQueryOptions({ query: { limit: 20 } }),
+  );
   const submitMutation = useMutation({
-    mutationFn: async () => {
-      if (!title.trim() || !description.trim()) throw new Error('invalid');
-      const response = await feedbackClient.index.$post({
-        json: {
-          type,
-          title: title.trim(),
-          description: description.trim(),
-          images: images.map((image) => ({ dataUrl: image.dataUrl })),
-        },
-      });
-      if (!response.ok) throw new Error('feedback_submit_failed');
-    },
+    ...api.feedback.create.mutationOptions(),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['feedback'] });
+      await queryClient.invalidateQueries({ queryKey: api.feedback.key() });
       setTitle('');
       setDescription('');
       setImages([]);
@@ -82,13 +61,9 @@ export default function FeedbackScreen() {
     },
   });
   const deleteMutation = useMutation({
-    mutationFn: async (feedbackId: string) => {
-      const response = await feedbackClient[':feedbackId'].$delete({
-        param: { feedbackId },
-      });
-      if (!response.ok) throw new Error('feedback_delete_failed');
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['feedback'] }),
+    ...api.feedback.delete.mutationOptions(),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: api.feedback.key() }),
   });
 
   async function chooseImages() {
@@ -121,9 +96,19 @@ export default function FeedbackScreen() {
       );
       return;
     }
-    submitMutation.mutate(undefined, {
-      onError: () => Alert.alert('No se pudo enviar', 'Intenta nuevamente.'),
-    });
+    submitMutation.mutate(
+      {
+        payload: {
+          type,
+          title: title.trim(),
+          description: description.trim(),
+          images: images.map((image) => ({ dataUrl: image.dataUrl })),
+        },
+      },
+      {
+        onError: () => Alert.alert('No se pudo enviar', 'Intenta nuevamente.'),
+      },
+    );
   }
 
   function remove(item: FeedbackItem) {
@@ -133,10 +118,13 @@ export default function FeedbackScreen() {
         text: 'Eliminar',
         style: 'destructive',
         onPress: () => {
-          deleteMutation.mutate(item.id, {
-            onError: () =>
-              Alert.alert('No se pudo eliminar', 'Intenta nuevamente.'),
-          });
+          deleteMutation.mutate(
+            { params: { feedbackId: item.id } },
+            {
+              onError: () =>
+                Alert.alert('No se pudo eliminar', 'Intenta nuevamente.'),
+            },
+          );
         },
       },
     ]);
@@ -320,9 +308,9 @@ export default function FeedbackScreen() {
                   </View>
                 </View>
                 <Text style={styles.description}>{item.description}</Text>
-                {item.metadata.attachments?.length ? (
+                {feedbackAttachments(item.metadata).length > 0 ? (
                   <ScrollView horizontal>
-                    {item.metadata.attachments.map((image) => (
+                    {feedbackAttachments(item.metadata).map((image) => (
                       <Image
                         key={image.url}
                         source={{ uri: image.url }}

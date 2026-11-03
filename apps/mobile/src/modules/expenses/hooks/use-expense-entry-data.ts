@@ -1,29 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
-import { groupsClient } from '@/api/groups';
+import { api } from '@/lib/api';
 import { authClient } from '@/lib/auth-client';
-
-type GroupMember = {
-  id: string;
-  userId?: string | null;
-  name: string;
-  image?: string | null;
-};
-
-type Group = {
-  id: string;
-  name: string;
-  imageUrl?: string | null;
-  updatedAt?: string;
-  participantCount?: number;
-  members?: GroupMember[];
-  currentUser?: { memberId?: string | null } | null;
-};
-
-type GroupsPage = {
-  data: Group[];
-  pagination?: { nextCursor?: string | null };
-};
 
 export type ExpenseEntrySpace = {
   id: string;
@@ -44,24 +22,13 @@ export type ExpenseEntryFriend = {
 
 export function useExpenseEntryData() {
   const { data: session } = authClient.useSession();
-  const currentUser = (session as { user?: { id?: string | null } } | null)
-    ?.user;
-  const groupsQuery = useInfiniteQuery({
-    queryKey: ['expense-entry-groups'],
-    initialPageParam: null as string | null,
-    queryFn: async ({ pageParam }) => {
-      const response = await groupsClient.index.$get({
-        query: {
-          limit: '20',
-          filter: 'all',
-          ...(pageParam ? { cursor: pageParam } : {}),
-        },
-      });
-      if (!response.ok) throw new Error('groups_load_failed');
-      return (await response.json()) as unknown as GroupsPage;
-    },
-    getNextPageParam: (lastPage) => lastPage.pagination?.nextCursor,
-  });
+  const currentUserId = (session as { user?: { id?: string | null } } | null)
+    ?.user?.id;
+  const groupsQuery = useInfiniteQuery(
+    api.groups.list.infiniteQueryOptions({
+      query: { limit: 20, filter: 'all' },
+    }),
+  );
 
   useEffect(() => {
     if (!groupsQuery.hasNextPage || groupsQuery.isFetchingNextPage) return;
@@ -78,9 +45,9 @@ export function useExpenseEntryData() {
       groups.map((group) => ({
         id: group.id,
         name: group.name,
-        imageUrl: group.imageUrl ?? null,
-        participantCount: group.participantCount ?? group.members?.length ?? 0,
-        updatedAt: group.updatedAt ?? '',
+        imageUrl: group.imageUrl,
+        participantCount: group.participantCount,
+        updatedAt: group.updatedAt,
       })),
     [groups],
   );
@@ -89,11 +56,11 @@ export function useExpenseEntryData() {
     const byIdentity = new Map<string, ExpenseEntryFriend>();
 
     for (const group of groups) {
-      const currentMemberId = group.currentUser?.memberId ?? null;
-      for (const member of group.members ?? []) {
+      const currentMemberId = group.currentUser?.memberId;
+      for (const member of group.members) {
         if (
           member.id === currentMemberId ||
-          (currentUser?.id && member.userId === currentUser.id)
+          (currentUserId && member.userId === currentUserId)
         ) {
           continue;
         }
@@ -105,24 +72,24 @@ export function useExpenseEntryData() {
         if (!existing) {
           byIdentity.set(identity, {
             id: member.id,
-            userId: member.userId ?? null,
+            userId: member.userId,
             name: member.name,
-            image: member.image ?? null,
+            image: member.image,
             sharedGroupCount: 1,
-            lastSeenAt: group.updatedAt ?? '',
+            lastSeenAt: group.updatedAt,
           });
           continue;
         }
 
         const currentLastSeen = new Date(existing.lastSeenAt).getTime();
-        const groupLastSeen = new Date(group.updatedAt ?? '').getTime();
+        const groupLastSeen = new Date(group.updatedAt).getTime();
         byIdentity.set(identity, {
           ...existing,
-          image: existing.image ?? member.image ?? null,
+          image: existing.image ?? member.image,
           sharedGroupCount: existing.sharedGroupCount + 1,
           lastSeenAt:
             groupLastSeen > currentLastSeen
-              ? (group.updatedAt ?? existing.lastSeenAt)
+              ? group.updatedAt
               : existing.lastSeenAt,
         });
       }
@@ -134,7 +101,7 @@ export function useExpenseEntryData() {
         new Date(left.lastSeenAt).getTime();
       return dateDiff !== 0 ? dateDiff : left.name.localeCompare(right.name);
     });
-  }, [currentUser?.id, groups]);
+  }, [currentUserId, groups]);
 
   return {
     groupsQuery,

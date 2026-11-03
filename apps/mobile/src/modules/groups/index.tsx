@@ -12,12 +12,12 @@ import {
   Text,
   View,
 } from 'react-native';
-import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Screen } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { cacheGroups, readCachedGroups } from '@/lib/groups-list-cache';
 import { getPendingGroups, syncPendingGroups } from '@/lib/offline-group-queue';
 import { TripCard } from '@/modules/home/components/trip-card';
@@ -40,10 +40,6 @@ type Group = {
   }[];
   hasExpenses?: boolean;
 };
-type GroupPage = {
-  data: Group[];
-  pagination?: { nextCursor?: string | null; total?: number };
-};
 type GroupFilter = 'all' | 'theyOweYou' | 'youOweThem' | 'noDebt';
 
 export default function GroupsScreen() {
@@ -65,41 +61,33 @@ export default function GroupsScreen() {
       void queryClient.invalidateQueries({
         queryKey: ['offline-pending-groups'],
       });
-      void queryClient.invalidateQueries({ queryKey: ['groups-list'] });
+      void queryClient.invalidateQueries({ queryKey: api.groups.list.key() });
     });
   }, [queryClient]);
-  const groupsQuery = useInfiniteQuery({
-    queryKey: ['groups-list', search.trim(), filter],
-    initialPageParam: null as string | null,
-    queryFn: async ({ pageParam }) => {
-      const response = await groupsClient.index.$get({
-        query: {
-          limit: '50',
-          filter,
-          ...(pageParam ? { cursor: pageParam } : {}),
-          ...(search.trim() ? { search: search.trim() } : {}),
-        },
-      });
-      if (!response.ok) throw new Error('groups_load_failed');
-      const page = (await response.json()) as unknown as GroupPage;
-      try {
-        await cacheGroups(page.data);
-        queryClient.setQueryData<Group[]>(
-          ['cached-groups-list'],
-          (current = []) => {
-            const merged = new Map(current.map((group) => [group.id, group]));
-            for (const group of page.data) merged.set(group.id, group);
-            return [...merged.values()];
-          },
-        );
-      } catch {
-        // Cache persistence is best effort and must not block the response.
-      }
-      return page;
-    },
-    getNextPageParam: (lastPage) => lastPage.pagination?.nextCursor,
-  });
-  const groups = groupsQuery.data?.pages.flatMap((page) => page.data) ?? [];
+  const groupsQuery = useInfiniteQuery(
+    api.groups.list.infiniteQueryOptions({
+      query: {
+        limit: 50,
+        filter,
+        ...(search.trim() ? { search: search.trim() } : {}),
+      },
+    }),
+  );
+  const pages = groupsQuery.data?.pages;
+  useEffect(() => {
+    const loaded = pages?.flatMap((page) => page.data) ?? [];
+    if (loaded.length === 0) return;
+    void cacheGroups(loaded).catch(() => undefined);
+    queryClient.setQueryData<Group[]>(
+      ['cached-groups-list'],
+      (current = []) => {
+        const merged = new Map(current.map((group) => [group.id, group]));
+        for (const group of loaded) merged.set(group.id, group);
+        return [...merged.values()];
+      },
+    );
+  }, [pages, queryClient]);
+  const groups = pages?.flatMap((page) => page.data) ?? [];
   const visibleGroups = groupsQuery.data
     ? groups
     : filterCachedGroups(cachedGroupsQuery.data ?? [], search, filter);
@@ -116,7 +104,7 @@ export default function GroupsScreen() {
         })
       : [];
   const totalGroups =
-    groupsQuery.data?.pages[0]?.pagination?.total ?? visibleGroups.length;
+    groupsQuery.data?.pages[0]?.pagination.total ?? visibleGroups.length;
   const trips = visibleGroups.map(toTrip);
   const hasLocalGroups =
     visibleGroups.length > 0 || visiblePendingGroups.length > 0;

@@ -2,13 +2,12 @@ import {
   Ionicons,
   type IoniconsIconName,
 } from '@react-native-vector-icons/ionicons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { usersClient } from '@/api/users';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -22,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { authClient } from '@/lib/auth-client';
 import { languages, useI18n } from '@/lib/i18n';
 import {
@@ -30,6 +30,7 @@ import {
   getPushNotificationStatus,
   type PushNotificationStatus,
 } from '@/lib/push-notifications';
+import { styles } from './profile.styles';
 import type { ProfileSession } from './profile.types';
 import { QrScanner } from './qr-scanner';
 
@@ -73,14 +74,14 @@ export default function ProfileScreen() {
   const [languageDialog, setLanguageDialog] = useState(false);
   const [sessions, setSessions] = useState<ProfileSession[]>([]);
   const [revokingSession, setRevokingSession] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isUpdatingImage, setIsUpdatingImage] = useState(false);
   const [notificationStatus, setNotificationStatus] =
     useState<PushNotificationStatus>('permission-required');
   const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
   const [imageOverride, setImageOverride] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const imageMutation = useMutation(api.users.image.mutationOptions());
+  const usernameMutation = useMutation(api.users.username.mutationOptions());
   const sessionsQuery = useQuery({
     queryKey: ['profile-sessions'],
     enabled: sessionsDialog,
@@ -159,11 +160,14 @@ export default function ProfileScreen() {
     if (!asset?.base64) return;
 
     const dataUrl = `data:image/jpeg;base64,${asset.base64}`;
-    setIsUpdatingImage(true);
-    const response = await usersClient.me.image.$patch({ json: { dataUrl } });
-    setIsUpdatingImage(false);
+    const updated = await imageMutation
+      .mutateAsync({ payload: { dataUrl } })
+      .then(
+        () => true,
+        () => false,
+      );
 
-    if (!response.ok) {
+    if (!updated) {
       Alert.alert('No se pudo actualizar', 'Intenta nuevamente.');
       return;
     }
@@ -182,13 +186,14 @@ export default function ProfileScreen() {
       return;
     }
 
-    setIsSaving(true);
-    const response = await usersClient.me.username.$patch({
-      json: { username: normalized },
-    });
-    setIsSaving(false);
+    const updated = await usernameMutation
+      .mutateAsync({ payload: { username: normalized } })
+      .then(
+        () => true,
+        () => false,
+      );
 
-    if (!response.ok) {
+    if (!updated) {
       Alert.alert('No se pudo actualizar', 'Intenta nuevamente.');
       return;
     }
@@ -263,7 +268,7 @@ export default function ProfileScreen() {
             </View>
           )}
           <Button
-            disabled={isUpdatingImage}
+            disabled={imageMutation.isPending}
             onPress={() => void updatePhoto()}
             size="icon-sm"
             variant="default"
@@ -417,11 +422,11 @@ export default function ProfileScreen() {
               <Text>Cancelar</Text>
             </DialogClose>
             <Button
-              disabled={isSaving}
+              disabled={usernameMutation.isPending}
               onPress={() => void saveUsername()}
               style={styles.saveButton}
             >
-              {isSaving ? (
+              {usernameMutation.isPending ? (
                 <Spinner color="#FFFFFF" />
               ) : (
                 <Text style={styles.saveText}>Guardar</Text>
@@ -535,189 +540,3 @@ export default function ProfileScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FAFAFA' },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 152,
-    gap: 16,
-  },
-  pageTitle: {
-    color: '#0F172A',
-    fontSize: 30,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  userCard: {
-    position: 'relative',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 28,
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 1,
-  },
-  avatar: { width: 58, height: 58, borderRadius: 22 },
-  avatarFallback: {
-    width: 58,
-    height: 58,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
-  },
-  photoButton: {
-    position: 'absolute',
-    left: 58,
-    top: 58,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#DE034D',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  userCopy: { flex: 1, gap: 3 },
-  userName: { color: '#0F172A', fontSize: 16, fontWeight: '600' },
-  username: { color: '#DE034D', fontSize: 14 },
-  email: { color: '#64748B', fontSize: 14 },
-  card: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 28,
-    padding: 8,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 1,
-  },
-  row: {
-    minHeight: 68,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 8,
-    borderRadius: 20,
-  },
-  pressed: { backgroundColor: '#F8FAFC' },
-  rowIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF0F4',
-  },
-  rowCopy: { flex: 1, gap: 3 },
-  rowTitle: { color: '#0F172A', fontSize: 14, fontWeight: '600' },
-  rowSubtitle: { color: '#64748B', fontSize: 12 },
-  rowTrailing: { color: '#DE034D', fontSize: 12, fontWeight: '600' },
-  sessionLabel: { color: '#94A3B8', fontSize: 11, letterSpacing: 2, margin: 8 },
-  sessionCopy: {
-    color: '#64748B',
-    fontSize: 14,
-    lineHeight: 20,
-    marginHorizontal: 8,
-  },
-  logoutButton: {
-    height: 48,
-    borderRadius: 24,
-    margin: 8,
-    backgroundColor: '#EF4444',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  logoutText: { color: '#FFFFFF', fontSize: 15, fontWeight: '500' },
-  modalBackdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(15,23,42,0.35)',
-  },
-  modalCard: {
-    maxHeight: '80%',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-    gap: 12,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  modalTitle: { color: '#0F172A', fontSize: 20, fontWeight: '600' },
-  modalDescription: { color: '#64748B', fontSize: 14, lineHeight: 20 },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 25,
-    paddingHorizontal: 18,
-    color: '#0F172A',
-    fontSize: 15,
-  },
-  modalActions: { flexDirection: 'row', gap: 12, marginTop: 4 },
-  cancelButton: {
-    height: 48,
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveButton: {
-    height: 48,
-    flex: 1,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#DE034D',
-  },
-  saveText: { color: '#FFFFFF', fontWeight: '600' },
-  languageOptionText: { color: '#0F172A', fontWeight: '600' },
-  sessionsList: { marginTop: 4 },
-  emptySessions: { paddingVertical: 24, color: '#64748B', textAlign: 'center' },
-  emptySessionsText: {
-    color: '#64748B',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  sessionItem: {
-    borderRadius: 18,
-    backgroundColor: '#F8FAFC',
-    padding: 14,
-    marginBottom: 10,
-  },
-  sessionRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  sessionItemCopy: { flex: 1, gap: 4 },
-  sessionDevice: { color: '#0F172A', fontSize: 13, fontWeight: '600' },
-  sessionDate: { color: '#64748B', fontSize: 12 },
-  revokeButton: {
-    alignSelf: 'flex-start',
-    marginTop: 10,
-    borderColor: '#FECACA',
-  },
-  revokeText: { color: '#B91C1C', fontSize: 12, fontWeight: '600' },
-  currentSession: {
-    alignSelf: 'flex-start',
-    marginTop: 10,
-    color: '#15803D',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-});

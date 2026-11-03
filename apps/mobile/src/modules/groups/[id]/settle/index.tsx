@@ -1,30 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
-import { groupsClient } from '@/api/groups';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 
-type Group = {
-  directDebts?: {
-    toMemberId: string;
-    toName: string;
-    amount: number;
-    currency: string;
-  }[];
-  directCredits?: {
-    fromMemberId: string;
-    fromName: string;
-    amount: number;
-    currency: string;
-  }[];
-  myMembership?: { id: string; name: string };
-};
 type Option = {
   key: string;
   fromMemberId: string;
@@ -42,35 +27,23 @@ export default function GroupSettleScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [selectedKey, setSelectedKey] = useState('');
-  const [amount, setAmount] = useState('');
+  const [amountInput, setAmountInput] = useState<string | null>(null);
   const groupQuery = useQuery({
-    queryKey: ['group-summary', id],
+    ...api.groups.get.queryOptions({ params: { id: id ?? '' } }),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].$get({
-        param: { id: id ?? '' },
-      });
-      if (!response.ok) throw new Error('group_load_failed');
-      return (await response.json()) as Group;
-    },
   });
   const settlementExpenseQuery = useQuery({
-    queryKey: ['group-expense', id, settlementExpenseId],
+    ...api.groups.getExpense.queryOptions({
+      params: { id: id ?? '', expenseId: settlementExpenseId ?? '' },
+    }),
     enabled: Boolean(id && settlementExpenseId),
-    queryFn: async () => {
-      const response = await groupsClient[':id'].expenses[':expenseId'].$get({
-        param: { id: id ?? '', expenseId: settlementExpenseId ?? '' },
-      });
-      if (!response.ok) throw new Error('settlement_load_failed');
-      return response.json();
-    },
   });
   const options = useMemo<Option[]>(() => {
     const group = groupQuery.data;
     const me = group?.myMembership;
     if (!me) return [];
     return [
-      ...(group.directDebts ?? []).map((item) => ({
+      ...group.directDebts.map((item) => ({
         key: `${me.id}:${item.toMemberId}:${item.currency}`,
         fromMemberId: me.id,
         fromName: me.name,
@@ -79,7 +52,7 @@ export default function GroupSettleScreen() {
         amount: item.amount,
         currency: item.currency,
       })),
-      ...(group.directCredits ?? []).map((item) => ({
+      ...group.directCredits.map((item) => ({
         key: `${item.fromMemberId}:${me.id}:${item.currency}`,
         fromMemberId: item.fromMemberId,
         fromName: item.fromName,
@@ -92,13 +65,10 @@ export default function GroupSettleScreen() {
   }, [groupQuery.data]);
   const selected =
     options.find((item) => item.key === selectedKey) ?? options[0];
-  const settlementExpense =
-    settlementExpenseQuery.data && 'isSettlement' in settlementExpenseQuery.data
-      ? settlementExpenseQuery.data
-      : null;
+  const settlementExpense = settlementExpenseQuery.data ?? null;
   const editingOption: Option | undefined = settlementExpense?.isSettlement
     ? (() => {
-        const participant = settlementExpense.participants?.[0];
+        const participant = settlementExpense.participants[0];
         if (!participant || !settlementExpense.paidBy) return undefined;
         const key = `${settlementExpense.paidBy.id}:${participant.memberId}:${settlementExpense.currency}`;
         const pendingDebt =
@@ -115,17 +85,7 @@ export default function GroupSettleScreen() {
       })()
     : undefined;
   const activeOption = settlementExpenseId ? editingOption : selected;
-  useEffect(() => {
-    if (settlementExpenseId && editingOption) {
-      setSelectedKey(editingOption.key);
-      setAmount(String(editingOption.amount));
-      return;
-    }
-    if (selected && !selectedKey) {
-      setSelectedKey(selected.key);
-      setAmount(String(selected.amount));
-    }
-  }, [editingOption, selected, selectedKey, settlementExpenseId]);
+  const amount = amountInput ?? String(activeOption?.amount ?? '');
   const mutation = useMutation({
     mutationFn: async () => {
       const value = Number(amount.replace(',', '.'));
@@ -137,23 +97,20 @@ export default function GroupSettleScreen() {
         value > option.amount
       )
         throw new Error('invalid');
-      const response = await groupsClient[':id'].settlements.$post({
-        param: { id: id ?? '' },
-        json: {
+      return api.groups.settleDebt.request({
+        params: { id: id ?? '' },
+        payload: {
           fromMemberId: option.fromMemberId,
           toMemberId: option.toMemberId,
           amount: value,
           currency: option.currency,
         },
       });
-      if (!response.ok) throw new Error('settlement_failed');
     },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-reports', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
+        queryClient.invalidateQueries({ queryKey: api.groups.key() }),
       ]);
       router.replace(`/groups/${id}` as never);
     },
@@ -162,9 +119,9 @@ export default function GroupSettleScreen() {
     mutationFn: async () => {
       if (!settlementExpenseId || !activeOption) throw new Error('invalid');
       const value = Number(amount.replace(',', '.'));
-      const response = await groupsClient[':id'].expenses[':expenseId'].$put({
-        param: { id: id ?? '', expenseId: settlementExpenseId },
-        json: {
+      return api.groups.updateExpense.request({
+        params: { id: id ?? '', expenseId: settlementExpenseId },
+        payload: {
           description: `Liquidación: ${activeOption.fromName} → ${activeOption.toName}`,
           amount: value,
           currency: activeOption.currency,
@@ -174,17 +131,11 @@ export default function GroupSettleScreen() {
           exactShares: { [activeOption.toMemberId]: value },
         },
       });
-      if (!response.ok) throw new Error('settlement_update_failed');
     },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['home-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['group-summary', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-expenses', id] }),
-        queryClient.invalidateQueries({ queryKey: ['group-report'] }),
-        queryClient.invalidateQueries({
-          queryKey: ['group-expense', id, settlementExpenseId],
-        }),
+        queryClient.invalidateQueries({ queryKey: api.groups.key() }),
       ]);
       router.replace(`/groups/${id}` as never);
     },
@@ -223,11 +174,11 @@ export default function GroupSettleScreen() {
                   <Button
                     key={option.key}
                     variant={
-                      option.key === selected?.key ? 'default' : 'outline'
+                      option.key === activeOption?.key ? 'default' : 'outline'
                     }
                     onPress={() => {
                       setSelectedKey(option.key);
-                      setAmount(String(option.amount));
+                      setAmountInput(null);
                     }}
                   >
                     <Text style={styles.buttonText}>
@@ -241,7 +192,7 @@ export default function GroupSettleScreen() {
                     <Label>Monto a liquidar</Label>
                     <Input
                       value={amount}
-                      onChangeText={setAmount}
+                      onChangeText={setAmountInput}
                       keyboardType="decimal-pad"
                       placeholder={String(activeOption.amount)}
                     />

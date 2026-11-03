@@ -1,27 +1,18 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import type { ApiSuccess } from '@vornway/api-client';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { notificationsClient } from '@/api/notifications';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen, ScreenHeader } from '@/components/ui/screen';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
-type Notification = {
-  id: string;
-  title: string;
-  body: string;
-  createdAt: string;
-  readAt?: string | null;
-  url?: string | null;
-  actorName?: string | null;
-  actorImage?: string | null;
-  type?: string;
-};
+type Notification = ApiSuccess<'notifications', 'list'>['data'][number];
 
 function relativeDate(
   value: string,
@@ -75,32 +66,22 @@ function groupNotifications(
     },
   ].filter((group) => group.items.length > 0);
 }
-function notificationGlyph(type?: string) {
+function notificationGlyph(type: string) {
   return type === 'expense.created' ? '＋' : '↻';
 }
 export default function NotificationsScreen() {
   const router = useRouter();
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const notificationsQuery = useInfiniteQuery({
-    queryKey: ['notifications'],
-    initialPageParam: null as string | null,
-    queryFn: async ({ pageParam }) => {
-      const response = await notificationsClient.index.$get({
-        query: { limit: '50', ...(pageParam ? { cursor: pageParam } : {}) },
-      });
-      if (!response.ok) throw new Error('notifications_load_failed');
-      return (await response.json()) as {
-        data: Notification[];
-        pagination?: { nextCursor?: string | null };
-      };
-    },
-    getNextPageParam: (lastPage) => lastPage.pagination?.nextCursor,
-  });
+  const notificationsQuery = useInfiniteQuery(
+    api.notifications.list.infiniteQueryOptions({ query: { limit: 50 } }),
+  );
   useEffect(
     () => () => {
-      void notificationsClient['read-all'].$post().finally(() => {
-        void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void api.notifications.readAll.request().finally(() => {
+        void queryClient.invalidateQueries({
+          queryKey: api.notifications.key(),
+        });
         void queryClient.invalidateQueries({ queryKey: ['home-summary'] });
       });
     },

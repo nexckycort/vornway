@@ -1,6 +1,6 @@
+import { useMutation } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import { Alert, Text } from 'react-native';
-import { usersClient } from '@/api/users';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { api } from '@/lib/api';
 import { authClient } from '@/lib/auth-client';
 
 export function useUsernameRequirement() {
@@ -21,7 +22,8 @@ export function useUsernameRequirement() {
   )?.user?.username?.trim();
   const [open, setOpen] = useState(false);
   const [username, setUsername] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  const usernameMutation = useMutation(api.users.username.mutationOptions());
+  const isSaving = usernameMutation.isPending;
   const resolution = useRef<((allowed: boolean) => void) | null>(null);
 
   const ensureUsername = useCallback(() => {
@@ -52,12 +54,8 @@ export function useUsernameRequirement() {
       return;
     }
 
-    setIsSaving(true);
     try {
-      const response = await usersClient.me.username.$patch({
-        json: { username: normalized },
-      });
-      if (!response.ok) throw new Error('username_update_failed');
+      await usernameMutation.mutateAsync({ payload: { username: normalized } });
 
       await authClient.getSession();
       const resolve = resolution.current;
@@ -66,10 +64,8 @@ export function useUsernameRequirement() {
       resolve?.(true);
     } catch {
       Alert.alert('No se pudo guardar', 'Intenta nuevamente.');
-    } finally {
-      setIsSaving(false);
     }
-  }, [username]);
+  }, [username, usernameMutation]);
 
   const dialog = (
     <Dialog

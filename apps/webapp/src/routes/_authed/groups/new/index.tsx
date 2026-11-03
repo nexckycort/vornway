@@ -53,9 +53,10 @@ function RouteComponent() {
   } = Route.useSearch();
 
   const [name, setName] = useState(searchName);
-  const [type, setType] = useState<string>(
+  const [baseType, setBaseType] = useState<string>(
     searchType || (spaceKind === 'personal' ? 'personal' : DEFAULT_SHARED_TYPE),
   );
+  const [appliedDraftId, setAppliedDraftId] = useState('');
   const [description, setDescription] = useState(searchDescription);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
@@ -78,40 +79,35 @@ function RouteComponent() {
   const showSelection =
     step !== 'details' && !searchName && !searchType && !draftId;
 
-  const isValid = name.trim().length > 0 && type.trim().length > 0;
+  const type =
+    selectedSpaceKind === 'personal'
+      ? 'personal'
+      : selectedSpaceKind === 'shared'
+        ? DEFAULT_SHARED_TYPE
+        : baseType;
 
-  useEffect(() => {
-    if (selectedSpaceKind === 'personal' && type !== 'personal') {
-      setType('personal');
-    } else if (selectedSpaceKind === 'shared' && type !== DEFAULT_SHARED_TYPE) {
-      setType(DEFAULT_SHARED_TYPE);
-    }
-  }, [selectedSpaceKind, type]);
+  const isValid = name.trim().length > 0 && type.trim().length > 0;
 
   useEffect(() => {
     if (showSelection) return;
     nameInputRef.current?.focus();
   }, [showSelection]);
 
-  useEffect(() => {
-    if (showSelection) return;
-    if (!draftId) return;
-
+  if (!showSelection && draftId && appliedDraftId !== draftId) {
+    setAppliedDraftId(draftId);
     const draft = loadGroupDraft(draftId);
-    if (!draft) return;
-
-    setName(draft.name);
-    setType(
-      selectedSpaceKind === 'personal'
-        ? 'personal'
-        : draft.type === 'personal'
+    if (draft) {
+      setName(draft.name);
+      setBaseType(
+        draft.type === 'personal'
           ? DEFAULT_SHARED_TYPE
           : draft.type || DEFAULT_SHARED_TYPE,
-    );
-    setDescription(draft.description);
-    setImageDataUrl(draft.image?.dataUrl ?? null);
-    setImageFileName(draft.image?.fileName ?? null);
-  }, [draftId, selectedSpaceKind, showSelection]);
+      );
+      setDescription(draft.description);
+      setImageDataUrl(draft.image?.dataUrl ?? null);
+      setImageFileName(draft.image?.fileName ?? null);
+    }
+  }
 
   useEffect(() => {
     if (showSelection) return;
@@ -383,51 +379,6 @@ function SpaceTypeSelection({
   onContinue: () => void;
   t: ReturnType<typeof getGroupDetailMessages>;
 }) {
-  const Card = ({ kind }: { kind: 'shared' | 'personal' }) => {
-    const isSelected = selected === kind;
-    const isShared = kind === 'shared';
-    return (
-      <button
-        type="button"
-        aria-pressed={isSelected}
-        onClick={() => onSelect(kind)}
-        className={`relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border-2 p-4 text-left transition-colors ${
-          isSelected
-            ? 'border-[#ff658a] bg-[#fff0f2]'
-            : 'border-[#ebebeb] bg-white'
-        }`}
-      >
-        <span
-          className={`absolute right-4 top-4 flex size-6 items-center justify-center rounded-full border text-sm font-semibold ${
-            isSelected
-              ? 'border-[#de034d] bg-[#de034d] text-white'
-              : 'border-[#d1d5db] bg-white text-transparent'
-          }`}
-          aria-hidden="true"
-        >
-          ✓
-        </span>
-        <span className="pr-9 text-base font-semibold text-[#171717]">
-          {isShared ? t.form.sharedSpace : t.form.personalSpace}
-        </span>
-        <span className="mt-1 max-w-[300px] text-sm leading-5 text-[#737373]">
-          {isShared ? t.form.sharedSpaceCopy : t.form.personalSpaceCopy}
-        </span>
-        <span className="mt-3 flex min-h-0 flex-1 items-center justify-center">
-          <img
-            src={
-              isShared
-                ? '/images/group-space-shared.png'
-                : '/images/group-space-personal.png'
-            }
-            alt=""
-            className="max-h-full w-full object-contain"
-          />
-        </span>
-      </button>
-    );
-  };
-
   return (
     <main className="h-dvh max-h-dvh overflow-hidden bg-[#efefef] text-foreground">
       <div className="mx-auto flex h-dvh max-h-dvh w-full max-w-[412px] flex-col overflow-hidden bg-white">
@@ -455,8 +406,18 @@ function SpaceTypeSelection({
             {t.form.selectionCopy}
           </p>
           <div className="grid min-h-0 flex-1 grid-rows-2 gap-4">
-            <Card kind="shared" />
-            <Card kind="personal" />
+            <SpaceKindCard
+              kind="shared"
+              selected={selected}
+              onSelect={onSelect}
+              t={t}
+            />
+            <SpaceKindCard
+              kind="personal"
+              selected={selected}
+              onSelect={onSelect}
+              t={t}
+            />
           </div>
         </section>
         <footer className="shrink-0 border-t border-[#ededed] bg-white px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
@@ -471,5 +432,60 @@ function SpaceTypeSelection({
         </footer>
       </div>
     </main>
+  );
+}
+
+function SpaceKindCard({
+  kind,
+  selected,
+  onSelect,
+  t,
+}: {
+  kind: 'shared' | 'personal';
+  selected: 'shared' | 'personal' | null;
+  onSelect: (value: 'shared' | 'personal') => void;
+  t: ReturnType<typeof getGroupDetailMessages>;
+}) {
+  const isSelected = selected === kind;
+  const isShared = kind === 'shared';
+  return (
+    <button
+      type="button"
+      aria-pressed={isSelected}
+      onClick={() => onSelect(kind)}
+      className={`relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border-2 p-4 text-left transition-colors ${
+        isSelected
+          ? 'border-[#ff658a] bg-[#fff0f2]'
+          : 'border-[#ebebeb] bg-white'
+      }`}
+    >
+      <span
+        className={`absolute right-4 top-4 flex size-6 items-center justify-center rounded-full border text-sm font-semibold ${
+          isSelected
+            ? 'border-[#de034d] bg-[#de034d] text-white'
+            : 'border-[#d1d5db] bg-white text-transparent'
+        }`}
+        aria-hidden="true"
+      >
+        ✓
+      </span>
+      <span className="pr-9 text-base font-semibold text-[#171717]">
+        {isShared ? t.form.sharedSpace : t.form.personalSpace}
+      </span>
+      <span className="mt-1 max-w-[300px] text-sm leading-5 text-[#737373]">
+        {isShared ? t.form.sharedSpaceCopy : t.form.personalSpaceCopy}
+      </span>
+      <span className="mt-3 flex min-h-0 flex-1 items-center justify-center">
+        <img
+          src={
+            isShared
+              ? '/images/group-space-shared.png'
+              : '/images/group-space-personal.png'
+          }
+          alt=""
+          className="max-h-full w-full object-contain"
+        />
+      </span>
+    </button>
   );
 }

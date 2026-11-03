@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from 'react';
 import { API_URL } from '#/config/env';
 import { m } from '#/paraglide/messages.js';
 
@@ -100,40 +106,33 @@ export function useVersionCheck() {
     }
   }, []);
 
-  useEffect(() => {
+  const runCheck = useEffectEvent(() => {
     void checkForUpdates();
+  });
+  const reloadIfUpdating = useEffectEvent(() => {
+    if (isUpdating) window.location.reload();
+  });
 
-    const interval = window.setInterval(
-      () => {
-        void checkForUpdates();
-      },
-      15 * 60 * 1000,
-    );
+  useEffect(() => {
+    const initialCheck = window.setTimeout(runCheck, 0);
+    const interval = window.setInterval(runCheck, 15 * 60 * 1000);
 
-    const handleOnline = () => {
-      void checkForUpdates();
-    };
-
-    const handleControllerChange = () => {
-      if (!isUpdating) return;
-      window.location.reload();
-    };
-
-    window.addEventListener('online', handleOnline);
+    window.addEventListener('online', runCheck);
     navigator.serviceWorker?.addEventListener(
       'controllerchange',
-      handleControllerChange,
+      reloadIfUpdating,
     );
 
     return () => {
+      window.clearTimeout(initialCheck);
       window.clearInterval(interval);
-      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('online', runCheck);
       navigator.serviceWorker?.removeEventListener(
         'controllerchange',
-        handleControllerChange,
+        reloadIfUpdating,
       );
     };
-  }, [checkForUpdates, isUpdating]);
+  }, []);
 
   return {
     updateAvailable,

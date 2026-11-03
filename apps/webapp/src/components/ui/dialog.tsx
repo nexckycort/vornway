@@ -1,11 +1,11 @@
+'use client';
+
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import * as React from 'react';
 import { Button } from '#/components/ui/button';
 import { cn } from '#/lib/utils';
-('use client');
-
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   const lastOpen = React.useRef(props.open);
   const openedAtLocationKey = React.useRef<string | null>(null);

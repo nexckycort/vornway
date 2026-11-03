@@ -18,6 +18,19 @@ import {
   useGroupExpenseQuery,
   useGroupSummaryQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import {
+  AvatarCircle,
+  DebtSection,
+  KeypadButton,
+} from './-components/settle-parts';
+import {
+  currencyMeta,
+  formatAmountInput,
+  formatEditableAmount,
+  parseEditableAmount,
+  type SettlementOption,
+  type Step,
+} from './-lib/settle';
 export const Route = createFileRoute('/_authed/groups/$id/settle')({
   validateSearch: (search: Record<string, unknown>) => ({
     settlementExpenseId:
@@ -28,88 +41,6 @@ export const Route = createFileRoute('/_authed/groups/$id/settle')({
   }),
   component: RouteComponent,
 });
-
-const currencyMeta: Record<
-  string,
-  { flag: string; label: string; symbol: string }
-> = {
-  COP: { flag: '🇨🇴', label: m['common.currency.copFull'](), symbol: '$' },
-  EUR: { flag: '🇪🇺', label: m['common.currency.eurFull'](), symbol: '€' },
-  USD: { flag: '🇺🇸', label: m['common.currency.usdFull'](), symbol: 'US$' },
-  GBP: { flag: '🇬🇧', label: m['common.currency.gbpFull'](), symbol: '£' },
-  MXN: { flag: '🇲🇽', label: m['common.currency.mxnFull'](), symbol: '$' },
-  BRL: { flag: '🇧🇷', label: m['common.currency.brlFull'](), symbol: 'R$' },
-};
-
-type Step = 1 | 2;
-
-type SettlementOption = {
-  key: string;
-  fromMemberId: string;
-  fromName: string;
-  toMemberId: string;
-  toName: string;
-  currency: string;
-  amount: number;
-};
-
-function formatCompactAmount(currency: string, amount: number) {
-  const hasDecimals = Math.abs(amount % 1) > 0.000001;
-
-  try {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: hasDecimals ? 2 : 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${amount.toLocaleString('es-CO', {
-      minimumFractionDigits: hasDecimals ? 2 : 0,
-      maximumFractionDigits: 2,
-    })} ${currency}`;
-  }
-}
-
-function formatAmountInput(currency: string, digits: string) {
-  const normalizedDigits = digits.includes(',') ? digits : `${digits},00`;
-  const [integerPart, decimalPart = '00'] = normalizedDigits.split(',');
-  const amount = parseEditableAmount(normalizedDigits);
-  const formattedAmount = formatCompactAmount(currency, amount);
-  const safeIntegerPart = integerPart || '0';
-  const safeDecimalPart = decimalPart.padEnd(2, '0').slice(0, 2);
-
-  try {
-    const formattedInteger = new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(Number.parseInt(safeIntegerPart, 10) || 0);
-
-    return `${formattedInteger},${safeDecimalPart}`;
-  } catch {
-    void formattedAmount;
-    return `${safeIntegerPart},${safeDecimalPart} ${currency}`;
-  }
-}
-
-function formatEditableAmount(value: number) {
-  if (Number.isInteger(value)) return String(value);
-  return value.toFixed(2).replace('.', ',');
-}
-
-function parseEditableAmount(value: string) {
-  return Number.parseFloat(value.replace(',', '.')) || 0;
-}
-
-function initialsFromName(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('');
-}
 
 function RouteComponent() {
   const { id } = Route.useParams();
@@ -133,7 +64,7 @@ function RouteComponent() {
   const [error, setError] = useState<string | null>(null);
   const hasStepTwoHistoryRef = useRef(false);
   const closingStepTwoFromPopStateRef = useRef(false);
-  const didInitializeEditRef = useRef(false);
+  const [didInitializeEdit, setDidInitializeEdit] = useState(false);
 
   const myMembershipId = groupQuery.data?.myMembership?.id ?? null;
   const myMembershipName =
@@ -229,30 +160,27 @@ function RouteComponent() {
     };
   }, [options, settlementExpenseId, settlementExpenseQuery.data]);
 
-  useEffect(() => {
-    if (settlementExpenseId) return;
+  if (!settlementExpenseId && !selectedKey && options[0]) {
+    setSelectedKey(options[0].key);
+    setAmountDigits(formatEditableAmount(options[0].amount));
+  }
 
-    if (!selectedKey && options[0]) {
-      setSelectedKey(options[0].key);
-      setAmountDigits(formatEditableAmount(options[0].amount));
-    }
-  }, [options, selectedKey, settlementExpenseId]);
-
-  useEffect(() => {
-    if (!settlementExpenseId || didInitializeEditRef.current) return;
-    const expense = settlementExpenseQuery.data;
-    if (!expense?.isSettlement) return;
-
-    const toMemberId = expense.participants[0]?.memberId;
-    if (!toMemberId) return;
-
-    const key = `${expense.paidBy.id}:${toMemberId}:${expense.currency}`;
-    setSelectedKey(key);
-    setAmountDigits(formatEditableAmount(expense.amount));
+  const settlementToEdit = settlementExpenseQuery.data;
+  const settlementToEditMemberId = settlementToEdit?.participants[0]?.memberId;
+  if (
+    settlementExpenseId &&
+    !didInitializeEdit &&
+    settlementToEdit?.isSettlement &&
+    settlementToEditMemberId
+  ) {
+    setSelectedKey(
+      `${settlementToEdit.paidBy.id}:${settlementToEditMemberId}:${settlementToEdit.currency}`,
+    );
+    setAmountDigits(formatEditableAmount(settlementToEdit.amount));
     setStep(2);
     setError(null);
-    didInitializeEditRef.current = true;
-  }, [settlementExpenseId, settlementExpenseQuery.data]);
+    setDidInitializeEdit(true);
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -649,156 +577,5 @@ function RouteComponent() {
         )}
       </div>
     </main>
-  );
-}
-
-function DebtSection({
-  title,
-  items,
-  membersById,
-  myMembershipId,
-  onSelect,
-  className = '',
-}: {
-  title: string;
-  items: {
-    key: string;
-    fromMemberId: string;
-    fromName: string;
-    toMemberId: string;
-    toName: string;
-    currency: string;
-    amount: number;
-  }[];
-  membersById: Map<
-    string,
-    {
-      id: string;
-      name: string;
-      email: string | null;
-      image: string | null;
-      role: string;
-      userId: string | null;
-      isCurrentUser: boolean;
-      expenseCount: number;
-    }
-  >;
-  myMembershipId: string | null;
-  onSelect: (key: string) => void;
-  className?: string;
-}) {
-  const t = getGroupDetailMessages();
-  if (items.length === 0) return null;
-
-  return (
-    <section className={className}>
-      <h2 className="mb-3 text-xl font-medium leading-none text-[#1f2937]">
-        {title}
-      </h2>
-      <div className="space-y-3">
-        {items.map((item) => {
-          const counterpartId =
-            item.fromMemberId === myMembershipId
-              ? item.toMemberId
-              : item.fromMemberId;
-          const counterpart = membersById.get(counterpartId) ?? {
-            name:
-              item.fromMemberId === myMembershipId
-                ? item.toName
-                : item.fromName,
-            image: null,
-          };
-          const isDebtToMe = item.toMemberId === myMembershipId;
-
-          return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => onSelect(item.key)}
-              className="flex w-full items-center gap-3 rounded-[22px] border border-[#e8edf3] bg-white px-3 py-3 text-left shadow-[0_10px_20px_rgba(15,23,42,0.03)]"
-            >
-              <AvatarCircle
-                name={counterpart.name}
-                image={counterpart.image}
-                size="md"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-semibold text-[#111827]">
-                  {counterpart.name}
-                </p>
-                <p
-                  className={`mt-1 text-sm ${
-                    isDebtToMe ? 'text-[#10b981]' : 'text-[#ef4444]'
-                  }`}
-                >
-                  {isDebtToMe
-                    ? t.settle.owesYou(
-                        formatCompactAmount(item.currency, item.amount),
-                      )
-                    : t.settle.youOwe(
-                        formatCompactAmount(item.currency, item.amount),
-                      )}
-                </p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function AvatarCircle({
-  name,
-  image,
-  size,
-}: {
-  name: string;
-  image: string | null;
-  size: 'md';
-}) {
-  const sizeClass = size === 'md' ? 'size-12' : 'size-10';
-
-  if (image) {
-    return (
-      <img
-        src={image}
-        alt={name}
-        className={`${sizeClass} shrink-0 rounded-full object-cover`}
-        referrerPolicy="no-referrer"
-      />
-    );
-  }
-
-  return (
-    <div
-      className={`${sizeClass} flex shrink-0 items-center justify-center rounded-full bg-[#f3f4f6] text-lg font-medium text-[#374151]`}
-    >
-      {initialsFromName(name)}
-    </div>
-  );
-}
-
-function KeypadButton({
-  label,
-  onClick,
-  borderless = false,
-}: {
-  label: React.ReactNode;
-  onClick: () => void;
-  borderless?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex min-h-0 items-center justify-center rounded-[18px] bg-white text-[24px] font-light text-[#1f2937] transition-transform active:scale-[0.98] ${
-        borderless
-          ? ''
-          : 'border border-[#edf1f5] shadow-[0_8px_18px_rgba(15,23,42,0.03)]'
-      }`}
-    >
-      {label}
-    </button>
   );
 }

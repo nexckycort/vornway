@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
@@ -11,6 +11,10 @@ import {
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { GroupReportBalanceTab } from './-components/group-report-balance-tab';
 import { GroupReportTotalsTab } from './-components/group-report-totals-tab';
+import {
+  toDayBoundaryIso,
+  type ReportDateFilterMode,
+} from './-lib/date-filter';
 
 export const Route = createFileRoute('/_authed/groups/$id/reports/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -21,8 +25,6 @@ export const Route = createFileRoute('/_authed/groups/$id/reports/')({
   }),
   component: RouteComponent,
 });
-
-type ReportDateFilterMode = 'all' | 'day' | 'range';
 
 type GroupSummaryCounterpartyFields = {
   directDebts: {
@@ -37,22 +39,6 @@ type GroupSummaryCounterpartyFields = {
   }[];
 };
 
-function toDayBoundaryIso(
-  value: Date,
-  boundary: 'start' | 'end',
-): string | undefined {
-  const year = value.getFullYear();
-  const month = value.getMonth();
-  const day = value.getDate();
-
-  const date =
-    boundary === 'start'
-      ? new Date(year, month, day, 0, 0, 0, 0)
-      : new Date(year, month, day, 23, 59, 59, 999);
-
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
-}
-
 function RouteComponent() {
   const { id } = Route.useParams();
   const { tab } = Route.useSearch();
@@ -60,8 +46,8 @@ function RouteComponent() {
   const navigate = useNavigate({ from: Route.fullPath });
   const { flowState, navigateToGroupRoot } = useGroupFlowNavigation(id);
   const groupQuery = useGroupSummaryQuery(id);
-  const today = useMemo(() => new Date(), []);
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('COP');
+  const [today] = useState(() => new Date());
+  const [requestedCurrency, setSelectedCurrency] = useState<string>('COP');
   const [dateFilterMode, setDateFilterMode] =
     useState<ReportDateFilterMode>('all');
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(today);
@@ -118,6 +104,11 @@ function RouteComponent() {
 
     return Array.from(currencies);
   }, [group?.totals, reportsTotalsQuery.data?.totalsByCurrency]);
+  const selectedCurrency =
+    availableCurrencies.length === 0 ||
+    availableCurrencies.includes(requestedCurrency)
+      ? requestedCurrency
+      : (availableCurrencies[0] ?? 'COP');
   const sortedBalanceMembers = useMemo(() => {
     if (!group) return [];
     const summary = group as typeof group & GroupSummaryCounterpartyFields;
@@ -212,12 +203,6 @@ function RouteComponent() {
     { label: t.reports.day, value: 'day' },
     { label: t.reports.range, value: 'range' },
   ];
-  useEffect(() => {
-    if (availableCurrencies.length === 0) return;
-    if (availableCurrencies.includes(selectedCurrency)) return;
-
-    setSelectedCurrency(availableCurrencies[0] ?? 'COP');
-  }, [availableCurrencies, selectedCurrency]);
 
   if (groupQuery.isLoading) {
     return (

@@ -1,11 +1,4 @@
-import {
-  CalendarDaysIcon,
-  Cancel01Icon,
-  CheckIcon,
-  ChevronRightIcon,
-  MailIcon,
-  UserAdd01Icon,
-} from '@hugeicons/core-free-icons';
+import { CheckIcon, ChevronRightIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
@@ -24,19 +17,22 @@ import {
   goalTypes,
 } from '../-lib/goal-experience';
 import { getGoalsMessages } from '../-messages';
+import {
+  DateField,
+  InsightCard,
+  GoalPreviewCard,
+  StepHeader,
+} from './-components/goal-form-parts';
+import {
+  type DraftParticipant,
+  GoalParticipantsStep,
+} from './-components/goal-participants-step';
 export const Route = createFileRoute('/_authed/goals/new/')({
   validateSearch: (search: Record<string, unknown>) => ({
     from: search.from === 'home' ? ('home' as const) : ('goals' as const),
   }),
   component: RouteComponent,
 });
-
-type DraftParticipant = {
-  name: string;
-  userId?: string;
-  email?: string | null;
-  image?: string | null;
-};
 
 function normalizeText(value: string) {
   return value.trim().toLocaleLowerCase('es-CO');
@@ -107,12 +103,6 @@ function RouteComponent() {
 
     return () => window.clearTimeout(timeout);
   }, [participantInput]);
-
-  useEffect(() => {
-    const nextType = goalTypes.find((item) => item.id === goalType);
-    if (!nextType) return;
-    setEmoji((current) => current || nextType.emoji);
-  }, [goalType]);
 
   const participantsCountLabel = useMemo(() => {
     if (participants.length === 0) return t.onlyYou;
@@ -423,105 +413,16 @@ function RouteComponent() {
           ) : null}
 
           {step === 4 ? (
-            <section className="space-y-4">
-              <StepHeader
-                eyebrow={t.stepFive}
-                title={t.addPeopleTitle}
-                copy={t.stepFiveCopy}
-              />
-              <div className="flex gap-2">
-                <input
-                  ref={participantRef}
-                  value={participantInput}
-                  onChange={(event) => setParticipantInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      addParticipant({ name: participantInput });
-                    }
-                  }}
-                  placeholder={t.peoplePlaceholder}
-                  className="h-12 min-w-0 flex-1 rounded-[20px] border border-[#e2e8f0] bg-white px-4 text-base outline-none"
-                />
-                <Button
-                  type="button"
-                  size="icon"
-                  className="size-12 rounded-[20px]"
-                  onClick={() => addParticipant({ name: participantInput })}
-                  disabled={!participantInput.trim()}
-                  aria-label={t.addParticipantAria}
-                >
-                  <HugeiconsIcon icon={UserAdd01Icon} className="size-5" />
-                </Button>
-              </div>
-
-              {searchQuery.isFetching && debouncedSearch ? (
-                <p className="text-sm text-[#64748b]">
-                  Buscando coincidencias...
-                </p>
-              ) : null}
-
-              {searchResults.length > 0 ? (
-                <div className="space-y-2">
-                  {searchResults.map((candidate) => (
-                    <button
-                      key={candidate.id}
-                      type="button"
-                      disabled={candidate.isCurrentUser}
-                      onClick={() => {
-                        if (candidate.isCurrentUser) return;
-                        addParticipant({
-                          name: candidate.name,
-                          userId: candidate.id,
-                          email: candidate.email,
-                        });
-                      }}
-                      className="flex w-full items-center gap-3 rounded-[22px] border border-[#e2e8f0] bg-white px-4 py-3 text-left disabled:opacity-60"
-                    >
-                      <MemberAvatar name={candidate.name} image={null} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-[#0f172a]">
-                          {candidate.name}
-                        </span>
-                        <span className="block truncate text-xs text-[#64748b]">
-                          {candidate.email}
-                        </span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-
-              <div className="space-y-2">
-                {participants.map((participant, index) => (
-                  <div
-                    key={`${participant.userId ?? participant.name}-${index}`}
-                    className="flex items-center gap-3 rounded-[22px] border border-[#e2e8f0] bg-white px-4 py-3"
-                  >
-                    <MemberAvatar
-                      name={participant.name}
-                      image={participant.image ?? null}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-[#0f172a]">
-                        {participant.name}
-                      </span>
-                      <span className="block truncate text-xs text-[#64748b]">
-                        {participant.email ?? 'Participante manual'}
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeParticipant(index)}
-                      className="flex size-9 items-center justify-center rounded-full text-[#94a3b8]"
-                      aria-label={`Eliminar ${participant.name}`}
-                    >
-                      <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
+            <GoalParticipantsStep
+              inputRef={participantRef}
+              input={participantInput}
+              onInputChange={setParticipantInput}
+              isSearching={searchQuery.isFetching && Boolean(debouncedSearch)}
+              searchResults={searchResults}
+              participants={participants}
+              onAdd={addParticipant}
+              onRemove={removeParticipant}
+            />
           ) : null}
 
           {step === 5 ? (
@@ -608,147 +509,5 @@ function RouteComponent() {
         </div>
       </form>
     </MobilePageLayout>
-  );
-}
-
-function StepHeader({
-  eyebrow,
-  title,
-  copy,
-}: {
-  eyebrow: string;
-  title: string;
-  copy: string;
-}) {
-  return (
-    <div>
-      <p className="text-[11px] font-semibold uppercase text-primary">
-        {eyebrow}
-      </p>
-      <h1 className="mt-1 text-3xl font-semibold leading-9 text-[#0f172a]">
-        {title}
-      </h1>
-      <p className="mt-2 text-sm leading-6 text-[#64748b]">{copy}</p>
-    </div>
-  );
-}
-
-function GoalPreviewCard({
-  name,
-  emoji,
-  typeLabel,
-  target,
-  currency,
-  progress,
-  accent,
-}: {
-  name: string;
-  emoji: string;
-  typeLabel: string;
-  target: number;
-  currency: string;
-  progress: number;
-  accent: string;
-}) {
-  return (
-    <div className="relative overflow-hidden rounded-[32px] bg-[#111111] p-5 text-white shadow-[0_20px_45px_rgba(15,23,42,0.22)]">
-      <div
-        className="absolute -right-10 -top-10 size-36 rounded-full opacity-25 blur-2xl"
-        style={{ backgroundColor: accent }}
-      />
-      <div className="relative flex items-start justify-between">
-        <div className="flex size-14 items-center justify-center rounded-3xl bg-white/10 text-3xl">
-          {emoji || '✨'}
-        </div>
-        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">
-          {typeLabel}
-        </span>
-      </div>
-      <h2 className="relative mt-6 text-2xl font-semibold leading-8">
-        {name || 'Nueva meta'}
-      </h2>
-      <p className="relative mt-2 text-sm text-white/60">
-        Objetivo {formatCurrency(currency, target || 0)}
-      </p>
-      <div className="relative mt-5 h-2 rounded-full bg-white/10">
-        <div
-          className="h-full rounded-full"
-          style={{
-            width: `${Math.max(3, progress)}%`,
-            backgroundColor: accent,
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function DateField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="rounded-[22px] border border-[#e2e8f0] bg-white px-4 py-3">
-      <span className="flex items-center gap-2 text-xs text-[#64748b]">
-        <HugeiconsIcon icon={CalendarDaysIcon} className="size-3.5" />
-        {label}
-      </span>
-      <input
-        type="date"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-2 w-full bg-transparent text-sm font-semibold text-[#0f172a] outline-none"
-      />
-    </label>
-  );
-}
-
-function InsightCard({
-  label,
-  value,
-  copy,
-}: {
-  label: string;
-  value: string;
-  copy: string;
-}) {
-  return (
-    <div className="rounded-[24px] border border-[#e2e8f0] bg-white p-4">
-      <p className="text-xs text-[#64748b]">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-[#0f172a]">{value}</p>
-      <p className="mt-1 text-xs text-[#94a3b8]">{copy}</p>
-    </div>
-  );
-}
-
-function MemberAvatar({
-  name,
-  image,
-}: {
-  name: string;
-  image?: string | null;
-}) {
-  if (image) {
-    return (
-      <img
-        src={image}
-        alt={name}
-        className="size-10 rounded-full object-cover"
-        referrerPolicy="no-referrer"
-      />
-    );
-  }
-
-  return (
-    <span className="flex size-10 items-center justify-center rounded-full bg-[#f1f5f9] text-sm font-semibold text-[#0f172a]">
-      {name.trim().charAt(0).toUpperCase() || (
-        <HugeiconsIcon icon={MailIcon} className="size-4" />
-      )}
-    </span>
   );
 }

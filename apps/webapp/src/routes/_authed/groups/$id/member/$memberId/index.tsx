@@ -1,7 +1,7 @@
 import { ChevronRightIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { m } from '#/paraglide/messages.js';
@@ -18,6 +18,7 @@ import {
   getExpenseEmoji,
   getInitials,
 } from '../../-components/group-detail.utils';
+import { useLoadMoreSentinel } from '../../-hooks/use-load-more-sentinel';
 export const Route = createFileRoute('/_authed/groups/$id/member/$memberId/')({
   validateSearch: (search: Record<string, unknown>) => ({
     categoryId:
@@ -64,7 +65,7 @@ function RouteComponent() {
     startDate,
     endDate,
   });
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreRef = useLoadMoreSentinel(expensesQuery);
 
   const member = groupQuery.data?.members.find((item) => item.id === memberId);
   const expenses = useMemo(
@@ -97,34 +98,6 @@ function RouteComponent() {
   );
   const hasSummaryData =
     summaryEntries.length > 0 || (paidOnly && grossPaidEntries.length > 0);
-  const hasNextPageRef = useRef(expensesQuery.hasNextPage);
-  const isFetchingRef = useRef(expensesQuery.isFetching);
-  const fetchNextPageRef = useRef(expensesQuery.fetchNextPage);
-  hasNextPageRef.current = expensesQuery.hasNextPage;
-  isFetchingRef.current = expensesQuery.isFetching;
-  fetchNextPageRef.current = expensesQuery.fetchNextPage;
-
-  useEffect(() => {
-    const node = loadMoreRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0];
-        if (!first?.isIntersecting) return;
-        if (!hasNextPageRef.current || isFetchingRef.current) return;
-        void fetchNextPageRef.current();
-      },
-      {
-        root: null,
-        rootMargin: '240px 0px',
-        threshold: 0,
-      },
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
 
   const handleBack = () => {
     void navigate({

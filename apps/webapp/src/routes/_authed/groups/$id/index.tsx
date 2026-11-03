@@ -1,15 +1,5 @@
-import { Delete02Icon, PencilIcon, PinIcon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import QRCode from 'qrcode';
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { Button } from '#/components/ui/button';
 import {
   Drawer,
@@ -35,12 +25,14 @@ import {
   usePinnedGroupExpensesQuery,
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useToggleExpensePinMutation } from '#/routes/_authed/groups/-hooks/use-toggle-expense-pin';
-import { CategoryIcon } from './-components/category-icon';
+import { ExpenseOptionsDrawer } from './-components/expense-options-drawer';
 import { GroupDetailHeader } from './-components/group-detail-header';
 import { GroupDetailSkeleton } from './-components/group-detail-skeleton';
 import { formatMoney } from './-components/group-detail.utils';
 import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
 import { GroupParticipantsStrip } from './-components/group-participants-strip';
+import { useInviteQrCode } from './-hooks/use-invite-qr-code';
+import { useLoadMoreSentinel } from './-hooks/use-load-more-sentinel';
 import { getGroupDetailMessages } from './-messages';
 import type { ExpenseItem, GroupSummary } from './-types/group-detail.types';
 export const Route = createFileRoute('/_authed/groups/$id/')({
@@ -52,7 +44,6 @@ function RouteComponent() {
   const t = getGroupDetailMessages();
   const navigate = useNavigate();
   const { flowState, navigateToFlowBack } = useGroupFlowNavigation(id);
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [showQrDrawer, setShowQrDrawer] = useState(false);
   const [showExpenseOptionsDrawer, setShowExpenseOptionsDrawer] =
     useState(false);
@@ -67,10 +58,10 @@ function RouteComponent() {
     GroupSummary['members'][number] | null
   >(null);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
-  const [groupQrCode, setGroupQrCode] = useState<string | null>(null);
 
   const groupQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
+  const loadMoreRef = useLoadMoreSentinel(expensesQuery);
   const getPendingExpensesSnapshot = useCallback(
     () => getPendingExpensesForGroup(id),
     [id],
@@ -193,71 +184,10 @@ function RouteComponent() {
     groupQuery.data?.inviteCode && typeof window !== 'undefined'
       ? `https://join.vornway.com/${groupQuery.data.inviteCode}`
       : '';
+  const groupQrCode = useInviteQrCode(inviteLink, 320);
   const isExpensesSectionLoading =
     expensesQuery.isPending ||
     (!expensesQuery.data && expensesQuery.isFetching);
-
-  const hasNextPageRef = useRef(expensesQuery.hasNextPage);
-  const isFetchingRef = useRef(expensesQuery.isFetching);
-  const fetchNextPageRef = useRef(expensesQuery.fetchNextPage);
-  hasNextPageRef.current = expensesQuery.hasNextPage;
-  isFetchingRef.current = expensesQuery.isFetching;
-  fetchNextPageRef.current = expensesQuery.fetchNextPage;
-
-  useEffect(() => {
-    const node = loadMoreRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0];
-        if (!first?.isIntersecting) return;
-        if (!hasNextPageRef.current || isFetchingRef.current) return;
-        void fetchNextPageRef.current();
-      },
-      {
-        root: null,
-        rootMargin: '240px 0px',
-        threshold: 0,
-      },
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    if (!inviteLink) {
-      setGroupQrCode(null);
-      return;
-    }
-
-    void QRCode.toDataURL(inviteLink, {
-      errorCorrectionLevel: 'M',
-      margin: 1,
-      width: 320,
-      color: {
-        dark: '#111111',
-        light: '#ffffff',
-      },
-    })
-      .then((dataUrl: string) => {
-        if (active) {
-          setGroupQrCode(dataUrl);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setGroupQrCode(null);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [inviteLink]);
 
   if (groupQuery.isPending || (!groupQuery.data && groupQuery.isFetching)) {
     return <GroupDetailSkeleton />;
@@ -501,151 +431,24 @@ function RouteComponent() {
         </DrawerContent>
       </Drawer>
 
-      <Drawer
+      <ExpenseOptionsDrawer
         open={showExpenseOptionsDrawer && Boolean(expenseForOptions)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setShowExpenseOptionsDrawer(false);
-            setExpenseForOptions(null);
-          } else {
-            setShowExpenseOptionsDrawer(true);
-          }
+        expense={expenseForOptions}
+        isPinned={
+          expenseForOptions
+            ? pinnedExpenseIds.includes(expenseForOptions.id)
+            : false
+        }
+        isPinPending={toggleExpensePinMutation.isPending}
+        pinError={toggleExpensePinMutation.error}
+        onClose={() => {
+          setShowExpenseOptionsDrawer(false);
+          setExpenseForOptions(null);
         }}
-      >
-        <DrawerContent>
-          {expenseForOptions ? (
-            <div className="space-y-3 px-5 pb-5 pt-4">
-              <div className="rounded-[20px] border border-[#e2e8f0] bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                <div className="flex items-start gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#eeeeee] text-[#202124]">
-                    <CategoryIcon
-                      icon={expenseForOptions.category?.icon}
-                      color={expenseForOptions.category?.color}
-                      fallback={<span className="text-lg">💸</span>}
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-[#132238]">
-                          {expenseForOptions.description}
-                        </p>
-                        <p className="truncate text-xs text-[#64748b]">
-                          Pagado por {expenseForOptions.paidBy.name}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className="text-sm font-semibold text-[#202124]">
-                          {formatMoney(
-                            expenseForOptions.currency,
-                            expenseForOptions.amount,
-                          )}
-                        </p>
-                        {expenseForOptions.currentUserBalance !== null ? (
-                          <p
-                            className={`text-xs font-medium ${
-                              expenseForOptions.currentUserBalance > 0
-                                ? 'text-emerald-500'
-                                : expenseForOptions.currentUserBalance < 0
-                                  ? 'text-red-500'
-                                  : 'text-[#64748b]'
-                            }`}
-                          >
-                            {expenseForOptions.currentUserBalance > 0
-                              ? `Te deben ${formatMoney(
-                                  expenseForOptions.currency,
-                                  expenseForOptions.currentUserBalance,
-                                )}`
-                              : expenseForOptions.currentUserBalance < 0
-                                ? `Tú debes ${formatMoney(
-                                    expenseForOptions.currency,
-                                    Math.abs(
-                                      expenseForOptions.currentUserBalance,
-                                    ),
-                                  )}`
-                                : 'Sin saldo'}
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {!expenseForOptions.isDeleted &&
-              !expenseForOptions.isSettlement ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowExpenseOptionsDrawer(false);
-                    setExpenseForOptions(null);
-                    handleEditExpense(expenseForOptions);
-                  }}
-                  className="flex w-full items-center gap-3 rounded-2xl p-1 text-left"
-                >
-                  <HugeiconsIcon
-                    icon={PencilIcon}
-                    className="size-5 text-[#202124]"
-                  />
-                  <span className="font-medium text-[#132238]">
-                    Editar gasto
-                  </span>
-                </button>
-              ) : null}
-
-              {!expenseForOptions.isSettlement ? (
-                <button
-                  type="button"
-                  onClick={handleTogglePinnedExpense}
-                  disabled={
-                    expenseForOptions.isDeleted ||
-                    toggleExpensePinMutation.isPending
-                  }
-                  className="flex w-full items-center gap-3 rounded-2xl p-1 text-left disabled:opacity-60"
-                >
-                  <HugeiconsIcon
-                    icon={PinIcon}
-                    className="size-5 text-[#202124]"
-                  />
-                  <span className="font-medium text-[#132238]">
-                    {pinnedExpenseIds.includes(expenseForOptions.id)
-                      ? 'Desfijar'
-                      : 'Fijar'}
-                  </span>
-                </button>
-              ) : null}
-
-              {!expenseForOptions.isDeleted ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowExpenseOptionsDrawer(false);
-                    setExpenseForOptions(null);
-                    handleDeleteExpense(expenseForOptions);
-                  }}
-                  className="flex w-full items-center gap-3 rounded-2xl p-1 text-left"
-                >
-                  <HugeiconsIcon
-                    icon={Delete02Icon}
-                    className="size-5 text-red-500"
-                  />
-                  <span className="font-medium text-red-500">
-                    {t.detail.delete}
-                  </span>
-                </button>
-              ) : null}
-
-              {toggleExpensePinMutation.error ? (
-                <p className="text-sm text-red-500">
-                  {toggleExpensePinMutation.error instanceof Error
-                    ? toggleExpensePinMutation.error.message
-                    : t.detail.pinFailed}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-        </DrawerContent>
-      </Drawer>
+        onEdit={handleEditExpense}
+        onDelete={handleDeleteExpense}
+        onTogglePin={handleTogglePinnedExpense}
+      />
 
       <Drawer
         open={showDeleteExpenseDrawer && Boolean(expenseToDelete)}

@@ -1,0 +1,164 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { api, failWithMessage } from '#/api/client';
+import { Button } from '#/components/ui/button';
+import { m } from '#/paraglide/messages.js';
+import { ScreenShell, SummaryCard } from './finance-layout';
+import {
+  categorySpend,
+  currency,
+  type FinanceBudgetInput,
+  type FinanceCategory,
+  type FinanceSummary,
+  moneyLabel,
+  parseMoney,
+} from './finance-model';
+
+export function FinanceBudgetsView({
+  month,
+  summary,
+  categories,
+  onBack,
+}: {
+  month: string;
+  summary: FinanceSummary;
+  categories: FinanceCategory[];
+  onBack: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [budgetCategoryId, setBudgetCategoryId] = useState('');
+  const [budgetAmount, setBudgetAmount] = useState('');
+
+  const budgetMutation = useMutation({
+    mutationFn: async (input: FinanceBudgetInput) => {
+      return failWithMessage(
+        api.finances.upsertBudget.request({ payload: input }),
+        m['finances.budgetSaveFailed'](),
+      );
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['finances-summary'] });
+      setBudgetAmount('');
+      toast.success(m['finances.budgetSaved']());
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : m['finances.budgetSaveFailed'](),
+      );
+    },
+  });
+
+  function submitBudget() {
+    const parsedAmount = parseMoney(budgetAmount);
+    if (!budgetCategoryId || parsedAmount < 0) {
+      toast.error(m['finances.budgetValidation']());
+      return;
+    }
+
+    budgetMutation.mutate({
+      categoryId: budgetCategoryId,
+      month,
+      amount: parsedAmount,
+      currency,
+    });
+  }
+
+  return (
+    <ScreenShell title={m['finances.budgets']()} month={month} onBack={onBack}>
+      <section className="grid gap-4">
+        {summary.budgets.length === 0 ? (
+          <div className="rounded-[30px] bg-white p-5 text-sm text-black/45">
+            {m['finances.emptyBudgets']()}
+          </div>
+        ) : (
+          summary.budgets.map((budget) => {
+            const spent = categorySpend(summary, budget.categoryId);
+            const available = Math.max(budget.amount - spent, 0);
+            const progress =
+              budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
+
+            return (
+              <article key={budget.id} className="rounded-[30px] bg-white p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-semibold">
+                      {budget.category.name}
+                    </h2>
+                    <p className="mt-1 text-sm text-black/45">
+                      {m['finances.available']()}: {moneyLabel(available)}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold">
+                    {Math.round(Math.min(progress, 999))}%
+                  </p>
+                </div>
+                <div className="mt-5 h-2 overflow-hidden rounded-full bg-black/5">
+                  <div
+                    className="h-full rounded-full bg-[#101113]"
+                    style={{ width: `${Math.min(progress, 100)}%` }}
+                  />
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <SummaryCard
+                    label={m['finances.spent']()}
+                    value={moneyLabel(spent)}
+                  />
+                  <SummaryCard
+                    label={m['finances.limit']()}
+                    value={moneyLabel(budget.amount)}
+                  />
+                </div>
+              </article>
+            );
+          })
+        )}
+      </section>
+
+      <section className="mt-6 rounded-[30px] bg-white p-5">
+        <h2 className="text-lg font-semibold">
+          {m['finances.createBudget']()}
+        </h2>
+        <div className="mt-5 grid gap-3">
+          <select
+            value={budgetCategoryId}
+            onChange={(event) => setBudgetCategoryId(event.target.value)}
+            className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
+          >
+            <option value="">{m['finances.selectCategory']()}</option>
+            {categories
+              .filter(
+                (category) =>
+                  category.transactionType === 'EXPENSE' ||
+                  category.transactionType === 'BOTH',
+              )
+              .map((category: FinanceCategory) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+          </select>
+          <input
+            inputMode="decimal"
+            value={budgetAmount}
+            onChange={(event) => setBudgetAmount(event.target.value)}
+            placeholder={m['finances.budgetPlaceholder']()}
+            className="h-13 rounded-[20px] border border-black/5 bg-[#f7f7f4] px-4 text-sm outline-none"
+          />
+          <Button
+            type="button"
+            onClick={submitBudget}
+            disabled={budgetMutation.isPending}
+            className="h-12 rounded-full"
+          >
+            {budgetMutation.isPending
+              ? m['common.saving']()
+              : m['finances.saveBudget']()}
+          </Button>
+        </div>
+      </section>
+    </ScreenShell>
+  );
+}

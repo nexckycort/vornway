@@ -14,41 +14,25 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+function isAppInstalled() {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
+  const isMinimalUI = window.matchMedia('(display-mode: minimal-ui)').matches;
+  const isIOSInstalled =
+    'standalone' in window.navigator &&
+    (window.navigator as Navigator & { standalone?: boolean }).standalone ===
+      true;
+
+  return isStandalone || isFullscreen || isMinimalUI || isIOSInstalled;
+}
+
 export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(globalDeferredPrompt);
   const [isInstallable, setIsInstallable] = useState(!!globalDeferredPrompt);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(isAppInstalled);
 
   useEffect(() => {
-    if (globalDeferredPrompt && !deferredPrompt) {
-      setDeferredPrompt(globalDeferredPrompt);
-      setIsInstallable(true);
-    }
-
-    // Check if app is already installed
-    const checkIfInstalled = () => {
-      const isStandalone = window.matchMedia(
-        '(display-mode: standalone)',
-      ).matches;
-      const isFullscreen = window.matchMedia(
-        '(display-mode: fullscreen)',
-      ).matches;
-      const isMinimalUI = window.matchMedia(
-        '(display-mode: minimal-ui)',
-      ).matches;
-
-      // Check if launched from home screen (iOS Safari)
-      const isIOSInstalled =
-        'standalone' in window.navigator &&
-        (window.navigator as Navigator & { standalone?: boolean })
-          .standalone === true;
-
-      return isStandalone || isFullscreen || isMinimalUI || isIOSInstalled;
-    };
-
-    setIsInstalled(checkIfInstalled());
-
     const handleBeforeInstallPrompt = (e: Event) => {
       const event = e as BeforeInstallPromptEvent;
       e.preventDefault();

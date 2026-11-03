@@ -5,8 +5,9 @@ import {
   useEffect,
   useState,
 } from 'react';
+import { useWhenChanged } from '#/hooks/use-when-changed';
 import { resolveAssetUrl } from '#/lib/asset-url';
-import { signOut, useSession } from '#/lib/auth-client';
+import { type Session, signOut, useSession } from '#/lib/auth-client';
 
 const AUTH_USER_CACHE_KEY = 'vornway.auth.cached-user';
 
@@ -80,6 +81,20 @@ function clearCachedUser() {
   window.localStorage.removeItem(AUTH_USER_CACHE_KEY);
 }
 
+function toUser(data: Session): User {
+  return {
+    id: data.user.id ?? '',
+    name: data.user.name ?? '',
+    username: readSessionUsername(data.user),
+    email: data.user.email ?? '',
+    image: resolveAssetUrl(
+      data.user.image ?? null,
+      data.user.updatedAt ?? null,
+    ),
+    updatedAt: data.user.updatedAt ?? new Date(0),
+  };
+}
+
 export type AuthContextProps = {
   loading: boolean;
   isAuthenticated: boolean;
@@ -128,30 +143,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  useEffect(() => {
+  useWhenChanged([data, isOnline], () => {
     if (data) {
       setForcedLoggedOut(false);
-      const user = {
-        id: data?.user.id ?? '',
-        name: data?.user.name ?? '',
-        username: readSessionUsername(data?.user),
-        email: data?.user.email ?? '',
-        image: resolveAssetUrl(
-          data?.user.image ?? null,
-          data?.user.updatedAt ?? null,
-        ),
-        updatedAt: data?.user.updatedAt ?? new Date(0),
-      };
+      setCurrentUser(toUser(data));
+    } else if (isOnline) {
+      setCurrentUser(null);
+    }
+  });
 
-      setCurrentUser(user);
-      writeCachedUser(user);
+  useEffect(() => {
+    if (data) {
+      writeCachedUser(toUser(data));
       return;
     }
 
-    if (!data && isOnline) {
-      clearCachedUser();
-      setCurrentUser(null);
-    }
+    if (isOnline) clearCachedUser();
   }, [data, isOnline]);
 
   return (

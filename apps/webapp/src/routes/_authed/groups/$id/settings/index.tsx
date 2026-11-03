@@ -10,7 +10,6 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import QRCode from 'qrcode';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
@@ -38,6 +37,7 @@ import {
   useUpdateGroupSettingsMutation,
 } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useGroupSummaryQuery } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
+import { useInviteQrCode } from '../-hooks/use-invite-qr-code';
 export const Route = createFileRoute('/_authed/groups/$id/settings/')({
   component: RouteComponent,
 });
@@ -58,7 +58,6 @@ function RouteComponent() {
   const [showLeaveGroupDrawer, setShowLeaveGroupDrawer] = useState(false);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
-  const [groupQrCode, setGroupQrCode] = useState<string | null>(null);
   const copiedResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -78,36 +77,7 @@ function RouteComponent() {
     return `https://join.vornway.com/${groupQuery.data.inviteCode}`;
   }, [groupQuery.data?.inviteCode]);
 
-  useEffect(() => {
-    let active = true;
-
-    if (!inviteLink) {
-      setGroupQrCode(null);
-      return () => {
-        active = false;
-      };
-    }
-
-    void QRCode.toDataURL(inviteLink, {
-      errorCorrectionLevel: 'M',
-      margin: 1,
-      width: 420,
-      color: {
-        dark: '#111111',
-        light: '#ffffff',
-      },
-    })
-      .then((dataUrl: string) => {
-        if (active) setGroupQrCode(dataUrl);
-      })
-      .catch(() => {
-        if (active) setGroupQrCode(null);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [inviteLink]);
+  const groupQrCode = useInviteQrCode(inviteLink, 420);
 
   const copyText = async (value: string, label: string) => {
     try {

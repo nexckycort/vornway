@@ -160,7 +160,7 @@ self.addEventListener('install', (event) => {
             CACHE_NAME = `vornway-app-shell-${buildVersion}-${manifestSignature}`;
           }
         }
-      } catch (_error) {
+      } catch {
         assets = [];
       }
 
@@ -266,7 +266,7 @@ self.addEventListener('fetch', (event) => {
             void cache.put(request, response.clone());
           }
           return response;
-        } catch (_error) {
+        } catch {
           const cachedManifest = await matchFromAnyCache(request);
           if (cachedManifest) {
             return cachedManifest;
@@ -282,7 +282,7 @@ self.addEventListener('fetch', (event) => {
             void cache.put('/index.html', response.clone());
           }
           return response;
-        } catch (_error) {
+        } catch {
           const cachedRoot = await cache.match('/index.html');
           if (cachedRoot) {
             return cachedRoot;
@@ -344,7 +344,7 @@ self.addEventListener('push', (event) => {
     if (event.data) {
       payload = { ...fallback, ...event.data.json() };
     }
-  } catch (_error) {
+  } catch {
     payload = fallback;
   }
 

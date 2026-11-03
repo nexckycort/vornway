@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { api, failWithMessage } from '#/api/client';
+import { useWhenChanged } from '#/hooks/use-when-changed';
 import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 import {
@@ -160,22 +161,18 @@ function RouteComponent() {
     });
   }
 
-  const prepareTransactionEdit = useCallback(
-    (nextTransaction: EditableFinanceTransaction) => {
-      setEditingTransactionName(nextTransaction.description);
-      setEditingTransactionAmount(String(nextTransaction.amount));
-      setEditingTransactionDate(toInputDate(nextTransaction.occurredAt));
-      setEditingTransactionCategoryId(nextTransaction.categoryId ?? '');
-      setEditingTransactionAccountId(nextTransaction.accountId ?? '');
-      setEditingTransactionTagsInput(tagsToInput(nextTransaction.tags));
-    },
-    [],
-  );
+  function prepareTransactionEdit(nextTransaction: EditableFinanceTransaction) {
+    setEditingTransactionName(nextTransaction.description);
+    setEditingTransactionAmount(String(nextTransaction.amount));
+    setEditingTransactionDate(toInputDate(nextTransaction.occurredAt));
+    setEditingTransactionCategoryId(nextTransaction.categoryId ?? '');
+    setEditingTransactionAccountId(nextTransaction.accountId ?? '');
+    setEditingTransactionTagsInput(tagsToInput(nextTransaction.tags));
+  }
 
-  useEffect(() => {
-    if (!transaction) return;
-    prepareTransactionEdit(transaction);
-  }, [prepareTransactionEdit, transaction]);
+  useWhenChanged([transaction], () => {
+    if (transaction) prepareTransactionEdit(transaction);
+  });
 
   function submitTransactionUpdate(
     nextTransaction: EditableFinanceTransaction,

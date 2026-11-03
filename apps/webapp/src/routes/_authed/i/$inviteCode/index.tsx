@@ -6,7 +6,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
 import { Button } from '#/components/ui/button';
 import { useUsernameRequirement } from '#/contexts/username-requirement/use-username-requirement';
@@ -31,32 +31,21 @@ function RouteComponent() {
   const queryClient = useQueryClient();
   const previewQuery = useInvitePreviewQuery(inviteCode);
   const acceptMutation = useAcceptInvite(inviteCode);
-  const [selection, setSelection] = useState<Selection>('new');
+  const [selectionChoice, setSelection] = useState<Selection>('new');
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const preview = previewQuery.data;
   const group = preview?.group ?? null;
   const unregisteredMembers = preview?.unregisteredMembers ?? [];
   const alreadyMember = preview?.alreadyMember ?? false;
+  const selection: Selection = unregisteredMembers.some(
+    (member) => member.id === selectionChoice,
+  )
+    ? selectionChoice
+    : 'new';
   const selectedMember = unregisteredMembers.find(
     (member) => member.id === selection,
   );
-
-  useEffect(() => {
-    if (!preview) return;
-
-    if (unregisteredMembers.length > 0) {
-      setSelection((current) =>
-        current === 'new' ||
-        unregisteredMembers.some((member) => member.id === current)
-          ? current
-          : 'new',
-      );
-      return;
-    }
-
-    setSelection('new');
-  }, [preview, unregisteredMembers]);
 
   const goToGroup = async (groupType: string, groupId: string) => {
     await queryClient.invalidateQueries({ queryKey: ['groups-list'] });

@@ -15,6 +15,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { getBottomAppBarMessages } from '#/components/bottom-app-bar.messages';
 import { useAuth } from '#/contexts/auth/use-auth';
+import { useWhenChanged } from '#/hooks/use-when-changed';
 import { cn } from '#/lib/utils';
 export type BottomAppBarIconName =
   | 'compass'
@@ -151,9 +152,12 @@ export function BottomAppBar() {
     };
   }, []);
 
+  useWhenChanged([activeIndex], () => {
+    if (activeIndex >= 0) setIsMinimized(false);
+  });
+
   useEffect(() => {
     if (activeIndex < 0) return;
-    setIsMinimized(false);
     ignoreNextScroll.current = true;
   }, [activeIndex]);
 

@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog';
+import { useWhenChanged } from '#/hooks/use-when-changed';
 import { extractInviteCodeFromQrValue } from '#/lib/invite-code';
 import { getProfileMessages } from '#/routes/_authed/profile/-messages';
 
@@ -34,6 +35,11 @@ export function QrScannerDialog({
   const [status, setStatus] = useState<ScannerStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  useWhenChanged([open], () => {
+    setStatus(open ? 'starting' : 'idle');
+    setErrorMessage(null);
+  });
+
   const stopScanner = useCallback(async () => {
     const scanner = scannerRef.current;
 
@@ -58,15 +64,11 @@ export function QrScannerDialog({
   useEffect(() => {
     if (!open) {
       resolvedRef.current = false;
-      setStatus('idle');
-      setErrorMessage(null);
       void stopScanner();
       return;
     }
 
     let active = true;
-    setStatus('starting');
-    setErrorMessage(null);
 
     void (async () => {
       try {

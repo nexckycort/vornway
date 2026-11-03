@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ApiRequest } from '@vornway/api-client';
-import { useEffect, useMemo, useState } from 'react';
+import { type SetStateAction, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { api, withErrorMessage } from '#/api/client';
 import { m } from '#/paraglide/messages.js';
@@ -81,55 +81,47 @@ function uniqueParticipantOptions(
   return Array.from(participants.values());
 }
 
+function settlementDefaults(participantOptions: SettlementParticipantOption[]) {
+  if (participantOptions.length < 2) return { from: '', to: '', amount: '' };
+
+  const to =
+    participantOptions.find((participant) => participant.isPayer)?.id ??
+    participantOptions[0]?.id ??
+    '';
+  const from =
+    participantOptions.find(
+      (participant) => participant.id !== to && participant.share > 0,
+    )?.id ??
+    participantOptions.find((participant) => participant.id !== to)?.id ??
+    '';
+  const share =
+    participantOptions.find((participant) => participant.id === from)?.share ??
+    0;
+
+  return { from, to, amount: formatEditableAmount(share) };
+}
+
 export function useSettleQuickSplitDebt(input: SettleQuickSplitExpenseInput) {
   const queryClient = useQueryClient();
   const participantOptions = useMemo(
     () => uniqueParticipantOptions(input.expense),
     [input.expense],
   );
-  const [fromParticipantId, setFromParticipantId] = useState('');
-  const [toParticipantId, setToParticipantId] = useState('');
-  const [amountInput, setAmountInput] = useState('');
-
-  useEffect(() => {
-    if (participantOptions.length < 2) {
-      setFromParticipantId('');
-      setToParticipantId('');
-      setAmountInput('');
-      return;
-    }
-
-    const defaultTo =
-      participantOptions.find((participant) => participant.isPayer)?.id ??
-      participantOptions[0]?.id ??
-      '';
-    const defaultFrom =
-      participantOptions.find(
-        (participant) => participant.id !== defaultTo && participant.share > 0,
-      )?.id ??
-      participantOptions.find((participant) => participant.id !== defaultTo)
-        ?.id ??
-      '';
-    const defaultAmount =
-      participantOptions.find((participant) => participant.id === defaultFrom)
-        ?.share ?? 0;
-
-    setFromParticipantId((current) =>
-      current &&
-      participantOptions.some((participant) => participant.id === current)
-        ? current
-        : defaultFrom,
+  const defaults = settlementDefaults(participantOptions);
+  const [fromChoice, setFromParticipantId] = useState('');
+  const [toChoice, setToParticipantId] = useState('');
+  const [amountChoice, setAmountChoice] = useState<string | null>(null);
+  const isKnown = (id: string) =>
+    participantOptions.some((participant) => participant.id === id);
+  const fromParticipantId =
+    fromChoice && isKnown(fromChoice) ? fromChoice : defaults.from;
+  const toParticipantId =
+    toChoice && isKnown(toChoice) ? toChoice : defaults.to;
+  const amountInput = amountChoice ?? defaults.amount;
+  const setAmountInput = (next: SetStateAction<string>) =>
+    setAmountChoice((current) =>
+      typeof next === 'function' ? next(current ?? defaults.amount) : next,
     );
-    setToParticipantId((current) =>
-      current &&
-      participantOptions.some((participant) => participant.id === current)
-        ? current
-        : defaultTo,
-    );
-    setAmountInput((current) =>
-      current.trim().length > 0 ? current : formatEditableAmount(defaultAmount),
-    );
-  }, [participantOptions]);
 
   const fromParticipant =
     participantOptions.find(

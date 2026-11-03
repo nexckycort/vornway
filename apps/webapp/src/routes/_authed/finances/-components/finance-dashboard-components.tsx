@@ -1,6 +1,6 @@
 import { UserGroupIcon, Wallet02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { type RefObject, useState } from 'react';
+import { type Ref, useState } from 'react';
 import { formatCurrency, formatShortDate } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
 import {
@@ -198,7 +198,7 @@ export function FigmaHistory({
   onOpenDebtPayment,
 }: {
   movements: FinanceMovement[];
-  loadMoreRef: RefObject<HTMLDivElement | null>;
+  loadMoreRef: Ref<HTMLDivElement>;
   isLoading: boolean;
   isFetchingNextPage: boolean;
   onOpenTransaction: (transaction: FinanceMovementTransaction) => void;

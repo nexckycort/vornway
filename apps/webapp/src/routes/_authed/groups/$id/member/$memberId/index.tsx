@@ -3,6 +3,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { MobilePageLayout } from '#/components/mobile-page-layout';
+import { useLoadMore } from '#/hooks/use-load-more';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { m } from '#/paraglide/messages.js';
 import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
@@ -18,7 +19,6 @@ import {
   getExpenseEmoji,
   getInitials,
 } from '../../-components/group-detail.utils';
-import { useLoadMoreSentinel } from '../../-hooks/use-load-more-sentinel';
 export const Route = createFileRoute('/_authed/groups/$id/member/$memberId/')({
   validateSearch: (search: Record<string, unknown>) => ({
     categoryId:
@@ -65,7 +65,7 @@ function RouteComponent() {
     startDate,
     endDate,
   });
-  const loadMoreRef = useLoadMoreSentinel(expensesQuery);
+  const loadMoreRef = useLoadMore(expensesQuery);
 
   const member = groupQuery.data?.members.find((item) => item.id === memberId);
   const expenses = useMemo(

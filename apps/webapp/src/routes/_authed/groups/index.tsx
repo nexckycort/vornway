@@ -5,13 +5,8 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { createFileRoute, Link, useLocation } from '@tanstack/react-router';
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
+import { useLoadMore } from '#/hooks/use-load-more';
 import {
   getGroupFlowEntryState,
   getLocationHref,
@@ -42,7 +37,6 @@ export const Route = createFileRoute('/_authed/groups/')({
 function RouteComponent() {
   const t = getGroupsMessages();
   const location = useLocation();
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<GroupListFilter>('all');
   const cachedGroups = useSyncExternalStore(
@@ -59,6 +53,7 @@ function RouteComponent() {
     search,
     filter,
   });
+  const loadMoreRef = useLoadMore(groupsQuery);
 
   const serverGroups = useMemo(
     () => groupsQuery.data?.pages.flatMap((page) => page.data) ?? [],
@@ -69,28 +64,6 @@ function RouteComponent() {
     if (groupsQuery.data) return serverGroups;
     return filterCachedGroups(cachedGroups, search, filter);
   }, [cachedGroups, filter, groupsQuery.data, search, serverGroups]);
-
-  useEffect(() => {
-    const node = loadMoreRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0];
-        if (!first?.isIntersecting) return;
-        if (!groupsQuery.hasNextPage || groupsQuery.isFetching) return;
-        void groupsQuery.fetchNextPage();
-      },
-      {
-        root: null,
-        rootMargin: '240px 0px',
-        threshold: 0,
-      },
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [groupsQuery]);
 
   const groupTrips = useMemo(
     () =>

@@ -11,9 +11,10 @@ import {
   useRouterState,
 } from '@tanstack/react-router';
 import type { Cursor } from '@vornway/api-client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { api, failWithMessage } from '#/api/client';
+import { useLoadMore } from '#/hooks/use-load-more';
 import { m } from '#/paraglide/messages.js';
 import { FinanceBudgetsView } from './-components/finance-budgets-view';
 import { FinanceCategoriesView } from './-components/finance-categories-view';
@@ -68,7 +69,6 @@ function FinancesDashboard() {
   const navigate = useNavigate({ from: Route.fullPath });
   const { view, month } = Route.useSearch();
   const timeZone = getBrowserTimeZone();
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>(
     'expense',
@@ -124,46 +124,7 @@ function FinancesDashboard() {
     summary?.accounts.filter(
       (account) => account.status !== 'CLOSED' && account.currency === currency,
     ) ?? [];
-  const hasNextMovementsPageRef = useRef(movementsQuery.hasNextPage);
-  const isFetchingMovementsRef = useRef(movementsQuery.isFetching);
-  const fetchNextMovementsPageRef = useRef(movementsQuery.fetchNextPage);
-
-  useEffect(() => {
-    hasNextMovementsPageRef.current = movementsQuery.hasNextPage;
-    isFetchingMovementsRef.current = movementsQuery.isFetching;
-    fetchNextMovementsPageRef.current = movementsQuery.fetchNextPage;
-  }, [
-    movementsQuery.hasNextPage,
-    movementsQuery.isFetching,
-    movementsQuery.fetchNextPage,
-  ]);
-
-  useEffect(() => {
-    const node = loadMoreRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0];
-        if (!first?.isIntersecting) return;
-        if (
-          !hasNextMovementsPageRef.current ||
-          isFetchingMovementsRef.current
-        ) {
-          return;
-        }
-        void fetchNextMovementsPageRef.current();
-      },
-      {
-        root: null,
-        rootMargin: '240px 0px',
-        threshold: 0,
-      },
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
+  const loadMoreRef = useLoadMore(movementsQuery);
   const transactionCategories = useMemo(
     () =>
       categories.filter((category) =>

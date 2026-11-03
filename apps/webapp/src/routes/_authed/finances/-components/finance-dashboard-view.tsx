@@ -1,5 +1,5 @@
 import { type NavigateOptions, useNavigate } from '@tanstack/react-router';
-import type { RefObject } from 'react';
+import type { Ref } from 'react';
 import { getGroupFlowEntryState } from '#/lib/group-flow-navigation';
 import {
   FigmaCategoriesSlide,
@@ -36,7 +36,7 @@ export function FinanceDashboardView({
   categories: FinanceCategory[];
   categoryTotals: Record<string, number>;
   movements: FinanceMovement[];
-  loadMoreRef: RefObject<HTMLDivElement | null>;
+  loadMoreRef: Ref<HTMLDivElement>;
   isMovementsLoading: boolean;
   isFetchingNextMovementsPage: boolean;
   onGoTo: (view: FinanceView, transactionId?: string) => void;

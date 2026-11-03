@@ -9,6 +9,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer';
+import { useLoadMore } from '#/hooks/use-load-more';
 import { usePinnedExpenseIds } from '#/lib/expense-pins';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { shareOrCopy } from '#/lib/native-share';
@@ -32,7 +33,6 @@ import { formatMoney } from './-components/group-detail.utils';
 import { GroupExpensesTimeline } from './-components/group-expenses-timeline';
 import { GroupParticipantsStrip } from './-components/group-participants-strip';
 import { useInviteQrCode } from './-hooks/use-invite-qr-code';
-import { useLoadMoreSentinel } from './-hooks/use-load-more-sentinel';
 import { getGroupDetailMessages } from './-messages';
 import type { ExpenseItem, GroupSummary } from './-types/group-detail.types';
 export const Route = createFileRoute('/_authed/groups/$id/')({
@@ -61,7 +61,7 @@ function RouteComponent() {
 
   const groupQuery = useGroupSummaryQuery(id);
   const expensesQuery = useGroupExpensesInfiniteQuery(id);
-  const loadMoreRef = useLoadMoreSentinel(expensesQuery);
+  const loadMoreRef = useLoadMore(expensesQuery);
   const getPendingExpensesSnapshot = useCallback(
     () => getPendingExpensesForGroup(id),
     [id],

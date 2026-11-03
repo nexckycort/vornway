@@ -11,6 +11,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu';
+import { useLoadMore } from '#/hooks/use-load-more';
 import { useGroupFlowNavigation } from '#/lib/group-flow-navigation';
 import { formatLongDate } from '#/lib/i18n';
 import { getGroupDetailMessages } from '#/routes/_authed/groups/$id/-messages';
@@ -24,7 +25,6 @@ import {
 } from '#/routes/_authed/groups/-hooks/use-group-detail-query';
 import { useGroupMemberExpensesByMembersQuery } from '#/routes/_authed/groups/-hooks/use-group-member-expenses-query';
 import { useCategoryDateFilter } from '../-hooks/use-category-date-filter';
-import { useLoadMoreObserver } from '../-hooks/use-load-more-observer';
 import type { ReportDateFilterMode } from '../-lib/date-filter';
 import { CategoryDateDrawers } from './-components/category-date-drawers';
 import { CategoryDetailSkeleton } from './-components/category-detail-skeleton';
@@ -320,7 +320,7 @@ function RouteComponent() {
   const activeHistoryFetchingNextPage = isParticipantFilterActive
     ? false
     : groupExpensesQuery.isFetchingNextPage;
-  const loadMoreRef = useLoadMoreObserver({
+  const loadMoreRef = useLoadMore({
     hasNextPage: isParticipantFilterActive
       ? false
       : groupExpensesQuery.hasNextPage,

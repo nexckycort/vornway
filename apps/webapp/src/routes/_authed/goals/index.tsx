@@ -5,7 +5,8 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useLoadMore } from '#/hooks/use-load-more';
 import { getGoalsMessages } from '#/routes/_authed/goals/-messages';
 import { GoalCard } from './-components/goal-card';
 import { GoalsSkeleton } from './-components/goals-skeleton';
@@ -20,36 +21,14 @@ function RouteComponent() {
   const isProduction = import.meta.env.PROD;
   const navigate = useNavigate();
   const router = useRouter();
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
   const goalsQuery = useGoalsInfiniteQuery(search);
+  const loadMoreRef = useLoadMore(goalsQuery);
 
   const goals = useMemo(
     () => goalsQuery.data?.pages.flatMap((page) => page.data) ?? [],
     [goalsQuery.data],
   );
-
-  useEffect(() => {
-    const node = loadMoreRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0];
-        if (!first?.isIntersecting) return;
-        if (!goalsQuery.hasNextPage || goalsQuery.isFetching) return;
-        void goalsQuery.fetchNextPage();
-      },
-      {
-        root: null,
-        rootMargin: '240px 0px',
-        threshold: 0,
-      },
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [goalsQuery]);
 
   return (
     <main className="min-h-screen bg-[#efefef] text-foreground">

@@ -1,6 +1,6 @@
 import { ChevronRightIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import type { RefObject } from 'react';
+import type { Ref } from 'react';
 import { formatCurrency, formatLongDate } from '#/lib/i18n';
 import { CategoryIcon } from '#/routes/_authed/groups/$id/-components/category-icon';
 import { getExpenseEmoji } from '#/routes/_authed/groups/$id/-components/group-detail.utils';
@@ -17,7 +17,7 @@ type CategoryExpenseHistoryProps = {
   filteredExpenses: ExpenseItem[];
   groupedExpenses: { label: string; items: ExpenseItem[] }[];
   categoryColor: string;
-  loadMoreRef: RefObject<HTMLDivElement | null>;
+  loadMoreRef: Ref<HTMLDivElement>;
   onOpenExpense: (expenseId: string) => void;
 };
 

@@ -12,7 +12,7 @@ import {
   useNavigate,
   useRouterState,
 } from '@tanstack/react-router';
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar';
 import { Button } from '#/components/ui/button';
 import {
@@ -22,6 +22,7 @@ import {
 } from '#/components/ui/input-group';
 import { Skeleton } from '#/components/ui/skeleton';
 import { useAuth } from '#/contexts/auth/use-auth';
+import { useLoadMore } from '#/hooks/use-load-more';
 import { formatCurrency } from '#/lib/i18n';
 import { cn } from '#/lib/utils';
 import { getFriendsExpensesMessages } from './-friends-messages';
@@ -54,7 +55,6 @@ function FriendsExpensesPage() {
   const t = getFriendsExpensesMessages();
   const { recentFriends, isLoading: friendsLoading } = useExpenseEntryData();
   const expensesQuery = useQuickSplitExpensesInfiniteQuery();
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<ExpenseFilter>('all');
   const deferredSearch = useDeferredValue(search.trim().toLocaleLowerCase());
@@ -98,23 +98,7 @@ function FriendsExpensesPage() {
     [deferredSearch, expenses, filter],
   );
 
-  const { fetchNextPage, hasNextPage, isFetching } = expensesQuery;
-
-  useEffect(() => {
-    const node = loadMoreRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting || !hasNextPage || isFetching) return;
-        void fetchNextPage();
-      },
-      { rootMargin: '240px 0px' },
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetching]);
+  const loadMoreRef = useLoadMore(expensesQuery);
 
   return (
     <main className="min-h-dvh bg-[#fafafa] text-[#1e1e1e]">

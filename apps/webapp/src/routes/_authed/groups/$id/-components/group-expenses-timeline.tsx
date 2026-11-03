@@ -1,4 +1,4 @@
-import { type RefObject, useMemo } from 'react';
+import { type Ref, useMemo } from 'react';
 import { Skeleton } from '#/components/ui/skeleton';
 import { getGroupDetailMessages } from '../-messages';
 import type { ExpenseItem } from '../-types/group-detail.types';
@@ -12,7 +12,7 @@ type GroupExpensesTimelineProps = {
   error: unknown;
   isFetchingNextPage: boolean;
   pinnedExpenseIds: string[];
-  loadMoreRef: RefObject<HTMLDivElement | null>;
+  loadMoreRef: Ref<HTMLDivElement>;
   onOpenExpense: (expenseId: string) => void;
   onOpenOptions: (expense: ExpenseItem) => void;
   onDeleteExpense: (expense: ExpenseItem) => void;

@@ -7,6 +7,7 @@ import type { ExpenseGroup, ExpenseRecord } from '../-lib/initial-values';
 import { ExpenseAdvancedDetailsDrawer } from './expense-advanced-details-drawer';
 import { ExpenseAmountHeader } from './expense-amount-header';
 import { ExpenseCategoryDrawer } from './expense-category-drawer';
+import { ExpenseCreateCategoryDialog } from './expense-create-category-dialog';
 import { ExpenseCurrencyDrawer } from './expense-currency-drawer';
 import { ExpenseDetailsFields } from './expense-details-fields';
 import { ExpenseLineItemsDrawer } from './expense-line-items-drawer';
@@ -130,6 +131,7 @@ export function AddExpenseForm({
       <ExpenseLineItemsDrawer form={form} />
       <ExpenseAdvancedDetailsDrawer form={form} />
       <ExpenseCategoryDrawer form={form} />
+      <ExpenseCreateCategoryDialog form={form} />
       <ExpenseCurrencyDrawer form={form} />
     </MobilePageLayout>
   );

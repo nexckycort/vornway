@@ -21,7 +21,8 @@ export function useExpenseCategoryCreation({
   groupMessages,
 }: UseExpenseCategoryCreationOptions) {
   const [showCategoryDrawer, setShowCategoryDrawer] = useState(false);
-  const [showCreateCategoryForm, setShowCreateCategoryForm] = useState(false);
+  const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
+    useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryIcon, setNewCategoryIcon] = useState(
     categoryIconOptions[1].id,
@@ -45,8 +46,9 @@ export function useExpenseCategoryCreation({
     return () => window.cancelAnimationFrame(frame);
   }, [isCustomCategoryIcon]);
 
-  const openCreateCategoryForm = () => {
-    setShowCreateCategoryForm(true);
+  const openCreateCategoryDialog = () => {
+    setShowCategoryDrawer(false);
+    setShowCreateCategoryDialog(true);
   };
 
   const handleCreateCategory = async () => {
@@ -65,7 +67,7 @@ export function useExpenseCategoryCreation({
       setNewCategoryIcon(categoryIconOptions[1].id);
       setNewCategoryCustomIcon('');
       setNewCategoryColor(categoryColorOptions[0]);
-      setShowCreateCategoryForm(false);
+      setShowCreateCategoryDialog(false);
       setShowCategoryDrawer(false);
     } catch (creationError) {
       setError(
@@ -85,15 +87,15 @@ export function useExpenseCategoryCreation({
     newCategoryCustomIcon,
     newCategoryIcon,
     newCategoryName,
-    openCreateCategoryForm,
+    openCreateCategoryDialog,
     setNewCategoryColor,
     setNewCategoryCustomIcon,
     setNewCategoryIcon,
     setNewCategoryName,
     setShowCategoryDrawer,
-    setShowCreateCategoryForm,
+    setShowCreateCategoryDialog,
     showCategoryDrawer,
-    showCreateCategoryForm,
+    showCreateCategoryDialog,
     trimmedNewCategoryName,
   };
 }

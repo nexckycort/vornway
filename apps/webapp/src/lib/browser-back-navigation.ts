@@ -1,3 +1,5 @@
+import { isOverlayHistoryTraversal } from '#/lib/overlay-history';
+
 export const MAIN_VIEW_PATHS = new Set([
   '/',
   '/expenses/friends',
@@ -32,7 +34,7 @@ export function installBrowserBackNavigation() {
   let options: BrowserBackNavigationOptions | null = null;
 
   const handlePopState = (event: PopStateEvent) => {
-    if (!options || hasOpenOverlay()) return;
+    if (!options || hasOpenOverlay() || isOverlayHistoryTraversal()) return;
 
     const isGroupCreationPath = /^\/groups\/new(?:\/|$)/.test(currentPathname);
     const creationSource = new URLSearchParams(currentSearch).get('from');

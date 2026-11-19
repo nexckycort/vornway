@@ -1,86 +1,14 @@
 'use client';
 
 import type * as React from 'react';
-import { useEffect, useRef } from 'react';
 import { Drawer as DrawerPrimitive } from 'vaul';
+import { useOverlayHistory } from '#/lib/overlay-history';
 import { cn } from '#/lib/utils';
 
 function Drawer({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
-  const lastOpen = useRef(Boolean(props.open));
-  const openedAtLocationKey = useRef<string | null>(null);
-  const didPushHistory = useRef(false);
-  const closingFromPopState = useRef(false);
-  const closeBackTimeout = useRef<number | null>(null);
-
-  const getLocationKey = () =>
-    `${window.location.pathname}${window.location.search}${window.location.hash}`;
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: overlay history is managed manually
-  useEffect(() => {
-    if (!lastOpen.current && props.open) {
-      if (closeBackTimeout.current !== null) {
-        window.clearTimeout(closeBackTimeout.current);
-        closeBackTimeout.current = null;
-      }
-
-      window.history.pushState(
-        {
-          ...window.history.state,
-          drawer: true,
-        },
-        '',
-      );
-      openedAtLocationKey.current = getLocationKey();
-      didPushHistory.current = true;
-      closingFromPopState.current = false;
-    }
-
-    if (lastOpen.current && !props.open) {
-      if (didPushHistory.current && !closingFromPopState.current) {
-        const openedLocationKey = openedAtLocationKey.current;
-
-        closeBackTimeout.current = window.setTimeout(() => {
-          const sameLocation = openedLocationKey === getLocationKey();
-
-          if (!props.open && sameLocation) {
-            window.history.back();
-          }
-
-          closeBackTimeout.current = null;
-        }, 0);
-      }
-
-      openedAtLocationKey.current = null;
-      didPushHistory.current = false;
-      closingFromPopState.current = false;
-    }
-
-    lastOpen.current = Boolean(props.open);
-  }, [props.open]);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      if (lastOpen.current) {
-        closingFromPopState.current = true;
-        props.onOpenChange?.(false);
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [props.onOpenChange]);
-
-  useEffect(() => {
-    return () => {
-      if (closeBackTimeout.current !== null) {
-        window.clearTimeout(closeBackTimeout.current);
-      }
-    };
-  }, []);
+  useOverlayHistory(Boolean(props.open), () => props.onOpenChange?.(false));
 
   return <DrawerPrimitive.Root data-slot="drawer" {...props} />;
 }

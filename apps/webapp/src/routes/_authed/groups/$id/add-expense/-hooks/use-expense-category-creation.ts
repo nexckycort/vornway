@@ -21,9 +21,7 @@ export function useExpenseCategoryCreation({
   groupMessages,
 }: UseExpenseCategoryCreationOptions) {
   const [showCategoryDrawer, setShowCategoryDrawer] = useState(false);
-  const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
-    useState(false);
-  const pendingCreateCategoryDialogRef = useRef(false);
+  const [showCreateCategoryForm, setShowCreateCategoryForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryIcon, setNewCategoryIcon] = useState(
     categoryIconOptions[1].id,
@@ -47,15 +45,8 @@ export function useExpenseCategoryCreation({
     return () => window.cancelAnimationFrame(frame);
   }, [isCustomCategoryIcon]);
 
-  const openCreateCategoryDialog = () => {
-    pendingCreateCategoryDialogRef.current = true;
-    setShowCategoryDrawer(false);
-  };
-
-  const handleCategoryDrawerAnimationEnd = (open: boolean) => {
-    if (open || !pendingCreateCategoryDialogRef.current) return;
-    pendingCreateCategoryDialogRef.current = false;
-    setShowCreateCategoryDialog(true);
+  const openCreateCategoryForm = () => {
+    setShowCreateCategoryForm(true);
   };
 
   const handleCreateCategory = async () => {
@@ -74,7 +65,7 @@ export function useExpenseCategoryCreation({
       setNewCategoryIcon(categoryIconOptions[1].id);
       setNewCategoryCustomIcon('');
       setNewCategoryColor(categoryColorOptions[0]);
-      setShowCreateCategoryDialog(false);
+      setShowCreateCategoryForm(false);
       setShowCategoryDrawer(false);
     } catch (creationError) {
       setError(
@@ -89,22 +80,20 @@ export function useExpenseCategoryCreation({
     customCategoryIcon,
     customCategoryIconInputRef,
     handleCreateCategory,
-    handleCategoryDrawerAnimationEnd,
     isCustomCategoryIcon,
     newCategoryColor,
     newCategoryCustomIcon,
     newCategoryIcon,
     newCategoryName,
-    openCreateCategoryDialog,
-    pendingCreateCategoryDialogRef,
+    openCreateCategoryForm,
     setNewCategoryColor,
     setNewCategoryCustomIcon,
     setNewCategoryIcon,
     setNewCategoryName,
     setShowCategoryDrawer,
-    setShowCreateCategoryDialog,
+    setShowCreateCategoryForm,
     showCategoryDrawer,
-    showCreateCategoryDialog,
+    showCreateCategoryForm,
     trimmedNewCategoryName,
   };
 }

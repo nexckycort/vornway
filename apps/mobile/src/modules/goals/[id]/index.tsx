@@ -244,52 +244,20 @@ export default function GoalDetailScreen() {
               ))}
               {goal.members.map((member) => (
                 <View key={member.id} style={styles.memberRow}>
-                  <View style={styles.memberInfo}>
-                    <Text style={styles.copy}>{member.name}</Text>
-                    <Text style={styles.memberMeta}>
-                      {formatGoalAmount(
-                        goal.memberStats.find(
-                          (item) => item.memberId === member.id,
-                        )?.totalAmount ?? 0,
-                        goal.currency,
-                      )}
-                      {goal.memberStats.find(
+                  <Text style={styles.copy}>{member.name}</Text>
+                  <Text style={styles.memberMeta}>
+                    {formatGoalAmount(
+                      goal.memberStats.find(
                         (item) => item.memberId === member.id,
-                      )?.contributedThisMonth
-                        ? ' · Este mes'
-                        : ''}
-                    </Text>
-                  </View>
-                  {isAdmin && member.role !== 'admin' ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={mutations.removeMember.isPending}
-                      onPress={() =>
-                        Alert.alert(
-                          'Eliminar miembro',
-                          `¿Quieres eliminar a ${member.name} del espacio? Sus aportes y gastos impiden eliminarlo.`,
-                          [
-                            { text: 'Cancelar', style: 'cancel' },
-                            {
-                              text: 'Eliminar',
-                              style: 'destructive',
-                              onPress: () =>
-                                mutations.removeMember.mutate(member.id, {
-                                  onError: (error) =>
-                                    Alert.alert(
-                                      'No se pudo eliminar el miembro',
-                                      error.message,
-                                    ),
-                                }),
-                            },
-                          ],
-                        )
-                      }
-                    >
-                      <Text style={styles.delete}>Eliminar</Text>
-                    </Button>
-                  ) : null}
+                      )?.totalAmount ?? 0,
+                      goal.currency,
+                    )}
+                    {goal.memberStats.find(
+                      (item) => item.memberId === member.id,
+                    )?.contributedThisMonth
+                      ? ' · Este mes'
+                      : ''}
+                  </Text>
                 </View>
               ))}
               <Button
@@ -533,7 +501,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 9,
   },
-  memberInfo: { flex: 1, gap: 3 },
   memberMeta: { color: '#94A3B8', fontSize: 12 },
   timeline: { gap: 10, paddingTop: 8 },
   timelineItem: {

@@ -24,18 +24,6 @@ export function useGoalMutations(id: string, groupId: string | undefined) {
       );
     },
   });
-  const removeMember = useMutation({
-    onSuccess: invalidate,
-    mutationFn: (memberId: string) => {
-      if (!groupId) throw new Error('group_missing');
-      return withErrorMessage(
-        api.groups.removeMember.request({
-          params: { id: groupId, memberId },
-        }),
-        'member_remove_failed',
-      );
-    },
-  });
   const update = useMutation({
     onSuccess: invalidate,
     mutationFn: (payload: ApiPayload<'goals', 'update'>) =>
@@ -63,5 +51,5 @@ export function useGoalMutations(id: string, groupId: string | undefined) {
       ),
   });
 
-  return { addMember, removeMember, update, contribution, deleteContribution };
+  return { addMember, update, contribution, deleteContribution };
 }

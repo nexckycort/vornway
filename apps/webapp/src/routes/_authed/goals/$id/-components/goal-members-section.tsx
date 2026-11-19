@@ -1,12 +1,27 @@
-import { Award01Icon, UserAdd01Icon } from '@hugeicons/core-free-icons';
+import {
+  Award01Icon,
+  Delete02Icon,
+  UserAdd01Icon,
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { type RefObject, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '#/components/ui/button';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer';
 import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
-import { useAddMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
+import {
+  useAddMemberMutation,
+  useRemoveMemberMutation,
+} from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
 import type { GoalDetailData } from '../../-hooks/use-goal-detail-query';
 import type { rankMembers } from '../../-lib/goal-detail';
@@ -27,8 +42,12 @@ export function GoalMembersSection({
   const t = getGoalsMessages();
   const queryClient = useQueryClient();
   const addMemberMutation = useAddMemberMutation(goal.group.id);
+  const removeMemberMutation = useRemoveMemberMutation(goal.group.id);
   const [participantInput, setParticipantInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [memberToRemove, setMemberToRemove] = useState<
+    GoalDetailData['members'][number] | null
+  >(null);
   const searchQuery = useUserSearchQuery(debouncedSearch);
   const searchResults = searchQuery.data?.data ?? [];
   const currentUserIds = useMemo(
@@ -76,6 +95,25 @@ export function GoalMembersSection({
         error instanceof Error
           ? error.message
           : m['system.addGoalParticipantFailed'](),
+      );
+    }
+  };
+
+  const removeMember = async () => {
+    if (!memberToRemove || removeMemberMutation.isPending) return;
+
+    try {
+      await removeMemberMutation.mutateAsync({ memberId: memberToRemove.id });
+      await queryClient.invalidateQueries({
+        queryKey: ['goal-detail', goal.id],
+      });
+      setMemberToRemove(null);
+      toast.success(m['groups.participants.removeSuccess']());
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : m['groups.detail.removeMemberFailed'](),
       );
     }
   };
@@ -183,6 +221,17 @@ export function GoalMembersSection({
                   className="size-4 text-amber-500"
                 />
               ) : null}
+              {isAdmin && member.role !== 'admin' && amount === 0 ? (
+                <button
+                  type="button"
+                  disabled={removeMemberMutation.isPending}
+                  onClick={() => setMemberToRemove(member)}
+                  aria-label={m['groups.detail.removeMemberTitle']()}
+                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-rose-500 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <HugeiconsIcon icon={Delete02Icon} className="size-4" />
+                </button>
+              ) : null}
             </div>
             <div className="mt-4 flex items-end justify-between">
               <div>
@@ -206,6 +255,45 @@ export function GoalMembersSection({
           </article>
         ))}
       </div>
+
+      <Drawer
+        open={Boolean(memberToRemove)}
+        onOpenChange={(open) => !open && setMemberToRemove(null)}
+      >
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{m['groups.detail.removeMemberTitle']()}</DrawerTitle>
+            <DrawerDescription>
+              {memberToRemove
+                ? m['groups.detail.removeMemberConfirm']({
+                    name: memberToRemove.name,
+                  })
+                : null}
+            </DrawerDescription>
+          </DrawerHeader>
+          <DrawerFooter>
+            <Button
+              type="button"
+              variant="destructive"
+              className="h-12 rounded-full"
+              disabled={removeMemberMutation.isPending}
+              onClick={() => void removeMember()}
+            >
+              {removeMemberMutation.isPending
+                ? m['groups.detail.deleting']()
+                : m['groups.detail.yesDeleteMember']()}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 rounded-full"
+              onClick={() => setMemberToRemove(null)}
+            >
+              {t.common.cancel}
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </section>
   );
 }

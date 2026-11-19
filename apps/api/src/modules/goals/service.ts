@@ -2,8 +2,12 @@ import {
   type CreateGoalPayload,
   type GoalsQuery,
   type UpdateGoalPayload,
+  GoalAccessDenied,
   GoalNameRequired,
   GoalNotFound,
+  GoalParticipantHasContributions,
+  GoalParticipantNotFound,
+  GoalParticipantRemovalForbidden,
 } from '@vornway/contracts/modules/goals/contract';
 import { Context, Crypto, DateTime, Effect, Layer } from 'effect';
 import { Database, DatabaseError } from '#/infrastructure/database/database';
@@ -215,7 +219,73 @@ const make = Effect.gen(function* () {
     });
   });
 
-  return { list, get, create, update };
+  const removeMember = Effect.fn('Goals.removeMember')(function* (
+    userId: string,
+    goalId: string,
+    memberId: string,
+  ) {
+    const goal = yield* database.use((db) =>
+      db.goal.findFirst({
+        where: adminGoalWhere(userId, goalId),
+        select: {
+          id: true,
+          groupId: true,
+          title: true,
+          group: {
+            select: {
+              GroupMember: {
+                where: { userId, role: 'admin' },
+                select: { name: true },
+                take: 1,
+              },
+            },
+          },
+        },
+      }),
+    );
+    if (!goal) return yield* new GoalNotFound();
+    const actor = goal.group.GroupMember[0];
+    if (!actor) return yield* new GoalAccessDenied();
+
+    const member = yield* database.use((db) =>
+      db.groupMember.findFirst({
+        where: { id: memberId, groupId: goal.groupId },
+        select: { id: true, name: true, role: true },
+      }),
+    );
+    if (!member) return yield* new GoalParticipantNotFound();
+    if (member.role === 'admin') {
+      return yield* new GoalParticipantRemovalForbidden();
+    }
+
+    const contributionCount = yield* database.use((db) =>
+      db.goalContribution.count({ where: { goalId: goal.id, memberId } }),
+    );
+    if (contributionCount > 0) {
+      return yield* new GoalParticipantHasContributions();
+    }
+
+    return yield* database.transaction(async (tx) => {
+      await tx.groupMember.delete({ where: { id: member.id } });
+      await tx.activityLog.create({
+        data: {
+          groupId: goal.groupId,
+          actorUserId: userId,
+          actorName: actor.name,
+          action: 'goal.member_removed',
+          targetName: goal.title,
+          details: {
+            goalId: goal.id,
+            memberId: member.id,
+            memberName: member.name,
+          },
+        },
+      });
+      return { id: member.id, name: member.name };
+    });
+  });
+
+  return { list, get, create, update, removeMember };
 });
 
 export class Goals extends Context.Service<

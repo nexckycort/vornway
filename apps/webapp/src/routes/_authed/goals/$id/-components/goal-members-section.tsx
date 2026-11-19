@@ -18,12 +18,10 @@ import {
 } from '#/components/ui/drawer';
 import { formatCurrency } from '#/lib/i18n';
 import { m } from '#/paraglide/messages.js';
-import {
-  useAddMemberMutation,
-  useRemoveMemberMutation,
-} from '#/routes/_authed/groups/-hooks/use-group-actions';
+import { useAddMemberMutation } from '#/routes/_authed/groups/-hooks/use-group-actions';
 import { useUserSearchQuery } from '#/routes/_authed/groups/-hooks/use-user-search-query';
 import type { GoalDetailData } from '../../-hooks/use-goal-detail-query';
+import { useRemoveGoalMemberMutation } from '../../-hooks/use-remove-goal-member';
 import type { rankMembers } from '../../-lib/goal-detail';
 import { getGoalsMessages } from '../../-messages';
 import { Avatar, SectionHeader } from './goal-detail-parts';
@@ -42,7 +40,7 @@ export function GoalMembersSection({
   const t = getGoalsMessages();
   const queryClient = useQueryClient();
   const addMemberMutation = useAddMemberMutation(goal.group.id);
-  const removeMemberMutation = useRemoveMemberMutation(goal.group.id);
+  const removeMemberMutation = useRemoveGoalMemberMutation(goal.id);
   const [participantInput, setParticipantInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [memberToRemove, setMemberToRemove] = useState<
@@ -103,10 +101,7 @@ export function GoalMembersSection({
     if (!memberToRemove || removeMemberMutation.isPending) return;
 
     try {
-      await removeMemberMutation.mutateAsync({ memberId: memberToRemove.id });
-      await queryClient.invalidateQueries({
-        queryKey: ['goal-detail', goal.id],
-      });
+      await removeMemberMutation.mutateAsync(memberToRemove.id);
       setMemberToRemove(null);
       toast.success(m['groups.participants.removeSuccess']());
     } catch (error) {

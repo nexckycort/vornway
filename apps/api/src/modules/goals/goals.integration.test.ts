@@ -62,6 +62,7 @@ describe('goals', () => {
         ['/api/goals/g1', json('GET')],
         ['/api/goals', json('POST', newGoal())],
         ['/api/goals/g1', json('PATCH', {})],
+        ['/api/goals/g1/members/m1', json('DELETE')],
         [
           '/api/goals/g1/contributions',
           json('POST', { memberId: 'm', amount: 1 }),
@@ -249,6 +250,95 @@ describe('goals', () => {
         [],
       );
       expect(rows).toEqual([{ count: 1 }]);
+    }),
+  );
+
+  testEffect('lets admins remove goal members without contributions', () =>
+    Effect.gen(function* () {
+      const { app, ana } = yield* setup;
+      const id = yield* createGoal(ana, {
+        participants: [{ name: 'Luis' }],
+      });
+      const member = (yield* getDetail(ana, id)).body.members.find(
+        (item) => item.name === 'Luis',
+      );
+
+      const response = yield* ana.device.delete(
+        `/api/goals/${id}/members/${member?.id}`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ id: member?.id, name: 'Luis' });
+      expect((yield* getDetail(ana, id)).body.members).toHaveLength(1);
+      expect(
+        yield* app.db.query('select id from group_member where id = $1', [
+          member?.id,
+        ]),
+      ).toEqual([]);
+      expect(
+        yield* app.db.query('select action from activity_log', []),
+      ).toContainEqual({ action: 'goal.member_removed' });
+    }),
+  );
+
+  testEffect('protects goal members with contributions from removal', () =>
+    Effect.gen(function* () {
+      const { app, ana } = yield* setup;
+      const id = yield* createGoal(ana, {
+        participants: [{ name: 'Luis' }],
+      });
+      const member = (yield* getDetail(ana, id)).body.members.find(
+        (item) => item.name === 'Luis',
+      );
+      yield* ana.device.post(`/api/goals/${id}/contributions`, {
+        memberId: member?.id,
+        amount: 100,
+      });
+
+      const response = yield* ana.device.delete(
+        `/api/goals/${id}/members/${member?.id}`,
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        _tag: 'GoalParticipantHasContributions',
+        error: 'No puedes eliminar a un participante con aportes',
+      });
+      expect((yield* getDetail(ana, id)).body.members).toContainEqual(
+        expect.objectContaining({ id: member?.id, name: 'Luis' }),
+      );
+      expect(
+        yield* app.db.query(
+          'select count(*)::int as count from goal_contribution where "memberId" = $1',
+          [member?.id],
+        ),
+      ).toEqual([{ count: 1 }]);
+    }),
+  );
+
+  testEffect('only goal admins can remove non-admin participants', () =>
+    Effect.gen(function* () {
+      const { ana, bea } = yield* setup;
+      const id = yield* createGoal(ana, {
+        participants: [{ name: 'Bea', userId: bea.id }, { name: 'Luis' }],
+      });
+      const detail = (yield* getDetail(ana, id)).body;
+      const luis = detail.members.find((item) => item.name === 'Luis');
+
+      const memberRemoval = yield* bea.device.delete(
+        `/api/goals/${id}/members/${luis?.id}`,
+      );
+      const adminRemoval = yield* ana.device.delete(
+        `/api/goals/${id}/members/${detail.myMembership.id}`,
+      );
+
+      expect(memberRemoval.status).toBe(404);
+      expect(memberRemoval.body).toMatchObject({ _tag: 'GoalNotFound' });
+      expect(adminRemoval.status).toBe(403);
+      expect(adminRemoval.body).toEqual({
+        _tag: 'GoalParticipantRemovalForbidden',
+        error: 'No tienes permiso para eliminar a este participante',
+      });
     }),
   );
 

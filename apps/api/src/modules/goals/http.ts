@@ -24,6 +24,11 @@ export const GoalsHandlers = HttpApiBuilder.group(Api, 'goals', (handlers) =>
           goals.update(user.id, params.id, payload),
         ),
       )
+      .handle('removeMember', ({ params }) =>
+        Effect.flatMap(CurrentUser, (user) =>
+          goals.removeMember(user.id, params.id, params.memberId),
+        ),
+      )
       .handle('addContribution', ({ params, payload }) =>
         Effect.flatMap(CurrentUser, (user) =>
           contributions.add(user.id, params.id, payload),

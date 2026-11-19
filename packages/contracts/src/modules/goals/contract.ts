@@ -65,6 +65,39 @@ export class GoalParticipantInvalid extends Schema.TaggedError<GoalParticipantIn
   },
   { httpApiStatus: 400 },
 ) {}
+export class GoalParticipantRemovalForbidden extends Schema.TaggedError<GoalParticipantRemovalForbidden>()(
+  'GoalParticipantRemovalForbidden',
+  {
+    error: Schema.String.pipe(
+      Schema.withConstructorDefault(
+        Effect.succeed('No tienes permiso para eliminar a este participante'),
+      ),
+    ),
+  },
+  { httpApiStatus: 403 },
+) {}
+export class GoalParticipantHasContributions extends Schema.TaggedError<GoalParticipantHasContributions>()(
+  'GoalParticipantHasContributions',
+  {
+    error: Schema.String.pipe(
+      Schema.withConstructorDefault(
+        Effect.succeed('No puedes eliminar a un participante con aportes'),
+      ),
+    ),
+  },
+  { httpApiStatus: 400 },
+) {}
+export class GoalParticipantNotFound extends Schema.TaggedError<GoalParticipantNotFound>()(
+  'GoalParticipantNotFound',
+  {
+    error: Schema.String.pipe(
+      Schema.withConstructorDefault(
+        Effect.succeed('Participante no encontrado'),
+      ),
+    ),
+  },
+  { httpApiStatus: 404 },
+) {}
 export class GoalContributionNotFound extends Schema.TaggedError<GoalContributionNotFound>()(
   'GoalContributionNotFound',
   {
@@ -245,10 +278,12 @@ export const GoalDetail = Schema.Struct({
 export const GoalRef = Schema.Struct({ id: Schema.String });
 
 const GoalParams = Schema.Struct({ id: Id });
+const GoalMemberParams = Schema.Struct({ id: Id, memberId: Id });
 const ContributionParams = Schema.Struct({
   id: Id,
   contributionId: Id,
 });
+const GoalMemberRef = Schema.Struct({ id: Id, name: Schema.String });
 
 export class GoalsApi extends HttpApiGroup.make('goals')
   .add(
@@ -277,6 +312,19 @@ export class GoalsApi extends HttpApiGroup.make('goals')
       payload: UpdateGoalPayload,
       success: GoalRef,
       error: [GoalNotFound, GoalNameRequired],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.delete('removeMember', '/api/goals/:id/members/:memberId', {
+      params: GoalMemberParams,
+      success: GoalMemberRef,
+      error: [
+        GoalNotFound,
+        GoalAccessDenied,
+        GoalParticipantRemovalForbidden,
+        GoalParticipantHasContributions,
+        GoalParticipantNotFound,
+      ],
     }),
   )
   .add(

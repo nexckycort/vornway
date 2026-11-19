@@ -56,6 +56,7 @@ describe('Api contract', () => {
       'POST /api/goals → 201 400 401 500 503',
       'GET /api/goals/{id} → 200 400 401 404 500 503',
       'PATCH /api/goals/{id} → 200 400 401 404 500 503',
+      'DELETE /api/goals/{id}/members/{memberId} → 200 400 401 403 404 500 503',
       'POST /api/goals/{id}/contributions → 201 400 401 403 404 500 503',
       'DELETE /api/goals/{id}/contributions/{contributionId} → 200 400 401 403 404 500 503',
       'POST /api/groups → 201 400 401 500 503',

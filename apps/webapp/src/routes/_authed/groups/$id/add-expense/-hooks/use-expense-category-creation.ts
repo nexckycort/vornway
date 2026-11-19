@@ -52,16 +52,11 @@ export function useExpenseCategoryCreation({
     setShowCategoryDrawer(false);
   };
 
-  useEffect(() => {
-    if (showCategoryDrawer || !pendingCreateCategoryDialogRef.current) return;
-
-    const frame = window.requestAnimationFrame(() => {
-      setShowCreateCategoryDialog(true);
-      pendingCreateCategoryDialogRef.current = false;
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [showCategoryDrawer]);
+  const handleCategoryDrawerAnimationEnd = (open: boolean) => {
+    if (open || !pendingCreateCategoryDialogRef.current) return;
+    pendingCreateCategoryDialogRef.current = false;
+    setShowCreateCategoryDialog(true);
+  };
 
   const handleCreateCategory = async () => {
     if (!trimmedNewCategoryName || createCategoryMutation.isPending) return;
@@ -94,6 +89,7 @@ export function useExpenseCategoryCreation({
     customCategoryIcon,
     customCategoryIconInputRef,
     handleCreateCategory,
+    handleCategoryDrawerAnimationEnd,
     isCustomCategoryIcon,
     newCategoryColor,
     newCategoryCustomIcon,

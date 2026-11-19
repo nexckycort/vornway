@@ -17,6 +17,7 @@ export function ExpenseCategoryDrawer({ form }: ExpenseCategoryDrawerProps) {
   const {
     categories,
     categoryId,
+    handleCategoryDrawerAnimationEnd,
     groupMessages,
     openCreateCategoryDialog,
     setCategoryId,
@@ -25,7 +26,11 @@ export function ExpenseCategoryDrawer({ form }: ExpenseCategoryDrawerProps) {
   } = form;
 
   return (
-    <Drawer open={showCategoryDrawer} onOpenChange={setShowCategoryDrawer}>
+    <Drawer
+      open={showCategoryDrawer}
+      onOpenChange={setShowCategoryDrawer}
+      onAnimationEnd={handleCategoryDrawerAnimationEnd}
+    >
       <DrawerContent className="flex max-h-[85dvh] flex-col overflow-hidden">
         <DrawerHeader>
           <DrawerTitle>{groupMessages.expense.categoryTitle}</DrawerTitle>

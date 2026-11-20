@@ -4,9 +4,7 @@ import { emailOTPClient } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
-
-export const API_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? 'https://api.dev.vornway.com';
+import { env } from '@/config/env';
 
 // @better-auth/expo and better-auth can resolve separate copies of
 // @better-auth/core in isolated workspace installs. Their runtime contract is
@@ -21,7 +19,7 @@ const expoAuthPlugin = expoClient({
 }) as unknown as BetterAuthClientPlugin;
 
 export const authClient = createAuthClient({
-  baseURL: API_URL,
+  baseURL: env.apiUrl,
   plugins: [expoAuthPlugin, emailOTPClient()],
 });
 
